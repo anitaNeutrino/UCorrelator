@@ -16,7 +16,7 @@ BINDIR=bin
 .PHONY: clean install all
 
 
-OBJS := $(addprefix $(BUILDDIR)/, Baseline.o SystemResponse.o UCFilters.o Flags.o dict.o)
+OBJS := $(addprefix $(BUILDDIR)/, AntennaPositions.o Baseline.o SystemResponse.o UCFilters.o Flags.o Correlator.o dict.o)
 
 #BINARIES := $(addprefix $(BINDIR)/, binary);
 

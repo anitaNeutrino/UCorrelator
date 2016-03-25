@@ -11,6 +11,7 @@
 #include <complex>
 #include "TH2.h" 
 #include "FFTWComplex.h" 
+#include <map>
 class AnalysisWaveform; 
 
 namespace UCorrelator
@@ -76,10 +77,10 @@ namespace UCorrelator
       virtual double getMagnitude(double f, double angle= 0) const;  
       virtual double getPhase(double f, double angle = 0) const; 
 
-      virtual AnalysisWaveform * convolve(const AnalysisWaveform * wf, double angle = 0) ; 
-      virtual AnalysisWaveform * deconvolve(const AnalysisWaveform * wf, double angle = 0) ; 
-      virtual void convolveInPlace(AnalysisWaveform * wf, double angle = 0) ; 
-      virtual void deconvolveinPlace(AnalysisWaveform * wf, double angle = 0) ; 
+      virtual AnalysisWaveform * convolve(const AnalysisWaveform * wf, double angle = 0) const; 
+      virtual AnalysisWaveform * deconvolve(const AnalysisWaveform * wf, const DeconvolutionMethod * method = &kDefaultDeconvolution, double angle = 0) const; 
+      virtual void convolveInPlace(AnalysisWaveform * wf, double angle = 0) const; 
+      virtual void deconvolveInPlace(AnalysisWaveform * wf, const DeconvolutionMethod * method = &kDefaultDeconvolution, double angle = 0) const; 
 
   };
 
@@ -87,20 +88,15 @@ namespace UCorrelator
   {
     public: 
       Response(int NFreq, double df); 
-      Reponse(int Nfreq, double df, int nangles, const double * angles, const FFTWComplex ** responses);  
-      Reponse(int Nfreq, double df, const FFTWComplex * response);  
+      Response(int Nfreq, double df, int nangles, const double * angles, const FFTWComplex ** responses);  
+      Response(int Nfreq, double df, const FFTWComplex * response);  
 
-      void addResponseAtAngle(double angle, const FFTWcomplex * response); 
+      void addResponseAtAngle(double angle, const FFTWComplex * response); 
 
       virtual FFTWComplex getResponse(double f, double angle = 0) const; 
       virtual double getMagnitude(double f, double angle= 0) const; 
       virtual double getPhase(double f, double angle = 0) const; 
        
-
-      virtual AnalysisWaveform * convolve(const AnalysisWaveform * wf, double angle = 0) ; 
-      virtual AnalysisWaveform * deconvolve(const AnalysisWaveform * wf, double angle = 0) ; 
-      virtual void convolveInPlace(AnalysisWaveform * wf, double angle = 0) ; 
-      virtual void deconvolveinPlace(AnalysisWaveform * wf, double angle = 0) ; 
       
       virtual ~Response(); 
 
@@ -109,27 +105,23 @@ namespace UCorrelator
       double df; 
       int nangles; 
       std::map<double, FFTWComplex *> responses; 
-      TH2D phases; 
-      TH2D mags; 
-      bool dirty; 
-      void recompute(); 
+      mutable TH2D phases; 
+      mutable TH2D mags; 
+      mutable bool dirty; 
+      void recompute() const; 
   }; 
 
 
   class CompositeResponse : public AbstractResponse
   {
     public:  
-      void addResponse(const AbstractResponse * response) { response.push_back(response); } 
+      void addResponse(const AbstractResponse * response) { responses.push_back(response); } 
       virtual FFTWComplex getResponse(double f, double angle = 0) const; 
+      virtual ~CompositeResponse() { ; } 
    
     private: 
       std::vector<const AbstractResponse * > responses; 
   }; 
-
-
-  AnalysisWaveform * convolve(const AnalysisWaveform * wf, const AbstractResponse * response, double off_axis_angle); 
-  AnalysisWaveform * deconvolve(const AnalysisWaveform * wf, const AbstractResponse * response,  const DeconvolutionMethod * method = &kDefaultDeconvolution, double off_axis_angle = 0); 
-
 
 
 }

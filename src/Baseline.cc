@@ -49,6 +49,7 @@ static int makeBaselines(int run, TGraph ** hpol, TGraph ** vpol, int N = 5000)
            hpol[ant] = new TGraph(NSAMPLES/2+1); 
            vpol[ant] = new TGraph(NSAMPLES/2+1); 
        }
+       
        TGraph * gh = d.useful()->getGraph(ant, AnitaPol::kHorizontal); 
        TGraph * gv = d.useful()->getGraph(ant, AnitaPol::kVertical); 
 
@@ -94,6 +95,7 @@ static int makeBaselines(int run, TGraph ** hpol, TGraph ** vpol, int N = 5000)
       vpol[ant]->GetY()[i] /= nevents; 
     }
   }
+
 
   return nevents; 
 }

@@ -185,6 +185,45 @@ static void interpolateFreqsBetween(TGraph * g, double fmin, double fmax)
   }
 }
 
+static std::vector<TString> hpol_freq_names; 
+static std::vector<TString> vpol_freq_names; 
+
+const char * UCorrelator::AdaptiveFilter::outputName(unsigned i) const
+{
+  if (i >= 4 && (i -4)/2 == hpol_freq_names.size()) 
+  {
+    hpol_freq_names.push_back(TString::Format("freq_hpol_%d",(i - 4)/2));  
+    vpol_freq_names.push_back(TString::Format("freq_vpol_%d",(i - 4)/2));  
+  }
+
+  switch(i) 
+  {
+    case AnitaPol::kHorizontal: 
+      return "mean_freq_hpol";
+    case AnitaPol::kVertical: 
+      return "mean_freq_vpol";
+    case 2+AnitaPol::kHorizontal: 
+      return "strongest_cw_hpol"; 
+    case 2+AnitaPol::kVertical: 
+      return "strongest_cw_vpol"; 
+    default:
+      return  (i %2 ) ?  hpol_freq_names[(i-4)/2].Data() 
+                      :  vpol_freq_names[(i-4)/2].Data(); 
+  }
+
+  return 0; 
+}
+
+
+void UCorrelator::AdaptiveFilter::fillOutputs(double *vals) const
+{
+
+  memcpy(vals, mean_freq, 2*sizeof(double)); 
+  memcpy(vals + 2, strongest_cw, 2*sizeof(double)); 
+  memcpy(vals + 4, freqs[0], nfreq*sizeof(double)); 
+  memcpy(vals + 4 + nfreq, freqs[1], nfreq*sizeof(double)); 
+}
+
 void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event) 
 {
   /* Here we do all the same processing to the baseline as Abby does */ 
@@ -348,12 +387,9 @@ void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event)
       if (freqs[pol][freq] == -1) break; 
 
       ComplicatedNotchFilter complicated(freqs[pol][freq]-bw, freqs[pol][freq]+bw, temperature, gain); 
-      for (int i= 0; i < NUM_DIGITZED_CHANNELS; i++) 
+      for (int i= 0; i < NUM_DIGITZED_CHANNELS/2; i++) 
       {
-        if (pol== AntennaPositions::instance()->polByTrace[i]) 
-        {
-          complicated.processOne(getWf(event,i)); 
-        }
+          complicated.processOne(getWf(event,i, AnitaPol::AnitaPol_t(pol))); 
       }
     }
   }

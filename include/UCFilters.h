@@ -100,7 +100,8 @@ namespace UCorrelator
       const char * tag() const { return "AdaptiveFilter"; } 
       const char * description() const { return desc_string.Data(); }
       virtual void process(FilteredAnitaEvent * event); 
-      unsigned nOutputs() const { return 2 + 2*nfreq; } 
+      unsigned nOutputs() const { return 4 + 2*nfreq; } 
+      void fillOutputs(double * vars) const; 
       const char * outputName(unsigned i) const; 
 
     private: 
