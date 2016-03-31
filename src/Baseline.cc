@@ -70,8 +70,8 @@ static int makeBaselines(int run, TGraph ** hpol, TGraph ** vpol, int N = 5000)
            vpol[ant]->GetX()[j] = j  / (NOMINAL_DT * NSAMPLES);  //GHz
          }
 
-         hpol[ant]->GetY()[j] += fft_h[i].getAbs() / (NSAMPLES/2.+1)  * (j == 0 || j == NSAMPLES/2 ? 1 : 2); 
-         vpol[ant]->GetY()[j] += fft_v[i].getAbs() / (NSAMPLES/2.+1)  * (j == 0 || j == NSAMPLES/2 ? 1 : 2); 
+         hpol[ant]->GetY()[j] += fft_h[j].getAbs() / (NSAMPLES/2.+1)  * (j == 0 || j == NSAMPLES/2 ? 1 : 2); 
+         vpol[ant]->GetY()[j] += fft_v[j].getAbs() / (NSAMPLES/2.+1)  * (j == 0 || j == NSAMPLES/2 ? 1 : 2); 
 
        }
 
@@ -116,6 +116,7 @@ void UCorrelator::Baseline::saveToDir(const char * dir)
 UCorrelator::Baseline::Baseline(int run, int navg, const char * persistdir) 
   : navg(navg) , run(run)
 {
+  bool foundit = false;
   if (persistdir)  
   {
     TFile f(TString::Format("%s/%d_%d.root", persistdir, run,navg)); 
@@ -129,11 +130,15 @@ UCorrelator::Baseline::Baseline(int run, int navg, const char * persistdir)
         TGraph * found_vpol = (TGraph*) f.Get(TString::Format("v%d",ant)); 
         vpol[ant] = new TGraph(*found_vpol);  
       }
-      return; 
+      foundit = true;
     }
   }
 
-  makeBaselines(run, hpol, vpol, navg); 
+  if (!foundit) 
+  {
+    printf("Didn't find baselines... creating!\n"); 
+    makeBaselines(run, hpol, vpol, navg); 
+  }
 
 
   hpol_avg = new TGraph(NSAMPLES/2+1); 

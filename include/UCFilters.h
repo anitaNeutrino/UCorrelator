@@ -19,7 +19,7 @@ namespace UCorrelator
   void applyAbbysFilterStrategy(FilterStrategy * strategy); 
 
   //condition used for satellite filter
-  bool antennaIsNorthFacing(FilteredAnitaEvent *ev, int trace); 
+  bool antennaIsNorthFacing(FilteredAnitaEvent *ev, int ant, AnitaPol::AnitaPol_t); 
 
 
   class SimplePassBandFilter : public UniformFilterOperation

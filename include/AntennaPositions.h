@@ -13,19 +13,17 @@ namespace UCorrelator
     AntennaPositions(); 
 
     public: 
-      static AntennaPositions * instance(); 
+      static const AntennaPositions * instance() { if (!theInstance) theInstance = new AntennaPositions ; return theInstance; }
 
-      void getClosestAntennas(double phi, int N, int * closest, uint64_t disallowed = 0); 
-      double phiAntByTrace[NUM_DIGITZED_CHANNELS]; 
-      double phiAntByPolAnt[2][NUM_DIGITZED_CHANNELS/2]; 
-      double rAntByTrace[NUM_DIGITZED_CHANNELS]; 
-      double rAntByPolAnt[2][NUM_DIGITZED_CHANNELS/2]; 
-      double zAntByTrace[NUM_DIGITZED_CHANNELS]; 
-      double zAntByPolAnt[2][NUM_DIGITZED_CHANNELS/2]; 
-      int traceByPolAnt[2][NUM_DIGITZED_CHANNELS/2]; 
-      int antByTrace[NUM_DIGITZED_CHANNELS]; 
-      AnitaPol::AnitaPol_t polByTrace[NUM_DIGITZED_CHANNELS]; 
+      void getClosestAntennas(double phi, int N, int * closest, uint64_t disallowed = 0) const; 
+
+      double phiAnt[2][NUM_SEAVEYS]; 
+      double rAnt[2][NUM_SEAVEYS]; 
+      double zAnt[2][NUM_SEAVEYS]; 
   }; 
+
+
+
 }
 
 

@@ -4,8 +4,8 @@ include Makefile.config
 CXX=g++
 CXXFLAGS+= -g
 
-CXXFLAGS     += $(ROOTCFLAGS) $(SYSINCLUDES) -I$(ANITA_UTIL_INSTALL_DIR)/include
-LDFLAGS      += $(ROOTLDFLAGS)  -L$(ANITA_UTIL_INSTALL_DIR)/lib
+CXXFLAGS     += $(ROOTCFLAGS) $(SYSINCLUDES) -O3  -I$(ANITA_UTIL_INSTALL_DIR)/include 
+LDFLAGS      += $(ROOTLDFLAGS)  -L$(ANITA_UTIL_INSTALL_DIR)/lib  
 LIBS          = $(ROOTLIBS) -g -Wl,-z,defs -lMathMore -lRootFftwWrapper -lAnitaEvent -lAnitaAnalysis
 GLIBS         = $(ROOTGLIBS) $(SYSLIBS)
 LIBDIR=lib

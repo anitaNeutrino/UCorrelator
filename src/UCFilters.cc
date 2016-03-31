@@ -9,6 +9,7 @@
 #include "DigitalFilter.h"
 #include "AntennaPositions.h" 
 
+
 void UCorrelator::applyAbbysFilterStrategy(FilterStrategy * strategy) 
 {
 
@@ -33,6 +34,7 @@ void UCorrelator::SimplePassBandFilter::processOne(AnalysisWaveform* g)
   int nfreq = g->Nfreq(); 
   double df = g->deltaF(); 
 
+//  printf("SimplePassBandFilter::processOne!\n"); 
   FFTWComplex * vals = g->updateFreq(); 
   for (int i = 0; i < nfreq; i++) 
   {
@@ -47,6 +49,7 @@ void UCorrelator::SimplePassBandFilter::processOne(AnalysisWaveform* g)
 
 void UCorrelator::SimpleNotchFilter::processOne(AnalysisWaveform* g) 
 {
+//  printf("SimpleNotchFilter::processOne!\n"); 
   int nfreq = g->Nfreq(); 
   double df = g->deltaF(); 
 
@@ -64,6 +67,7 @@ void UCorrelator::SimpleNotchFilter::processOne(AnalysisWaveform* g)
 
 void UCorrelator::ComplicatedNotchFilter::processOne(AnalysisWaveform* g) 
 {
+//  printf("ComplicatedNotchFilter::processOne!\n"); 
   int nfreq = g->Nfreq(); 
   double df = g->deltaF();  // this is ordinarily Ghz 
 
@@ -90,9 +94,10 @@ void UCorrelator::ComplicatedNotchFilter::processOne(AnalysisWaveform* g)
 
 
 
-bool UCorrelator::antennaIsNorthFacing(FilteredAnitaEvent * ev, int trace) 
+bool UCorrelator::antennaIsNorthFacing(FilteredAnitaEvent * ev, int ant, AnitaPol::AnitaPol_t pol) 
 {
-  double headingAnt = ev->getGPS()->heading - AntennaPositions::instance()->phiAntByTrace[trace]; 
+  
+  double headingAnt = ev->getGPS()->heading - AntennaPositions::instance()->phiAnt[pol][ant]; 
   if (headingAnt >= 360) headingAnt -=360; 
   if (headingAnt < 0) headingAnt +=360; 
   return (headingAnt  <=120 || headingAnt >= 240); 
@@ -226,6 +231,7 @@ void UCorrelator::AdaptiveFilter::fillOutputs(double *vals) const
 
 void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event) 
 {
+//  printf("AdaptiveFilter::process!\n"); 
   /* Here we do all the same processing to the baseline as Abby does */ 
   if (run < 0 || run != event->getHeader()->run)
   {
@@ -255,7 +261,6 @@ void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event)
 
 
     //means used for normalization
-  
   }
 
 
@@ -265,23 +270,27 @@ void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event)
 
   TGraph powers[2]; 
 
-  for (int i = 0; i < NUM_DIGITZED_CHANNELS; i++) 
+
+  for (int pol = AnitaPol::kHorizontal; pol <= AnitaPol::kVertical; pol++)
   {
-    const TGraph * power = event->getFilteredGraph(i)->power(); 
-    AnitaPol::AnitaPol_t pol = AntennaPositions::instance()->polByTrace[i]; 
-
-    TGraph * which_power = &powers[pol]; 
-    if (which_power->GetN() == 0)
+    for (int i = 0; i < NUM_SEAVEYS; i++) 
     {
-      which_power->Set(power->GetN()); 
-      memcpy(which_power->GetX(), power->GetX(), power->GetN() * sizeof(double)); 
-    }
+      const TGraph * power = event->getFilteredGraph(i,(AnitaPol::AnitaPol_t)pol)->power(); 
 
-    for (int i = 0; i < which_power->GetN(); i++) 
-    {
-        which_power->GetY()[i] = power->Eval(which_power->GetX()[i])  * 2 / NUM_DIGITZED_CHANNELS ; 
+
+      TGraph * which_power = &powers[pol]; 
+      if (which_power->GetN() == 0)
+      {
+        which_power->Set(power->GetN()); 
+        memcpy(which_power->GetX(), power->GetX(), power->GetN() * sizeof(double)); 
+      }
+
+      for (int i = 0; i < which_power->GetN(); i++) 
+      {
+          which_power->GetY()[i] = FFTtools::evalEvenGraph(power, which_power->GetX()[i])  / NUM_SEAVEYS ; 
+      }
+      dBize(which_power); 
     }
-    dBize(which_power); 
   }
 
   //compute means
@@ -387,7 +396,7 @@ void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event)
       if (freqs[pol][freq] == -1) break; 
 
       ComplicatedNotchFilter complicated(freqs[pol][freq]-bw, freqs[pol][freq]+bw, temperature, gain); 
-      for (int i= 0; i < NUM_DIGITZED_CHANNELS/2; i++) 
+      for (int i= 0; i < NUM_SEAVEYS; i++) 
       {
           complicated.processOne(getWf(event,i, AnitaPol::AnitaPol_t(pol))); 
       }
