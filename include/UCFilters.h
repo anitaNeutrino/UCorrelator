@@ -86,7 +86,7 @@ namespace UCorrelator
     public: 
       AdaptiveFilter(double dbCut, const char * baseline_dir, int navg = 1000, 
         double fmin = 0.2, double fmax = 1.2, double bandwidth = 0.026, int nFreqs = 5, double temperature = 340, double gain = 75 ) 
-        : dbCut(dbCut), run(-1), navg(navg), baseline_dir(baseline_dir), baseline(0), fmin(fmin), fmax(fmax), hpol_avg(0), vpol_avg(0), 
+        : dbCut(dbCut), run(-1), navg(navg), baseline_dir(baseline_dir), baseline(0), fmin(fmin), fmax(fmax), bw(bandwidth), nfreq(nFreqs), hpol_avg(0), vpol_avg(0), 
         temperature(temperature), gain(gain)
       {
         desc_string.Form("Adaptive filter with BW %f using Baselines with %d averages and a db cut of %f\n",bw,  navg, dbCut); 

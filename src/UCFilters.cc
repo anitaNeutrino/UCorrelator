@@ -195,7 +195,7 @@ static std::vector<TString> vpol_freq_names;
 
 const char * UCorrelator::AdaptiveFilter::outputName(unsigned i) const
 {
-  if (i >= 4 && (i -4)/2 == hpol_freq_names.size()) 
+  if (i >= 4 && (i -4)/2 >= hpol_freq_names.size()) 
   {
     hpol_freq_names.push_back(TString::Format("freq_hpol_%d",(i - 4)/2));  
     vpol_freq_names.push_back(TString::Format("freq_vpol_%d",(i - 4)/2));  

@@ -41,18 +41,20 @@ void UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * 
   for (int i = 0; i < NUM_SEAVEYS; i++) 
   {
 
-    double dphi = disallowed & (1 << i) ? 360 : fabs(FFTtools::wrap(phiAnt[0][i], 360, 0)); 
+    double dphi = disallowed & (1 << i) ? 360 : fabs(FFTtools::wrap(phi-phiAnt[0][i], 360, 0)); 
     dphis.insert(std::pair<double,int>(dphi,i)); 
   }
 
-
   int Nused = 0; 
 
+//  printf("Closest antennas to %f: ",phi); 
   for (std::multimap<double,int>::const_iterator it = dphis.begin(); it !=dphis.end(); it++) 
   {
+//    printf("  %d %f\n", (*it).second, (*it).first); 
     closest[Nused++] = (*it).second; 
     if (Nused == N) break; 
   }
+//  printf("\n"); 
 }
 
 

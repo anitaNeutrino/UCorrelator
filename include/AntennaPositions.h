@@ -21,9 +21,6 @@ namespace UCorrelator
       double rAnt[2][NUM_SEAVEYS]; 
       double zAnt[2][NUM_SEAVEYS]; 
   }; 
-
-
-
 }
 
 

@@ -4,9 +4,9 @@ include Makefile.config
 CXX=g++
 CXXFLAGS+= -g
 
-CXXFLAGS     += $(ROOTCFLAGS) $(SYSINCLUDES) -O3  -I$(ANITA_UTIL_INSTALL_DIR)/include 
-LDFLAGS      += $(ROOTLDFLAGS)  -L$(ANITA_UTIL_INSTALL_DIR)/lib  
-LIBS          = $(ROOTLIBS) -g -Wl,-z,defs -lMathMore -lRootFftwWrapper -lAnitaEvent -lAnitaAnalysis
+CXXFLAGS     += $(ROOTCFLAGS) $(SYSINCLUDES) -O3  -I$(ANITA_UTIL_INSTALL_DIR)/include -I$(EIGEN3_INCLUDE_DIR)/eigen3  -march=native -fopenmp
+LDFLAGS      += $(ROOTLDFLAGS)  -L$(ANITA_UTIL_INSTALL_DIR)/lib -fopenmp
+LIBS          = $(ROOTLIBS) -g -Wl,-z,defs -lMathMore -lRootFftwWrapper -lAnitaEvent -lAnitaAnalysis -lAnitaCorrelator  
 GLIBS         = $(ROOTGLIBS) $(SYSLIBS)
 LIBDIR=lib
 BUILDDIR=build
@@ -16,7 +16,7 @@ BINDIR=bin
 .PHONY: clean install all
 
 
-OBJS := $(addprefix $(BUILDDIR)/, AntennaPositions.o Baseline.o SystemResponse.o UCFilters.o Flags.o Correlator.o dict.o)
+OBJS := $(addprefix $(BUILDDIR)/, AntennaPositions.o Baseline.o SystemResponse.o UCFilters.o Flags.o Correlator.o WaveformCombiner.o PeakFinder.o Analyzer.o AnalysisConfig.o Util.o dict.o)
 
 #BINARIES := $(addprefix $(BINDIR)/, binary);
 

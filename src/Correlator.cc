@@ -30,9 +30,6 @@ static const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions:
 
 #define PHI_SECTOR_ANGLE (360. / NUM_PHI)
 
-//this should probably be defined elsewhere
-#define ADU5_FORE_PHI 22.5
-
 
 
 UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, int ntheta, double theta_min, double theta_max)
@@ -44,11 +41,21 @@ UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, in
   trigcache = new TrigCache(nphi, (phi_max-phi_min)/nphi, phi_min, ntheta, (theta_max - theta_min)/ntheta,theta_min, ap); 
 
   disallowed_antennas = 0; 
-  pad_factor = 1; 
+  pad_factor = 3; 
   max_phi = 75; 
 
   memset(padded_waveforms, 0, NANTENNAS * sizeof(AnalysisWaveform*)); 
   memset(correlations, 0, NANTENNAS * NANTENNAS * sizeof(AnalysisWaveform*)); 
+
+  for (int i = 0; i < NANTENNAS; i++)
+  {
+    omp_init_lock(&waveform_locks[i]);
+
+    for (int j = 0; j < NANTENNAS; j++) 
+    {
+      omp_init_lock(&correlation_locks[i][j]);
+    }
+  }
   ev = 0; 
   groupDelayFlag = 1; 
 }
@@ -127,7 +134,6 @@ for (int i = 0; i < NANTENNAS; i++)
 
     for (int j = i; j < NANTENNAS; j++) 
     {
-
       if (correlations[i][j])
       {
         delete correlations[i][j]; 
@@ -140,9 +146,21 @@ for (int i = 0; i < NANTENNAS; i++)
 }
 
 
+
+
 AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2) 
 {
 //  printf("%d %d / %d \n",ant1,ant2, NANTENNAS); 
+
+
+#ifdef UCORRELATOR_OPENMP
+#ifndef FFTTOOLS_COMPILED_WITH_OPENMP
+#pragma omp critical (getCorrelation)
+  {
+#endif
+#endif
+
+  omp_set_lock(&waveform_locks[ant1]); 
   if (!padded_waveforms[ant1])
   {
 //    printf("Copying and padding %d\n",ant1); 
@@ -150,7 +168,9 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2)
      rms[ant1] = padded_waveforms[ant1]->even()->GetRMS(2); 
      padded_waveforms[ant1]->padEven(1); 
   }
+  omp_unset_lock(&waveform_locks[ant1]); 
 
+  omp_set_lock(&waveform_locks[ant2]); 
   if (!padded_waveforms[ant2])
   {
 //    printf("Copying and padding %d\n",ant2); 
@@ -159,14 +179,28 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2)
       rms[ant2] = padded_waveforms[ant2]->even()->GetRMS(2); 
       padded_waveforms[ant2]->padEven(1); 
   }
+  omp_unset_lock(&waveform_locks[ant2]); 
 
+
+  omp_set_lock(&correlation_locks[ant1][ant2]); 
 
   if (!correlations[ant1][ant2])
   {
+    omp_set_lock(&waveform_locks[ant1]); 
+    omp_set_lock(&waveform_locks[ant2]); 
 //    printf("Computing correlation %d %d\n", ant1, ant2); 
     correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],padded_waveforms[ant2],pad_factor, rms[ant1] * rms[ant2]); 
+    omp_unset_lock(&waveform_locks[ant2]); 
+    omp_unset_lock(&waveform_locks[ant1]); 
   }
 
+  omp_unset_lock(&correlation_locks[ant1][ant2]); 
+
+#ifdef UCORRELATOR_OPENMP
+#ifndef FFTTOOLS_COMPILED_WITH_OPENMP
+  }
+#endif
+#endif
   return correlations[ant1][ant2]; 
 }
 
@@ -210,16 +244,33 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
 
   TrigCache cache(nphi, dphi, phi0, ntheta,dtheta,theta0, ap, true,nant, closest); 
 
+#ifdef UCORRELATOR_OPENMP
+#pragma omp parallel for
+#endif
   for (int ant_i = 0; ant_i < nant; ant_i++)
   {
     int ant1 = closest[ant_i]; 
     for (int ant_j = ant_i +1; ant_j < nant; ant_j++)
     {
       int ant2 = closest[ant_j]; 
+   //   printf("%d %d\n", ant1,ant2); 
       doAntennas(ant1, ant2, answer, &zoomed_norm, &cache); 
     }
   }
 
+  int nonzero = 0;
+  //only keep values with at least 3 contributing antennas 
+  for (int i = 0; i < (answer->GetNbinsX()+2) * (answer->GetNbinsY()+2); i++) 
+  {
+    double val = answer->GetArray()[i]; 
+    if (val == 0) continue;
+    int this_norm = zoomed_norm.GetArray()[i]; 
+    answer->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
+    nonzero++; 
+  }
+
+  answer->SetEntries(nonzero); 
+ 
   return answer;
 }
 
@@ -249,6 +300,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
    int first_phi_bin = hist->GetXaxis()->FindFixBin(lowerAngleThis); 
    int last_phi_bin  = hist->GetXaxis()->FindFixBin(higherAngleThis); 
 
+   if (first_phi_bin == 0) first_phi_bin = 1; 
+   if (last_phi_bin == hist->GetNbinsX()+1) last_phi_bin = hist->GetNbinsX(); 
    bool must_wrap = (last_phi_bin < first_phi_bin) ; 
 
    for (int phibin = first_phi_bin; (phibin <= last_phi_bin) || must_wrap; phibin++)
@@ -258,8 +311,10 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
        phibin = 1; 
        must_wrap = false; 
      }
+     
 
 
+//     printf("%d\n", phibin); 
      double phi = cache? cache->phi[phibin-1] : hist->GetXaxis()->GetBinCenter(phibin);
      double dphi1 = FFTtools::wrap(phi - centerPhi1,360,0); 
      double dphi2 = FFTtools::wrap(phi - centerPhi2,360,0); 
@@ -291,8 +346,15 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
        int bin = phibin + thetabin * nphibins ; 
 
 
-       hist->GetArray()[bin]+= val; 
-       norm->GetArray()[bin]++;
+
+#ifdef UCORRELATOR_OPENMP
+#pragma omp atomic
+#endif
+         hist->GetArray()[bin]+= val; 
+#ifdef UCORRELATOR_OPENMP
+#pragma omp atomic
+#endif
+         norm->GetArray()[bin]++;
 
      }
    }
@@ -307,10 +369,11 @@ void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol
   ev = event; 
   hist.Reset(); 
   norm.Reset(); 
-
   reset(); 
-  
 
+#ifdef UCORRELATOR_OPENMP
+  #pragma omp parallel for
+#endif
   for (int ant1 = 0; ant1 < NANTENNAS; ant1++)
   {
     if (disallowed_antennas & (1 << ant1)) continue; 
@@ -348,6 +411,17 @@ UCorrelator::Correlator::~Correlator()
 
   delete trigcache; 
   reset(); 
+
+  for (int i = 0; i < NANTENNAS; i++)
+  {
+    omp_destroy_lock(&waveform_locks[i]); 
+
+    for (int j = 0; j < NANTENNAS; j++) 
+    {
+      omp_destroy_lock(&correlation_locks[i][j]); 
+    }
+  }
+
 }
 
 
@@ -369,8 +443,6 @@ void UCorrelator::Correlator::dumpDeltaTs(const char * fname) const
   tree->Branch("delta_t",&delta_t); 
   tree->Branch("group_delay",&group_delay); 
 
-
- 
 
   for (ant1= 0; ant1 < NANTENNAS; ant1++) 
   {

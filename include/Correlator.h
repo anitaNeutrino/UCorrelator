@@ -4,6 +4,8 @@
 
 #include "AnitaConventions.h"
 #include "TH2.h"
+#include <omp.h>
+#include <stdint.h>
 
 class FilteredAnitaEvent; 
 class AnalysisWaveform; 
@@ -17,7 +19,7 @@ namespace UCorrelator
   class Correlator
   {
     public:
-      Correlator(int nphi, double phimin, double phimax, int ntheta, double theta_min, double theta_max); 
+      Correlator(int nphi, double phimin, double phimax, int ntheta, double theta_lowest, double theta_highest); 
       void compute(const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol); 
       const TH2 * getHist() const { return &hist; }  
       const TH2 * getNorm() const { return &norm; } 
@@ -38,6 +40,11 @@ namespace UCorrelator
     private: 
       AnalysisWaveform* padded_waveforms[NANTENNAS]; 
       AnalysisWaveform* correlations[NANTENNAS][NANTENNAS]; 
+
+      omp_lock_t waveform_locks[NANTENNAS]; 
+      omp_lock_t correlation_locks[NANTENNAS][NANTENNAS]; 
+
+
       TrigCache * trigcache; 
       double rms[NANTENNAS]; 
       TH2D hist; 
