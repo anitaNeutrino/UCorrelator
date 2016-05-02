@@ -1,7 +1,8 @@
 
-void doWais(int run = 352)
+void doWais(int run = 352, int max = 0)
 {
 
+  FFTtools::loadWisdom("wisdom.dat"); 
   AnitaDataset d(run); 
   UCorrelator::AnalysisConfig cfg; 
   cfg.start_pol = AnitaPol::kHorizontal; 
@@ -17,7 +18,7 @@ void doWais(int run = 352)
   FilterStrategy strategy (&ofile); 
   UCorrelator::applyAbbysFilterStrategy(&strategy); 
 
-  printf("Strategy applied!\n"); 
+//  printf("Strategy applied!\n"); 
 
   double waisPhiExpected, waisThetaExpected; 
   tree->Branch("summary",&sum); 
@@ -35,6 +36,8 @@ void doWais(int run = 352)
     if (UCorrelator::isWAISHPol(&pat, d.header()))
     {
       pat.getThetaAndPhiWaveWaisDivide(waisThetaExpected, waisPhiExpected); 
+      waisThetaExpected *= 180 / TMath::Pi(); 
+      waisPhiExpected *= 180 / TMath::Pi(); 
       printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone); 
       FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
 
@@ -44,11 +47,12 @@ void doWais(int run = 352)
       ndone++; 
     }
 
-    if (ndone > 50) break; 
+    if (max && ndone > max) break; 
 
   }
 
   ofile.cd(); 
   tree->Write(); 
 
+  FFTtools::saveWisdom("wisdom.dat"); 
 }

@@ -24,8 +24,8 @@ UCorrelator::AntennaPositions::AntennaPositions()
 //      printf("%d %d\n",pol,ant); 
       AnitaGeomTool * geom = AnitaGeomTool::Instance(); 
       phiAnt[pol][ant] = geom->getAntPhiPositionRelToAftFore(ant,(AnitaPol::AnitaPol_t)pol) * RAD2DEG; 
-      rAnt[pol][ant] = geom->getAntR(ant); 
-      zAnt[pol][ant] = geom->getAntZ(ant); 
+      rAnt[pol][ant] = geom->getAntR(ant,(AnitaPol::AnitaPol_t) pol); 
+      zAnt[pol][ant] = geom->getAntZ(ant,(AnitaPol::AnitaPol_t) pol); 
     }
   }
 }

@@ -103,12 +103,17 @@ namespace UCorrelator
       unsigned nOutputs() const { return 4 + 2*nfreq; } 
       void fillOutputs(double * vars) const; 
       const char * outputName(unsigned i) const; 
+      const TGraph * getHpolAvg() const { return hpol_avg; }
+      const TGraph * getVpolAvg() const { return vpol_avg; }
+      const TGraph * getLastPowerHpol() const { return &powers[0]; }
+      const TGraph * getLastPowerVpol() const { return &powers[1]; }
 
     private: 
 
 
       TString desc_string; 
       double dbCut; 
+      TGraph powers[2]; 
       int run; 
       int navg; 
       const char * baseline_dir; 

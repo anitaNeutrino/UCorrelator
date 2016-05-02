@@ -32,17 +32,21 @@ static const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions:
 
 
 
-UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, int ntheta, double theta_min, double theta_max)
+UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, int ntheta, double theta_min, double theta_max, bool use_center)
   : hist(TString::Format("ucorr_corr_%d",count_the_correlators),"Correlator", nphi, phi_min, phi_max, ntheta, theta_min, theta_max), 
     norm(TString::Format("ucorr_norm_%d",count_the_correlators++),"Normalization", nphi, phi_min, phi_max, ntheta, theta_min, theta_max)
 {
   
+  hist.GetXaxis()->SetTitle("#phi"); 
+  hist.GetYaxis()->SetTitle("-#theta"); 
   
-  trigcache = new TrigCache(nphi, (phi_max-phi_min)/nphi, phi_min, ntheta, (theta_max - theta_min)/ntheta,theta_min, ap); 
+  use_bin_center = use_center;
+  trigcache = new TrigCache(nphi, (phi_max-phi_min)/nphi, phi_min, ntheta, (theta_max - theta_min)/ntheta,theta_min, ap, use_center); 
 
   disallowed_antennas = 0; 
   pad_factor = 3; 
   max_phi = 75; 
+  max_phi2 = max_phi*max_phi;
 
   memset(padded_waveforms, 0, NANTENNAS * sizeof(AnalysisWaveform*)); 
   memset(correlations, 0, NANTENNAS * NANTENNAS * sizeof(AnalysisWaveform*)); 
@@ -132,7 +136,7 @@ for (int i = 0; i < NANTENNAS; i++)
       padded_waveforms[i] = 0; 
     }
 
-    for (int j = i; j < NANTENNAS; j++) 
+    for (int j = 0; j < NANTENNAS; j++) 
     {
       if (correlations[i][j])
       {
@@ -160,7 +164,10 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2)
 #endif
 #endif
 
+
+#ifdef UCORRELATOR_OPENMP
   omp_set_lock(&waveform_locks[ant1]); 
+#endif
   if (!padded_waveforms[ant1])
   {
 //    printf("Copying and padding %d\n",ant1); 
@@ -168,9 +175,11 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2)
      rms[ant1] = padded_waveforms[ant1]->even()->GetRMS(2); 
      padded_waveforms[ant1]->padEven(1); 
   }
+#ifdef UCORRELATOR_OPENMP
   omp_unset_lock(&waveform_locks[ant1]); 
-
   omp_set_lock(&waveform_locks[ant2]); 
+#endif
+
   if (!padded_waveforms[ant2])
   {
 //    printf("Copying and padding %d\n",ant2); 
@@ -179,24 +188,30 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2)
       rms[ant2] = padded_waveforms[ant2]->even()->GetRMS(2); 
       padded_waveforms[ant2]->padEven(1); 
   }
+
+#ifdef UCORRELATOR_OPENMP
   omp_unset_lock(&waveform_locks[ant2]); 
-
-
   omp_set_lock(&correlation_locks[ant1][ant2]); 
+#endif
 
   if (!correlations[ant1][ant2])
   {
+#ifdef UCORRELATOR_OPENMP
     omp_set_lock(&waveform_locks[ant1]); 
     omp_set_lock(&waveform_locks[ant2]); 
+#endif
 //    printf("Computing correlation %d %d\n", ant1, ant2); 
     correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],padded_waveforms[ant2],pad_factor, rms[ant1] * rms[ant2]); 
-    omp_unset_lock(&waveform_locks[ant2]); 
-    omp_unset_lock(&waveform_locks[ant1]); 
-  }
-
-  omp_unset_lock(&correlation_locks[ant1][ant2]); 
 
 #ifdef UCORRELATOR_OPENMP
+    omp_unset_lock(&waveform_locks[ant2]); 
+    omp_unset_lock(&waveform_locks[ant1]); 
+#endif
+  }
+
+
+#ifdef UCORRELATOR_OPENMP
+  omp_unset_lock(&correlation_locks[ant1][ant2]); 
 #ifndef FFTTOOLS_COMPILED_WITH_OPENMP
   }
 #endif
@@ -235,37 +250,42 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
                     ntheta, theta0, theta1); 
   }
   
+  answer->GetXaxis()->SetTitle("#phi"); 
+  answer->GetYaxis()->SetTitle("-#theta"); 
 
+  int closest[nant]; // is it a problem if nant is 0? 
+  if (nant) 
+  {
+    memset(closest,0,sizeof(closest)); 
+    ap->getClosestAntennas(phi, nant, closest, disallowed_antennas); 
+  }
 
-  int closest[nant]; 
+  TrigCache cache(nphi, dphi, phi0, ntheta,dtheta,theta0, ap, true,nant, nant ? closest : 0); 
 
-
-  ap->getClosestAntennas(phi, nant, closest, disallowed_antennas); 
-
-  TrigCache cache(nphi, dphi, phi0, ntheta,dtheta,theta0, ap, true,nant, closest); 
-
+  int n2loop = nant ? nant : NANTENNAS;  
+  double center_point[2] = { phi,theta}; 
 #ifdef UCORRELATOR_OPENMP
 #pragma omp parallel for
 #endif
-  for (int ant_i = 0; ant_i < nant; ant_i++)
+  for (int ant_i = 0; ant_i < n2loop; ant_i++)
   {
-    int ant1 = closest[ant_i]; 
-    for (int ant_j = ant_i +1; ant_j < nant; ant_j++)
+    int ant1 = nant ? closest[ant_i] : ant_i; 
+    for (int ant_j = ant_i +1; ant_j < n2loop; ant_j++)
     {
-      int ant2 = closest[ant_j]; 
+      int ant2 = nant ? closest[ant_j] : ant_j; 
    //   printf("%d %d\n", ant1,ant2); 
-      doAntennas(ant1, ant2, answer, &zoomed_norm, &cache); 
+      doAntennas(ant1, ant2, answer, &zoomed_norm, &cache, center_point); 
     }
   }
 
   int nonzero = 0;
-  //only keep values with at least 3 contributing antennas 
+  //only keep values with at least  contributing antennas 
   for (int i = 0; i < (answer->GetNbinsX()+2) * (answer->GetNbinsY()+2); i++) 
   {
     double val = answer->GetArray()[i]; 
     if (val == 0) continue;
     int this_norm = zoomed_norm.GetArray()[i]; 
-    answer->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
+    answer->GetArray()[i] = this_norm > 0  ? val/this_norm : 0;
     nonzero++; 
   }
 
@@ -276,14 +296,16 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
 
 
 inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist, 
-                                                TH2I * norm, const TrigCache * cache = 0)
+                                                TH2I * norm, const TrigCache * cache = 0, double * center_point)
 {
    int allowedFlag; 
    double lowerAngleThis, higherAngleThis, centerTheta1, centerTheta2, centerPhi1, centerPhi2;
+//   cache = 0; // REMOVE THIS AFTER TESTING
 
    allowedFlag=allowedPhisPairOfAntennas(lowerAngleThis,higherAngleThis, 
                     centerTheta1, centerTheta2, centerPhi1, centerPhi2, 
                     ant1,ant2, max_phi, pol);
+
 
 //   printf("HERE! allowedFlag:  %d\n", allowedFlag); 
    if(!allowedFlag) return; 
@@ -315,30 +337,26 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
 
 
 //     printf("%d\n", phibin); 
-     double phi = cache? cache->phi[phibin-1] : hist->GetXaxis()->GetBinCenter(phibin);
-     double dphi1 = FFTtools::wrap(phi - centerPhi1,360,0); 
-     double dphi2 = FFTtools::wrap(phi - centerPhi2,360,0); 
+     double phi = cache? cache->phi[phibin-1] :  ( use_bin_center ? hist->GetXaxis()->GetBinCenter(phibin) : hist->GetXaxis()->GetBinLowEdge(phibin));
+     double phi4width = center_point ? center_point[0] : phi; 
+     double dphi1 = FFTtools::wrap(phi4width - centerPhi1,360,0); 
+     double dphi2 = FFTtools::wrap(phi4width - centerPhi2,360,0); 
 
      for (int thetabin = 1; thetabin <= hist->GetNbinsY(); thetabin++)
      {
-       double theta = cache ? cache->theta[thetabin-1] : -hist->GetYaxis()->GetBinCenter(thetabin); //doh
-       double dtheta1 = FFTtools::wrap(theta - centerTheta1,360,0); 
-       double dtheta2 = FFTtools::wrap(theta - centerTheta2,360,0); 
+       double theta = cache ? cache->theta[thetabin-1] : - ( use_bin_center ? hist->GetYaxis()->GetBinCenter(thetabin) : hist->GetYaxis()->GetBinLowEdge(thetabin) ); //doh
+       double theta4width = center_point ? center_point[1] : theta; 
+       double dtheta1 = FFTtools::wrap(theta4width - centerTheta1,360,0); 
+       double dtheta2 = FFTtools::wrap(theta4width - centerTheta2,360,0); 
 
        // check if in beam width 
+       
        if (dphi1*dphi1 + dtheta1*dtheta1 > max_phi * max_phi) continue; 
        if (dphi2*dphi2 + dtheta2*dtheta2 > max_phi * max_phi) continue; 
 
-       double timeExpected = cache? getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache)
-                                  : getDeltaT(ant1, ant2, phi, theta,pol); 
+       double timeExpected = cache? getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag)
+                                  : getDeltaT(ant1, ant2, phi, theta,pol, groupDelayFlag); 
 
-       //add in off-axis antenna delay here
-       if (groupDelayFlag)
-       {
-            Double_t delay1=getAntennaGroupDelay(dphi1,theta);
-            Double_t delay2=getAntennaGroupDelay(dphi2,theta);
-            timeExpected +=(delay1-delay2);
-       }
          
        //TODO: add additional interpolation methods
        double val = correlation->evalEven(timeExpected); 
@@ -346,16 +364,15 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
        int bin = phibin + thetabin * nphibins ; 
 
 
-
 #ifdef UCORRELATOR_OPENMP
 #pragma omp atomic
 #endif
          hist->GetArray()[bin]+= val; 
+
 #ifdef UCORRELATOR_OPENMP
 #pragma omp atomic
 #endif
          norm->GetArray()[bin]++;
-
      }
    }
 }
@@ -430,12 +447,15 @@ void UCorrelator::Correlator::dumpDeltaTs(const char * fname) const
 
   TFile f(fname,"RECREATE"); 
 
+  TTree * positions = new TTree("positions","Positions"); 
+
 
   TTree * tree = new TTree("delays","Delays"); 
 
-  int ant1, ant2; 
+  int ant1, ant2, pol; 
   double phi, theta, delta_t, group_delay; 
 
+  tree->Branch("pol",&pol); 
   tree->Branch("ant1",&ant1); 
   tree->Branch("ant2",&ant2); 
   tree->Branch("phi",&phi); 
@@ -443,35 +463,48 @@ void UCorrelator::Correlator::dumpDeltaTs(const char * fname) const
   tree->Branch("delta_t",&delta_t); 
   tree->Branch("group_delay",&group_delay); 
 
+  double ant_phi, ant_r, ant_z; 
+  positions->Branch("ant",&ant1); 
+  positions->Branch("phi",&ant_phi); 
+  positions->Branch("r",&ant_r); 
+  positions->Branch("z",&ant_z); 
+  positions->Branch("pol",&pol); 
 
-  for (ant1= 0; ant1 < NANTENNAS; ant1++) 
+  for (pol = 0; pol < 2; pol++)
   {
-    for (ant2 = ant1+1; ant2 < NANTENNAS; ant2++)
+    for (ant1= 0; ant1 < NANTENNAS; ant1++) 
     {
-      for (phi = -180; phi <=180; phi += 2)
-      {
-        for (theta = -90; theta <=90; theta +=2) 
-        {
-          delta_t = getDeltaT(ant1,ant2,phi,theta,pol); 
+      ant_phi = ap->phiAnt[pol][ant1]; 
+      ant_r = ap->rAnt[pol][ant1]; 
+      ant_z = ap->zAnt[pol][ant1]; 
+      positions->Fill(); 
 
-           if (groupDelayFlag)
-           {
-              double dphi1 = FFTtools::wrap(phi - ap->phiAnt[pol][ant1],360,0); 
-              double dphi2 = FFTtools::wrap(phi - ap->phiAnt[pol][ant2],360,0); 
-              double delay1=getAntennaGroupDelay(dphi1,theta);
-              double delay2=getAntennaGroupDelay(dphi2,theta);
-              group_delay = delay1-delay2; 
-              delta_t +=group_delay;
-           }
-     
-          f.cd(); 
-          tree->Fill(); 
+      for (ant2 = ant1+1; ant2 < NANTENNAS; ant2++)
+      {
+        for (phi = 0; phi <=360; phi += 2)
+        {
+          for (theta = -90; theta <=90; theta +=2) 
+          {
+             delta_t = getDeltaT(ant1,ant2,phi,theta,(AnitaPol::AnitaPol_t) pol, groupDelayFlag); 
+
+             if (groupDelayFlag)
+             {
+                double dphi1 = FFTtools::wrap(phi - ap->phiAnt[pol][ant1],360,0); 
+                double dphi2 = FFTtools::wrap(phi - ap->phiAnt[pol][ant2],360,0); 
+                double delay1=getAntennaGroupDelay(dphi1,theta);
+                double delay2=getAntennaGroupDelay(dphi2,theta);
+                group_delay = delay1-delay2; 
+             }
+             f.cd(); 
+             tree->Fill(); 
+          }
         }
       }
     }
   }
 
   f.cd(); 
+  positions->Write(); 
   tree->Write(); 
   f.Close(); 
 

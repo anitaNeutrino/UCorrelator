@@ -19,16 +19,16 @@ namespace UCorrelator
   class Correlator
   {
     public:
-      Correlator(int nphi, double phimin, double phimax, int ntheta, double theta_lowest, double theta_highest); 
+      Correlator(int nphi, double phimin, double phimax, int ntheta, double theta_lowest, double theta_highest, bool use_bin_center = false); 
       void compute(const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol); 
       const TH2 * getHist() const { return &hist; }  
       const TH2 * getNorm() const { return &norm; } 
       
-      TH2D* computeZoomed(double phi, double theta, int nphi, double dphi,  int ntheta, double dtheta, int nant, TH2D * useme = 0); 
+      TH2D* computeZoomed(double phi, double theta, int nphi, double dphi,  int ntheta, double dtheta, int nant = 0, TH2D * useme = 0); 
 
       void setDisallowedAntennas(uint64_t disallowed) { disallowed_antennas = disallowed; } 
       void setAllowedAntennas(uint64_t allowed) { disallowed_antennas = ~allowed; } 
-      void setMaxAntennaMaxPhiDistance(double max_ant_phi) { max_phi = max_ant_phi; } 
+      void setMaxAntennaMaxPhiDistance(double max_ant_phi) { max_phi = max_ant_phi;  max_phi2 = max_phi * max_phi; } 
 
       void setGroupDelayFlag(bool flag) { groupDelayFlag = flag; } 
       const AnalysisWaveform * getCorrelationGraph(int ant1, int ant2) { return getCorrelation(ant1,ant2); }
@@ -50,15 +50,16 @@ namespace UCorrelator
       TH2D hist; 
       TH2I norm; 
 
-      double max_phi;
+      double max_phi, max_phi2;
       uint64_t disallowed_antennas;
       int pad_factor;
       const FilteredAnitaEvent * ev; 
       AnitaPol::AnitaPol_t pol; 
       bool groupDelayFlag; 
+      bool use_bin_center; 
 
       AnalysisWaveform * getCorrelation(int ant1, int ant2); 
-      void doAntennas(int ant1, int ant2, TH2D * hist, TH2I * norm, const TrigCache * tc); 
+      void doAntennas(int ant1, int ant2, TH2D * hist, TH2I * norm, const TrigCache * tc, double * center_point  = 0); 
       void reset(); 
 
   }; 

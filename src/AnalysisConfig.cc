@@ -16,13 +16,15 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
   correlator_nphi = 180; 
   correlator_ntheta = 90; 
   correlator_theta_lowest = 60; 
-  correlator_theta_highest = -25; 
+  correlator_theta_highest = 25; 
+  enable_group_delay = true; 
 
 
-  zoomed_nphi = 50; 
-  zoomed_ntheta = 50; 
+  zoomed_nphi = 100; 
+  zoomed_ntheta = 100; 
   zoomed_dphi = 0.3; 
   zoomed_dtheta = 0.3; 
+  zoomed_nant = 0; 
 
 
   combine_nantennas = 10; 
@@ -33,9 +35,9 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
   start_pol = AnitaPol::kHorizontal; 
   end_pol = AnitaPol::kVertical; 
 
-  peak_isolation_requirement = 10; 
+  peak_isolation_requirement = 20; 
 
-  fine_peak_finding_option = FinePeakFindingQuadraticFit16; 
+  fine_peak_finding_option = FinePeakFindingQuadraticFit25; 
   nmaxima = 2; 
   use_bin_center = false; 
 

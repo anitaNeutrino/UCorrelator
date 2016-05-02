@@ -18,7 +18,7 @@ namespace UCorrelator
   //angles all in degrees! 
   struct TrigCache
   {
-    TrigCache(int nphi, double dphi, double phi_start, int ntheta, double dtheta, double theta_start, const AntennaPositions * ap, bool use_bin_center= true, int nant2use = 0, const int * ants = 0) 
+    TrigCache(int nphi, double dphi, double phi_start, int ntheta, double dtheta, double theta_start, const AntennaPositions * ap, bool use_bin_center= false, int nant2use = 0, const int * ants = 0) 
       : nphi(nphi) 
     {
 

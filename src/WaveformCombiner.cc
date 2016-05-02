@@ -14,6 +14,7 @@ UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool us
   setNPad(npad); 
   setDeconvolve(deconvolve); 
   setUseUnfiltered(useUnfiltered); 
+  setGroupDelayFlag(true); 
   
   memset(responses,0, sizeof(responses)); 
 
@@ -96,7 +97,6 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
   double delays[nant]; 
 
 
-  double group_delay_0 = getAntennaGroupDelay(FFTtools::wrap(phi - antpos->phiAnt[pol][antennas[0]],360,0), theta); 
   for (int i = 0; i < nant; i++) 
   {
     //ensure transform already calculated so we don't have to repeat when deconvolving
@@ -113,9 +113,7 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
       deconv[i].padFreq(npad); 
     }
 
-    delays[i] = i == 0 ? 0 : getDeltaT(antennas[i], antennas[0], phi, theta, pol)
-                       + getAntennaGroupDelay(FFTtools::wrap(phi - antpos->phiAnt[pol][antennas[i]],360,0), theta)
-                       - group_delay_0; 
+    delays[i] = i == 0 ? 0 : getDeltaT(antennas[i], antennas[0], phi, theta, pol, enable_group_delay); 
 
 //    printf("%d\n",antennas[i]); 
 //    printf("%f\n",delays[i]); 

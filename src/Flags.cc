@@ -40,7 +40,7 @@ int UCorrelator::flags::checkSaturation(const UsefulAnitaEvent *ev, uint64_t * s
 
 
   if (save_hsat) *save_hsat = hsat; 
-  if (save_vsat) *save_hsat = vsat; 
+  if (save_vsat) *save_vsat = vsat; 
 
   return totalsat; 
 }

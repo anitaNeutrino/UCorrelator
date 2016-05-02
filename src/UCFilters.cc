@@ -17,6 +17,7 @@ void UCorrelator::applyAbbysFilterStrategy(FilterStrategy * strategy)
   strategy->addOperation(new SimplePassBandFilter(0.2, 1.2)); 
 
   // satellite filter if north facing 
+
   strategy->addOperation(new ConditionalFilterOperation
                              (  new ComplicatedNotchFilter(0.26-0.026, 0.26 + 0.026), 
                                     &UCorrelator::antennaIsNorthFacing, "_north", "if is facing north",true
@@ -268,29 +269,30 @@ void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event)
   //find average hpol and vpol  powers 
 
 
-  TGraph powers[2]; 
 
 
   for (int pol = AnitaPol::kHorizontal; pol <= AnitaPol::kVertical; pol++)
   {
+    TGraph * which_power = &powers[pol]; 
     for (int i = 0; i < NUM_SEAVEYS; i++) 
     {
       const TGraph * power = event->getFilteredGraph(i,(AnitaPol::AnitaPol_t)pol)->power(); 
 
 
-      TGraph * which_power = &powers[pol]; 
-      if (which_power->GetN() == 0)
+      if (i == 0)
       {
         which_power->Set(power->GetN()); 
         memcpy(which_power->GetX(), power->GetX(), power->GetN() * sizeof(double)); 
+        memset(which_power->GetY(), 0, power->GetN() * sizeof(double)); 
       }
 
-      for (int i = 0; i < which_power->GetN(); i++) 
+      for (int j = 0; j < which_power->GetN(); j++) 
       {
-          which_power->GetY()[i] = FFTtools::evalEvenGraph(power, which_power->GetX()[i])  / NUM_SEAVEYS ; 
+          which_power->GetY()[j] += FFTtools::evalEvenGraph(power, which_power->GetX()[j])  / NUM_SEAVEYS ; 
       }
-      dBize(which_power); 
     }
+
+     dBize(which_power); 
   }
 
   //compute means
@@ -334,6 +336,7 @@ void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event)
     double total_power = 0; 
     int power_min_bin = getBin(fmin,power); 
     int power_max_bin = getBin(fmax,power); 
+
     for (int i = power_min_bin; i <= power_max_bin; i++) 
     {
       total_power += TMath::Power(10, power->GetY()[i]/10); 
@@ -353,18 +356,21 @@ void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event)
 
     // see if any peaks are ndB above the baseline
 
-    TGraph deltaMag(*power); 
+    TGraph deltaMag(power->GetN(), power->GetX(), power->GetY()); 
     for (int i = power_min_bin; i <= power_max_bin; i++) 
     {
-      deltaMag.GetY()[i]-= baseline->Eval(power->GetX()[i]); 
+      deltaMag.GetY()[i]-= FFTtools::evalEvenGraph(baseline,power->GetX()[i]); 
     }
 
     strongest_cw[pol] = 0; 
+    int max_freq_index = 0; 
     for (int i = 0; i < nfreq; i++) 
     {
        int max_index = TMath::MaxElement(power_max_bin- power_min_bin + 1,   deltaMag.GetY() + power_min_bin); 
+       max_index += power_min_bin; 
        double val = deltaMag.GetY()[max_index]; 
        double f = deltaMag.GetX()[max_index]; 
+//       printf("%f: %f\n", f, val); 
 
        if (val > dbCut)
        {
@@ -376,7 +382,8 @@ void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event)
        }
        else
        {
-         freqs[pol][i] = -1; 
+         max_freq_index = i; 
+         break; 
        }
 
        for (int i = getBin(f-bw, &deltaMag); i <= getBin(f+bw, &deltaMag); i++) 
@@ -386,6 +393,12 @@ void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event)
 
 
     }
+
+    for (int i =  max_freq_index; i < nfreq; i++) 
+    {
+      freqs[pol][i] = -1; 
+    }
+
   }
 
   //now that we have the frequencies to cut, we should cut them!
@@ -396,6 +409,7 @@ void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event)
       if (freqs[pol][freq] == -1) break; 
 
       ComplicatedNotchFilter complicated(freqs[pol][freq]-bw, freqs[pol][freq]+bw, temperature, gain); 
+//      printf("Filtering out %f\n", freqs[pol][freq]); 
       for (int i= 0; i < NUM_SEAVEYS; i++) 
       {
           complicated.processOne(getWf(event,i, AnitaPol::AnitaPol_t(pol))); 

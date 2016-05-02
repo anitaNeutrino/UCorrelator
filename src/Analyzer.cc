@@ -22,6 +22,8 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
    interactive(interactive)  
 {
 
+  corr.setGroupDelayFlag(cfg->enable_group_delay); 
+  wfcomb.setGroupDelayFlag(cfg->enable_group_delay); 
   instance_counter++; 
   power_filter = 0; //TODO initialize this 
 
@@ -53,7 +55,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
   summary = new (summary) AnitaEventSummary(event->getHeader()); 
 
   //check for saturation
-  uint64_t saturated[2]; 
+  uint64_t saturated[2] = {0,0}; 
   UCorrelator::flags::checkSaturation(event->getUsefulAnitaEvent(), 
                                       &saturated[AnitaPol::kHorizontal], 
                                       &saturated[AnitaPol::kVertical], 
@@ -61,7 +63,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
   //we need a UsefulAdu5Pat for this event
   
-  UsefulAdu5Pat pat( event->getGPS()); 
+  UsefulAdu5Pat * pat =  (UsefulAdu5Pat*) event->getGPS();  //unconstifying it .. hopefully that won't cause problems
 
   // These will be needed for peak finding
 
@@ -86,21 +88,21 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     // Find the isolated peaks in the image 
     peakfinder::RoughMaximum maxima[cfg->nmaxima]; 
     int npeaks = UCorrelator::peakfinder::findIsolatedMaxima((const TH2D*) corr.getHist(), cfg->peak_isolation_requirement, cfg->nmaxima, maxima, cfg->use_bin_center); 
-    printf("npeaks: %d\n", npeaks); 
+//    printf("npeaks: %d\n", npeaks); 
     summary->nPeaks[pol] = npeaks; 
 
     // Loop over found peaks 
     for (int i = 0; i < npeaks; i++) 
     {
       // zoom in on the values 
-//      printf("rough phi:%f, rough theta: %f\n", maxima[i].x, -maxima[i].y); 
-      fillPointingInfo(maxima[i].x, maxima[i].y, &summary->peak[pol][i], &pat); 
+      printf("rough phi:%f, rough theta: %f\n", maxima[i].x, -maxima[i].y); 
+      fillPointingInfo(maxima[i].x, maxima[i].y, &summary->peak[pol][i], pat); 
       if (interactive)
       {
         zoomed_correlation_maps[pol][i]->~TH2D(); 
         zoomed_correlation_maps[pol][i] = new (zoomed_correlation_maps[pol][i]) TH2D(zoomed); 
       }
-//      printf("phi:%f, theta:%f\n", summary->peak[pol][i].phi, summary->peak[pol][i].theta); 
+      printf("phi:%f, theta:%f\n", summary->peak[pol][i].phi, summary->peak[pol][i].theta); 
       //now make the combined waveforms 
       wfcomb.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
       fillWaveformInfo(wfcomb.getCoherent(), &summary->coherent[pol][i]); 
@@ -116,12 +118,12 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     }
   }
 
-  fillFlags(event, &summary->flags); 
+  fillFlags(event, &summary->flags, pat); 
 }
 
 void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_theta, AnitaEventSummary::PointingHypothesis * point, UsefulAdu5Pat * pat)
 {
-      corr.computeZoomed(rough_phi, rough_theta, cfg->zoomed_nphi, cfg->zoomed_dphi,  cfg->zoomed_ntheta, cfg->zoomed_dtheta, cfg->combine_nantennas, &zoomed); 
+      corr.computeZoomed(rough_phi, rough_theta, cfg->zoomed_nphi, cfg->zoomed_dphi,  cfg->zoomed_ntheta, cfg->zoomed_dtheta, cfg->zoomed_nant, &zoomed); 
 
       //get pointer to the pointing hypothesis we are about to fill 
 
@@ -160,7 +162,7 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
       point->hwAngle = -9999; // TODO 
 
       //Compute intersection with continent
-      pat->getSourceLonAndLatAtAlt(point->phi, point->theta, point->latitude, point->longitude, point->altitude); 
+//      pat->getSourceLonAndLatAtAlt(point->phi, point->theta, point->latitude, point->longitude, point->altitude); 
 }
 
 
@@ -244,7 +246,7 @@ UCorrelator::Analyzer::~Analyzer()
   }
 }
 
-void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary::EventFlags * flags) 
+void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary::EventFlags * flags, UsefulAdu5Pat * pat) 
 {
 
   //TODO 
@@ -254,12 +256,11 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   flags->strongCWFlag = false; 
 
 
-  UsefulAdu5Pat pat((Adu5Pat*) fae->getGPS()); 
-  if ( isLDBHPol(&pat, fae->getHeader(), cfg) || isLDBVPol (&pat, fae->getHeader(), cfg))
+  if ( isLDBHPol(pat, fae->getHeader(), cfg) || isLDBVPol (pat, fae->getHeader(), cfg))
   {
     flags->pulser = AnitaEventSummary::EventFlags::LDB; 
   }
-  else if ( isWAISHPol(&pat, fae->getHeader(), cfg) || isWAISVPol (&pat, fae->getHeader(), cfg))
+  else if ( isWAISHPol(pat, fae->getHeader(), cfg) || isWAISVPol (pat, fae->getHeader(), cfg))
   {
     flags->pulser = AnitaEventSummary::EventFlags::WAIS; 
   }

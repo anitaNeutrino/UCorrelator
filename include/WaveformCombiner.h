@@ -35,6 +35,7 @@ namespace UCorrelator
       void setNAntennas(int n) { nant = n; }
       void setDeconvolve(bool deconvolve) {do_deconvolution = deconvolve ;}
       void setUseUnfiltered(bool raw_opt) {use_raw = raw_opt;}
+      void setGroupDelayFlag(bool opt) { enable_group_delay = opt; } 
 
       static AnalysisWaveform *  combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0); 
 
@@ -50,6 +51,7 @@ namespace UCorrelator
       int nant; 
       bool use_raw; 
       bool do_deconvolution; 
+      bool enable_group_delay; 
 
   };
 

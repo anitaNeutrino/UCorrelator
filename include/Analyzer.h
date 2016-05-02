@@ -48,7 +48,7 @@ namespace UCorrelator
 
       void fillWaveformInfo(const AnalysisWaveform * wf, AnitaEventSummary::WaveformInfo * info); 
       void fillPointingInfo(double rough_phi, double rough_theta, AnitaEventSummary::PointingHypothesis * point, UsefulAdu5Pat * pat); 
-      void fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary::EventFlags * flags); 
+      void fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary::EventFlags * flags, UsefulAdu5Pat * pat); 
 
       TH2D* correlation_maps[2]; 
       std::vector<TH2D*>  zoomed_correlation_maps[2]; 

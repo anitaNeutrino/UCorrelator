@@ -20,11 +20,13 @@ namespace UCorrelator
       unsigned correlator_ntheta; 
       double correlator_theta_lowest; 
       double correlator_theta_highest; 
+      bool enable_group_delay; 
 
       int zoomed_nphi; 
       int zoomed_ntheta; 
       double zoomed_dphi; 
       double zoomed_dtheta; 
+      int zoomed_nant; 
 
       unsigned combine_nantennas; 
       unsigned combine_npad; 
