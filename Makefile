@@ -4,8 +4,8 @@ include Makefile.config
 CXX=g++
 CXXFLAGS+= -g
 
-CXXFLAGS     += $(ROOTCFLAGS) $(SYSINCLUDES) -O3  -I$(ANITA_UTIL_INSTALL_DIR)/include -I$(EIGEN3_INCLUDE_DIR)/eigen3  -march=native -fopenmp
-LDFLAGS      += $(ROOTLDFLAGS)  -L$(ANITA_UTIL_INSTALL_DIR)/lib -fopenmp
+CXXFLAGS     += $(ROOTCFLAGS) $(SYSINCLUDES) -I$(ANITA_UTIL_INSTALL_DIR)/include -I$(EIGEN3_INCLUDE_DIR)/eigen3 
+LDFLAGS      += $(ROOTLDFLAGS)  -L$(ANITA_UTIL_INSTALL_DIR)/lib 
 LIBS          = $(ROOTLIBS) -g -Wl,-z,defs -lMathMore -lRootFftwWrapper -lAnitaEvent -lAnitaAnalysis -lAnitaCorrelator  
 GLIBS         = $(ROOTGLIBS) $(SYSLIBS)
 LIBDIR=lib
@@ -13,7 +13,7 @@ BUILDDIR=build
 INCLUDEDIR=include
 BINDIR=bin
 
-.PHONY: clean install all
+.PHONY: clean install all doc
 
 
 OBJS := $(addprefix $(BUILDDIR)/, AntennaPositions.o Baseline.o SystemResponse.o UCFilters.o Flags.o Correlator.o WaveformCombiner.o PeakFinder.o Analyzer.o AnalysisConfig.o Util.o dict.o)
@@ -54,6 +54,7 @@ $(BUILDDIR)/%.o: build/%.cc $(INCLUDES) Makefile | $(BUILDDIR)
 	$(CXX)  -I../include -I./ $(CXXFLAGS) -o $@ -c $< 
 
 
+
 $(BINDIR)/%: %.cc $(INCLUDES) Makefile $(LIBNAME) | $(BINDIR)
 	@echo Compiling $<
 	@$(CXX)  -I./include -I./ $(CXXFLAGS) -o $@ $(LDFLAGS) -L./$(LIBDIR) -l$(LINKLIBNAME)  $< 
@@ -70,6 +71,10 @@ endif
 	install -d $(ANITA_UTIL_INSTALL_DIR)/cinclude 
 	install -c -m 755 $(LIBNAME)(ANITA_UTIL_INSTALL_DIR)/lib  
 	install -c -m 644 $(INCLUDES) $(ANITA_UTIL_INSTALL_DIR)/include 
+
+
+doc: $(INCLUDES) 
+	doxygen doc/Doxyfile 
 
 clean: 
 	rm -rf build

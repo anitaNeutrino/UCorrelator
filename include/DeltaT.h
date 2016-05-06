@@ -13,7 +13,7 @@
 
 namespace UCorrelator
 {
-  /** Placeholder for now ... */ 
+  /** Placeholder for now ...  this should be updated for A3*/ 
   inline double getAntennaGroupDelay(double phidiff, double theta) 
   {
     theta-=10;
@@ -27,7 +27,7 @@ namespace UCorrelator
   }
 
 
-  //Geometric delay between antennas; 
+  /**Geometric delay between antennas  */
   inline double getDeltaT(int ant1, int ant2, double phi, double theta, AnitaPol::AnitaPol_t pol, bool includeGroupDelay = false) 
   {
     double th = theta * DEG2RAD; 
@@ -51,7 +51,7 @@ namespace UCorrelator
     return geomDelay;
   }
 
-  //geometric delay using cache
+  /** Geometric delay between antennas using cached trig values */ 
   inline double getDeltaTFast(int ant1, int ant2, int phibin, int thetabin, AnitaPol::AnitaPol_t pol, const TrigCache * cache, bool includeGroupDelay = false) 
   {
     const AntennaPositions * ap = AntennaPositions::instance(); 

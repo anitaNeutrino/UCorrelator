@@ -263,7 +263,11 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   TrigCache cache(nphi, dphi, phi0, ntheta,dtheta,theta0, ap, true,nant, nant ? closest : 0); 
 
   int n2loop = nant ? nant : NANTENNAS;  
-  double center_point[2] = { phi,theta}; 
+
+  double center_point[2];
+  center_point[0] = phi; 
+  center_point[1] = theta; 
+
 #ifdef UCORRELATOR_OPENMP
 #pragma omp parallel for
 #endif
@@ -295,8 +299,19 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
 }
 
 
+static inline bool between(double phi, double low, double high)
+{
+
+  double diff_highlow = fmod(high - low + 360, 360); 
+  double diff_philow = fmod(phi - low + 360, 360); 
+
+  return diff_philow < diff_highlow; 
+}
+
+
 inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist, 
-                                                TH2I * norm, const TrigCache * cache = 0, double * center_point)
+                                                TH2I * norm, const TrigCache * cache , 
+                                                const double * center_point )
 {
    int allowedFlag; 
    double lowerAngleThis, higherAngleThis, centerTheta1, centerTheta2, centerPhi1, centerPhi2;
@@ -307,11 +322,11 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
                     ant1,ant2, max_phi, pol);
 
 
-//   printf("HERE! allowedFlag:  %d\n", allowedFlag); 
    if(!allowedFlag) return; 
 
-//   printf("Doing antennas (%d,%d)\n",ant1,ant2); 
 //   printf("lowerAngleThis: %g higherAngleThis: %g\n", lowerAngleThis, higherAngleThis); 
+   // More stringent check if we have a center point
+   if (center_point && !between(center_point[0], lowerAngleThis, higherAngleThis))  return; 
 
    AnalysisWaveform * correlation = getCorrelation(ant1,ant2); 
    
@@ -319,8 +334,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
 
    //find phi bin corresponding to lowerAngleThis and higherAngleThis
 
-   int first_phi_bin = hist->GetXaxis()->FindFixBin(lowerAngleThis); 
-   int last_phi_bin  = hist->GetXaxis()->FindFixBin(higherAngleThis); 
+   int first_phi_bin = center_point ? 1 : hist->GetXaxis()->FindFixBin(lowerAngleThis); 
+   int last_phi_bin  = center_point ? hist->GetNbinsX() : hist->GetXaxis()->FindFixBin(higherAngleThis); 
 
    if (first_phi_bin == 0) first_phi_bin = 1; 
    if (last_phi_bin == hist->GetNbinsX()+1) last_phi_bin = hist->GetNbinsX(); 
@@ -335,25 +350,23 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
      }
      
 
-
-//     printf("%d\n", phibin); 
      double phi = cache? cache->phi[phibin-1] :  ( use_bin_center ? hist->GetXaxis()->GetBinCenter(phibin) : hist->GetXaxis()->GetBinLowEdge(phibin));
-     double phi4width = center_point ? center_point[0] : phi; 
-     double dphi1 = FFTtools::wrap(phi4width - centerPhi1,360,0); 
-     double dphi2 = FFTtools::wrap(phi4width - centerPhi2,360,0); 
+//     double phi4width = center_point ? center_point[0] : phi; 
+     double dphi1 = center_point ? 0 : FFTtools::wrap(phi - centerPhi1,360,0); 
+     double dphi2 = center_point ? 0 : FFTtools::wrap(phi - centerPhi2,360,0); 
 
      for (int thetabin = 1; thetabin <= hist->GetNbinsY(); thetabin++)
      {
-       double theta = cache ? cache->theta[thetabin-1] : - ( use_bin_center ? hist->GetYaxis()->GetBinCenter(thetabin) : hist->GetYaxis()->GetBinLowEdge(thetabin) ); //doh
-       double theta4width = center_point ? center_point[1] : theta; 
-       double dtheta1 = FFTtools::wrap(theta4width - centerTheta1,360,0); 
-       double dtheta2 = FFTtools::wrap(theta4width - centerTheta2,360,0); 
+       double theta = cache ? cache->theta[thetabin-1] : -( use_bin_center ? hist->GetYaxis()->GetBinCenter(thetabin) : hist->GetYaxis()->GetBinLowEdge(thetabin) ); //doh
+//       double theta4width = center_point ? center_point[1] : theta; 
+       double dtheta1 = center_point ? 0 : FFTtools::wrap(theta- centerTheta1,360,0); 
+       double dtheta2 = center_point ? 0 : FFTtools::wrap(theta- centerTheta2,360,0); 
 
        // check if in beam width 
-       
-       if (dphi1*dphi1 + dtheta1*dtheta1 > max_phi * max_phi) continue; 
-       if (dphi2*dphi2 + dtheta2*dtheta2 > max_phi * max_phi) continue; 
+       if (!center_point && dphi1*dphi1 + dtheta1*dtheta1 > max_phi * max_phi) continue; 
+       if (!center_point && dphi2*dphi2 + dtheta2*dtheta2 > max_phi * max_phi) continue; 
 
+       //TODO vectorize this
        double timeExpected = cache? getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag)
                                   : getDeltaT(ant1, ant2, phi, theta,pol, groupDelayFlag); 
 

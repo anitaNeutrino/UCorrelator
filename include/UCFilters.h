@@ -1,10 +1,8 @@
 #ifndef _UCORRELATOR_FILTERS_H_
 #define _UCORRELATOR_FILTERS_H_
 
-/** This file implements all of the filters used in MyCorrelator 
+/** \file This file implements all of the filters used in MyCorrelator 
  * in the new framework. 
- *
- * The AdaptiveFilter requires baselines of runs, which are handled in Baseline.h
  * */ 
 
 #include "FilteredAnitaEvent.h" 
@@ -18,16 +16,19 @@ namespace UCorrelator
   /*** Apply the series of filters originally implemented in MyCorrelator to the filter strategy */ 
   void applyAbbysFilterStrategy(FilterStrategy * strategy); 
 
-  //condition used for satellite filter
+  /** Condition used for satellite filter */ 
   bool antennaIsNorthFacing(FilteredAnitaEvent *ev, int ant, AnitaPol::AnitaPol_t); 
 
 
-  class SimplePassBandFilter : public UniformFilterOperation
-  {
-    public: 
-      const char * tag() const { return "SimplePassBandFilter"; }
-      const char * description() const { return descStr.Data(); }
+  /** SimplePassBandFilter just cuts everything outside the pass band in
+   * fourier space like a brick wall, with all the ensuing acausal goodness.
+   *
+    */ 
+  class SimplePassBandFilter : public UniformFilterOperation { public: const
+    char * tag() const { return "SimplePassBandFilter"; } const char *
+      description() const { return descStr.Data(); }
 
+      /** Filter everything outside the pass band. Numbers are given in GHz. */ 
       SimplePassBandFilter(double low = 200, double high = 1200)  
         : low(low), high(high)
       {
@@ -43,9 +44,12 @@ namespace UCorrelator
 
   }; 
 
+  /** Brick wall notch filter.  */ 
   class SimpleNotchFilter : public UniformFilterOperation
   {
     public: 
+
+      /** Ghz*/ 
       SimpleNotchFilter(double minfreq, double maxfreq) 
         : min(minfreq), max(maxfreq) 
       {
@@ -61,9 +65,13 @@ namespace UCorrelator
   }; 
 
 
+  /** 
+   * This filter is a brick-wall notch filter that then fills in the notch using thermal noise. 
+   */
   class ComplicatedNotchFilter : public UniformFilterOperation 
   {
     public: 
+      /** Build a ComplicatedNotchFilter. The temperature and gain are used to model the thermal noise.  */
       ComplicatedNotchFilter(double minfreqGHz, double maxfreqGHz, double temperature = 340, double gain = 75) 
         : min(minfreqGHz), max(maxfreqGHz), temperature(temperature), gain(gain) 
       {
@@ -80,10 +88,12 @@ namespace UCorrelator
       double gain; 
   }; 
 
+  /** Attempted reimplementation of Abby's Adaptive Filter. Dont' know if it works fully yet... */
   class AdaptiveFilter : public FilterOperation
   {
 
     public: 
+
       AdaptiveFilter(double dbCut, const char * baseline_dir, int navg = 1000, 
         double fmin = 0.2, double fmax = 1.2, double bandwidth = 0.026, int nFreqs = 5, double temperature = 340, double gain = 75 ) 
         : dbCut(dbCut), run(-1), navg(navg), baseline_dir(baseline_dir), baseline(0), fmin(fmin), fmax(fmax), bw(bandwidth), nfreq(nFreqs), hpol_avg(0), vpol_avg(0), 

@@ -21,27 +21,46 @@ namespace UCorrelator
 
   class AnalysisConfig; 
 
+  /** 
+   * The analyzer is the main workhorse of UCorrelator. It plumbs together various other parts of UCorrelator to do stuff.  
+   *
+   */ 
+
   class Analyzer
   {
 
     public:
+      /** Create an Analyzer. By default, the default AnalysisConfig parameters are used, but one may be passed. If interactive is passed, 
+       * more internal state will be accessible */ 
       Analyzer(const AnalysisConfig * cfg = 0, bool interactive = false); 
+
+      /** Destructor */ 
       virtual ~Analyzer();
 
 
 
-      void analyze(const FilteredAnitaEvent * fae, AnitaEventSummary *summary); 
+      /** Analyze the event and put the results into the summary. The summary is reinitialized, clobbering everything. */
+      void analyze(const FilteredAnitaEvent * event, AnitaEventSummary *summary); 
 
-//      AnitaEventSummary * analyze(AnitaDataset * dataset, FilterStrategy * strategy, AnitaEventSummary * summary = 0, int eventNumber = -1, int entryNumber=-1); 
-
+      /** Retrieve the internal correlator. Note that if multiple polarizations are analyzed, the Correlator's internal state
+       *  will be related to the last polarization used. */ 
       const Correlator * getCorrelator() const { return &corr; } 
+
+      /** Retrieve the internal waveform combiner. Note that if multiple polarizations are analyzed, the WaveformCombiner's internal state
+       *  will be related to the last polarization used. */ 
       const WaveformCombiner * getWaveformCombiner() const { return &wfcomb; } 
 
+      /** Return the correlation map for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
       const TH2 * getCorrelationMap(AnitaPol::AnitaPol_t pol) const  { return correlation_maps[pol] ; } 
-      const TH2 * getZoomedCorrelationMap(AnitaPol::AnitaPol_t pol, int i) const { return zoomed_correlation_maps[pol][i]; }
-      const AnalysisWaveform * getCoherent(AnitaPol::AnitaPol_t pol, int i) const { return coherent[pol][i]; } 
-      const AnalysisWaveform * getDeconvolved(AnitaPol::AnitaPol_t pol, int i) const { return deconvolved[pol][i]; } 
 
+      /** Return the ith zoomed correlation map for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
+      const TH2 * getZoomedCorrelationMap(AnitaPol::AnitaPol_t pol, int i) const { return zoomed_correlation_maps[pol][i]; }
+
+      /** Return the ith coherent waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
+      const AnalysisWaveform * getCoherent(AnitaPol::AnitaPol_t pol, int i) const { return coherent[pol][i]; } 
+
+       /** Return the ith deconvolved waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
+      const AnalysisWaveform * getDeconvolved(AnitaPol::AnitaPol_t pol, int i) const { return deconvolved[pol][i]; } 
 
 
     private:

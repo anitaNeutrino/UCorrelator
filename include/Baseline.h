@@ -9,16 +9,15 @@ class TGraph;
 namespace UCorrelator
 {
 
-
-  class Baseline
-  {
-
   /** This class is used to build, save and fetch baselines
    * for use with the adaptive filter. 
    *  
-   *  Baselines are per run and appear to be simply averaged averforms. 
-   *
+   *  Baselines are per run and appear to be simply averaged waveforms. 
    * */ 
+
+
+  class Baseline
+  {
 
 
     public: 

@@ -1,7 +1,7 @@
 #ifndef _UCORRELATOR_FLAGS_H
 #define _UCORRELATOR_FLAGS_H
 
-/** This file is full of a bunch of methods that check various things about events */ 
+/** \file This file is full of a bunch of methods that check various things about events */ 
 
 #include <stdint.h>
 class UsefulAnitaEvent; 

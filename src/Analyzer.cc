@@ -52,7 +52,7 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
 void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEventSummary * summary) 
 {
 //  summary->~AnitaEventSummary(); 
-  summary = new (summary) AnitaEventSummary(event->getHeader()); 
+  summary = new (summary) AnitaEventSummary(event->getHeader(), (UsefulAdu5Pat*) event->getGPS()); 
 
   //check for saturation
   uint64_t saturated[2] = {0,0}; 
@@ -161,8 +161,13 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
       // will do this later
       point->hwAngle = -9999; // TODO 
 
-      //Compute intersection with continent
-//      pat->getSourceLonAndLatAtAlt(point->phi, point->theta, point->latitude, point->longitude, point->altitude); 
+      //Compute intersection with continent, or set values to -9999 if no intersection
+      if (!pat->getSourceLonAndLatAtAlt(point->phi, point->theta, point->latitude, point->longitude, point->altitude)) 
+      {
+        point->latitude = -9999; 
+        point->longitude = -9999;  
+        point->altitude = -9999; 
+      }
 }
 
 

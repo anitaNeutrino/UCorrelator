@@ -3,14 +3,22 @@ void doWais(int run = 352, int max = 0)
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
+
+//  /*AnalysisWaveform::InterpolationType*/ AnalysisWaveform::defaultInterpolationType = AnalysisWaveform::REGULARIZED_SPARSE_YEN; 
+
   AnitaDataset d(run); 
   UCorrelator::AnalysisConfig cfg; 
   cfg.start_pol = AnitaPol::kHorizontal; 
   cfg.end_pol = AnitaPol::kHorizontal; 
+  
 
   UCorrelator::Analyzer analyzer(&cfg); 
 
-  TFile ofile(TString::Format("wais/wais_hpol_%d.root", run), "RECREATE"); 
+  TString outname; 
+  if (max) outname.Form("wais/wais_hpol_%d_max_%d.root",run,max); 
+  else outname.Form("wais/wais_hpol_%d_max.root",run); 
+
+  TFile ofile(outname, "RECREATE"); 
   TTree * tree = new TTree("wais","WAIS Hpol"); 
   AnitaEventSummary * sum = new AnitaEventSummary; 
 

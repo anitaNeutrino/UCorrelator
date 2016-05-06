@@ -4,6 +4,11 @@
 class TH2D; 
 #include "AnitaEventSummary.h"
 
+/** \file 
+ *  
+ *  This file contains various peak finding routines
+ *
+ */ 
 namespace UCorrelator
 {
 
@@ -12,6 +17,7 @@ namespace UCorrelator
 
 
 
+    /** Stores the location of a rough maximum */
     class RoughMaximum
     {
       public:
@@ -21,6 +27,7 @@ namespace UCorrelator
         double y; 
     }; 
 
+    /** Stores the location and uncertainty of a fine maximum */
     class FineMaximum
     {
       public: 
@@ -30,6 +37,8 @@ namespace UCorrelator
         double sigma_y;
         double covar; 
         double val; 
+
+        /** copy into pointing hypothesis struct */
         void copyToPointingHypothesis(AnitaEventSummary::PointingHypothesis *p);
     }; 
 

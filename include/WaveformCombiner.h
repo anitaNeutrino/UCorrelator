@@ -12,10 +12,12 @@ namespace UCorrelator
 {
   class AbstractResponse; 
 
+  /** This combines multiple waveforms. It uses supersampling and interpolation, but could in principle use a Fourier phase shift */
   class WaveformCombiner
   {
 
     public: 
+
       WaveformCombiner(int nantennas = 10, int npad = 3, bool useUnfiltered = true, bool deconvolve = false, const char * responseDir = ""); 
 
       /** Sets the responses used when deconvolving. 
@@ -23,12 +25,15 @@ namespace UCorrelator
        * Responses may be set globally, globally for polarizations or per antenna 
        */ 
       void setResponse(const AbstractResponse * response = 0, AnitaPol::AnitaPol_t pol = AnitaPol::kNotAPol, int antenna = -1); 
+
+      /** not implemented yet */
       void loadResponsesFromDir(const char * dir); 
 
       virtual ~WaveformCombiner(); 
 
       /** Combines the waveforms from the given event */ 
       void combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, uint64_t disallowed = 0); 
+
       const AnalysisWaveform * getCoherent() const { return &coherent; }
       const AnalysisWaveform * getDeconvolved() const; 
       void setNPad(int new_npad) { npad = new_npad; }

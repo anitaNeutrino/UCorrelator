@@ -1,10 +1,6 @@
 #ifndef _UCORRELATOR_TRIGCACHE_H
 #define _UCORRELATOR_TRIGCACHE_H
 
-/* This class just defines a trig function cache for the correlator nothing interesting! 
- *
- * */ 
-
 #include "AntennaPositions.h"
 #include <cmath>
 
@@ -15,7 +11,10 @@
 namespace UCorrelator
 {
 
-  //angles all in degrees! 
+/** This class just defines a trig function cache for the correlator nothing interesting! 
+ *
+ *   Angles all in degrees. 
+ **/ 
   struct TrigCache
   {
     TrigCache(int nphi, double dphi, double phi_start, int ntheta, double dtheta, double theta_start, const AntennaPositions * ap, bool use_bin_center= false, int nant2use = 0, const int * ants = 0) 

@@ -136,7 +136,7 @@ UCorrelator::Baseline::Baseline(int run, int navg, const char * persistdir)
 
   if (!foundit) 
   {
-    printf("Didn't find baselines... creating!\n"); 
+    printf("Didn't find baselines... creating! Define UCORRELATOR_BASELINE_DIR to persist somewhere.\n"); 
     makeBaselines(run, hpol, vpol, navg); 
   }
 

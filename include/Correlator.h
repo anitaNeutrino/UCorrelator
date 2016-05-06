@@ -15,25 +15,48 @@ class TrigCache;
 
 namespace UCorrelator
 {
+  
 
+  /** This creates the inteferometric map for an ANITA event */ 
   class Correlator
   {
     public:
+      /** Create a correlator with the following options for the rough map */ 
       Correlator(int nphi, double phimin, double phimax, int ntheta, double theta_lowest, double theta_highest, bool use_bin_center = false); 
+
+      /** Compute the rough correlation map for the event and pol */ 
       void compute(const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol); 
+
+      /** Get the rough correlation map */ 
       const TH2 * getHist() const { return &hist; }  
+ 
+      /** Get the rough correlation map normalization */ 
       const TH2 * getNorm() const { return &norm; } 
       
+
+      /** Compute a zoomed in map around phi and theta. nphi,dphi,ntheta,dtheta. If nant is non-zero, only the nearest nant antennas are used. You can use useme to avoid allocating a new TH2.  */ 
       TH2D* computeZoomed(double phi, double theta, int nphi, double dphi,  int ntheta, double dtheta, int nant = 0, TH2D * useme = 0); 
 
+      /** Disable the antennas given by the bitmap */ 
       void setDisallowedAntennas(uint64_t disallowed) { disallowed_antennas = disallowed; } 
+
+      /** Enable only the antennas given by the bitmap */ 
       void setAllowedAntennas(uint64_t allowed) { disallowed_antennas = ~allowed; } 
+
+      /** An antenna only contributes to an angle if it's within max_phi  of it */
       void setMaxAntennaMaxPhiDistance(double max_ant_phi) { max_phi = max_ant_phi;  max_phi2 = max_phi * max_phi; } 
 
+      /** Use the group delay in computing the delay */ 
       void setGroupDelayFlag(bool flag) { groupDelayFlag = flag; } 
+
+
+      /** Get the correlation between two antennas */
       const AnalysisWaveform * getCorrelationGraph(int ant1, int ant2) { return getCorrelation(ant1,ant2); }
 
+      /** Set the supersampling factor */ 
       void setPadFactor(int pad) { pad_factor = pad; } 
+
+      /** Debugging method to dump out some info to a file */ 
       void dumpDeltaTs(const char * file) const; 
       virtual ~Correlator(); 
 
@@ -59,7 +82,7 @@ namespace UCorrelator
       bool use_bin_center; 
 
       AnalysisWaveform * getCorrelation(int ant1, int ant2); 
-      void doAntennas(int ant1, int ant2, TH2D * hist, TH2I * norm, const TrigCache * tc, double * center_point  = 0); 
+      void doAntennas(int ant1, int ant2, TH2D * hist, TH2I * norm, const TrigCache * tc, const double * center_point  = 0); 
       void reset(); 
 
   }; 

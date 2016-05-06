@@ -20,10 +20,10 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
   enable_group_delay = true; 
 
 
-  zoomed_nphi = 100; 
-  zoomed_ntheta = 100; 
-  zoomed_dphi = 0.3; 
-  zoomed_dtheta = 0.3; 
+  zoomed_nphi = 60; 
+  zoomed_ntheta = 60; 
+  zoomed_dphi = 0.5; 
+  zoomed_dtheta = 0.5; 
   zoomed_nant = 0; 
 
 
