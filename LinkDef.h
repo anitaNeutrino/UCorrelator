@@ -21,6 +21,7 @@
 #pragma link C++ class UCorrelator::CompositeResponse;
 #pragma link C++ class UCorrelator::SimplePassBandFilter;
 #pragma link C++ class UCorrelator::ComplicatedNotchFilter;
+#pragma link C++ class UCorrelator::SineSubtractFilter;
 #pragma link C++ class UCorrelator::SimpleNotchFilter;
 #pragma link C++ class UCorrelator::AdaptiveFilter;
 #pragma link C++ class UCorrelator::WaveformCombiner;

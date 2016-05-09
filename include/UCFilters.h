@@ -9,6 +9,8 @@
 #include "FilterOperation.h" 
 #include "TString.h" 
 #include "Baseline.h"
+#include "SineSubtract.h" 
+#include "AnalysisWaveform.h" 
 
 namespace UCorrelator 
 {
@@ -147,6 +149,27 @@ namespace UCorrelator
   }; 
 
 
+
+  class SineSubtractFilter
+    : public FilterOperation
+  {
+    public: 
+      SineSubtractFilter(double min_power_ratio = 0.05, int max_failed_iter = 0, double oversample_factor = 4, int nfreq_bands = 0, const double *  freq_bands_start = 0, const double * freq_bands_end = 0, int nstored_freqs = 5); 
+
+      virtual ~SineSubtractFilter();  
+
+      const char * tag() const { return "SineSubtractFilter"; }
+      const char * description() const { return desc_string.Data(); } 
+      unsigned nOutputs() const { return 1+2*NUM_SEAVEYS*(2+3*nstored_freqs); }
+      const char * outputName(unsigned i) const{ return output_names[i].Data(); }
+      void fillOutputs(double * vars) const; 
+      virtual void process(FilteredAnitaEvent * ev); 
+    private:
+      FFTtools::SineSubtract * subs[2][NUM_SEAVEYS]; 
+      TString desc_string; 
+      std::vector<TString> output_names;
+      int nstored_freqs; 
+  };
 
   
 }

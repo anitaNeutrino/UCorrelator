@@ -41,7 +41,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
   nmaxima = 2; 
   use_bin_center = false; 
 
-  bw_ndb = 3; 
+  bw_ndb = 6; 
 
   noise_estimate_t0 = 70; 
   noise_estimate_t1 = 100; 

@@ -8,6 +8,7 @@
 #include "Adu5Pat.h"
 #include "DigitalFilter.h"
 #include "AntennaPositions.h" 
+#include "omp.h"
 
 
 void UCorrelator::applyAbbysFilterStrategy(FilterStrategy * strategy) 
@@ -419,4 +420,118 @@ void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event)
   
   
 }
+
+
+
+//
+///// SINE SUBTRACT //// 
+//
+
+
+UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int max_failed_iter, double oversample_factor, int nfreq_bands, const double * fmin, const double * fmax, int nstored_freqs)
+  : nstored_freqs(nstored_freqs) 
+{
+ desc_string.Form("SineSubtract with min_power_ratio=%f, max_failed_iter =%d, oversample_factor = %f and %d frequency bands", min_power_ratio, max_failed_iter,oversample_factor, nfreq_bands);
+ if (nfreq_bands)
+ {
+   desc_string += ". The bands are: "; 
+   for (int i = 0; i < nfreq_bands; i++)
+   {
+     desc_string += TString::Format ("(%f -> %f)", fmin[i], fmax[i]); 
+   }
+ }
+ 
+
+ output_names.push_back(TString("total_power_removed")); 
+
+ for (int pol = 0; pol < 2; pol++)
+ {
+   for (int i = 0; i < NUM_SEAVEYS; i++) 
+   {
+     subs[pol][i] = new FFTtools::SineSubtract(max_failed_iter, min_power_ratio); 
+     subs[pol][i]->setOversampleFactor(oversample_factor); 
+     subs[pol][i]->setFreqLimits(nfreq_bands, fmin, fmax); 
+
+
+     output_names.push_back(TString::Format("niter_%d_%d",pol,i)); 
+     output_names.push_back(TString::Format("power_removed_%d_%d",pol,i)); 
+
+     for (int j = 0; j < nstored_freqs; j++)
+     {
+       output_names.push_back(TString::Format("freq%d_%d_%d",j,pol,i)); 
+       output_names.push_back(TString::Format("A%d_%d_%d",j,pol,i)); 
+       output_names.push_back(TString::Format("phase%d_%d_%d",j,pol,i)); 
+     }
+   }
+ }
+}
+
+
+void UCorrelator::SineSubtractFilter::fillOutputs(double * vars) const 
+{
+  double total_power_initial = 0; 
+  double total_power_final = 0; 
+
+  int ivar = 1; 
+  for (int pol = 0; pol < 2; pol++)
+  {
+    for (int i = 0; i < NUM_SEAVEYS; i++) 
+    {
+      const FFTtools::SineSubtractResult *r =  subs[pol][i]->getResult(); 
+      double pinit = r->powers[0]; 
+      double pfinal = r->powers[r->powers.size()-1]; 
+      total_power_initial += pinit;
+      total_power_final += pfinal; 
+      vars[ivar++] = r->freqs.size();
+      vars[ivar++] = 1.-pfinal/pinit; 
+
+      for (int j = 0; j < nstored_freqs; j++)
+      {
+        if (j >= int(r->freqs.size()))
+        {
+          vars[ivar++] = 0; 
+          vars[ivar++] = 0; 
+          vars[ivar++] = 0; 
+        }
+        else
+        {
+          vars[ivar++] = r->freqs[j]; 
+          vars[ivar++] = r->amps[0][j]; 
+          vars[ivar++] = r->phases[0][j];  
+        }
+      }
+    }
+  }
+
+  vars[0] = 1. - total_power_final / total_power_initial; 
+}
+
+void UCorrelator::SineSubtractFilter::process(FilteredAnitaEvent * ev) 
+{
+
+#ifdef UCORRELATOR_OPENMP
+#pragma omp parallel for
+#endif
+  for (int i = 0; i < NUM_SEAVEYS; i++) 
+  {
+    for (int pol = 0; pol < 2; pol++)
+    {
+      AnalysisWaveform * wf = getWf(ev, i, AnitaPol::AnitaPol_t(pol)); 
+      TGraph * g = wf->updateUneven(); 
+      subs[pol][i]->subtractCW(1,&g, 1/2.6); 
+    }
+  }
+}
+
+UCorrelator::SineSubtractFilter::~SineSubtractFilter()
+{
+ for (int pol = 0; pol < 2; pol++)
+ {
+   for (int i = 0; i < NUM_SEAVEYS; i++) 
+   {
+     delete subs[pol][i]; 
+   }
+ }
+}
+
 

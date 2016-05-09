@@ -75,6 +75,7 @@ endif
 
 doc: $(INCLUDES) 
 	doxygen doc/Doxyfile 
+	make -C doc/latex
 
 clean: 
 	rm -rf build
