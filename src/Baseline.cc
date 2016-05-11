@@ -32,8 +32,8 @@ static int makeBaselines(int run, TGraph ** hpol, TGraph ** vpol, int N = 5000)
 
   while (nevents < N && i < d.N()) 
   {
-    d.getEntry(i); 
-
+    d.getEntry(i++); 
+ 
     // skip non-RF triggers and a small fraction of times? is this really right? This is what Abby has though
     if (d.header()-> trigType != 1 && d.header()->triggerTimeNs <= 1e6)  
        continue; 
@@ -136,7 +136,11 @@ UCorrelator::Baseline::Baseline(int run, int navg, const char * persistdir)
 
   if (!foundit) 
   {
-    printf("Didn't find baselines... creating! Define UCORRELATOR_BASELINE_DIR to persist somewhere.\n"); 
+    printf("Didn't find baselines... creating!\n"); 
+    if (!persistdir) 
+    {
+      printf("Define UCORRELATOR_BASELINE_DIR to persist somewhere.\n"); 
+    }
     makeBaselines(run, hpol, vpol, navg); 
   }
 
