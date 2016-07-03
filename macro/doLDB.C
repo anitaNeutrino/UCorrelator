@@ -1,14 +1,4 @@
 
-#include "FFTtools.h"
-#include "Analyzer.h"
-#include "FilteredAnitaEvent.h"
-#include "AnitaDataset.h" 
-#include "RawAnitaHeader.h"
-#include "AnalysisConfig.h"
-#include "UCFilters.h"
-#include "Util.h"
-#include "FilterStrategy.h"
-
 void doWais(int run = 352, int max = 0, bool sine_subtract = false)
 {
 
@@ -19,7 +9,6 @@ void doWais(int run = 352, int max = 0, bool sine_subtract = false)
   AnitaDataset d(run); 
   UCorrelator::AnalysisConfig cfg; 
   cfg.start_pol = AnitaPol::kHorizontal; 
-  cfg.end_pol = AnitaPol::kHorizontal; 
   
 
   UCorrelator::Analyzer analyzer(&cfg); 
@@ -39,7 +28,7 @@ void doWais(int run = 352, int max = 0, bool sine_subtract = false)
     double fmins[1] = {0.2}; 
     double fmaxs[1] = {1.3}; 
     strategy.addOperation(new UCorrelator::SineSubtractFilter(0.05, 0, 4,1,fmins,fmaxs)); 
-    strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2,1.3)); 
+    strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2.1.3)); 
   }
   else
   {
@@ -48,8 +37,8 @@ void doWais(int run = 352, int max = 0, bool sine_subtract = false)
 
 //  printf("Strategy applied!\n"); 
 
-  RawAnitaHeader *hdr = 0 ; 
-  UsefulAdu5Pat *patptr = 0; 
+  RawAnitaHeader *hdr; 
+  UsefulAdu5Pat *patptr; 
   tree->Branch("summary",&sum); 
   tree->Branch("header",&hdr); 
   tree->Branch("pat",&patptr); 
@@ -63,11 +52,10 @@ void doWais(int run = 352, int max = 0, bool sine_subtract = false)
 
     UsefulAdu5Pat pat(d.gps()); 
 
-    if (UCorrelator::isWAISHPol(&pat, d.header()))
+    if (UCorrelator::isLDBHPol(&pat, d.header()) || UCorrelator::isLDBVpol(&pat, d.header()))
     {
       printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone); 
       FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
-
       analyzer.analyze(&ev, sum); 
       ofile.cd(); 
       header = d.header(); 

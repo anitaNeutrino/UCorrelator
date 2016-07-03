@@ -1,6 +1,11 @@
 #include "Analyzer.h" 
 #include "AnalysisConfig.h" 
+#include "TPaveText.h"
 #include "AnalysisWaveform.h"
+#include "TCanvas.h"
+#include "TStyle.h"
+#include "TMarker.h"
+#include "TEllipse.h"
 #include "FilteredAnitaEvent.h"
 #include "Util.h"
 #include "DigitalFilter.h" 
@@ -13,17 +18,29 @@
 static UCorrelator::AnalysisConfig defaultConfig; 
 static int instance_counter = 0; 
 
+#ifndef DEG2RAD
+#define DEG2RAD (TMath::Pi()/ 180) 
+#endif
+
+#ifndef RAD2DEG
+#define RAD2DEG (180 / TMath::Pi()) 
+#endif
+
+
+
 
 UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive) 
   : cfg(conf ? conf: &defaultConfig),
     corr(cfg->correlator_nphi,0,360,  cfg->correlator_ntheta, -cfg->correlator_theta_lowest, cfg->correlator_theta_highest) , 
     wfcomb(cfg->combine_nantennas, cfg->combine_npad), 
+    wfcomb_xpol(cfg->combine_nantennas, cfg->combine_npad), 
     zoomed(TString::Format("zoomed_%d", instance_counter), "Zoomed!", cfg->zoomed_nphi, 0 ,1, cfg->zoomed_ntheta, 0, 1),
    interactive(interactive)  
 {
 
   corr.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb.setGroupDelayFlag(cfg->enable_group_delay); 
+  wfcomb_xpol.setGroupDelayFlag(cfg->enable_group_delay); 
   instance_counter++; 
   power_filter = 0; //TODO initialize this 
 
@@ -40,18 +57,29 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
       coherent[1].push_back(new AnalysisWaveform); 
       deconvolved[0].push_back(new AnalysisWaveform); 
       deconvolved[1].push_back(new AnalysisWaveform); 
+      coherent_xpol[0].push_back(new AnalysisWaveform); 
+      coherent_xpol[1].push_back(new AnalysisWaveform); 
+      deconvolved_xpol[0].push_back(new AnalysisWaveform); 
+      deconvolved_xpol[1].push_back(new AnalysisWaveform); 
 
+      coherent_power[0].push_back(new TGraphAligned); 
+      coherent_power[1].push_back(new TGraphAligned); 
+      deconvolved_power[0].push_back(new TGraphAligned); 
+      deconvolved_power[1].push_back(new TGraphAligned); 
+      coherent_power_xpol[0].push_back(new TGraphAligned); 
+      coherent_power_xpol[1].push_back(new TGraphAligned); 
+      deconvolved_power_xpol[0].push_back(new TGraphAligned); 
+      deconvolved_power_xpol[1].push_back(new TGraphAligned); 
     }
-
   }
 }
 
 
 
 
+
 void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEventSummary * summary) 
 {
-//  summary->~AnitaEventSummary(); 
   summary = new (summary) AnitaEventSummary(event->getHeader(), (UsefulAdu5Pat*) event->getGPS()); 
 
   //check for saturation
@@ -65,13 +93,35 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
   
   UsefulAdu5Pat * pat =  (UsefulAdu5Pat*) event->getGPS();  //unconstifying it .. hopefully that won't cause problems
 
-  // These will be needed for peak finding
+  
 
   // loop over wanted polarizations 
-
-
   for (int pol = cfg->start_pol; pol <= cfg->end_pol; pol++) 
   {
+
+    UShort_t triggeredPhi = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->l3TrigPatternH : event->getHeader()->l3TrigPattern; 
+    UShort_t triggeredPhiL1 =AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->l1TrigMaskH : event->getHeader()->l1TrigMask;  
+    UShort_t maskedPhi = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->phiTrigMaskH : event->getHeader()->phiTrigMask; 
+
+    TVector2 triggerAngle; 
+
+    int ntriggered = __builtin_popcount(triggeredPhi); 
+    int ntriggeredL1 = ntriggered ? 0 : __builtin_popcount(triggeredPhiL1); 
+
+    UShort_t which_trigger = ntriggered ? triggeredPhi : triggeredPhiL1; 
+    int which_ntriggered = ntriggered ? ntriggered : ntriggeredL1; 
+
+    for (int i = 0; i < NUM_PHI; i++) 
+    {
+      if (which_trigger & (1 << i))
+      {
+         double ang = (i * 22.5) * TMath::Pi()/180;
+         triggerAngle += TVector2(cos(ang), sin(ang)) / which_ntriggered; 
+      }
+    }
+
+    double avgHwAngle = triggerAngle.Phi(); 
+
     // tell the correlator not to use saturated events and make the correlation map
     corr.setDisallowedAntennas(saturated[pol]); 
     corr.compute(event, AnitaPol::AnitaPol_t(pol)); 
@@ -91,37 +141,101 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 //    printf("npeaks: %d\n", npeaks); 
     summary->nPeaks[pol] = npeaks; 
 
+    rough_peaks[pol].clear(); 
+
     // Loop over found peaks 
     for (int i = 0; i < npeaks; i++) 
     {
       // zoom in on the values 
-      printf("rough phi:%f, rough theta: %f\n", maxima[i].x, -maxima[i].y); 
-      fillPointingInfo(maxima[i].x, maxima[i].y, &summary->peak[pol][i], pat); 
+//      printf("rough phi:%f, rough theta: %f\n", maxima[i].x, -maxima[i].y); 
+    
+
+      rough_peaks[pol].push_back(std::pair<double,double>(maxima[i].x, maxima[i].y)); 
+
+      fillPointingInfo(maxima[i].x, maxima[i].y, &summary->peak[pol][i], pat, avgHwAngle, triggeredPhi, maskedPhi); 
       if (interactive)
       {
         zoomed_correlation_maps[pol][i]->~TH2D(); 
         zoomed_correlation_maps[pol][i] = new (zoomed_correlation_maps[pol][i]) TH2D(zoomed); 
       }
-      printf("phi:%f, theta:%f\n", summary->peak[pol][i].phi, summary->peak[pol][i].theta); 
+//      printf("phi:%f, theta:%f\n", summary->peak[pol][i].phi, summary->peak[pol][i].theta); 
       //now make the combined waveforms 
       wfcomb.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
-      fillWaveformInfo(wfcomb.getCoherent(), &summary->coherent[pol][i]); 
-      fillWaveformInfo(wfcomb.getDeconvolved(), &summary->deconvolved[pol][i]); 
+      wfcomb_xpol.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
+      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol); 
+      fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol); 
 
-      if (interactive)
+
+      if (interactive) //copy everythig
       {
         coherent[pol][i]->~AnalysisWaveform(); 
-        deconvolved[pol][i]->~AnalysisWaveform(); 
         coherent[pol][i] = new (coherent[pol][i]) AnalysisWaveform(*wfcomb.getCoherent()); 
-        deconvolved[pol][i] = new (deconvolved[pol][i]) AnalysisWaveform(*wfcomb.getDeconvolved()); 
+
+        coherent_power[pol][i]->~TGraphAligned(); 
+        coherent_power[pol][i] = new (coherent_power[pol][i]) TGraphAligned(*wfcomb.getCoherentAvgSpectrum()); 
+        coherent_power[pol][i]->dBize(); 
+
+
+        if (wfcomb.getDeconvolved())
+        {
+          deconvolved[pol][i]->~AnalysisWaveform(); 
+          deconvolved[pol][i] = new (deconvolved[pol][i]) AnalysisWaveform(*wfcomb.getDeconvolved()); 
+          deconvolved[pol][i]->updateEven()->SetLineColor(2); 
+
+          deconvolved_power[pol][i]->~TGraphAligned(); 
+          deconvolved_power[pol][i] = new (deconvolved_power[pol][i]) TGraphAligned(*wfcomb.getDeconvolvedAvgSpectrum()); 
+          deconvolved_power[pol][i]->dBize(); 
+          deconvolved_power[pol][i]->SetLineColor(2); 
+          interactive_deconvolved = true; 
+        }
+        else
+        {
+          interactive_deconvolved = false; 
+        }
+
+
+        coherent_xpol[pol][i]->~AnalysisWaveform(); 
+        coherent_xpol[pol][i] = new (coherent_xpol[pol][i]) AnalysisWaveform(*wfcomb_xpol.getCoherent()); 
+        coherent_xpol[pol][i]->updateEven()->SetLineColor(11); 
+        coherent_xpol[pol][i]->updateEven()->SetLineStyle(3); 
+        
+        coherent_power_xpol[pol][i]->~TGraphAligned(); 
+        coherent_power_xpol[pol][i] = new (coherent_power_xpol[pol][i]) TGraphAligned(*wfcomb_xpol.getCoherentAvgSpectrum()); 
+        coherent_power_xpol[pol][i]->dBize(); 
+        coherent_power_xpol[pol][i]->SetLineStyle(3); 
+        coherent_power_xpol[pol][i]->SetLineColor(11); 
+
+
+        if (wfcomb_xpol.getDeconvolved())
+        {
+          deconvolved_xpol[pol][i]->~AnalysisWaveform(); 
+          deconvolved_xpol[pol][i] = new (deconvolved_xpol[pol][i]) AnalysisWaveform(*wfcomb_xpol.getDeconvolved()); 
+
+          deconvolved_xpol[pol][i]->updateEven()->SetLineColor(45); 
+          deconvolved_xpol[pol][i]->updateEven()->SetLineStyle(3); 
+          deconvolved_power_xpol[pol][i]->~TGraphAligned(); 
+          deconvolved_power_xpol[pol][i] = new (deconvolved_power_xpol[pol][i]) TGraphAligned(*wfcomb_xpol.getDeconvolvedAvgSpectrum()); 
+          deconvolved_power_xpol[pol][i]->dBize(); 
+          deconvolved_power_xpol[pol][i]->SetLineStyle(3); 
+          deconvolved_power_xpol[pol][i]->SetLineColor(46); 
+          interactive_xpol_deconvolved = true; 
+        }
+        else
+        {
+          interactive_xpol_deconvolved = false; 
+        }
       }
     }
   }
 
   fillFlags(event, &summary->flags, pat); 
+
+  if (interactive) last = *summary; 
+
 }
 
-void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_theta, AnitaEventSummary::PointingHypothesis * point, UsefulAdu5Pat * pat)
+void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_theta, AnitaEventSummary::PointingHypothesis * point, 
+                                             UsefulAdu5Pat * pat, double hwPeakAngle, UShort_t triggered_sectors, UShort_t masked_sectors)
 {
       corr.computeZoomed(rough_phi, rough_theta, cfg->zoomed_nphi, cfg->zoomed_dphi,  cfg->zoomed_ntheta, cfg->zoomed_dtheta, cfg->zoomed_nant, &zoomed); 
 
@@ -158,30 +272,63 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
       //snr is ratio of point value to map rms
       point->snr = point->value / maprms; 
 
-      // will do this later
-      point->hwAngle = -9999; // TODO 
+      point->hwAngle = FFTtools::wrap(point->phi - hwPeakAngle,360,0); 
+      int sector = fmod(point->phi + 11.25,360) / 22.5; 
+
+      point->masked = masked_sectors & ( 1 << sector); 
+      point->triggered = triggered_sectors & ( 1 << sector); 
 
       //Compute intersection with continent, or set values to -9999 if no intersection
-      if (!pat->getSourceLonAndLatAtAlt(point->phi, point->theta, point->latitude, point->longitude, point->altitude)) 
+      if (!pat->traceBackToContinent(point->phi * DEG2RAD, point->theta * DEG2RAD, &point->longitude, &point->latitude, &point->altitude, &point->theta_adjustment_needed)) 
       {
         point->latitude = -9999; 
         point->longitude = -9999;  
         point->altitude = -9999; 
+        point->theta_adjustment_needed = -9999; 
+      }
+      else
+      {
+        point->theta_adjustment_needed *= RAD2DEG; 
       }
 }
 
 
-void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, AnitaEventSummary::WaveformInfo * info)
+void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph* pwr, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol)
 {
   if (!wf)
   {
     memset(info, 0, sizeof(AnitaEventSummary::WaveformInfo)); 
     return; 
   }
-  const TGraph * even = wf->even(); 
+  const TGraphAligned * even = wf->even(); 
+  const TGraphAligned * xpol_even= xpol_wf->even(); 
   info->peakVal = FFTtools::getPeakVal((TGraph*) even); 
+  info->xPolPeakVal = FFTtools::getPeakVal((TGraph*) xpol_even); 
   info->peakHilbert = FFTtools::getPeakVal((TGraph*) wf->hilbertEnvelope()); 
+  info->xPolPeakHilbert = FFTtools::getPeakVal((TGraph*) xpol_wf->hilbertEnvelope()); 
   info->numAntennasInCoherent = cfg->combine_nantennas; 
+
+
+  if (pol == AnitaPol::kHorizontal)
+  {
+    FFTtools::stokesParameters(even->GetN(), 
+                               even->GetY(), 
+                               wf->hilbertTransform()->even()->GetY(), 
+                               xpol_even->GetY(), 
+                               xpol_wf->hilbertTransform()->even()->GetY(), 
+                               &(info->I), &(info->Q), &(info->U), &(info->V)); 
+  }
+
+  else
+  {
+    FFTtools::stokesParameters(even->GetN(), 
+                               xpol_even->GetY(), 
+                               xpol_wf->hilbertTransform()->even()->GetY(), 
+                               even->GetY(), 
+                               wf->hilbertTransform()->even()->GetY(), 
+                               &(info->I), &(info->Q), &(info->U), &(info->V)); 
+ 
+  }
 
   double dt = wf->deltaT(); 
   double t0 = even->GetX()[0]; 
@@ -195,7 +342,8 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, AnitaE
   
   info->snr = info->peakVal / rms; 
 
-  TGraph power(*wf->powerdB()); 
+  TGraphAligned power(*pwr); 
+  power.dBize(); 
 
   if (power_filter)
   {
@@ -239,14 +387,138 @@ UCorrelator::Analyzer::~Analyzer()
     delete correlation_maps[0];
     delete correlation_maps[1]; 
 
-    for (int i = 0; i < cfg->nmaxima; i++)
+    for (int pol = 0; pol < 2; pol++)
     {
-      delete zoomed_correlation_maps[0][i];
-      delete zoomed_correlation_maps[1][i];
-      delete coherent[0][i];
-      delete coherent[1][i];
-      delete deconvolved[0][i];
-      delete deconvolved[1][i];
+      for (int i = 0; i < cfg->nmaxima; i++)
+      {
+        delete zoomed_correlation_maps[pol][i];
+
+        delete coherent[pol][i];
+        delete deconvolved[pol][i];
+
+        delete coherent_xpol[pol][i];
+        delete deconvolved_xpol[pol][i];
+
+        delete coherent_power[pol][i];
+        delete deconvolved_power[pol][i];
+
+        delete coherent_power_xpol[pol][i];
+        delete deconvolved_power_xpol[pol][i];
+      }
+    }
+
+    clearInteractiveMemory(); 
+  }
+}
+
+void UCorrelator::Analyzer::clearInteractiveMemory() const
+{
+
+  for (unsigned i = 0; i < delete_list.size(); i++) 
+  {
+    delete delete_list[i]; 
+  }
+
+  delete_list.clear(); 
+}
+
+void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
+{
+  TPad * pads[2] = {ch,cv}; 
+
+
+  gStyle->SetOptStat(0); 
+  for (int ipol = cfg->start_pol; ipol <= cfg->end_pol; ipol++)
+  {
+    if (!pads[ipol])
+    {
+      pads[ipol] = new TCanvas(ipol == 0 ? "analyzer_ch" : "analyzer_cv", ipol == 0 ? "hpol" : "vpol",1920,500); 
+    }
+
+    pads[ipol]->Clear(); 
+    pads[ipol]->Divide(2,1); 
+
+    pads[ipol]->cd(1)->Divide(1,2); 
+
+    pads[ipol]->cd(1)->cd(1); 
+    correlation_maps[ipol]->Draw("colz"); 
+
+    for (int i = 0; i < last.nPeaks[ipol]; i++) 
+    {
+      pads[ipol]->cd(1)->cd(1); 
+      TMarker * m = new TMarker(rough_peaks[ipol][i].first, rough_peaks[ipol][i].second, 3); 
+      m->SetMarkerSize(last.nPeaks[ipol] -i); 
+      m->Draw(); 
+      delete_list.push_back(m); 
+
+      pads[ipol]->cd(1)->cd(2); 
+      TPaveText * pt  = new TPaveText(i/double(last.nPeaks[ipol]),0,(i+1)/double(last.nPeaks[ipol]),1); 
+      delete_list.push_back(pt); 
+      pt->AddText(TString::Format("#phi: %0.2f (rough) , %0.3f (fine)", rough_peaks[ipol][i].first, last.peak[ipol][i].phi)); 
+      pt->AddText(TString::Format("#theta: %0.2f (rough) , %0.3f (fine)", -rough_peaks[ipol][i].second, last.peak[ipol][i].theta)); 
+      pt->AddText(TString::Format("peak val: %f", last.peak[ipol][i].value)); 
+      pt->AddText(TString::Format("peak_{hilbert} (coherent): %0.3f", last.coherent[ipol][i].peakHilbert)); 
+      pt->AddText(TString::Format("Stokes: (coherent): (%0.3g, %0.3g, %0.3g, %0.3g)", last.coherent[ipol][i].I, last.coherent[ipol][i].Q, last.coherent[ipol][i].U, last.coherent[ipol][i].V));
+      pt->AddText(TString::Format("BW: (coherent): %0.3f", last.coherent[ipol][i].bandwidth)); 
+      pt->AddText(TString::Format("position: %0.3f N, %0.3f E, %0.3f m", last.peak[ipol][i].latitude, last.peak[ipol][i].longitude, last.peak[ipol][i].altitude)); 
+      pt->Draw(); 
+    }
+
+
+    pads[ipol]->cd(2)->Divide(last.nPeaks[ipol], 3); 
+
+    for (int i = 0; i < last.nPeaks[ipol]; i++) 
+    {
+      pads[ipol]->cd(2)->cd(i+1); 
+      zoomed_correlation_maps[ipol][i]->Draw("colz"); 
+      const AnitaEventSummary::PointingHypothesis & p = last.peak[ipol][i]; 
+      TMarker * m = new TMarker(p.phi, -p.theta,2); 
+      delete_list.push_back(m); 
+
+      double angle = 90. / TMath::Pi()* atan2(2*p.rho * p.sigma_theta * p.sigma_phi, p.sigma_phi * p.sigma_phi - p.sigma_theta * p.sigma_theta);
+      TEllipse *el = new TEllipse(p.phi, -p.theta, p.sigma_phi, p.sigma_theta, 0, 360, angle); 
+      delete_list.push_back(el); 
+
+      el->SetFillStyle(0); 
+      el->SetLineColor(3); 
+      el->Draw(); 
+      m->SetMarkerSize(2); 
+      m->SetMarkerColor(3); 
+      m->Draw(); 
+
+      pads[ipol]->cd(2)->cd(i+last.nPeaks[ipol]+1); 
+
+      coherent[ipol][i]->drawEven("al"); 
+
+      if (interactive_deconvolved)
+      {
+        deconvolved[ipol][i]->drawEven("lsame"); 
+      }
+
+      coherent_xpol[ipol][i]->drawEven("lsame"); 
+
+      if (interactive_xpol_deconvolved)
+      {
+        deconvolved_xpol[ipol][i]->drawEven("lsame"); 
+      }
+
+
+      pads[ipol]->cd(2)->cd(i+2*last.nPeaks[ipol]+1); 
+
+
+      ((TGraph*)coherent_power[ipol][i])->Draw("al"); 
+
+      if (interactive_deconvolved)
+      {
+        ((TGraph*)deconvolved_power[ipol][i])->Draw("lsame");; 
+      }
+
+      ((TGraph*)coherent_power_xpol[ipol][i])->Draw("lsame"); 
+
+      if (interactive_xpol_deconvolved)
+      {
+        ((TGraph*)deconvolved_power_xpol[ipol][i])->Draw("lsame"); 
+      }
     }
   }
 }

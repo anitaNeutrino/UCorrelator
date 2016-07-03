@@ -12,6 +12,48 @@
 #include "AnalysisWaveform.h"
 #include "TStopwatch.h" 
 
+#ifdef UCORRELATOR_OPENMP
+#include <omp.h>
+#endif
+
+namespace UCorrelator
+{
+  class CorrelatorLocks
+  {
+    public:
+
+#ifdef UCORRELATOR_OPENMP
+      omp_lock_t waveform_locks[NANTENNAS]; 
+      omp_lock_t correlation_locks[NANTENNAS][NANTENNAS]; 
+
+      CorrelatorLocks() 
+      {
+        for (int i = 0; i < NANTENNAS; i++)
+        {
+          omp_init_lock(&waveform_locks[i]);
+
+          for (int j = 0; j < NANTENNAS; j++) 
+          {
+            omp_init_lock(&correlation_locks[i][j]);
+          }
+        }
+
+      }
+      ~CorrelatorLocks() 
+      {
+        for (int i = 0; i < NANTENNAS; i++)
+        {
+          omp_destroy_lock(&waveform_locks[i]);
+
+          for (int j = 0; j < NANTENNAS; j++) 
+          {
+            omp_destroy_lock(&correlation_locks[i][j]);
+          }
+        }
+      }
+#endif
+  };
+}
 
 
 
@@ -33,12 +75,14 @@ static const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions:
 
 
 UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, int ntheta, double theta_min, double theta_max, bool use_center)
-  : hist(TString::Format("ucorr_corr_%d",count_the_correlators),"Correlator", nphi, phi_min, phi_max, ntheta, theta_min, theta_max), 
-    norm(TString::Format("ucorr_norm_%d",count_the_correlators++),"Normalization", nphi, phi_min, phi_max, ntheta, theta_min, theta_max)
 {
-  
-  hist.GetXaxis()->SetTitle("#phi"); 
-  hist.GetYaxis()->SetTitle("-#theta"); 
+  TString histname = TString::Format("ucorr_corr_%d",count_the_correlators);
+  TString normname = TString::Format("ucorr_norm_%d",count_the_correlators++);
+  hist = new TH2D(histname.Data(),"Correlator", nphi, phi_min, phi_max, ntheta, theta_min, theta_max); 
+  norm = new TH2I(normname.Data(),"Normalization", nphi, phi_min, phi_max, ntheta, theta_min, theta_max);
+    
+  hist->GetXaxis()->SetTitle("#phi"); 
+  hist->GetYaxis()->SetTitle("-#theta"); 
   
   use_bin_center = use_center;
   trigcache = new TrigCache(nphi, (phi_max-phi_min)/nphi, phi_min, ntheta, (theta_max - theta_min)/ntheta,theta_min, ap, use_center); 
@@ -51,15 +95,9 @@ UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, in
   memset(padded_waveforms, 0, NANTENNAS * sizeof(AnalysisWaveform*)); 
   memset(correlations, 0, NANTENNAS * NANTENNAS * sizeof(AnalysisWaveform*)); 
 
-  for (int i = 0; i < NANTENNAS; i++)
-  {
-    omp_init_lock(&waveform_locks[i]);
-
-    for (int j = 0; j < NANTENNAS; j++) 
-    {
-      omp_init_lock(&correlation_locks[i][j]);
-    }
-  }
+#ifdef UCORRELATOR_OPENMP
+  locks = new CorrelatorLocks; 
+#endif
   ev = 0; 
   groupDelayFlag = 1; 
 }
@@ -166,7 +204,7 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2)
 
 
 #ifdef UCORRELATOR_OPENMP
-  omp_set_lock(&waveform_locks[ant1]); 
+  omp_set_lock(&locks->waveform_locks[ant1]); 
 #endif
   if (!padded_waveforms[ant1])
   {
@@ -176,8 +214,8 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2)
      padded_waveforms[ant1]->padEven(1); 
   }
 #ifdef UCORRELATOR_OPENMP
-  omp_unset_lock(&waveform_locks[ant1]); 
-  omp_set_lock(&waveform_locks[ant2]); 
+  omp_unset_lock(&locks->waveform_locks[ant1]); 
+  omp_set_lock(&locks->waveform_locks[ant2]); 
 #endif
 
   if (!padded_waveforms[ant2])
@@ -190,28 +228,28 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2)
   }
 
 #ifdef UCORRELATOR_OPENMP
-  omp_unset_lock(&waveform_locks[ant2]); 
-  omp_set_lock(&correlation_locks[ant1][ant2]); 
+  omp_unset_lock(&locks->waveform_locks[ant2]); 
+  omp_set_lock(&locks->correlation_locks[ant1][ant2]); 
 #endif
 
   if (!correlations[ant1][ant2])
   {
 #ifdef UCORRELATOR_OPENMP
-    omp_set_lock(&waveform_locks[ant1]); 
-    omp_set_lock(&waveform_locks[ant2]); 
+    omp_set_lock(&locks->waveform_locks[ant1]); 
+    omp_set_lock(&locks->waveform_locks[ant2]); 
 #endif
 //    printf("Computing correlation %d %d\n", ant1, ant2); 
     correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],padded_waveforms[ant2],pad_factor, rms[ant1] * rms[ant2]); 
 
 #ifdef UCORRELATOR_OPENMP
-    omp_unset_lock(&waveform_locks[ant2]); 
-    omp_unset_lock(&waveform_locks[ant1]); 
+    omp_unset_lock(&locks->waveform_locks[ant2]); 
+    omp_unset_lock(&locks->waveform_locks[ant1]); 
 #endif
   }
 
 
 #ifdef UCORRELATOR_OPENMP
-  omp_unset_lock(&correlation_locks[ant1][ant2]); 
+  omp_unset_lock(&locks->correlation_locks[ant1][ant2]); 
 #ifndef FFTTOOLS_COMPILED_WITH_OPENMP
   }
 #endif
@@ -393,12 +431,12 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
 void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t whichpol) 
 {
 
-  TStopwatch sw; 
+//  TStopwatch sw; 
 
   pol = whichpol; 
   ev = event; 
-  hist.Reset(); 
-  norm.Reset(); 
+  hist->Reset(); 
+  norm->Reset(); 
   reset(); 
 
 #ifdef UCORRELATOR_OPENMP
@@ -412,26 +450,26 @@ void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol
     {
       if (disallowed_antennas & (1 << ant2)) continue; 
 
-      doAntennas(ant1, ant2, &hist, &norm, trigcache); 
+      doAntennas(ant1, ant2, hist, norm, trigcache); 
     }
   }
 
 
   int nonzero = 0;
   //only keep values with at least 3 contributing antennas 
-  for (int i = 0; i < (hist.GetNbinsX()+2) * (hist.GetNbinsY()+2); i++) 
+  for (int i = 0; i < (hist->GetNbinsX()+2) * (hist->GetNbinsY()+2); i++) 
   {
-    double val = hist.GetArray()[i]; 
+    double val = hist->GetArray()[i]; 
     if (val == 0) continue;
-    int this_norm = norm.GetArray()[i]; 
-    hist.GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
+    int this_norm = norm->GetArray()[i]; 
+    hist->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
   //  printf("%d %g %d\n",  i,  val, this_norm); 
     nonzero++; 
   }
 
-  hist.SetEntries(nonzero); 
-  norm.SetEntries(nonzero); 
-  sw.Print("u");
+  hist->SetEntries(nonzero); 
+  norm->SetEntries(nonzero); 
+//  sw.Print("u");
 }
 
 
@@ -441,16 +479,12 @@ UCorrelator::Correlator::~Correlator()
 
   delete trigcache; 
   reset(); 
+  delete hist; 
+  delete norm; 
 
-  for (int i = 0; i < NANTENNAS; i++)
-  {
-    omp_destroy_lock(&waveform_locks[i]); 
-
-    for (int j = 0; j < NANTENNAS; j++) 
-    {
-      omp_destroy_lock(&correlation_locks[i][j]); 
-    }
-  }
+#ifdef UCORRELATOR_OPENMP
+  delete locks; 
+#endif 
 
 }
 
@@ -523,3 +557,5 @@ void UCorrelator::Correlator::dumpDeltaTs(const char * fname) const
 
 
 }
+
+

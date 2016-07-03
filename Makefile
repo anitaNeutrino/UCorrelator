@@ -16,9 +16,9 @@ BINDIR=bin
 .PHONY: clean install all doc
 
 
-OBJS := $(addprefix $(BUILDDIR)/, AntennaPositions.o Baseline.o SystemResponse.o UCFilters.o Flags.o Correlator.o WaveformCombiner.o PeakFinder.o Analyzer.o AnalysisConfig.o Util.o dict.o)
+OBJS := $(addprefix $(BUILDDIR)/, AntennaPositions.o Baseline.o SystemResponse.o UCFilters.o Flags.o Correlator.o WaveformCombiner.o PeakFinder.o Analyzer.o AnalysisConfig.o Util.o UCorrelatorDict.o)
 
-#BINARIES := $(addprefix $(BINDIR)/, binary);
+BINARIES := $(addprefix $(BINDIR)/, doWais doDecimated doDecimatedNoFilter doLDB);
 
 INCLUDES := $(addprefix $(INCLUDEDIR)/, $(shell ls $(INCLUDEDIR)))
 
@@ -31,6 +31,7 @@ all: $(LIBNAME) $(BINARIES)
 $(LIBNAME): $(OBJS) | $(LIBDIR)
 	@echo Building shared library $@
 	@$(CXX) $(SOFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) $(GLIBS) -shared -o $@
+	cp $(BUILDDIR)/*.pcm $(LIBDIR) 
 
 
 $(OBJS): | $(BUILDDIR)
@@ -55,22 +56,25 @@ $(BUILDDIR)/%.o: build/%.cc $(INCLUDES) Makefile | $(BUILDDIR)
 
 
 
-$(BINDIR)/%: %.cc $(INCLUDES) Makefile $(LIBNAME) | $(BINDIR)
+$(BINDIR)/%: drivers/%.cc $(INCLUDES) Makefile $(LIBNAME) | $(BINDIR)
 	@echo Compiling $<
-	@$(CXX)  -I./include -I./ $(CXXFLAGS) -o $@ $(LDFLAGS) -L./$(LIBDIR) -l$(LINKLIBNAME)  $< 
+	@$(CXX)  -I./include -I./ $(CXXFLAGS) -o $@ -L./$(LIBDIR) $(LDFLAGS) -l$(LINKLIBNAME)  $< 
 
-$(BUILDDIR)/dict.cc: $(INCLUDES) LinkDef.h | $(BUILDDIR)
+$(BUILDDIR)/UCorrelatorDict.cc: $(INCLUDES) LinkDef.h | $(BUILDDIR)
 	@echo Running rootcint
 	rootcint  -f $@ -c -p -I$(ANITA_UTIL_INSTALL_DIR)/include $(INCLUDES) LinkDef.h
 
-install: 
+
+install: $(LIBNAME)
 ifndef ANITA_UTIL_INSTALL_DIR 
 	$(error Please define ANITA_UTIL_INSTALL_DIR)
 endif 
 	install -d $(ANITA_UTIL_INSTALL_DIR)/lib 
-	install -d $(ANITA_UTIL_INSTALL_DIR)/cinclude 
-	install -c -m 755 $(LIBNAME)(ANITA_UTIL_INSTALL_DIR)/lib  
+	install -d $(ANITA_UTIL_INSTALL_DIR)/include 
+	install -c -m 755 $(LIBNAME) $(ANITA_UTIL_INSTALL_DIR)/lib
 	install -c -m 644 $(INCLUDES) $(ANITA_UTIL_INSTALL_DIR)/include 
+	if [ -e $(BUILDDIR)/UCorrelatorDict_rdict.pcm ];  then install -c -m 755 $(BUILDDIR)/UCorrelatorDict_rdict.pcm $(ANITA_UTIL_INSTALL_DIR)/lib; fi; 
+
 
 
 doc: $(INCLUDES) 

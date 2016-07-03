@@ -1,15 +1,17 @@
-
 #include "FFTtools.h"
 #include "Analyzer.h"
 #include "FilteredAnitaEvent.h"
-#include "AnitaDataset.h" 
-#include "RawAnitaHeader.h"
-#include "AnalysisConfig.h"
-#include "UCFilters.h"
-#include "Util.h"
 #include "FilterStrategy.h"
+#include "Util.h"
+#include "TTree.h"
+#include "TFile.h"
+#include "UCFilters.h"
+#include "AnalysisConfig.h"
+#include "AnitaDataset.h"
+#include "RawAnitaHeader.h"
 
-void doWais(int run = 352, int max = 0, bool sine_subtract = false)
+
+void doldb(int run = 352, int max = 0, bool sine_subtract = false)
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
@@ -18,18 +20,16 @@ void doWais(int run = 352, int max = 0, bool sine_subtract = false)
 
   AnitaDataset d(run); 
   UCorrelator::AnalysisConfig cfg; 
-  cfg.start_pol = AnitaPol::kHorizontal; 
-  cfg.end_pol = AnitaPol::kHorizontal; 
   
 
   UCorrelator::Analyzer analyzer(&cfg); 
 
   TString outname; 
-  if (max) outname.Form("wais/wais_hpol_%d_max_%d%s.root",run,max, sine_subtract ? "_sinsub" : "" ); 
-  else outname.Form("wais/wais_hpol_%d%s.root",run, sine_subtract ? "_sinsub" : "" ); 
+  if (max) outname.Form("ldb/%d_max_%d%s.root",run,max, sine_subtract ? "_sinsub" : "" ); 
+  else outname.Form("ldb/%d%s.root",run, sine_subtract ? "_sinsub" : "" ); 
 
   TFile ofile(outname, "RECREATE"); 
-  TTree * tree = new TTree("wais","WAIS Hpol"); 
+  TTree * tree = new TTree("ldb","ldb Hpol"); 
   AnitaEventSummary * sum = new AnitaEventSummary; 
 
 
@@ -63,14 +63,14 @@ void doWais(int run = 352, int max = 0, bool sine_subtract = false)
 
     UsefulAdu5Pat pat(d.gps()); 
 
-    if (UCorrelator::isWAISHPol(&pat, d.header()))
+    if (UCorrelator::isLDBHPol(&pat, d.header()) || UCorrelator::isLDBVPol(&pat,d.header()))
     {
       printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone); 
       FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
 
       analyzer.analyze(&ev, sum); 
       ofile.cd(); 
-      header = d.header(); 
+      hdr = d.header(); 
       patptr = &pat; 
       tree->Fill(); 
       ndone++; 
@@ -84,4 +84,16 @@ void doWais(int run = 352, int max = 0, bool sine_subtract = false)
   tree->Write(); 
 
   FFTtools::saveWisdom("wisdom.dat"); 
+}
+
+int main (int nargs, char ** args)
+{
+   
+  int run = nargs < 2 ? 352 : atoi(args[1]); 
+  int max = nargs < 3 ? 0 : atoi(args[2]); 
+  int sinsub = nargs < 4 ? 0 : atoi(args[3]); 
+
+  doldb(run,max,sinsub); 
+
+
 }

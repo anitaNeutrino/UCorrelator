@@ -4,7 +4,6 @@
 
 #include "AnitaConventions.h"
 #include "TH2.h"
-#include <omp.h>
 #include <stdint.h>
 
 class FilteredAnitaEvent; 
@@ -16,6 +15,8 @@ class TrigCache;
 namespace UCorrelator
 {
   
+  //This is just to hide the OpenMP stuff from cling
+  class CorrelatorLocks; 
 
   /** This creates the inteferometric map for an ANITA event */ 
   class Correlator
@@ -28,10 +29,10 @@ namespace UCorrelator
       void compute(const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol); 
 
       /** Get the rough correlation map */ 
-      const TH2 * getHist() const { return &hist; }  
+      const TH2D * getHist() const { return hist; } 
  
       /** Get the rough correlation map normalization */ 
-      const TH2 * getNorm() const { return &norm; } 
+      const TH2I * getNorm() const { return norm; } 
       
 
       /** Compute a zoomed in map around phi and theta. nphi,dphi,ntheta,dtheta. If nant is non-zero, only the nearest nant antennas are used. You can use useme to avoid allocating a new TH2.  */ 
@@ -64,14 +65,12 @@ namespace UCorrelator
       AnalysisWaveform* padded_waveforms[NANTENNAS]; 
       AnalysisWaveform* correlations[NANTENNAS][NANTENNAS]; 
 
-      omp_lock_t waveform_locks[NANTENNAS]; 
-      omp_lock_t correlation_locks[NANTENNAS][NANTENNAS]; 
+      TH2D *hist; //wow, apparently sizeof(TH2D) is huge... that's why this is on the heap 
+      TH2I *norm; 
 
 
       TrigCache * trigcache; 
       double rms[NANTENNAS]; 
-      TH2D hist; 
-      TH2I norm; 
 
       double max_phi, max_phi2;
       uint64_t disallowed_antennas;
@@ -85,6 +84,7 @@ namespace UCorrelator
       void doAntennas(int ant1, int ant2, TH2D * hist, TH2I * norm, const TrigCache * tc, const double * center_point  = 0); 
       void reset(); 
 
+      CorrelatorLocks * locks; 
   }; 
 
 

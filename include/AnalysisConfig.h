@@ -12,12 +12,13 @@ namespace UCorrelator
   {
     public: 
     /** Create a default config */
-      AnalysisConfig(); 
 #ifdef ENABLE_LIBCONFIG
       /** (NOT IMPLEMENTED YET) construct from file */ 
       AnalysisConfig(const char * config_file = 0); 
       /** (NOT IMPLEMENTED YET) load options from file */ 
       void loadFromFile(const char * config_file); 
+#else
+      AnalysisConfig(); 
 #endif
 
 

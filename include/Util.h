@@ -33,6 +33,12 @@ namespace UCorrelator
   /** Returns true if we think it's a LDB hpol cal pulse */ 
   bool isLDBHPol(const UsefulAdu5Pat * pat, const RawAnitaHeader * hdr, const AnalysisConfig * cfg = 0) ; 
 
+
+  /** Returns 0 if misses continent, 1 if it hits, 2 if it hits after adjusting theta */ 
+  int traceBackToContinent(const UsefulAdu5Pat * pat, double phi, double theta, 
+                           double * lat, double * lon, double *alt, double * theta_adjustment_required, 
+                           double max_theta_adjustment = 1, int max_iter = 10); 
+
 }
 
 

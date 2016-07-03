@@ -1,11 +1,16 @@
 #include "PeakFinder.h"
 #include "TH2.h" 
-#include <Eigen/Dense> 
 #include "TF2.h" 
 #include "FFTtools.h"
 #include "Math/Interpolator.h"
 #include "TGraph.h"
 
+#ifdef UCORRELATOR_USE_EIGEN_FOR_PEAK_FINDER
+#include <Eigen/Dense> 
+#else 
+#include "TMatrix.h"
+#include "TDecompSVD.h"
+#endif 
 
 static bool isLocalMaxima(const TH2D * hist, int bin) 
 {
@@ -30,7 +35,7 @@ static bool isLocalMaxima(const TH2D * hist, int bin)
   return true; 
 }
 
-static int findMaximum(const TH2D* hist, std::vector<bool> * notallowed)
+static int findMaximum(const TH2D* hist, std::vector<char> * notallowed)
 {
   const double * arr = hist->GetArray(); 
   int width = hist->GetNbinsX() + 2; 
@@ -62,16 +67,23 @@ static int findMaximum(const TH2D* hist, std::vector<bool> * notallowed)
   return max_i; 
 }
 
-static void maskNearbyBins(const TH2D * hist, double distance, int bin, std::vector<bool> * used)
+static void maskNearbyBins(const TH2D * hist, double distance, int bin, std::vector<char> * used)
 {
 
   const int width = hist->GetNbinsX()+2; 
   const int height = hist->GetNbinsY()+2; 
   int int_dist = int(distance+0.5); 
 
+  double dw = hist->GetXaxis()->GetBinWidth(1); 
+  double dh = hist->GetYaxis()->GetBinWidth(1); 
+  double dw2 = dw*dw; 
+  double dh2 = dh*dh; 
+
+
   int i0 = bin % width;
   int j0 = bin / width; 
-  int dist2 = int(distance*distance+0.5);  
+
+  double dist2 = distance*distance; 
 
   for (int jj = -int_dist; jj <= int_dist; jj++)
   {
@@ -82,13 +94,13 @@ static void maskNearbyBins(const TH2D * hist, double distance, int bin, std::vec
     for (int ii = -int_dist; ii <= int_dist; ii++) 
     {
       int i = i0 +ii; 
-      if (i < 1) continue; 
-      if (i >= width) continue; 
-      if (ii*ii + j2 > dist2) continue; 
+      if (i < 1) i += width; 
+      if (i >= width) i-=width; 
+      if (ii*ii*dw2 + j2*dh2 > dist2) continue; 
 
       int bin2use =  i+ j * width; 
 //      printf("Disallowing %d\n", bin2use); 
-      (*used)[bin2use] = true; 
+      (*used)[bin2use] = 1; 
     }
   }
 }
@@ -96,9 +108,20 @@ static void maskNearbyBins(const TH2D * hist, double distance, int bin, std::vec
 
 int UCorrelator::peakfinder::findIsolatedMaxima(const TH2D * hist, double distance, int Nmaxima, RoughMaximum * maxima,  bool use_bin_center)
 {
-  std::vector<bool> used( (hist->GetNbinsX() +2) * (hist->GetNbinsY()+2), false); 
+  int width = hist->GetNbinsX()+2; 
+  int height = hist->GetNbinsY()+2; 
+  std::vector<char> used( width*height, false); 
 
   int nfound = 0; 
+
+  //block out bins closest to top and bottom since we don't want maxima on the top or bottom edge 
+
+  int rows_not_allowed[] = {1,hist->GetNbinsY()}; 
+  for (unsigned i = 0; i < sizeof(rows_not_allowed) / sizeof(*rows_not_allowed); i++)
+  {
+    memset(&used[(width)*rows_not_allowed[i]], 1, width); 
+  }
+
 
   while (nfound < Nmaxima)
   {
@@ -136,6 +159,7 @@ void UCorrelator::peakfinder::FineMaximum::copyToPointingHypothesis(AnitaEventSu
   p->sigma_phi = sigma_x; 
   p->rho = covar / (sigma_x * sigma_y); 
   p->value = val; 
+  p->chisq = chisq; 
 }
 
 const int X2COEFF = 0; 
@@ -146,8 +170,11 @@ const int YCOEFF = 4;
 const int CCOEFF = 5; 
 
 
+
+#ifdef UCORRELATOR_USE_EIGEN_FOR_PEAK_FINDER
+
 template <unsigned N> 
-static const Eigen::JacobiSVD<Eigen::Matrix<double, N*N,6> > & getSVD()
+static const Eigen::Matrix<double,N*N,6> & getM()
 {
   int halfway = N/2; 
   static Eigen::Matrix<double, N*N,6> M; 
@@ -165,10 +192,51 @@ static const Eigen::JacobiSVD<Eigen::Matrix<double, N*N,6> > & getSVD()
       M(i + j * N, CCOEFF) = 1; 
     }
   }
+  return M; 
+}
 
-  static Eigen::JacobiSVD<Eigen::Matrix<double, N*N,6> > svd(M,Eigen::ComputeFullU | Eigen::ComputeFullV); 
+template <unsigned N> 
+static const Eigen::JacobiSVD<Eigen::Matrix<double, N*N,6> > & getSVD()
+{
+  static Eigen::JacobiSVD<Eigen::Matrix<double, N*N,6> > svd(getM<N>(),Eigen::ComputeFullU | Eigen::ComputeFullV); 
   return svd; 
 }
+#else
+
+template <unsigned N>
+static const TMatrixD & getM()
+{
+  int halfway = N/2; 
+  static TMatrixD M(N*N,6); 
+  for (unsigned i = 0; i < N; i++)
+  {
+    for (unsigned j = 0; j < N; j++) 
+    {
+      int x =  i- halfway; 
+      int y =  j - halfway; 
+      M(i + j * N, X2COEFF) = x * x; 
+      M(i + j * N, Y2COEFF) = y * y; 
+      M(i + j * N, XYCOEFF) = x * y; 
+      M(i + j * N, XCOEFF) = x; 
+      M(i + j * N, YCOEFF) = y; 
+      M(i + j * N, CCOEFF) = 1; 
+    }
+  }
+
+  return M;
+}
+
+template <unsigned N> 
+static const TDecompSVD & getSVD()
+{
+  static TDecompSVD svd(getM<N>()); 
+  svd.Decompose(); 
+  return svd; 
+
+
+}
+
+#endif
 
 
 template <unsigned N> 
@@ -184,8 +252,14 @@ static void doQuadraticPeakFinding(const TH2D * hist, UCorrelator::peakfinder::F
   int width = nbinsx + 2; 
 
   //build the linear system
+#ifdef UCORRELATOR_USE_EIGEN_FOR_PEAK_FINDER
   static const Eigen::JacobiSVD<Eigen::Matrix<double, N*N, 6> > & svd = getSVD<N>();  //I  hope this works! 
   Eigen::Matrix<double,N*N,1> Z; 
+#else
+  static const TDecompSVD  & svd = getSVD<N>(); 
+  TVectorD Z(N*N); 
+
+#endif
 
   double xcenter = hist->GetXaxis()->GetBinCenter(xmax); 
   double ycenter = hist->GetYaxis()->GetBinCenter(ymax); 
@@ -204,7 +278,16 @@ static void doQuadraticPeakFinding(const TH2D * hist, UCorrelator::peakfinder::F
   }
 
   //solve the linear system
+#ifdef UCORRELATOR_USE_EIGEN_FOR_PEAK_FINDER
   Eigen::Matrix<double,6,1> B = svd.solve(Z); 
+#else
+  bool ok; 
+  TVectorD B = ((TDecompSVD & )svd).Solve(Z,ok);  // I think this is effectively const since the matrix is fixed, but maybe it'll backfire with multiple threads. In that case, use EIGEN I guess?  
+  if (!ok) 
+  {
+    fprintf(stderr, "Warning in doQuadraticPeakFinding: SVD decomposition failed!\n"); 
+  }
+#endif
     
   //now do some algebra to figure out what x0,y0,sigma_x,sigma_y, covar are 
   //someone needs to check this 
@@ -227,9 +310,14 @@ static void doQuadraticPeakFinding(const TH2D * hist, UCorrelator::peakfinder::F
   // now use -hessian matrix to compute variance, covariance. Not sure this is right. 
   // Could instead try to match coefficients to taylor expansion, but that's a lot of work!
   peak->val =  a*x0*x0 + b * y0*y0 + c * x0*y0 + d * x0 + e * y0 + f; 
-  peak->sigma_x =  sqrt(-2*b*peak->val / (4*a*b - c*c))*dx;
-  peak->sigma_y =  sqrt(-2*a*peak->val / (4*a*b - c*c))*dy;
-  peak->covar = c*peak->val / (4*a*b - c*c)*dx*dy; 
+  peak->sigma_x =  sqrt(-2*b*peak->val / fabs(4*a*b - c*c))*dx; //i don't think that fabs is correct
+  peak->sigma_y =  sqrt(-2*a*peak->val / fabs(4*a*b - c*c))*dy;
+  peak->covar = c*peak->val / fabs(4*a*b - c*c)*dx*dy; 
+#ifdef UCORRELATOR_USE_EIGEN_FOR_PEAK_FINDER
+  peak->chisq = (getM<N>() * B - Z).squaredNorm()/ (N*N); 
+#else
+  peak->chisq = (getM<N>() * B - Z).Norm2Sqr()/ (N*N); 
+#endif
 
 }
 
@@ -456,6 +544,8 @@ void UCorrelator::peakfinder::doInterpolationPeakFindingAbby(const TH2D * hist, 
   peak->sigma_y = FWHMTheta / fwhm_conversion; 
   peak->covar = 0;
   peak->val = peakVal; 
+  peak->chisq = 0; // not sure what the best way to do this is 
+
 }
 
 
@@ -517,6 +607,7 @@ void UCorrelator::peakfinder::doPeakFindingGaussian(const TH2D * zoomed, FineMax
   peak->x = gaus2dfn.GetParameter(GAUS_X0); 
   peak->y = gaus2dfn.GetParameter(GAUS_Y0); 
   peak->val = gaus2dfn.GetParameter(GAUS_A) / (2 * M_PI * peak->sigma_x * peak->sigma_y * sqrt(1-peak->covar *peak->covar)); 
+  peak->chisq = gaus2dfn.GetChisquare()/ gaus2dfn.GetNDF(); 
 }
 
 

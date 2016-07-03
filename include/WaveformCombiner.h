@@ -36,6 +36,8 @@ namespace UCorrelator
 
       const AnalysisWaveform * getCoherent() const { return &coherent; }
       const AnalysisWaveform * getDeconvolved() const; 
+      const TGraph * getCoherentAvgSpectrum() const { return &coherent_avg_spectrum; } 
+      const TGraph * getDeconvolvedAvgSpectrum() const { return &deconvolved_avg_spectrum; } 
       void setNPad(int new_npad) { npad = new_npad; }
       void setNAntennas(int n) { nant = n; }
       void setDeconvolve(bool deconvolve) {do_deconvolution = deconvolve ;}
@@ -49,6 +51,8 @@ namespace UCorrelator
       
       AnalysisWaveform coherent; 
       AnalysisWaveform deconvolved; 
+      TGraphAligned coherent_avg_spectrum; 
+      TGraphAligned deconvolved_avg_spectrum; 
 
 
       const AbstractResponse * responses[2][NUM_SEAVEYS]; 

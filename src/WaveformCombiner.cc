@@ -42,7 +42,7 @@ const AnalysisWaveform * UCorrelator::WaveformCombiner::getDeconvolved() const
 
   if (!do_deconvolution)
   {
-    fprintf(stderr,"WARNING! Deconvolution has not been enabled!\n"); 
+//    fprintf(stderr,"WARNING! Deconvolution has not been enabled!\n"); 
     return 0; 
   }
 
@@ -86,6 +86,26 @@ void UCorrelator::WaveformCombiner::setResponse(const AbstractResponse * respons
 static const UCorrelator::AntennaPositions * antpos = UCorrelator::AntennaPositions::instance(); 
 
 
+static void scaleGraph(TGraph * g, double C)
+{
+
+  int max = g->GetN(); 
+
+  for (int i = 0; i < max; i++) 
+  {
+    g->GetY()[i] *= C; 
+  }
+}
+
+static void addToGraph(TGraph * g, const TGraph * h)
+{
+  int max = TMath::Min(g->GetN(), h->GetN()); 
+  for (int i = 0; i < max; i++)
+  {
+    g->GetY()[i] += h->GetY()[i]; 
+  }
+}
+
 void UCorrelator::WaveformCombiner::combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, uint64_t disallowed)
 {
 
@@ -101,8 +121,19 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
   {
     //ensure transform already calculated so we don't have to repeat when deconvolving
     (void) event->getRawGraph(antennas[i],pol)->freq(); 
+
     padded[i].~AnalysisWaveform(); 
-     new (&padded[i]) AnalysisWaveform(*event->getRawGraph(antennas[i],pol));
+    new (&padded[i]) AnalysisWaveform(*event->getRawGraph(antennas[i],pol));
+
+    if (i == 0)
+    {
+      coherent_avg_spectrum = *(event->getRawGraph(antennas[0],pol)->power());
+    }
+    else
+    {
+      addToGraph(&coherent_avg_spectrum, event->getRawGraph(antennas[0],pol)->power()); 
+    }
+
     padded[i].padFreq(npad);
 
     if (do_deconvolution)
@@ -110,6 +141,14 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
      deconv[i].~AnalysisWaveform(); 
       new (&deconv[i]) AnalysisWaveform(*event->getRawGraph(antennas[i],pol));
       responses[pol][antennas[i]]->deconvolveInPlace(&deconv[i]); //TODO add angle 
+      if (i == 0)
+      {
+        deconvolved_avg_spectrum= *(deconv[i].power()); 
+      }
+      else
+      {
+        addToGraph(&deconvolved_avg_spectrum, deconv[i].power()); 
+      }
       deconv[i].padFreq(npad); 
     }
 
@@ -123,10 +162,12 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
 
   combineWaveforms(nant, padded, delays,0, &coherent); 
   
+  scaleGraph(&coherent_avg_spectrum, 1./nant); 
 
   if (do_deconvolution)
   {
     combineWaveforms(nant, deconv, delays,0, &deconvolved); 
+    scaleGraph(&deconvolved_avg_spectrum, 1./nant); 
   }
 }
 

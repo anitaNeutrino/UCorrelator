@@ -31,7 +31,7 @@ namespace UCorrelator
       description() const { return descStr.Data(); }
 
       /** Filter everything outside the pass band. Numbers are given in GHz. */ 
-      SimplePassBandFilter(double low = 200, double high = 1200)  
+      SimplePassBandFilter(double low = 0.2, double high = 1.2)  
         : low(low), high(high)
       {
         descStr = TString::Format("SimplePassbandFilter(%g,%g)", low,high); 

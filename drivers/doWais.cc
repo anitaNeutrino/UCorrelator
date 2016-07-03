@@ -1,13 +1,15 @@
-
 #include "FFTtools.h"
 #include "Analyzer.h"
 #include "FilteredAnitaEvent.h"
-#include "AnitaDataset.h" 
-#include "RawAnitaHeader.h"
-#include "AnalysisConfig.h"
-#include "UCFilters.h"
-#include "Util.h"
 #include "FilterStrategy.h"
+#include "Util.h"
+#include "TTree.h"
+#include "TFile.h"
+#include "UCFilters.h"
+#include "AnalysisConfig.h"
+#include "AnitaDataset.h"
+#include "RawAnitaHeader.h"
+
 
 void doWais(int run = 352, int max = 0, bool sine_subtract = false)
 {
@@ -70,7 +72,7 @@ void doWais(int run = 352, int max = 0, bool sine_subtract = false)
 
       analyzer.analyze(&ev, sum); 
       ofile.cd(); 
-      header = d.header(); 
+      hdr = d.header(); 
       patptr = &pat; 
       tree->Fill(); 
       ndone++; 
@@ -84,4 +86,16 @@ void doWais(int run = 352, int max = 0, bool sine_subtract = false)
   tree->Write(); 
 
   FFTtools::saveWisdom("wisdom.dat"); 
+}
+
+int main (int nargs, char ** args)
+{
+   
+  int run = nargs < 2 ? 352 : atoi(args[1]); 
+  int max = nargs < 3 ? 0 : atoi(args[2]); 
+  int sinsub = nargs < 4 ? 0 : atoi(args[3]); 
+
+  doWais(run,max,sinsub); 
+
+
 }

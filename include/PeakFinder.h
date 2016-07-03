@@ -37,6 +37,7 @@ namespace UCorrelator
         double sigma_y;
         double covar; 
         double val; 
+        double chisq; 
 
         /** copy into pointing hypothesis struct */
         void copyToPointingHypothesis(AnitaEventSummary::PointingHypothesis *p);
@@ -63,7 +64,6 @@ namespace UCorrelator
 
     /** 2D gaussian fit to histogram.... this will be pretty slow */ 
     void doPeakFindingGaussian(const TH2D* hist, FineMaximum * peak);
-
   }
 
 }

@@ -1,5 +1,8 @@
+#include "FFTtools.h" 
+#include "AnitaDataset.h" 
+#include "Analyzer.h" 
 
-void doDecimated(int run = 352, int max = 0, bool sine_subtract = false)
+void doDecimatedNoFilter(int run = 352, int max = 0)
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
@@ -7,36 +10,22 @@ void doDecimated(int run = 352, int max = 0, bool sine_subtract = false)
 //  /*AnalysisWaveform::InterpolationType*/ AnalysisWaveform::defaultInterpolationType = AnalysisWaveform::REGULARIZED_SPARSE_YEN; 
 
   AnitaDataset d(run,true); 
+
   UCorrelator::AnalysisConfig cfg; 
+  cfg.nmaxima = 5; 
   
+  UCorrelator::Analyzer* analyzer = new UCorrelator::Analyzer(&cfg); 
 
-  UCorrelator::Analyzer analyzer(&cfg); 
-
-  TFile ofile(TString::Format("decimated/%d.root", run), "RECREATE"); 
-  TTree * tree = new TTree("decimated","decimated"); 
+  TFile ofile(TString::Format("decimated_no_filter/%d.root", run), "RECREATE"); 
+  TTree * tree = new TTree("decimated_no_filter","decimated_no_filter"); 
   AnitaEventSummary * sum = new AnitaEventSummary; 
+  FilterStrategy strategy; 
+  strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2,1.3)); 
 
-
-  FilterStrategy strategy (&ofile); 
-
-  if (sine_subtract) 
-  {
-    double fmins[1] = {0.2}; 
-    double fmaxs[1] = {1.3}; 
-    strategy.addOperation(new UCorrelator::SineSubtractFilter(0.05, 0, 4,1,fmins,fmaxs)); 
-    strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2.1.3)); 
-  }
-  else
-  {
-    UCorrelator::applyAbbysFilterStrategy(&strategy); 
-  }
-
-
-//  printf("Strategy applied!\n"); 
 
   tree->Branch("summary",&sum); 
-  RawAnitaHeader *hdr; 
-  Adu5Pat *pat; 
+  RawAnitaHeader *hdr = 0;
+  Adu5Pat *pat =  0; 
   tree->Branch("header",&hdr); 
   tree->Branch("pat",&pat); 
 
@@ -46,9 +35,9 @@ void doDecimated(int run = 352, int max = 0, bool sine_subtract = false)
 
   printf("----(%d)-----\n",i); 
     d.getEntry(i); 
-//    printf("%d\n",i); 
+    printf("%d\n",i); 
     FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
-    analyzer.analyze(&ev, sum); 
+    analyzer->analyze(&ev, sum); 
     ofile.cd(); 
     header = d.header(); 
     pat = d.gps(); 

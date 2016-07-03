@@ -1,4 +1,21 @@
-AnitaEventSummary * tryEvent(int run = 352, int event = 60832108, bool sinsub = false) 
+
+#include "AnitaEventSummary.h"
+#include "FFTtools.h"
+#include "AnitaDataset.h" 
+#include "AnalysisConfig.h" 
+#include "TEllipse.h" 
+#include "TMarker.h" 
+#include "UCFilters.h" 
+#include "TStyle.h" 
+#include "PeakFinder.h" 
+#include "FilterStrategy.h" 
+#include "Correlator.h" 
+#include "TFile.h" 
+#include "TH2.h" 
+#include "Analyzer.h" 
+#include "TCanvas.h" 
+
+AnitaEventSummary * tryEvent(int run = 352, int event = 60832108, bool nofilter = true) 
 {
 
 //  AnalysisWaveform::enableDebug(true); 
@@ -8,8 +25,14 @@ AnitaEventSummary * tryEvent(int run = 352, int event = 60832108, bool sinsub = 
   gStyle->SetOptStat(0); 
 
   AnitaDataset d(run); 
-  d.getEvent(event); 
-
+  if (event > 0)
+  {
+    d.getEvent(event); 
+  }
+  else
+  {
+    d.getEntry(-event); 
+  }
 
 
   TFile out("test.root","RECREATE"); 
@@ -17,13 +40,14 @@ AnitaEventSummary * tryEvent(int run = 352, int event = 60832108, bool sinsub = 
   double fmins[]={0.23, 0.43}; 
   double fmaxs[]={0.29, 0.49}; 
   
-  if (sinsub) 
+  if (!nofilter) 
   {
     strategy.addOperation(new UCorrelator::SineSubtractFilter(0.05, 0, 4)); 
   }
   else
   {
-    UCorrelator::applyAbbysFilterStrategy(&strategy); 
+    strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2,1.3)); 
+//    UCorrelator::applyAbbysFilterStrategy(&strategy); 
   }
 
   printf("strategy applied!\n"); 
@@ -37,10 +61,9 @@ AnitaEventSummary * tryEvent(int run = 352, int event = 60832108, bool sinsub = 
   printf("processed strategy!\n"); 
 
   AnitaEventSummary * sum = new AnitaEventSummary; 
-  UCorrelator::Analyzer anal;
+  UCorrelator::AnalysisConfig cfg; 
+  UCorrelator::Analyzer anal(&cfg, true); ;
   anal.analyze(fae, sum); 
-
-
 
 
 
@@ -74,7 +97,7 @@ AnitaEventSummary * tryEvent(int run = 352, int event = 60832108, bool sinsub = 
 
 
 
-  /*
+
   TCanvas * all[2]; 
   all[0] = new TCanvas("horiz","horiz!",1800,1200); 
   all[1] = new TCanvas("vertic","vertic!",1800,1200); 
@@ -101,6 +124,7 @@ AnitaEventSummary * tryEvent(int run = 352, int event = 60832108, bool sinsub = 
   TCanvas * c1 = new TCanvas(); 
   c1->Divide(2,2); 
 
+   c1->cd(1); 
 
   UCorrelator::Correlator corr(180,0,360, 90, -60,25); 
   corr.setPadFactor(3); 
@@ -110,21 +134,30 @@ AnitaEventSummary * tryEvent(int run = 352, int event = 60832108, bool sinsub = 
 //    corr.compute(fae,AnitaPol::kVertical); 
 
    corr.compute(fae,AnitaPol::kHorizontal); 
+   printf("Computed!\n"); 
 //   corr.setGroupDelayFlag(0); 
-   c1->cd(1); 
-   corr.getHist()->DrawCopy("colz"); 
+   const TH2 * hist= corr.getHist(); 
+//   printf("%x\n",corr.getHist()); 
+//   printf("%x\n",hist); 
+//   hist->Dump(); 
+   hist->DrawCopy("colz"); 
 
    UCorrelator::peakfinder::RoughMaximum rough[3]; 
    UCorrelator::peakfinder::FineMaximum fine[3]; 
 
    TCanvas * c2 = new TCanvas(); 
+
    c2->Divide(3,2); 
+
    int npeaks = UCorrelator::peakfinder::findIsolatedMaxima((const TH2D*)corr.getHist(), 20., 3, rough,true); 
 
    TH2D * zoomed = 0; 
    UCorrelator::WaveformCombiner comb(10); 
+
+   printf("Looping over peaks\n"); 
    for (int i = 0; i < npeaks; i++) 
    {
+     printf("%d\n",i); 
      c1->cd(2+i); 
      zoomed = corr.computeZoomed(rough[i].x, rough[i].y, 150, 0.2, 150, 0.2, 0,zoomed); zoomed->SetTitle(TString::Format("Zoomed peak %d", i)); zoomed->DrawCopy("colz"); 
      UCorrelator::peakfinder::doPeakFindingQuadratic25(zoomed, &fine[i]); 
@@ -138,7 +171,7 @@ AnitaEventSummary * tryEvent(int run = 352, int event = 60832108, bool sinsub = 
      m->SetMarkerColor(3); 
      m->Draw(); 
      printf("--------------------------------------\n"); 
-     printf("%f %f\n", fine[i].y, fine[i].x); 
+     printf("%f %f %f %f %f\n", fine[i].val, fine[i].y, fine[i].x, fine[i].sigma_y, fine[i].sigma_x); 
      comb.combine(fine[i].x, -fine[i].y, fae, AnitaPol::kHorizontal); 
      c2->cd(1+i); 
      TString title; 
@@ -153,8 +186,9 @@ AnitaEventSummary * tryEvent(int run = 352, int event = 60832108, bool sinsub = 
 //  c1->SaveAs("norm.png"); 
 
 
-//  corr.getHist()->DrawCopy("colz"); 
-//  c1->SaveAs("corr.png"); 
+//TCanvas * ccorr = new TCanvas("ccorr","corr",1800,1200); 
+// corr.getHist()->DrawCopy("colz"); 
+// ccorr->SaveAs("corr.png"); 
 
 //  */
 
