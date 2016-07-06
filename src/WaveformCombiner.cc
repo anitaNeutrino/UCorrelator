@@ -76,7 +76,7 @@ void UCorrelator::WaveformCombiner::setResponse(const AbstractResponse * respons
       }
       else
       {
-        responses[pol][antenna] = response; 
+        responses[pol][i] = response; 
       }
     }
   }
