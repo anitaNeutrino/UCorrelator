@@ -6,6 +6,7 @@
 #include "RawAnitaHeader.h"
 #include "AnalysisConfig.h"
 #include "UCFilters.h"
+#include "BasicFilters.h"
 #include "Util.h"
 #include "FilterStrategy.h"
 
@@ -39,7 +40,8 @@ void doWais(int run = 352, int max = 0, bool sine_subtract = false)
     double fmins[1] = {0.2}; 
     double fmaxs[1] = {1.3}; 
     strategy.addOperation(new UCorrelator::SineSubtractFilter(0.05, 0, 4,1,fmins,fmaxs)); 
-    strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2,1.3)); 
+    strategy.addOperation(new SimplePassBandFilter(0.2,1.3)); 
+    strategy.addOperation(new ALFAFilter); 
   }
   else
   {

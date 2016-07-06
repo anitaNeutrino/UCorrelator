@@ -6,6 +6,7 @@
 #include "TTree.h"
 #include "TFile.h"
 #include "UCFilters.h"
+#include "BasicFilters.h" 
 #include "AnalysisConfig.h"
 #include "AnitaDataset.h"
 #include "RawAnitaHeader.h"
@@ -35,7 +36,8 @@ void doDecimatedNoFilter(int run = 352, int max = 0)
 
 
   FilterStrategy strategy (&ofile); 
-  strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2,1.3)); 
+  strategy.addOperation(new SimplePassBandFilter(0.2,1.3)); 
+  strategy.addOperation(new ALFAFilter); 
 
 //  printf("Strategy applied!\n"); 
 

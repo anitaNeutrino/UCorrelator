@@ -1,6 +1,7 @@
 #include "FFTtools.h" 
 #include "FilterStrategy.h"
 #include "UCFilters.h" 
+#include "BasicFilters.h" 
 #include "TGraph.h" 
 #include "AnalysisWaveform.h" 
 #include "RawAnitaHeader.h"
@@ -17,6 +18,9 @@ void UCorrelator::applyAbbysFilterStrategy(FilterStrategy * strategy)
   //passband between 200 and 1200 MHz 
   strategy->addOperation(new SimplePassBandFilter(0.2, 1.2)); 
 
+  //alfa filter
+  strategy->addOperation(new ALFAFilter); 
+
   // satellite filter if north facing 
 
   strategy->addOperation(new ConditionalFilterOperation
@@ -31,41 +35,6 @@ void UCorrelator::applyAbbysFilterStrategy(FilterStrategy * strategy)
 }
 
 
-void UCorrelator::SimplePassBandFilter::processOne(AnalysisWaveform* g) 
-{
-  int nfreq = g->Nfreq(); 
-  double df = g->deltaF(); 
-
-//  printf("SimplePassBandFilter::processOne!\n"); 
-  FFTWComplex * vals = g->updateFreq(); 
-  for (int i = 0; i < nfreq; i++) 
-  {
-    if (i * df < low ||  i * df > high) 
-    {
-      vals[i].re = 0; 
-      vals[i].im = 0; 
-    }
-  }
-}
-
-
-void UCorrelator::SimpleNotchFilter::processOne(AnalysisWaveform* g) 
-{
-//  printf("SimpleNotchFilter::processOne!\n"); 
-  int nfreq = g->Nfreq(); 
-  double df = g->deltaF(); 
-
-  FFTWComplex * vals = g->updateFreq(); 
-  for (int i = 0; i < nfreq; i++) 
-  {
-    if (i * df >= min &&  i * df <= max) 
-    {
-      vals[i].re = 0; 
-      vals[i].im = 0; 
-    }
-  }
-
-}
 
 void UCorrelator::ComplicatedNotchFilter::processOne(AnalysisWaveform* g) 
 {

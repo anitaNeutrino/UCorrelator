@@ -22,50 +22,6 @@ namespace UCorrelator
   bool antennaIsNorthFacing(FilteredAnitaEvent *ev, int ant, AnitaPol::AnitaPol_t); 
 
 
-  /** SimplePassBandFilter just cuts everything outside the pass band in
-   * fourier space like a brick wall, with all the ensuing acausal goodness.
-   *
-    */ 
-  class SimplePassBandFilter : public UniformFilterOperation { public: const
-    char * tag() const { return "SimplePassBandFilter"; } const char *
-      description() const { return descStr.Data(); }
-
-      /** Filter everything outside the pass band. Numbers are given in GHz. */ 
-      SimplePassBandFilter(double low = 0.2, double high = 1.2)  
-        : low(low), high(high)
-      {
-        descStr = TString::Format("SimplePassbandFilter(%g,%g)", low,high); 
-      }
-    protected: 
-      virtual void processOne(AnalysisWaveform *) ;
-
-    private: 
-      TString descStr; 
-      double low; 
-      double high;
-
-  }; 
-
-  /** Brick wall notch filter.  */ 
-  class SimpleNotchFilter : public UniformFilterOperation
-  {
-    public: 
-
-      /** Ghz*/ 
-      SimpleNotchFilter(double minfreq, double maxfreq) 
-        : min(minfreq), max(maxfreq) 
-      {
-        desc.Form("SimpleNotchFilter(%g,%g)",min,max); 
-      }
-
-      const char * tag() const { return "SimpleNotchFilter"; } 
-      const char * description() const { return desc.Data(); } 
-      virtual void processOne(AnalysisWaveform *); 
-    private: 
-      TString desc;  
-      double min,max; 
-  }; 
-
 
   /** 
    * This filter is a brick-wall notch filter that then fills in the notch using thermal noise. 
