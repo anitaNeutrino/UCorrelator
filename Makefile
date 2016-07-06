@@ -30,7 +30,7 @@ all: $(LIBNAME) $(BINARIES)
 ### probably need some magic for Mac OS X here? 
 $(LIBNAME): $(OBJS) | $(LIBDIR)
 	@echo Building shared library $@
-	@$(CXX) $(SOFLAGS) $(LDFLAGS) $(OBJS) $(LIBS) $(GLIBS) -shared -o $@
+	@$(CXX) $(SOFLAGS) $(LDFLAGS) $(OBJS) -shared -o $@ $(LIBS) $(GLIBS) 
 	cp $(BUILDDIR)/*.pcm $(LIBDIR) 
 
 
@@ -58,7 +58,7 @@ $(BUILDDIR)/%.o: build/%.cc $(INCLUDES) Makefile | $(BUILDDIR)
 
 $(BINDIR)/%: drivers/%.cc $(INCLUDES) Makefile $(LIBNAME) | $(BINDIR)
 	@echo Compiling $<
-	@$(CXX)  -I./include -I./ $(CXXFLAGS) -o $@ -L./$(LIBDIR) $(LDFLAGS) -l$(LINKLIBNAME)  $< 
+	@$(CXX)  -I./include -I./ $(CXXFLAGS) -o $@ -L./$(LIBDIR) $(LDFLAGS) -l$(LINKLIBNAME)  $<  $(LIBS) 
 
 $(BUILDDIR)/UCorrelatorDict.cc: $(INCLUDES) LinkDef.h | $(BUILDDIR)
 	@echo Running rootcint
