@@ -3,7 +3,7 @@
   gSystem->Load("libAnitaEvent.so"); 
   gSystem->Load("libAnitaCorrelator.so"); 
   gSystem->Load("libAnitaAnalysis.so"); 
-  gSystem->Load("lib/libUCorrelator.so"); 
+  gSystem->Load("build/libUCorrelator.so"); 
 
 
 //  const Int_t NRGBs = 5;

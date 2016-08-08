@@ -1,87 +1,51 @@
-include Makefile.arch
-include Makefile.config
-
-CXX=g++
-CXXFLAGS+= -g
-
-CXXFLAGS     += $(ROOTCFLAGS) $(SYSINCLUDES) -I$(ANITA_UTIL_INSTALL_DIR)/include -I$(EIGEN3_INCLUDE_DIR)/eigen3 
-LDFLAGS      += $(ROOTLDFLAGS)  -L$(ANITA_UTIL_INSTALL_DIR)/lib 
-LIBS          = $(ROOTLIBS) -g -Wl,-z,defs -lMathMore -lRootFftwWrapper -lAnitaEvent -lAnitaAnalysis -lAnitaCorrelator  
-GLIBS         = $(ROOTGLIBS) $(SYSLIBS)
-LIBDIR=lib
-BUILDDIR=build
-INCLUDEDIR=include
-BINDIR=bin
-
-.PHONY: clean install all doc
+### Makefile that delegates building either to cmake or legacy Makefile 
+### Cmake is default, if you don't want to use CMake, you can do make legacy   
+### ( or move this file and rename Makefile.legacy to Makefile,
+###  or modify the all/clean/install targets below  ) 
+###
 
 
-OBJS := $(addprefix $(BUILDDIR)/, AntennaPositions.o Baseline.o SystemResponse.o UCFilters.o Flags.o Correlator.o WaveformCombiner.o PeakFinder.o Analyzer.o AnalysisConfig.o Util.o UCorrelatorDict.o)
+.PHONY: all configure clean cleaner install legacy legacy-clean legacy-install cmake-build cmake-clean cmake-install
 
-BINARIES := $(addprefix $(BINDIR)/, doWais doDecimated doDecimatedNoFilter doLDB);
-
-INCLUDES := $(addprefix $(INCLUDEDIR)/, $(shell ls $(INCLUDEDIR)))
-
-LINKLIBNAME=UCorrelator
-LIBNAME = $(LIBDIR)/lib$(LINKLIBNAME).${DllSuf}
-
-all: $(LIBNAME) $(BINARIES) 
-
-### probably need some magic for Mac OS X here? 
-$(LIBNAME): $(OBJS) | $(LIBDIR)
-	@echo Building shared library $@
-	@$(CXX) $(SOFLAGS) $(LDFLAGS) $(OBJS) -shared -o $@ $(LIBS) $(GLIBS) 
-	cp $(BUILDDIR)/*.pcm $(LIBDIR) 
+all: cmake-build 
+clean: cmake-clean
+install: cmake-install 
 
 
-$(OBJS): | $(BUILDDIR)
+### TODO add doxygen into CMakelists 
+doc: legacy-doc
 
-$(BUILDDIR): 
-	mkdir -p $(BUILDDIR)
+cmake-build: build/Makefile 
+	@+make -C  ./build
 
-$(BINDIR): 
-	mkdir -p $(BINDIR)
+legacy-doc: 
+	@make -f Makefile.legacy doc 
 
-$(LIBDIR): 
-	mkdir -p $(LIBDIR)
+legacy: 
+	@+make -f Makefile.legacy 
 
+legacy-clean: 
+	@make -f Makefile.legacy clean 
 
-$(BUILDDIR)/%.o: src/%.cc $(INCLUDES) Makefile | $(BUILDDIR) $(VECTORIZE)
-	@echo Compiling  $< 
-	@$(CXX)  -I./include $(CXXFLAGS) -o $@ -c $< 
+legacy-install: 
+	@make -f Makefile.legacy install 
 
-$(BUILDDIR)/%.o: build/%.cc $(INCLUDES) Makefile | $(BUILDDIR) 
-	@echo Compiling  $< 
-	$(CXX)  -I../include -I./ $(CXXFLAGS) -o $@ -c $< 
+configure: build/Makefile 
+	@ccmake . build 
 
+cmake-install: 
+	@make -C ./build install 
 
-
-$(BINDIR)/%: drivers/%.cc $(INCLUDES) Makefile $(LIBNAME) | $(BINDIR)
-	@echo Compiling $<
-	@$(CXX)  -I./include -I./ $(CXXFLAGS) -o $@ -L./$(LIBDIR) $(LDFLAGS) -l$(LINKLIBNAME)  $<  $(LIBS) 
-
-$(BUILDDIR)/UCorrelatorDict.cc: $(INCLUDES) LinkDef.h | $(BUILDDIR)
-	@echo Running rootcint
-	rootcint  -f $@ -c -p -I$(ANITA_UTIL_INSTALL_DIR)/include $(INCLUDES) LinkDef.h
-
-
-install: $(LIBNAME)
-ifndef ANITA_UTIL_INSTALL_DIR 
-	$(error Please define ANITA_UTIL_INSTALL_DIR)
-endif 
-	install -d $(ANITA_UTIL_INSTALL_DIR)/lib 
-	install -d $(ANITA_UTIL_INSTALL_DIR)/include 
-	install -c -m 755 $(LIBNAME) $(ANITA_UTIL_INSTALL_DIR)/lib
-	install -c -m 644 $(INCLUDES) $(ANITA_UTIL_INSTALL_DIR)/include 
-	if [ -e $(BUILDDIR)/UCorrelatorDict_rdict.pcm ];  then install -c -m 755 $(BUILDDIR)/UCorrelatorDict_rdict.pcm $(ANITA_UTIL_INSTALL_DIR)/lib; fi; 
-
-
-
-doc: $(INCLUDES) 
-	doxygen doc/Doxyfile 
-	make -C doc/latex
-
-clean: 
-	rm -rf build
+build/Makefile: 
+	@echo "Setting up cmake build. Use "make legacy" to use legacy Makefile" 
+	@mkdir -p build 
 	rm -rf bin
-	rm -rf lib
+	@cd build && cmake ../ 
+	ln -sf build/bin bin 
+
+distclean: 
+	@echo "Removing cmake directory" 
+	@rm -rf build 
+
+cmake-clean: build/Makefile 
+	@make -C ./build clean 
