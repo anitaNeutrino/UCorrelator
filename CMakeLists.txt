@@ -139,7 +139,7 @@ if (FORCE_OLD_GPP_ABI)
   add_definitions( -D_GLIBCXX_USE_CXX11_ABI=0 ) 
 endif() 
  
-option( ENABLE_OPEMNP "Enable OpenMP support") 
+option( ENABLE_OPENMP "Enable OpenMP support") 
 if(ENABLE_OPENMP) 
 
   FIND_PACKAGE( OpenMP REQUIRED)
@@ -158,8 +158,8 @@ endif()
 
 
 
-option( FFTTOOLS_COMPILED_WITH_OPENMP "If FFTtools was compiled with OpenMP support, enable this option to allow multiple FFT's to be computed in parallal") 
-if (FFTTOOLS_COMPILED_WITH_OPENMP)
+option( FFTTOOLS_ENABLE_OPENMP "If FFTtools was compiled with OpenMP support, enable this option to allow multiple FFT's to be computed in parallal") 
+if (FFTTOOLS_ENABLE_OPENMP)
   add_definitions(-DFFTTOOLS_COMPILED_WITH_OPENMP)
 endif()
 
