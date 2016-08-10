@@ -98,7 +98,7 @@ namespace UCorrelator
       virtual double getPhase(double f, double angle = 0) const; 
        
       
-      virtual ~Response(); 
+      virtual ~Response() { ; } 
 
     protected: 
       int Nfreq; 
