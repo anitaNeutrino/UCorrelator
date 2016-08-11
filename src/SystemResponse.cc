@@ -237,12 +237,12 @@ void UCorrelator::AbstractResponse::deconvolveInPlace(AnalysisWaveform * wf,  co
   wf->padEven(2); 
   int nf = wf->Nfreq();
   double df = wf->deltaF(); 
-  FFTWComplex R[nf]; 
+  std::vector<FFTWComplex> R(nf); 
   for (int i = 0; i < nf; i++) 
   {
     R[i] =getResponse(i * df, off_axis_angle);
   }
     
-  method->deconvolve(nf,df, wf->updateFreq(), R); 
+  method->deconvolve(nf,df, wf->updateFreq(), &R[0]); 
 
 }
