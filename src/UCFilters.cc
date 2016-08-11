@@ -9,8 +9,9 @@
 #include "Adu5Pat.h"
 #include "DigitalFilter.h"
 #include "AntennaPositions.h" 
+#ifdef UCORRELATOR_OPENMP
 #include "omp.h"
-
+#endif
 
 void UCorrelator::applyAbbysFilterStrategy(FilterStrategy * strategy) 
 {
