@@ -10,7 +10,7 @@
 #include "Util.h"
 #include "FilterStrategy.h"
 
-void doWais(int run = 352, int max = 0, bool sine_subtract = false)
+void doWais(int run = 352, int max = 0, bool sine_subtract = true)
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 

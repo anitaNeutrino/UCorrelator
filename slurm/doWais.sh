@@ -12,7 +12,7 @@ source /home/cozzyd/anita/env.sh
 
 RUN=$1
 N=${2-0}
-SINSUB=${3-true}
+SINSUB=${3-1}
 
 srun bin/doWais $RUN $N $SINSUB
 

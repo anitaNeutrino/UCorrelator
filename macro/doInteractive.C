@@ -1,12 +1,20 @@
 #include "Analyzer.h" 
+#include "AnitaDataset.h"
+#include "BasicFilters.h"
+#include "AnalysisConfig.h"
+#include "UCFilters.h"
 #include "FFTtools.h"
 
-UCorrelator::Analyzer *doInteractive(int run = 342, int event = 0, bool decimated = true )
+UCorrelator::Analyzer *doInteractive(int run = 352, int event = 60832108, bool decimated = false )
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
   FilterStrategy strategy; 
-  strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2,1.3)); 
+ // strategy.addOperation(new SimplePassBandFilter(0.2,1.3)); 
+ 
+  strategy.addOperation(new UCorrelator::SineSubtractFilter);
+  strategy.addOperation(new ALFAFilter); 
+
   AnitaDataset d(run,decimated);
 
   event > 0 ? d.getEvent(event) : d.getEntry(-event); 
