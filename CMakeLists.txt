@@ -56,7 +56,7 @@ message("ROOT_INCLUDE_DIRS is set to ${ROOT_INCLUDE_DIRS}")
 
 
 include_directories(${PROJECT_SOURCE_DIR} ${ROOT_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/include ${FFTW_INCLUDES} ${ZLIB_INCLUDES} ${UTIL_INC_DIR})
-add_definitions(${ROOT_CXX_FLAGS} -DUSE_FFT_TOOLS)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${ROOT_CXX_FLAGS}")
 
 file(GLOB HEADER_FILES
     "include/*.h"    
@@ -134,34 +134,19 @@ if(CMAKE_COMPILER_IS_GNUCXX)
  endif()
 endif() 
 
-option ( FORCE_OLD_GPP_ABI " Force old g++ ABI; this might be necessary if using new g++ with ROOT compiled with older g++ or other similar situations" OFF ) 
+option (FORCE_OLD_GPP_ABI "Force old g++ ABI. this might be necessary if using new g++ with ROOT compiled with older g++ or other similar situations" OFF ) 
 if (FORCE_OLD_GPP_ABI) 
-  add_definitions( -D_GLIBCXX_USE_CXX11_ABI=0 ) 
+  add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0) 
 endif() 
  
-option( ENABLE_OPENMP "Enable OpenMP support") 
-if(ENABLE_OPENMP) 
 
-  FIND_PACKAGE( OpenMP REQUIRED)
-  if(OPENMP_FOUND)
-    message("OPENMP FOUND")
-    add_definitions (-DUSE_OMP) 
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-  else() 
-    message(FATAL_ERROR "you tried to use openmp but Cmake couldn't find compiler support") 
-  endif() 
-endif() 
-
-
-
-option( FFTTOOLS_ENABLE_OPENMP "If FFTtools was compiled with OpenMP support, enable this option to allow multiple FFT's to be computed in parallal") 
+option( FFTTOOLS_ENABLE_OPENMP "If FFTtools was compiled with OpenMP support, enable this option to allow multiple FFT's to be computed in parallel") 
 if (FFTTOOLS_ENABLE_OPENMP)
   add_definitions(-DFFTTOOLS_COMPILED_WITH_OPENMP)
 endif()
 
 
+option ( ENABLE_OPENMP " Enable OpenMP for multicore usage") 
 if(ENABLE_OPENMP) 
   FIND_PACKAGE( OpenMP REQUIRED)
   if(OPENMP_FOUND)
