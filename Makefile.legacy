@@ -16,7 +16,7 @@ BINDIR=bin
 .PHONY: clean install all doc
 
 
-OBJS := $(addprefix $(BUILDDIR)/, AntennaPositions.o Baseline.o SystemResponse.o UCFilters.o Flags.o Correlator.o WaveformCombiner.o PeakFinder.o Analyzer.o AnalysisConfig.o Util.o UCorrelatorDict.o)
+OBJS := $(addprefix $(BUILDDIR)/, AntennaPositions.o Baseline.o SystemResponse.o UCFilters.o Flags.o Correlator.o WaveformCombiner.o PeakFinder.o Analyzer.o AnalysisConfig.o Util.o ShapeParameters.o UCorrelatorDict.o)
 
 BINARIES := $(addprefix $(BINDIR)/, doWais doDecimated doDecimatedNoFilter doLDB);
 
