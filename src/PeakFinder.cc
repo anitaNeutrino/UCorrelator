@@ -2,6 +2,7 @@
 #include "TH2.h" 
 #include "TF2.h" 
 #include "FFTtools.h"
+#include "Minuit2/Minuit2Minimizer.h" 
 #include "Math/Interpolator.h"
 #include "TGraph.h"
 
@@ -11,6 +12,8 @@
 #include "TMatrix.h"
 #include "TDecompSVD.h"
 #endif 
+
+extern int gErrorIgnoreLevel; // who ordered that? 
 
 static bool isLocalMaxima(const TH2D * hist, int bin) 
 {
@@ -611,11 +614,215 @@ void UCorrelator::peakfinder::doPeakFindingGaussian(const TH2D * zoomed, FineMax
 }
 
 
-void UCorrelator::peakfinder::doInterpolationPeakFindingBicubic(const TH2D * zoomed, FineMaximum * peak)
+const double  M1_elems[] = { 1,0,0,0,
+                             0,0,1,0,
+                             -3,3,-2,-1,
+                             2,-2,1,1}; 
+
+const static TMatrixD M1(4,4, M1_elems); 
+const double  M2_elems[] = { 1,0,-3,2,
+                             0,0,3,-2,
+                             0,1,-2,1,
+                             0,0,-1,1}; 
+
+const static TMatrixD M2(4,4, M2_elems); 
+
+
+
+
+class NegativeBicubicFunction : public ROOT::Math::IGradientFunctionMultiDim
 {
-  fprintf(stderr,"doInterpolationPeakFindingBicubic not implemented yet!\n"); 
+
+  public:
+    NegativeBicubicFunction( const double m[4][4], double xwidth, double ywidth) ; 
+    NegativeBicubicFunction( const NegativeBicubicFunction & other) { memcpy(a,other.a, sizeof(a)); } 
+
+    virtual double DoEval(const double * x) const; 
+    virtual double DoDerivative(const double * x, unsigned int coord) const; 
+    unsigned NDim() const { return 2; } 
+
+    virtual IBaseFunctionMultiDim * Clone() const { return new NegativeBicubicFunction(*this); }   
+
+  private: 
+    double a[4][4]; 
+}; 
 
 
+NegativeBicubicFunction::NegativeBicubicFunction (const double m[4][4], double xw, double yw) 
+{
+  TMatrixD Mf(4,4); 
+  //construct the bicubic polynomial over this bin 
+      
+  // This uses notation similar to wikipedia  
+
+
+  double f_00 = m[1][1]; 
+  double f_11 = m[2][2]; 
+  double f_01 = m[1][2]; 
+  double f_10 = m[2][1]; 
+
+
+  double fx_00 = (m[2][1] - m[0][1]) / (2*xw); 
+  double fx_10 = (m[3][1] - m[1][1]) / (2*xw); 
+  double fx_01 = (m[2][2] - m[0][2]) / (2*xw); 
+  double fx_11 = (m[3][2] - m[1][2]) / (2*xw); 
+      
+  double fy_00 = (m[1][2] - m[1][0]) / (2*yw); 
+  double fy_10 = (m[2][2] - m[2][0]) / (2*yw); 
+  double fy_01 = (m[1][3] - m[1][1]) / (2*yw); 
+  double fy_11 = (m[2][3] - m[2][1]) / (2*yw); 
+ 
+  double fxy_00 = ( (m[2][2] - m[0][2]) -(m[2][0] - m[0][0])) / (4*xw*yw) ; 
+  double fxy_01 = ( (m[2][3] - m[0][3]) -(m[2][1] - m[0][1])) / (4*xw*yw) ; 
+  double fxy_10 = ( (m[3][2] - m[1][2]) -(m[3][0] - m[1][0])) / (4*xw*yw) ; 
+  double fxy_11 = ( (m[3][3] - m[1][3]) -(m[3][1] - m[1][1])) / (4*xw*yw) ; 
+
+  Mf(0,0) = f_00; Mf(0,1) = f_01; Mf(0,2) = fy_00; Mf(0,3) = fy_01; 
+  Mf(1,0) = f_10; Mf(1,1) = f_11; Mf(1,2) = fy_10; Mf(1,3) = fy_11; 
+  Mf(2,0) = fx_00; Mf(2,1) = fx_01; Mf(2,2) = fxy_00; Mf(2,3) = fxy_01; 
+  Mf(3,0) = fx_10; Mf(3,1) = fx_11; Mf(3,2) = fxy_10; Mf(3,3) = fxy_11; 
+
+ //now there is probably some smart way to reuse some of the information between bins, but I dont' feel like figuring it out right now 
+
+  TMatrix Ma = M1 * Mf * M2; 
+  for (int i = 0; i < 4; i++) 
+  {
+    for (int j = 0; j < 4; j++)
+    {
+      a[i][j] = Ma(i,j); 
+    }
+  }
+
+}
+
+double NegativeBicubicFunction::DoEval(const double * p) const 
+{
+  double x[4]; 
+  double y[4]; 
+  x[0] = 1; 
+  y[0] = 1; 
+  for (int i = 1; i < 3; i++) 
+  {
+    x[i] = p[0] * x[i-1]; 
+    y[i] = p[1] * y[i-1]; 
+  }
+
+
+  double val = 0; 
+
+  for (int i = 0; i < 3; i++) 
+  {
+    for (int j = 0; j < 3; j++) 
+    {
+      val += a[i][j] * x[i] * y[j]; 
+    }
+  }
+
+  return -val; 
+}
+
+double NegativeBicubicFunction::DoDerivative(const double * p, unsigned int coord) const
+{
+  double x[4]; 
+  double y[4]; 
+  x[0] = 1; 
+  y[0] = 1; 
+  for (int i = 1; i < 3; i++) 
+  {
+    x[i] = p[0] * x[i-1]; 
+    y[i] = p[1] * y[i-1]; 
+  }
+
+
+  double val = 0; 
+
+
+  if (coord == 0) 
+  {
+    for (int i = 1; i < 3; i++) 
+    {
+      for (int j = 0; j < 3; j++) 
+      {
+        val += a[i][j] * x[i-1] * y[j] * i; 
+      }
+    }
+  }
+  else 
+  {
+    for (int i = 0; i < 3; i++) 
+    {
+      for (int j = 1; j < 3; j++) 
+      {
+        val += a[i][j] * x[i] * y[j-1]*j; 
+      }
+    }
+  }
+
+  return -val; 
+}
+
+
+static __thread ROOT::Minuit2::Minuit2Minimizer *min = 0; 
+
+void UCorrelator::peakfinder::doInterpolationPeakFindingBicubic(const TH2D * zoomed, FineMaximum * peak, double min_to_consider )
+{
+
+  TMatrixD Mf(4,4); 
+  double xwidth = zoomed->GetXaxis()->GetBinWidth(1); 
+  double ywidth = zoomed->GetYaxis()->GetBinWidth(1); 
+  double m[4][4]; 
+
+  if (!min) min = new ROOT::Minuit2::Minuit2Minimizer; 
+
+  double stupid_max = zoomed->GetMaximum(); 
+
+  peak->val = 0; 
+
+  for (int i = 2; i < zoomed->GetNbinsX(); i++) 
+  {
+    for (int j = 2; j < zoomed->GetNbinsY(); j++) 
+    {
+      //stupid heuristic quick fail 
+      bool ok = false; 
+      for (int ii = -1; ii < 3; ii++)
+      {
+        for (int jj = -1; jj < 3; jj++)
+        {
+          double val = zoomed->GetBinContent(i+ii, j+ii); 
+          if (val > stupid_max * min_to_consider) ok = true; 
+
+          m[ii+1][jj+1] = zoomed->GetBinContent(i+ii,j+jj); 
+        }
+      }
+
+      if (!ok) continue; 
+
+      NegativeBicubicFunction f(m,xwidth,ywidth); 
+
+      min->Clear(); 
+      min->SetFunction(f); 
+      min->SetLimitedVariable(0,"x", 0.5, 0.1, 0,1); 
+      min->SetLimitedVariable(1,"y", 0.5, 0.1, 0,1); 
+
+
+      //shut it up 
+      int old_level = gErrorIgnoreLevel; 
+      min->Minimize(); 
+      gErrorIgnoreLevel = old_level; 
+
+
+      if (-min->MinValue() > peak->val)
+      {
+        peak->val = -min->MinValue(); 
+        peak->x = min->X()[0]; 
+        peak->y = min->X()[1]; 
+        peak->sigma_x = sqrt(min->CovMatrix(0,0)); 
+        peak->sigma_y = sqrt(min->CovMatrix(1,1)); 
+        peak->covar = min->CovMatrix(0,1); 
+        peak->chisq = 0; 
+      }
+    }
+  }
 }
 
 

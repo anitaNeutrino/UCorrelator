@@ -51,7 +51,7 @@ namespace UCorrelator
     void doInterpolationPeakFindingAbby(const TH2D* hist, FineMaximum * peak);
 
     /** NOT IMPLEMENTED YET. Eventually, this will find the maximum of the bicubic interpolant in the maximum bin */ 
-    void doInterpolationPeakFindingBicubic(const TH2D* hist, FineMaximum * peak);
+    void doInterpolationPeakFindingBicubic(const TH2D* hist, FineMaximum * peak, double min_to_consider = 0.75);
 
     /** These all do a quadratic fit in the neighbhorhood of the maximum bin. The number denotes the size of the square.
      *  This should be very fast; the matrix decomposition necessary to perform the minimization is statically computed.
