@@ -22,7 +22,7 @@ UCorrelator::Analyzer *doInteractive(int run = 352, int event = 60832108, bool d
   FilteredAnitaEvent ev(d.useful(),&strategy, d.gps(), d.header()); 
 
   UCorrelator::AnalysisConfig cfg; 
-  cfg.nmaxima = 3; 
+  cfg.nmaxima = 5; 
   UCorrelator::Analyzer * analyzer = new UCorrelator::Analyzer(&cfg,true); 
 
   AnitaEventSummary sum; 

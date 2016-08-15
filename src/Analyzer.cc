@@ -11,8 +11,10 @@
 #include "DigitalFilter.h" 
 #include "FFTtools.h" 
 #include "UsefulAdu5Pat.h"
+#include "RawAnitaHeader.h" 
 #include "PeakFinder.h"
-#include "Flags.h"
+#include "UCFlags.h"
+#include "ShapeParameters.h" 
 
 
 static UCorrelator::AnalysisConfig defaultConfig; 
@@ -80,6 +82,8 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
 
 void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEventSummary * summary) 
 {
+  
+  /* Initialize the summary */ 
   summary = new (summary) AnitaEventSummary(event->getHeader(), (UsefulAdu5Pat*) event->getGPS()); 
 
   //check for saturation
@@ -90,9 +94,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
                                       cfg->saturation_threshold); 
 
   //we need a UsefulAdu5Pat for this event
-  
   UsefulAdu5Pat * pat =  (UsefulAdu5Pat*) event->getGPS();  //unconstifying it .. hopefully that won't cause problems
-
   
 
   // loop over wanted polarizations 
@@ -100,7 +102,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
   {
 
     UShort_t triggeredPhi = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->l3TrigPatternH : event->getHeader()->l3TrigPattern; 
-    UShort_t triggeredPhiL1 =AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->l1TrigMaskH : event->getHeader()->l1TrigMask;  
+    UShort_t triggeredPhiL1 = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->l1TrigMaskH : event->getHeader()->l1TrigMask;  
     UShort_t maskedPhi = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->phiTrigMaskH : event->getHeader()->phiTrigMask; 
 
     TVector2 triggerAngle; 
@@ -148,17 +150,22 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     {
       // zoom in on the values 
 //      printf("rough phi:%f, rough theta: %f\n", maxima[i].x, -maxima[i].y); 
-    
 
       rough_peaks[pol].push_back(std::pair<double,double>(maxima[i].x, maxima[i].y)); 
 
       fillPointingInfo(maxima[i].x, maxima[i].y, &summary->peak[pol][i], pat, avgHwAngle, triggeredPhi, maskedPhi); 
-      if (interactive)
+
+
+      //fill in separation 
+      summary->peak[pol][i].phi_separation = 1000; 
+      for (int j = 1; j < i; j++)
       {
-        zoomed_correlation_maps[pol][i]->~TH2D(); 
-        zoomed_correlation_maps[pol][i] = new (zoomed_correlation_maps[pol][i]) TH2D(zoomed); 
+        summary->peak[pol][i].phi_separation = TMath::Min(summary->peak[pol][i].phi_separation, fabs(FFTtools::wrap(summary->peak[pol][i].phi - summary->peak[pol][j].phi, 360, 0))); 
       }
+
 //      printf("phi:%f, theta:%f\n", summary->peak[pol][i].phi, summary->peak[pol][i].theta); 
+
+
       //now make the combined waveforms 
       wfcomb.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
       wfcomb_xpol.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
@@ -168,6 +175,10 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
       if (interactive) //copy everythig
       {
+
+        zoomed_correlation_maps[pol][i]->~TH2D(); 
+        zoomed_correlation_maps[pol][i] = new (zoomed_correlation_maps[pol][i]) TH2D(zoomed); 
+
         coherent[pol][i]->~AnalysisWaveform(); 
         coherent[pol][i] = new (coherent[pol][i]) AnalysisWaveform(*wfcomb.getCoherent()); 
 
@@ -308,6 +319,13 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   info->xPolPeakHilbert = FFTtools::getPeakVal((TGraph*) xpol_wf->hilbertEnvelope()); 
   info->numAntennasInCoherent = cfg->combine_nantennas; 
 
+  info->riseTime_10_90 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.9*info->peakVal); 
+  info->riseTime_10_50 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.5*info->peakVal); 
+  info->fallTime_90_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.9*info->peakVal); 
+  info->fallTime_50_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.5*info->peakVal); 
+  info->width_50_50 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.5*info->peakVal); 
+  info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal); 
+
 
   if (pol == AnitaPol::kHorizontal)
   {
@@ -318,7 +336,6 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
                                xpol_wf->hilbertTransform()->even()->GetY(), 
                                &(info->I), &(info->Q), &(info->U), &(info->V)); 
   }
-
   else
   {
     FFTtools::stokesParameters(even->GetN(), 

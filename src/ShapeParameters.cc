@@ -11,11 +11,11 @@ double UCorrelator::shape::getRiseTime(const TGraph * g, double min, double max)
   for (int i = 0; i < g->GetN(); i++) 
   {
 
-    if (g->GetY()[i] >= val_min && ifirst < 0)
+    if (g->GetY()[i] >= min && ifirst < 0)
     {
       ifirst = i; 
     }
-    if (g->GetY()[i] >= val_max && ilast < 0)
+    if (g->GetY()[i] >= max && ilast < 0)
     {
       ilast = i; 
       break; 
@@ -33,14 +33,14 @@ double UCorrelator::shape::getFallTime(const TGraph * g, double min, double max)
   int ilast = -1; 
 
 
-  for (int i = g->GetN()-1; i >= 0; i-- 
+  for (int i = g->GetN()-1; i >= 0; i--)
   {
 
-    if (g->GetY()[i] >= val_min && ilast < 0)
+    if (g->GetY()[i] >= min && ilast < 0)
     {
       ilast = i; 
     }
-    if (g->GetY()[i] >= val_max && ifirst < 0)
+    if (g->GetY()[i] >= max && ifirst < 0)
     {
       ifirst = i; 
       break; 
@@ -67,7 +67,7 @@ double UCorrelator::shape::getWidth(const TGraph * g, double val)
       break; 
     }
   }
-  for (int i = g->GetN()-1; i >= 0; i-- 
+  for (int i = g->GetN()-1; i >= 0; i--)
   {
     if (g->GetY()[i] >=val) 
     {
