@@ -88,7 +88,7 @@ int main (int nargs, char ** args)
    
   int run = nargs < 2 ? 352 : atoi(args[1]); 
   int max = nargs < 3 ? 0 : atoi(args[2]); 
-  int sinsub = nargs < 4 ? 0 : atoi(args[3]); 
+  int sinsub = nargs < 4 ? 1 : atoi(args[3]); 
 
   doDecimated(run,max,sinsub); 
 
