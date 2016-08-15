@@ -458,6 +458,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
     pads[ipol]->cd(1)->Divide(1,2); 
 
     pads[ipol]->cd(1)->cd(1); 
+    correlation_maps[ipol]->SetTitle(ipol == 0 ? "HPol map" : "VPol map" ); 
     correlation_maps[ipol]->Draw("colz"); 
 
     for (int i = 0; i < last.nPeaks[ipol]; i++) 
@@ -487,6 +488,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
     for (int i = 0; i < last.nPeaks[ipol]; i++) 
     {
       pads[ipol]->cd(2)->cd(i+1); 
+      zoomed_correlation_maps[ipol][i]->SetTitle(TString::Format("Zoomed peak %d", i+1)); 
       zoomed_correlation_maps[ipol][i]->Draw("colz"); 
       const AnitaEventSummary::PointingHypothesis & p = last.peak[ipol][i]; 
       TMarker * m = new TMarker(p.phi, -p.theta,2); 
@@ -505,6 +507,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 
       pads[ipol]->cd(2)->cd(i+last.nPeaks[ipol]+1); 
 
+      ((TGraph*) coherent[ipol][i]->even())->SetTitle(TString::Format ( "Coherent%s (+ xpol) %d", interactive_deconvolved ? " / Deconvolved (+ xpol)" : "", i+1)); 
       coherent[ipol][i]->drawEven("al"); 
 
       if (interactive_deconvolved)
@@ -523,6 +526,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       pads[ipol]->cd(2)->cd(i+2*last.nPeaks[ipol]+1); 
 
 
+      (((TGraph*)coherent_power[ipol][i]))->SetTitle(TString::Format ( "Power Coherent%s (+ xpol) %d", interactive_deconvolved ? " / Deconvolved (+ xpol)" : "", i+1)); 
       ((TGraph*)coherent_power[ipol][i])->Draw("al"); 
 
       if (interactive_deconvolved)
