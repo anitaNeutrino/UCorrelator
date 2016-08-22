@@ -172,6 +172,7 @@ endmacro()
 
 
 do_driver(doWais) 
+do_driver(doSimulated) 
 do_driver(doDecimated) 
 do_driver(doDecimatedNoFilter)
 do_driver(doLDB) 
