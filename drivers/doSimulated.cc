@@ -34,6 +34,22 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
   TTree * tree = new TTree("simulation"," Simulated events"); 
   AnitaEventSummary * sum = new AnitaEventSummary; 
 
+  
+  AnitaGeomTool *geomTool = AnitaGeomTool::Instance();
+  
+  double sourceLat, sourceLon, sourceAlt, sourceMag;
+  double thetaWave,phiWave;
+  int inu;
+  TString icemcfilename;
+  icemcfilename.Form("$ANITA_ROOT_DATA/run%d/icefinal%d.root", run, run);
+  TFile infile(icemcfilename, "READ"); 
+  TTree *icetree = (TTree*)infile.Get("passing_events");
+  icetree->SetBranchAddress("inu",          &inu              );
+  icetree->SetBranchAddress("sourceLon",    &sourceLon        );
+  icetree->SetBranchAddress("sourceLat",    &sourceLat        );
+  icetree->SetBranchAddress("sourceMag",    &sourceMag        );
+  
+ 
   FilterStrategy strategy (&ofile); 
   if (sine_subtract) 
   {
@@ -48,16 +64,22 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
 
   RawAnitaHeader *hdr = 0 ; 
   Adu5Pat *patptr = 0; 
-  tree->Branch("summary",&sum); 
-  tree->Branch("header",&hdr); 
-  tree->Branch("pat",&patptr); 
+  tree->Branch("summary",          &sum      ); 
+  tree->Branch("header",           &hdr      ); 
+  tree->Branch("pat",              &patptr   );
+  tree->Branch("thetaExpectedDeg", &thetaWave);
+  tree->Branch("phiExpectedDeg",   &phiWave  );
 
   int ndone = 0; 
+
+
   for (int i =0 ; i < d.N(); i++) {
 
     d.getEntry(i); 
     printf("----(%d)-----\n",i);
-
+    
+    UsefulAdu5Pat pat(d.gps()); 
+    
     printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone); 
     FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
 
@@ -65,6 +87,19 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
     ofile.cd(); 
     hdr = d.header(); 
     patptr = d.gps(); 
+
+    icetree->GetEntry(i);
+    sourceAlt=sourceMag-geomTool->getDistanceToCentreOfEarth(sourceLat);
+
+    pat.getThetaAndPhiWave(sourceLon, sourceLat, sourceAlt, thetaWave,phiWave);
+    thetaWave*=TMath::RadToDeg();
+    phiWave*=TMath::RadToDeg();
+    
+    std::cout << " Theta wave IceTree: " << thetaWave << std::endl;
+    std::cout << " Phi wave IceTree: " << phiWave << std::endl;
+
+
+
     tree->Fill(); 
     ndone++; 
 
