@@ -134,12 +134,6 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     //compute RMS of correlation map 
     maprms = corr.getHist()->GetRMS(3); 
 
-     if (interactive) 
-     {
-       correlation_maps[pol]->~TH2D(); 
-       correlation_maps[pol] = new (correlation_maps[pol]) TH2D(* (TH2D*) corr.getHist()); 
-     }
-
     // Find the isolated peaks in the image 
     peakfinder::RoughMaximum maxima[cfg->nmaxima]; 
     int npeaks = UCorrelator::peakfinder::findIsolatedMaxima((const TH2D*) corr.getHist(), cfg->peak_isolation_requirement, cfg->nmaxima, maxima, cfg->use_bin_center); 
@@ -239,6 +233,11 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
           interactive_xpol_deconvolved = false; 
         }
       }
+    }
+    if (interactive) 
+    {
+       correlation_maps[pol]->~TH2D(); 
+       correlation_maps[pol] = new (correlation_maps[pol]) TH2D(* (TH2D*) corr.getHist()); 
     }
   }
 
@@ -444,6 +443,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 {
   TPad * pads[2] = {ch,cv}; 
 
+  clearInteractiveMemory(); 
 
   gStyle->SetOptStat(0); 
   for (int ipol = cfg->start_pol; ipol <= cfg->end_pol; ipol++)
