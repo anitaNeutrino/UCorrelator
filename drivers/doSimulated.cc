@@ -89,6 +89,11 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
     patptr = d.gps(); 
 
     icetree->GetEntry(i);
+
+    if (hdr->eventNumber!=inu){
+      std::cout << " We have a problem with eventNumbers : " << hdr->eventNumber << " " << inu << std::endl;
+      break;
+    }
     sourceAlt=sourceMag-geomTool->getDistanceToCentreOfEarth(sourceLat);
 
     pat.getThetaAndPhiWave(sourceLon, sourceLat, sourceAlt, thetaWave,phiWave);
