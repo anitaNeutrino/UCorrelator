@@ -420,10 +420,11 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
 
        int bin = phibin + thetabin * nphibins ; 
        bins_to_fill[nused] = bin; 
-       vals_to_fill[thetabin-1] = val; 
+       vals_to_fill[nused] = val; 
+       nused++;
      }
 
-     for (int bi = 0; bi < ny; bi++)
+     for (int bi = 0; bi < nused; bi++)
      {
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi]; 
