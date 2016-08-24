@@ -453,19 +453,35 @@ void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol
   norm->Reset(); 
   reset(); 
 
-#ifdef UCORRELATOR_OPENMP
-  #pragma omp parallel for
-#endif
+
+  //precompute antenna combinations 
+
+
+  std::vector<std::pair<int,int> > pairs; 
+  pairs.reserve(NANTENNAS *NANTENNAS/2); 
+
   for (int ant1 = 0; ant1 < NANTENNAS; ant1++)
   {
     if (disallowed_antennas & (1 << ant1)) continue; 
 
-    for (int ant2 = ant1+1; ant2 < NANTENNAS; ant2++) 
+    for (int ant2 = ant1+1; ant2 < NANTENNAS; ant2++)
     {
       if (disallowed_antennas & (1 << ant2)) continue; 
 
-      doAntennas(ant1, ant2, hist, norm, trigcache); 
+      pairs.push_back(std::pair<int,int>(ant1,ant2));;
     }
+
+  }
+
+  unsigned nit = pairs.size(); 
+
+#ifdef UCORRELATOR_OPENMP
+  //TODO: make sure this is doing what we need... 
+  #pragma omp parallel for 
+#endif
+  for (int it = 0; it < nit; it++)
+  {
+     doAntennas(pairs[it].first, pairs[it].second, hist, norm, trigcache); 
   }
 
 
