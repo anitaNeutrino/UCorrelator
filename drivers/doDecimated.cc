@@ -26,7 +26,7 @@ void doDecimated(int run = 352, int max = 0, bool sine_subtract = false)
   UCorrelator::AnalysisConfig cfg; 
   
 #ifdef UCORRELATOR_OPENMP
-  printf("Num threads: %d\n", omp_get_num_threads()); 
+  printf("Max threads: %d\n", omp_get_max_threads()); 
 #endif
 
   UCorrelator::Analyzer analyzer(&cfg); 
