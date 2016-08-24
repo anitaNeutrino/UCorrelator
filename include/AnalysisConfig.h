@@ -61,6 +61,9 @@ namespace UCorrelator
       bool use_bin_center; ///True to use bin center in interferometric map
 
       double bw_ndb; /// the bandwidth of a waveform is defined as the portion of the power spectrum  near the highest value above -ndb 
+      double spectral_fit_start; 
+      double spectral_fit_stop; 
+
       double noise_estimate_t0;  ///this is used to pick parts of the waveform for calcuating the N in SNR
       double noise_estimate_t1;  ///this is used to pick parts of the waveform for calcuating the N in SNR
 

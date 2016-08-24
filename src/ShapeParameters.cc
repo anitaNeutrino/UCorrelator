@@ -53,7 +53,7 @@ double UCorrelator::shape::getFallTime(const TGraph * g, double min, double max)
 }
 
 
-double UCorrelator::shape::getWidth(const TGraph * g, double val)
+double UCorrelator::shape::getWidth(const TGraph * g, double val, int * start, int * end)
 {
 
   int ifirst = -1; 
@@ -78,5 +78,12 @@ double UCorrelator::shape::getWidth(const TGraph * g, double val)
 
   if (ifirst < 0 || ilast< 0) return -1; 
 
-  return g->GetX()[ilast] - g->GetX()[ifirst]; 
+  double t0 = g->GetX()[ifirst]; 
+  double t1 = g->GetX()[ilast]; 
+
+  if (start) *start = ifirst; 
+  if (end) *end = ilast; 
+
+  return t1-t0; 
+
 }
