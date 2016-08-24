@@ -393,7 +393,13 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
      double dphi1 = center_point ? 0 : FFTtools::wrap(phi - centerPhi1,360,0); 
      double dphi2 = center_point ? 0 : FFTtools::wrap(phi - centerPhi2,360,0); 
 
-     for (int thetabin = 1; thetabin <= hist->GetNbinsY(); thetabin++)
+     int ny = hist->GetNbinsY(); 
+
+     int nused = 0; 
+     int bins_to_fill[ny]; 
+     double vals_to_fill[ny]; 
+
+     for (int thetabin = 1; thetabin <= ny; thetabin++)
      {
        double theta = cache ? cache->theta[thetabin-1] : -( use_bin_center ? hist->GetYaxis()->GetBinCenter(thetabin) : hist->GetYaxis()->GetBinLowEdge(thetabin) ); //doh
 //       double theta4width = center_point ? center_point[1] : theta; 
@@ -413,7 +419,14 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
        double val = correlation->evalEven(timeExpected); 
 
        int bin = phibin + thetabin * nphibins ; 
+       bins_to_fill[nused] = bin; 
+       vals_to_fill[thetabin-1] = val; 
+     }
 
+     for (int bi = 0; bi < ny; bi++)
+     {
+       double val = vals_to_fill[bi]; 
+       int bin = bins_to_fill[bi]; 
 
 #ifdef UCORRELATOR_OPENMP
 #pragma omp atomic
