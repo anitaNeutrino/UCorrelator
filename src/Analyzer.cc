@@ -47,7 +47,7 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
   wfcomb.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_xpol.setGroupDelayFlag(cfg->enable_group_delay); 
   instance_counter++; 
-  power_filter = 0; //TODO initialize this 
+  power_filter = new FFTtools::GaussianFilter(2,3) ; //TODO make this configurable
 
   if (interactive) 
   {
@@ -416,6 +416,9 @@ UCorrelator::Analyzer::~Analyzer()
 
     clearInteractiveMemory(); 
   }
+
+  if (power_filter)
+    delete power_filter; 
 }
 
 void UCorrelator::Analyzer::clearInteractiveMemory() const
