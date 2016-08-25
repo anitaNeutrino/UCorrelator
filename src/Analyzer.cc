@@ -321,22 +321,22 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   info->xPolPeakHilbert = FFTtools::getPeakVal((TGraph*) xpol_wf->hilbertEnvelope()); 
   info->numAntennasInCoherent = cfg->combine_nantennas; 
 
-  info->totalPower = even->getSumV2(); 
-  info->totalPowerXpol = xpol_even->getSumV2(); 
+  // info->totalPower = even->getSumV2(); 
+  // info->totalPowerXpol = xpol_even->getSumV2(); 
 
-  info->riseTime_10_90 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.9*info->peakVal); 
-  info->riseTime_10_50 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.5*info->peakVal); 
-  info->fallTime_90_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.9*info->peakVal); 
-  info->fallTime_50_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.5*info->peakVal); 
+  // info->riseTime_10_90 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.9*info->peakVal); 
+  // info->riseTime_10_50 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.5*info->peakVal); 
+  // info->fallTime_90_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.9*info->peakVal); 
+  // info->fallTime_50_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.5*info->peakVal); 
 
-  int ifirst, ilast; 
-  info->width_50_50 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.5*info->peakVal, &ifirst, &ilast); 
-  info->power_50_50 = even->getSumV2(ifirst, ilast); 
+  // int ifirst, ilast; 
+  // info->width_50_50 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.5*info->peakVal, &ifirst, &ilast); 
+  // info->power_50_50 = even->getSumV2(ifirst, ilast); 
 
 
 
-  info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, &ifirst, &ilast); 
-  info->power_10_10 = even->getSumV2(ifirst, ilast); 
+  // info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, &ifirst, &ilast); 
+  // info->power_10_10 = even->getSumV2(ifirst, ilast); 
 
 
 
