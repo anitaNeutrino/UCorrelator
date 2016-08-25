@@ -15,7 +15,7 @@
 #include <omp.h>
 #endif 
 
-void doDecimated(int run = 352, int max = 0, bool sine_subtract = false)
+void doDecimated(int run = 352, int max = 0, bool sine_subtract = true)
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
