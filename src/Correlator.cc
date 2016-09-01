@@ -393,7 +393,13 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
      double dphi1 = center_point ? 0 : FFTtools::wrap(phi - centerPhi1,360,0); 
      double dphi2 = center_point ? 0 : FFTtools::wrap(phi - centerPhi2,360,0); 
 
-     for (int thetabin = 1; thetabin <= hist->GetNbinsY(); thetabin++)
+     int ny = hist->GetNbinsY(); 
+
+     int nused = 0; 
+     int bins_to_fill[ny]; 
+     double vals_to_fill[ny]; 
+
+     for (int thetabin = 1; thetabin <= ny; thetabin++)
      {
        double theta = cache ? cache->theta[thetabin-1] : -( use_bin_center ? hist->GetYaxis()->GetBinCenter(thetabin) : hist->GetYaxis()->GetBinLowEdge(thetabin) ); //doh
 //       double theta4width = center_point ? center_point[1] : theta; 
@@ -413,7 +419,15 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
        double val = correlation->evalEven(timeExpected); 
 
        int bin = phibin + thetabin * nphibins ; 
+       bins_to_fill[nused] = bin; 
+       vals_to_fill[nused] = val; 
+       nused++;
+     }
 
+     for (int bi = 0; bi < nused; bi++)
+     {
+       double val = vals_to_fill[bi]; 
+       int bin = bins_to_fill[bi]; 
 
 #ifdef UCORRELATOR_OPENMP
 #pragma omp atomic
@@ -439,19 +453,35 @@ void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol
   norm->Reset(); 
   reset(); 
 
-#ifdef UCORRELATOR_OPENMP
-  #pragma omp parallel for
-#endif
+
+  //precompute antenna combinations 
+
+
+  std::vector<std::pair<int,int> > pairs; 
+  pairs.reserve(NANTENNAS *NANTENNAS/2); 
+
   for (int ant1 = 0; ant1 < NANTENNAS; ant1++)
   {
     if (disallowed_antennas & (1 << ant1)) continue; 
 
-    for (int ant2 = ant1+1; ant2 < NANTENNAS; ant2++) 
+    for (int ant2 = ant1+1; ant2 < NANTENNAS; ant2++)
     {
       if (disallowed_antennas & (1 << ant2)) continue; 
 
-      doAntennas(ant1, ant2, hist, norm, trigcache); 
+      pairs.push_back(std::pair<int,int>(ant1,ant2));;
     }
+
+  }
+
+  unsigned nit = pairs.size(); 
+
+#ifdef UCORRELATOR_OPENMP
+  //TODO: make sure this is doing what we need... 
+  #pragma omp parallel for 
+#endif
+  for (int it = 0; it < nit; it++)
+  {
+     doAntennas(pairs[it].first, pairs[it].second, hist, norm, trigcache); 
   }
 
 

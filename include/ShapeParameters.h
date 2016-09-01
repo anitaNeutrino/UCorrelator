@@ -10,7 +10,7 @@ namespace UCorrelator
 
     double getRiseTime(const TGraph * g, double val_min, double val_max); 
     double getFallTime(const TGraph * g, double val_min, double val_max); 
-    double getWidth(const TGraph * g, double val_thresh); 
+    double getWidth(const TGraph * g, double val_thresh, int * istart = 0, int * iend = 0); 
   }
 
 }

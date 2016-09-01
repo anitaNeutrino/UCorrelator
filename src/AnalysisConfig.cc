@@ -57,13 +57,21 @@ AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(combine_npad); 
   LOOKUP(saturation_threshold); 
   LOOKUP(peak_isolation_requirement); 
+  LOOKUP(nmaxima); 
+  LOOKUP(use_bin_center); 
+  LOOKUP(bw_ndb);
+  LOOKUP(spectral_fit_start);
+  LOOKUP(spectral_fit_stop); 
+  LOOKUP(noise_estimate_t0); 
+  LOOKUP(noise_estimate_t1); 
 
 
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", &start_pol, 2,pols); 
   lookupEnum(&cfg, "end_pol", &end_pol, 2,pols); 
 
-  const char * peakfinders = {"Abby", }; 
+  const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25" }; 
+  lookupEnum(&cfg, "fine_peak_finding_option", fine_peak_finding_option, 6, peakfinders); 
 
 }
 #endif
@@ -114,6 +122,8 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
   use_bin_center = false; 
 
   bw_ndb = 6; 
+  spectral_fit_start = 0.18; 
+  spectral_fit_stop =8; 
 
   noise_estimate_t0 = 70; 
   noise_estimate_t1 = 100; 
