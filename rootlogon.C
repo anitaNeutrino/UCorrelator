@@ -1,8 +1,8 @@
 {
-  gSystem->Load("libRootFftwWrapper.so");
-  gSystem->Load("libAnitaEvent.so"); 
-  gSystem->Load("libAnitaCorrelator.so"); 
-  gSystem->Load("libAnitaAnalysis.so"); 
+  gSystem->Load("${ANITA_UTIL_INSTALL_DIR}/lib/libRootFftwWrapper.so");
+  gSystem->Load("${ANITA_UTIL_INSTALL_DIR}/lib/libAnitaEvent.so"); 
+  gSystem->Load("${ANITA_UTIL_INSTALL_DIR}/lib/libAnitaCorrelator.so"); 
+  gSystem->Load("${ANITA_UTIL_INSTALL_DIR}/lib/libAnitaAnalysis.so"); 
   gSystem->Load("build/libUCorrelator.so"); 
 
 
@@ -14,4 +14,5 @@
 //  Double_t blue[NRGBs]  = { 0.51, 1.00, 0.12, 0.00, 0.00 };
 //  TColor::CreateGradientColorTable(NRGBs, stops, red, green, blue, NCont);
   gStyle->SetNumberContours(255);
+  gStyle->SetPalette(55);
 }
