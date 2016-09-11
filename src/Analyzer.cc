@@ -15,6 +15,7 @@
 #include "PeakFinder.h"
 #include "UCFlags.h"
 #include "ShapeParameters.h" 
+#include "SpectrumParameters.h" 
 
 
 static UCorrelator::AnalysisConfig defaultConfig; 
@@ -27,6 +28,8 @@ static int instance_counter = 0;
 #ifndef RAD2DEG
 #define RAD2DEG (180 / TMath::Pi()) 
 #endif
+
+
 
 
 
@@ -44,7 +47,7 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
   wfcomb.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_xpol.setGroupDelayFlag(cfg->enable_group_delay); 
   instance_counter++; 
-  power_filter = 0; //TODO initialize this 
+  power_filter = new FFTtools::GaussianFilter(2,3) ; //TODO make this configurable
 
   if (interactive) 
   {
@@ -318,12 +321,24 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   info->xPolPeakHilbert = FFTtools::getPeakVal((TGraph*) xpol_wf->hilbertEnvelope()); 
   info->numAntennasInCoherent = cfg->combine_nantennas; 
 
+  info->totalPower = even->getSumV2(); 
+  info->totalPowerXpol = xpol_even->getSumV2(); 
+
   info->riseTime_10_90 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.9*info->peakVal); 
   info->riseTime_10_50 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.5*info->peakVal); 
   info->fallTime_90_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.9*info->peakVal); 
   info->fallTime_50_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.5*info->peakVal); 
-  info->width_50_50 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.5*info->peakVal); 
-  info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal); 
+
+  int ifirst, ilast; 
+  info->width_50_50 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.5*info->peakVal, &ifirst, &ilast); 
+  info->power_50_50 = even->getSumV2(ifirst, ilast); 
+
+
+
+  info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, &ifirst, &ilast); 
+  info->power_10_10 = even->getSumV2(ifirst, ilast); 
+
+
 
 
   if (pol == AnitaPol::kHorizontal)
@@ -366,32 +381,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
     power_filter->filterGraph(&power); 
   }
 
-  int peak_index; 
-  double peak_val =  FFTtools::getPeakVal(&power,&peak_index); 
-  int imax = power.GetN(); 
-  int imin = 0; 
-
-
-  for (int i = peak_index+1; i <power.GetN(); i++)
-  {
-    if (power.GetY()[i] < peak_val - cfg->bw_ndb)
-    {
-      imax = i; 
-      break; 
-    }
-  }
-
-  for (int i = peak_index+1; i >= 0; i--)
-  {
-    if (power.GetY()[i] < peak_val - cfg->bw_ndb)
-    {
-      imin = i; 
-      break; 
-    }
-  }
-
-  info->bandwidth = (imax - imin) * (power.GetX()[1]-power.GetX()[0]); 
-
+  spectrum::fillSpectrumParameters(&power, info, cfg); 
 
 }
 
@@ -402,6 +392,7 @@ UCorrelator::Analyzer::~Analyzer()
   {
     delete correlation_maps[0];
     delete correlation_maps[1]; 
+
 
     for (int pol = 0; pol < 2; pol++)
     {
@@ -425,6 +416,9 @@ UCorrelator::Analyzer::~Analyzer()
 
     clearInteractiveMemory(); 
   }
+
+  if (power_filter)
+    delete power_filter; 
 }
 
 void UCorrelator::Analyzer::clearInteractiveMemory() const
@@ -437,6 +431,16 @@ void UCorrelator::Analyzer::clearInteractiveMemory() const
 
   delete_list.clear(); 
 }
+
+
+static void setOnClickHandler(TPad * pad) 
+{
+
+}
+
+
+
+
 
 void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 {
@@ -477,7 +481,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       pt->AddText(TString::Format("peak val: %f", last.peak[ipol][i].value)); 
       pt->AddText(TString::Format("peak_{hilbert} (coherent): %0.3f", last.coherent[ipol][i].peakHilbert)); 
       pt->AddText(TString::Format("Stokes: (coherent): (%0.3g, %0.3g, %0.3g, %0.3g)", last.coherent[ipol][i].I, last.coherent[ipol][i].Q, last.coherent[ipol][i].U, last.coherent[ipol][i].V));
-      pt->AddText(TString::Format("BW: (coherent): %0.3f", last.coherent[ipol][i].bandwidth)); 
+//      pt->AddText(TString::Format("BW: (coherent): %0.3f", last.coherent[ipol][i].bandwidth)); 
       pt->AddText(TString::Format("position: %0.3f N, %0.3f E, %0.3f m", last.peak[ipol][i].latitude, last.peak[ipol][i].longitude, last.peak[ipol][i].altitude)); 
       pt->Draw(); 
     }
@@ -506,6 +510,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       m->Draw(); 
 
       pads[ipol]->cd(2)->cd(i+last.nPeaks[ipol]+1); 
+
 
       ((TGraph*) coherent[ipol][i]->even())->SetTitle(TString::Format ( "Coherent%s (+ xpol) %d", interactive_deconvolved ? " / Deconvolved (+ xpol)" : "", i+1)); 
       coherent[ipol][i]->drawEven("al"); 

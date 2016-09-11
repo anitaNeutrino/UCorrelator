@@ -167,11 +167,6 @@ static std::vector<TString> vpol_freq_names;
 
 const char * UCorrelator::AdaptiveFilter::outputName(unsigned i) const
 {
-  if (i >= 4 && (i -4)/2 >= hpol_freq_names.size()) 
-  {
-    hpol_freq_names.push_back(TString::Format("freq_hpol_%d",(i - 4)/2));  
-    vpol_freq_names.push_back(TString::Format("freq_vpol_%d",(i - 4)/2));  
-  }
 
   switch(i) 
   {
@@ -183,22 +178,40 @@ const char * UCorrelator::AdaptiveFilter::outputName(unsigned i) const
       return "strongest_cw_hpol"; 
     case 2+AnitaPol::kVertical: 
       return "strongest_cw_vpol"; 
-    default:
-      return  (i %2 ) ?  hpol_freq_names[(i-4)/2].Data() 
-                      :  vpol_freq_names[(i-4)/2].Data(); 
+    case 5: 
+      return "hpol_freqs"; 
+    case 6: 
+      return "vpol_freqs"; 
+    default: 
+      return 0; 
   }
 
   return 0; 
 }
 
 
-void UCorrelator::AdaptiveFilter::fillOutputs(double *vals) const
+void UCorrelator::AdaptiveFilter::fillOutput(unsigned  i, double *vals) const
 {
 
-  memcpy(vals, mean_freq, 2*sizeof(double)); 
-  memcpy(vals + 2, strongest_cw, 2*sizeof(double)); 
-  memcpy(vals + 4, freqs[0], nfreq*sizeof(double)); 
-  memcpy(vals + 4 + nfreq, freqs[1], nfreq*sizeof(double)); 
+  switch(i) 
+  {
+    case 0: 
+    case 1: 
+      *vals=mean_freq[i]; 
+      break; 
+    case 2: 
+    case 3: 
+      *vals=strongest_cw[i-2]; 
+      break; 
+    case 4: 
+      memcpy(vals, freqs[0], nfreq*sizeof(double)); 
+      break;
+    case 5: 
+      memcpy(vals, freqs[1], nfreq*sizeof(double)); 
+      break; 
+    default: 
+      return; 
+  }
 }
 
 void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event) 
@@ -414,6 +427,7 @@ UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int 
 
  output_names.push_back(TString("total_power_removed")); 
 
+ const char * polstr[2] = {"hpol","vpol"}; 
  for (int pol = 0; pol < 2; pol++)
  {
    for (int i = 0; i < NUM_SEAVEYS; i++) 
@@ -422,58 +436,91 @@ UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int 
      subs[pol][i]->setOversampleFactor(oversample_factor); 
      subs[pol][i]->setFreqLimits(nfreq_bands, fmin, fmax); 
 
+   }
 
-     output_names.push_back(TString::Format("niter_%d_%d",pol,i)); 
-     output_names.push_back(TString::Format("power_removed_%d_%d",pol,i)); 
+   output_names.push_back(TString::Format("niter_%s",polstr[pol])); 
+   output_names.push_back(TString::Format("power_removed_%s",polstr[pol])); 
 
-     for (int j = 0; j < nstored_freqs; j++)
-     {
-       output_names.push_back(TString::Format("freq%d_%d_%d",j,pol,i)); 
-       output_names.push_back(TString::Format("A%d_%d_%d",j,pol,i)); 
-       output_names.push_back(TString::Format("phase%d_%d_%d",j,pol,i)); 
-     }
+   for (int j = 0; j < nstored_freqs; j++)
+   {
+       output_names.push_back(TString::Format("freq%d_%s",j,polstr[pol])); 
+       output_names.push_back(TString::Format("A%d_%s",j,polstr[pol])); 
+       output_names.push_back(TString::Format("phase%d_%s",j,polstr[pol])); 
    }
  }
 }
 
 
-void UCorrelator::SineSubtractFilter::fillOutputs(double * vars) const 
+void UCorrelator::SineSubtractFilter::fillOutput(unsigned ui, double * vars) const 
 {
-  double total_power_initial = 0; 
-  double total_power_final = 0; 
+//  printf("fillOutput(%u)\n",ui); 
 
-  int ivar = 1; 
-  for (int pol = 0; pol < 2; pol++)
+  int i = int(ui);  //cheat; 
+  if (i == 0)
   {
-    for (int i = 0; i < NUM_SEAVEYS; i++) 
-    {
-      const FFTtools::SineSubtractResult *r =  subs[pol][i]->getResult(); 
-      double pinit = r->powers[0]; 
-      double pfinal = r->powers[r->powers.size()-1]; 
-      total_power_initial += pinit;
-      total_power_final += pfinal; 
-      vars[ivar++] = r->freqs.size();
-      vars[ivar++] = 1.-pfinal/pinit; 
+    double total_power_initial = 0; 
+    double total_power_final = 0; 
 
-      for (int j = 0; j < nstored_freqs; j++)
+    for (int pol = 0; pol < 2; pol++)
+    {
+      for (int i = 0; i < NUM_SEAVEYS; i++) 
       {
-        if (j >= int(r->freqs.size()))
-        {
-          vars[ivar++] = 0; 
-          vars[ivar++] = 0; 
-          vars[ivar++] = 0; 
-        }
-        else
-        {
-          vars[ivar++] = r->freqs[j]; 
-          vars[ivar++] = r->amps[0][j]; 
-          vars[ivar++] = r->phases[0][j];  
-        }
+        const FFTtools::SineSubtractResult *r =  subs[pol][i]->getResult(); 
+        double pinit = r->powers[0]; 
+        double pfinal = r->powers[r->powers.size()-1]; 
+        total_power_initial += pinit;
+        total_power_final += pfinal; 
       }
     }
+    *vars = 1. - total_power_final / total_power_initial; 
+    return; 
   }
 
-  vars[0] = 1. - total_power_final / total_power_initial; 
+  int nfor_each_pol = (nOutputs()-1)/2; 
+
+  int pol =  (i-1) < nfor_each_pol ? 0 : 1; 
+
+  for (int j = 0; j < NUM_SEAVEYS; j++) 
+  {
+     const FFTtools::SineSubtractResult *r =  subs[pol][j]->getResult(); 
+
+
+     if (i == 1 || i == 1 + nfor_each_pol) 
+     {
+       vars[j] = (double) r->freqs.size(); 
+     }
+     else if (i == 2 || i == 2 + nfor_each_pol) 
+     {
+       vars[j] = (double) r->powers[r->powers.size()-1] - r->powers[0]; 
+     }
+     else 
+     {
+       int ii =i -  3  -  (pol) * nfor_each_pol; 
+
+       int freqi = ii /3; 
+//       printf("%d\n", freqi); 
+
+       if (freqi >= r->freqs.size())
+       {
+         vars[j] = -1; 
+         continue; 
+       }
+
+       if (ii%3 ==0 ) 
+       {
+         vars[j] = r->freqs[freqi]; 
+       }
+       else if (ii %3 == 1) 
+       {
+         vars[j] = r->amps[0][freqi]; 
+       }
+       else
+       {
+         vars[j] = r->phases[0][freqi]; 
+       }
+     }
+  }
+
 }
 
 void UCorrelator::SineSubtractFilter::process(FilteredAnitaEvent * ev) 

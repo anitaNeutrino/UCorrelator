@@ -9,6 +9,7 @@
 #pragma link C++ namespace UCorrelator::flags;
 #pragma link C++ namespace UCorrelator::peakfinder;
 #pragma link C++ namespace UCorrelator::shape;
+#pragma link C++ namespace UCorrelator::spectrum;
 
 #pragma link C++ class UCorrelator::peakfinder::FineMaximum;
 #pragma link C++ class UCorrelator::peakfinder::RoughMaximum;

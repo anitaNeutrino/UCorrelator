@@ -21,7 +21,8 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
 
   AnitaDataset d(run); 
   UCorrelator::AnalysisConfig cfg; 
-  cfg.nmaxima = 2; 
+  cfg.nmaxima = 2;
+  cfg.enable_group_delay = false;
   
 
   UCorrelator::Analyzer analyzer(&cfg); 
@@ -39,6 +40,11 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
   
   double sourceLat, sourceLon, sourceAlt, sourceMag;
   double thetaWave,phiWave;
+  double thetaWave2,phiWave2;
+  double weight;
+  double posnu[3];
+  double rfexit[5][3];
+  double r_bn[3], r_enterice[3], r_in[3];
   int inu;
   TString icemcfilename;
   icemcfilename.Form("$ANITA_ROOT_DATA/run%d/icefinal%d.root", run, run);
@@ -47,9 +53,16 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
   icetree->SetBranchAddress("inu",          &inu              );
   icetree->SetBranchAddress("sourceLon",    &sourceLon        );
   icetree->SetBranchAddress("sourceLat",    &sourceLat        );
+  icetree->SetBranchAddress("sourceAlt",    &sourceAlt        );
   icetree->SetBranchAddress("sourceMag",    &sourceMag        );
+  icetree->SetBranchAddress("posnu",        &posnu            );
+  icetree->SetBranchAddress("rfexit",       &rfexit           );
+  icetree->SetBranchAddress("r_bn",         &r_bn             );
+  icetree->SetBranchAddress("r_enterice",   &r_enterice       );
+  icetree->SetBranchAddress("r_in",         &r_in             );
+  icetree->SetBranchAddress("weight",       &weight           );
+
   
- 
   FilterStrategy strategy (&ofile); 
   if (sine_subtract) 
   {
@@ -64,16 +77,20 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
 
   RawAnitaHeader *hdr = 0 ; 
   Adu5Pat *patptr = 0; 
-  tree->Branch("summary",          &sum      ); 
-  tree->Branch("header",           &hdr      ); 
-  tree->Branch("pat",              &patptr   );
-  tree->Branch("thetaExpectedDeg", &thetaWave);
-  tree->Branch("phiExpectedDeg",   &phiWave  );
+  tree->Branch("summary",           &sum       ); 
+  tree->Branch("header",            &hdr       ); 
+  tree->Branch("pat",               &patptr    );
+  tree->Branch("thetaExpectedDeg",  &thetaWave );
+  tree->Branch("phiExpectedDeg",    &phiWave   );
+  tree->Branch("thetaExpectedDeg2", &thetaWave2);
+  tree->Branch("phiExpectedDeg2",   &phiWave2  );
+  tree->Branch("weight",            &weight    );
 
   int ndone = 0; 
-
-
+  double tempLon, tempLat, tempAlt;
+  
   for (int i =0 ; i < d.N(); i++) {
+  // for (int i =0 ; i < 1; i++) {
 
     d.getEntry(i); 
     printf("----(%d)-----\n",i);
@@ -88,8 +105,14 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
     hdr = d.header(); 
     patptr = d.gps(); 
 
+    std::cout << " Measured phi and theta : " << sum->peak[1][0].phi << " " << sum->peak[1][0].theta << std::endl;
+
     icetree->GetEntry(i);
-    sourceAlt=sourceMag-geomTool->getDistanceToCentreOfEarth(sourceLat);
+
+    if (hdr->eventNumber!=inu){
+      std::cout << " We have a problem with eventNumbers : " << hdr->eventNumber << " " << inu << std::endl;
+      break;
+    }
 
     pat.getThetaAndPhiWave(sourceLon, sourceLat, sourceAlt, thetaWave,phiWave);
     thetaWave*=TMath::RadToDeg();
@@ -97,8 +120,13 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
     
     std::cout << " Theta wave IceTree: " << thetaWave << std::endl;
     std::cout << " Phi wave IceTree: " << phiWave << std::endl;
-
-
+    
+    geomTool->getLatLonAltFromCartesian(posnu, tempLat, tempLon, tempAlt);
+    pat.getThetaAndPhiWave(tempLon, tempLat, tempAlt, thetaWave2,phiWave2);
+    thetaWave2*=TMath::RadToDeg();
+    phiWave2*=TMath::RadToDeg();
+    std::cout << " Theta wave posnu: " << thetaWave2 << std::endl;
+    std::cout << " Phi wave posnu: " << phiWave2 << std::endl;
 
     tree->Fill(); 
     ndone++; 

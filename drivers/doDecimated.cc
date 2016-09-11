@@ -11,8 +11,11 @@
 #include "AnitaDataset.h"
 #include "RawAnitaHeader.h"
 
+#ifdef UCORRELATOR_OPENMP
+#include <omp.h>
+#endif 
 
-void doDecimated(int run = 352, int max = 0, bool sine_subtract = false)
+void doDecimated(int run = 352, int max = 0, bool sine_subtract = true)
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
@@ -22,6 +25,9 @@ void doDecimated(int run = 352, int max = 0, bool sine_subtract = false)
   AnitaDataset d(run,true); 
   UCorrelator::AnalysisConfig cfg; 
   
+#ifdef UCORRELATOR_OPENMP
+  printf("Max threads: %d\n", omp_get_max_threads()); 
+#endif
 
   UCorrelator::Analyzer analyzer(&cfg); 
 
@@ -31,6 +37,7 @@ void doDecimated(int run = 352, int max = 0, bool sine_subtract = false)
 
   TFile ofile(outname, "RECREATE"); 
   TTree * tree = new TTree("decimated","Decimated"); 
+  tree->SetAutoFlush(1000); 
   AnitaEventSummary * sum = new AnitaEventSummary; 
 
 

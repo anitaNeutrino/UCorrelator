@@ -68,9 +68,10 @@ namespace UCorrelator
       const char * tag() const { return "AdaptiveFilter"; } 
       const char * description() const { return desc_string.Data(); }
       virtual void process(FilteredAnitaEvent * event); 
-      unsigned nOutputs() const { return 4 + 2*nfreq; } 
-      void fillOutputs(double * vars) const; 
+      unsigned nOutputs() const { return 6 ; } 
+      virtual void fillOutput(unsigned i, double * vars) const; 
       const char * outputName(unsigned i) const; 
+      unsigned outputLength(unsigned i) const { return i < 4 ? 1 : nfreq; } 
       const TGraph * getHpolAvg() const { return hpol_avg; }
       const TGraph * getVpolAvg() const { return vpol_avg; }
       const TGraph * getLastPowerHpol() const { return &powers[0]; }
@@ -116,9 +117,10 @@ namespace UCorrelator
 
       const char * tag() const { return "SineSubtractFilter"; }
       const char * description() const { return desc_string.Data(); } 
-      unsigned nOutputs() const { return 1+2*NUM_SEAVEYS*(2+3*nstored_freqs); }
+      unsigned nOutputs() const { return 1+2*(2+3*nstored_freqs); }
       const char * outputName(unsigned i) const{ return output_names[i].Data(); }
-      void fillOutputs(double * vars) const; 
+      unsigned outputLength(unsigned i) const{ return i == 0 ? 1 : NUM_SEAVEYS; } 
+      void fillOutput(unsigned i, double * vars) const; 
       virtual void process(FilteredAnitaEvent * ev); 
     private:
       FFTtools::SineSubtract * subs[2][NUM_SEAVEYS]; 
