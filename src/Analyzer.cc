@@ -297,10 +297,12 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
         point->latitude = -9999; 
         point->longitude = -9999;  
         point->altitude = -9999; 
+        point->distanceToSource = -9999; 
         point->theta_adjustment_needed = -9999; 
       }
       else
       {
+        point->distanceToSource=pat->getDistanceFromSource(point->latitude, point->longitude, point->altitude); 
         point->theta_adjustment_needed *= RAD2DEG; 
       }
 }
