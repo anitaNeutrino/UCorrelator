@@ -3,6 +3,7 @@
 #include "TLinearFitter.h"
 #include "AnalysisConfig.h"
 #include <cfloat>
+#include "TMath.h"
 
 
 
@@ -64,6 +65,7 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum,
 
      double max_val = -DBL_MAX; 
      int max_i = -1; 
+     int max_j = -1; 
 
      for (unsigned j = 0; j < x.size(); j++) 
      {
@@ -72,7 +74,8 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum,
        if (val > max_val) 
        {
          max_val = val; 
-         max_i = j; 
+         max_i = x[j]/df-low; 
+         max_j = j; 
        }
      }
 
@@ -80,8 +83,8 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum,
 
      //now remove adjacents 
 
-     int start = max_i > 0 ? max_i-1 : 0; 
-     int end = max_i+1; 
+     int start = max_j > 0 ? max_j-1 : 0; 
+     int end = max_j+1; 
 
      x.erase(x.begin() + start, x.begin() + end); 
      y.erase(y.begin() + start, y.begin() + end); 
@@ -101,10 +104,11 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum,
   {
      int j = maxes[i]; 
      winfo->peakFrequency[i] = xx[j]; 
+     printf("peak freq: %f\n", xx[j]); 
      double max_val = yy[j] - (m*xx[j] + b); 
      int how_far = 1; 
      int index_bounds[2] = {j,j}; 
-     double power = max_val; 
+     double power = TMath::Power(10,max_val/10); 
 
      for (int sign = -1; sign <=1; sign+=2)
      {
@@ -116,11 +120,11 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum,
           index_bounds[(sign+1)/2] = jj;
           continue; 
         }
-        power += val; 
+        power += TMath::Power(10,val/10); 
         how_far++; 
      }
 
-     winfo->peakPower[i] = power; 
+     winfo->peakPower[i] = 10 * log10(power); 
      winfo->bandwidth[i] = xx[index_bounds[1]] - xx[index_bounds[0]]; 
    }
 

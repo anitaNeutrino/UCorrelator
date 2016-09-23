@@ -16,6 +16,8 @@
 #include "UCFlags.h"
 #include "ShapeParameters.h" 
 #include "SpectrumParameters.h" 
+#include "TF1.h" 
+#include "TGraphErrors.h"
 
 
 static UCorrelator::AnalysisConfig defaultConfig; 
@@ -315,7 +317,9 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   }
   const TGraphAligned * even = wf->even(); 
   const TGraphAligned * xpol_even= xpol_wf->even(); 
-  info->peakVal = FFTtools::getPeakVal((TGraph*) even); 
+  int peakBin;
+
+  info->peakVal = FFTtools::getPeakVal((TGraph*) even,&peakBin); 
   info->xPolPeakVal = FFTtools::getPeakVal((TGraph*) xpol_even); 
   info->peakHilbert = FFTtools::getPeakVal((TGraph*) wf->hilbertEnvelope()); 
   info->xPolPeakHilbert = FFTtools::getPeakVal((TGraph*) xpol_wf->hilbertEnvelope()); 
@@ -323,6 +327,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 
   info->totalPower = even->getSumV2(); 
   info->totalPowerXpol = xpol_even->getSumV2(); 
+  info->peakTime = even->GetX()[peakBin]; 
 
   info->riseTime_10_90 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.9*info->peakVal); 
   info->riseTime_10_50 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.5*info->peakVal); 
@@ -332,9 +337,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   int ifirst, ilast; 
   info->width_50_50 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.5*info->peakVal, &ifirst, &ilast); 
   info->power_50_50 = even->getSumV2(ifirst, ilast); 
-
-
-
+  even->getMoments(sizeof(info->peakMoments)/sizeof(double), info->peakTime, info->peakMoments); 
   info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, &ifirst, &ilast); 
   info->power_10_10 = even->getSumV2(ifirst, ilast); 
 
@@ -481,7 +484,6 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       pt->AddText(TString::Format("peak val: %f", last.peak[ipol][i].value)); 
       pt->AddText(TString::Format("peak_{hilbert} (coherent): %0.3f", last.coherent[ipol][i].peakHilbert)); 
       pt->AddText(TString::Format("Stokes: (coherent): (%0.3g, %0.3g, %0.3g, %0.3g)", last.coherent[ipol][i].I, last.coherent[ipol][i].Q, last.coherent[ipol][i].U, last.coherent[ipol][i].V));
-//      pt->AddText(TString::Format("BW: (coherent): %0.3f", last.coherent[ipol][i].bandwidth)); 
       pt->AddText(TString::Format("position: %0.3f N, %0.3f E, %0.3f m", last.peak[ipol][i].latitude, last.peak[ipol][i].longitude, last.peak[ipol][i].altitude)); 
       pt->Draw(); 
     }
@@ -515,6 +517,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       ((TGraph*) coherent[ipol][i]->even())->SetTitle(TString::Format ( "Coherent%s (+ xpol) %d", interactive_deconvolved ? " / Deconvolved (+ xpol)" : "", i+1)); 
       coherent[ipol][i]->drawEven("al"); 
 
+
       if (interactive_deconvolved)
       {
         deconvolved[ipol][i]->drawEven("lsame"); 
@@ -534,6 +537,31 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       (((TGraph*)coherent_power[ipol][i]))->SetTitle(TString::Format ( "Power Coherent%s (+ xpol) %d", interactive_deconvolved ? " / Deconvolved (+ xpol)" : "", i+1)); 
       ((TGraph*)coherent_power[ipol][i])->Draw("al"); 
 
+      TF1 * spectral_slope = new TF1(TString::Format("__slope_%d", i), "pol1",0.2,1.2); 
+      spectral_slope->SetParameter(0, last.coherent[ipol][i].spectrumIntercept) ;
+      spectral_slope->SetParameter(1, last.coherent[ipol][i].spectrumSlope) ;
+
+      spectral_slope->SetLineColor(2); 
+      spectral_slope->Draw("lsame"); 
+
+      TGraphErrors *gbw = new TGraphErrors(AnitaEventSummary::peaksPerSpectrum); 
+      gbw->SetTitle("Bandwidth Peaks"); 
+      for (int bwpeak = 0; bwpeak < AnitaEventSummary::peaksPerSpectrum; bwpeak++) 
+      {
+        double bwf = last.coherent[ipol][i].peakFrequency[bwpeak]; 
+        gbw->SetPoint(bwpeak, bwf, spectral_slope->Eval(bwf)+ last.coherent[ipol][i].peakPower[bwpeak]); 
+        gbw->SetPointError(bwpeak  , last.coherent[ipol][i].bandwidth[bwpeak]/2,0);
+      }
+      gbw->SetMarkerColor(5); 
+      gbw->Draw("lpsame"); 
+      gbw->Print(); 
+
+
+      delete_list.push_back(spectral_slope); 
+      delete_list.push_back(gbw);
+
+
+       
       if (interactive_deconvolved)
       {
         ((TGraph*)deconvolved_power[ipol][i])->Draw("lsame");; 
