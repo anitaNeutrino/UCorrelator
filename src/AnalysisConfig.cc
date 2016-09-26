@@ -122,8 +122,8 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
   use_bin_center = false; 
 
   bw_ndb = 6; 
-  spectral_fit_start = 0.18; 
-  spectral_fit_stop =1.2; 
+  spectral_fit_start = 0.22; 
+  spectral_fit_stop =0.7; 
 
   noise_estimate_t0 = 70; 
   noise_estimate_t1 = 100; 

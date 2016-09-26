@@ -45,6 +45,9 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
    interactive(interactive)  
 {
 
+  avg_spectra[0] = 0; 
+  avg_spectra[1] = 0; 
+
   corr.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_xpol.setGroupDelayFlag(cfg->enable_group_delay); 
@@ -144,6 +147,18 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
     rough_peaks[pol].clear(); 
 
+
+    //get the average spectra 
+    if (!avg_spectra[pol]) 
+    {
+      avg_spectra[pol] = new TGraph; 
+      avg_spectra[pol]->GetXaxis()->SetTitle("Frequency (GHz)"); 
+      avg_spectra[pol]->GetYaxis()->SetTitle("Power (dBish)"); 
+      avg_spectra[pol]->SetTitle(TString::Format("Average spectra for %s", pol == AnitaPol::kHorizontal ? "HPol" : "VPol")); 
+    }
+
+    event->getMedianSpectrum(avg_spectra[pol], AnitaPol::AnitaPol_t(pol),0.5); 
+
     // Loop over found peaks 
     for (int i = 0; i < npeaks; i++) 
     {
@@ -172,7 +187,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol); 
 
 
-      if (interactive) //copy everythig
+      if (interactive) //copy everything
       {
 
         zoomed_correlation_maps[pol][i]->~TH2D(); 
@@ -386,8 +401,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
     power_filter->filterGraph(&power); 
   }
 
-  spectrum::fillSpectrumParameters(&power, info, cfg); 
-
+  spectrum::fillSpectrumParameters(&power, avg_spectra[pol], info, cfg); 
 }
 
 
@@ -539,29 +553,33 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       (((TGraph*)coherent_power[ipol][i]))->SetTitle(TString::Format ( "Power Coherent%s (+ xpol) %d", interactive_deconvolved ? " / Deconvolved (+ xpol)" : "", i+1)); 
       ((TGraph*)coherent_power[ipol][i])->Draw("al"); 
 
-      TF1 * spectral_slope = new TF1(TString::Format("__slope_%d", i), "pol1",0.2,1.2); 
+
+      ((TGraph*)avg_spectra[ipol])->SetLineColor(2); 
+      ((TGraph*)avg_spectra[ipol])->Draw("lsame"); 
+
+      TF1 * spectral_slope = new TF1(TString::Format("__slope_%d", i), "pol1",0.2,0.7); 
       spectral_slope->SetParameter(0, last.coherent[ipol][i].spectrumIntercept) ;
       spectral_slope->SetParameter(1, last.coherent[ipol][i].spectrumSlope) ;
 
-      spectral_slope->SetLineColor(2); 
-      spectral_slope->Draw("lsame"); 
+//      spectral_slope->SetLineColor(2); 
+//      spectral_slope->Draw("lsame"); 
 
       TGraphErrors *gbw = new TGraphErrors(AnitaEventSummary::peaksPerSpectrum); 
       gbw->SetTitle("Bandwidth Peaks"); 
       for (int bwpeak = 0; bwpeak < AnitaEventSummary::peaksPerSpectrum; bwpeak++) 
       {
         double bwf = last.coherent[ipol][i].peakFrequency[bwpeak]; 
-        gbw->SetPoint(bwpeak, bwf, spectral_slope->Eval(bwf)+ last.coherent[ipol][i].peakPower[bwpeak]); 
+        gbw->SetPoint(bwpeak, bwf, avg_spectra[ipol]->Eval(bwf)+ spectral_slope->Eval(bwf)+ last.coherent[ipol][i].peakPower[bwpeak]); 
         gbw->SetPointError(bwpeak  , last.coherent[ipol][i].bandwidth[bwpeak]/2,0);
       }
-      gbw->SetMarkerColor(5); 
-      gbw->Draw("lpsame"); 
-      gbw->Print(); 
+      gbw->SetMarkerColor(4); 
+      gbw->SetMarkerStyle(20); 
+      gbw->Draw("psame"); 
+//      gbw->Print(); 
 
 
       delete_list.push_back(spectral_slope); 
       delete_list.push_back(gbw);
-
 
        
       if (interactive_deconvolved)
