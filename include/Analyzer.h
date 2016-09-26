@@ -112,6 +112,7 @@ namespace UCorrelator
       std::vector<TGraphAligned *> deconvolved_power_xpol[2]; 
       std::vector<std::pair<double,double> > rough_peaks[2]; 
       AnitaEventSummary last; //used in interactive mode by drawSummary
+      TGraph*  avg_spectra[2]; 
 
       const AnalysisConfig * cfg; 
       Correlator corr; 

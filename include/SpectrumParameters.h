@@ -10,7 +10,7 @@ namespace UCorrelator
   class AnalysisConfig; 
   namespace spectrum
   {
-    void fillSpectrumParameters( const TGraph * spectrum, AnitaEventSummary::WaveformInfo * winfo, const AnalysisConfig * config); 
+    void fillSpectrumParameters( const TGraph * spectrum, const TGraph * average, AnitaEventSummary::WaveformInfo * winfo, const AnalysisConfig * config); 
 
 
   }
