@@ -121,7 +121,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
   nmaxima = 2; 
   use_bin_center = false; 
 
-  bw_ndb = 6; 
+  bw_ndb = 3; 
   spectral_fit_start = 0.22; 
   spectral_fit_stop =0.7; 
 
