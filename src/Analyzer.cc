@@ -569,7 +569,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       for (int bwpeak = 0; bwpeak < AnitaEventSummary::peaksPerSpectrum; bwpeak++) 
       {
         double bwf = last.coherent[ipol][i].peakFrequency[bwpeak]; 
-        gbw->SetPoint(bwpeak, bwf, avg_spectra[ipol]->Eval(bwf)+ spectral_slope->Eval(bwf)+ last.coherent[ipol][i].peakPower[bwpeak]); 
+        gbw->SetPoint(bwpeak, bwf, avg_spectra[ipol]->Eval(bwf)+ last.coherent[ipol][i].peakPower[bwpeak]); 
         gbw->SetPointError(bwpeak  , last.coherent[ipol][i].bandwidth[bwpeak]/2,0);
       }
       gbw->SetMarkerColor(4); 
