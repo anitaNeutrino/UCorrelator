@@ -54,6 +54,7 @@ namespace UCorrelator
         FinePeakFindingQuadraticFit9, ///quadratic fit near peak, using 9 bins
         FinePeakFindingQuadraticFit16, ///quadratic fit near peak, using 16 bins
         FinePeakFindingQuadraticFit25, ///quadratic fit near peak, using 25 bins
+        FinePeakFindingHistogram, ///Uses histogram means / max / rms's/correlation. Dumb but fast and foolproof. 
       } fine_peak_finding_option; 
 
 
@@ -66,6 +67,8 @@ namespace UCorrelator
 
       double noise_estimate_t0;  ///this is used to pick parts of the waveform for calcuating the N in SNR
       double noise_estimate_t1;  ///this is used to pick parts of the waveform for calcuating the N in SNR
+
+      bool scale_by_cos_theta;  // Scale peak values by cos theta when picking max (due to different bin sizes) 
 
 
       /** Used to define when a waveform is likely from a cal pulser */

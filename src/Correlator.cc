@@ -74,7 +74,8 @@ static const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions:
 
 
 
-UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, int ntheta, double theta_min, double theta_max, bool use_center)
+UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, int ntheta, double theta_min, double theta_max, bool use_center, bool scale_by_cos_theta)
+  : scale_cos_theta(scale_by_cos_theta) 
 {
   TString histname = TString::Format("ucorr_corr_%d",count_the_correlators);
   TString normname = TString::Format("ucorr_norm_%d",count_the_correlators++);
@@ -418,6 +419,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
        //TODO: add additional interpolation methods
        double val = correlation->evalEven(timeExpected); 
 
+       if (scale_cos_theta) val *= cache ? cache->cos_theta[thetabin-1] : cos(hist->GetYaxis()->GetBinCenter(thetabin) * M_PI/180); 
+
        int bin = phibin + thetabin * nphibins ; 
        bins_to_fill[nused] = bin; 
        vals_to_fill[nused] = val; 
@@ -493,6 +496,7 @@ void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol
     if (val == 0) continue;
     int this_norm = norm->GetArray()[i]; 
     hist->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
+
   //  printf("%d %g %d\n",  i,  val, this_norm); 
     nonzero++; 
   }

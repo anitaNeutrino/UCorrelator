@@ -70,8 +70,8 @@ AnalysisConfig::loadFromFile(const char * config_file)
   lookupEnum(&cfg, "start_pol", &start_pol, 2,pols); 
   lookupEnum(&cfg, "end_pol", &end_pol, 2,pols); 
 
-  const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25" }; 
-  lookupEnum(&cfg, "fine_peak_finding_option", fine_peak_finding_option, 6, peakfinders); 
+  const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25", "Histogram" }; 
+  lookupEnum(&cfg, "fine_peak_finding_option", fine_peak_finding_option, sizeof(peakfinders)/sizeof(char *), peakfinders); 
 
 }
 #endif
@@ -120,8 +120,9 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
   fine_peak_finding_option = FinePeakFindingQuadraticFit25; 
   nmaxima = 2; 
   use_bin_center = false; 
+  scale_by_cos_theta = false; 
 
-  bw_ndb = 3; 
+  bw_ndb = 6; 
   spectral_fit_start = 0.22; 
   spectral_fit_stop =0.7; 
 
