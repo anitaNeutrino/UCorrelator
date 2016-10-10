@@ -18,12 +18,24 @@ void UCorrelator::NaiveDeconvolution::deconvolve(size_t N, double df, FFTWComple
 void UCorrelator::BandLimitedDeconvolution::deconvolve(size_t N, double df, FFTWComplex * Y, const FFTWComplex * response) const 
 {
 
-  int min_i = TMath::Max(0,int(min_freq / df)); 
-  int max_i = TMath::Min(N-1, size_t(max_freq / df)); 
-  for (int i = min_i; i < max_i; i++) 
+  size_t min_i =(size_t) TMath::Max(0,int(min_freq / df)); 
+  size_t max_i =(size_t) TMath::Min((int) N-1, int(max_freq / df)); 
+  FFTWComplex zero(0,0); 
+
+  for (size_t i = 0; i < min_i; i++) 
+  {
+    Y[i] = zero; 
+  }
+
+  for (size_t i = min_i; i < max_i; i++) 
   {
     Y[i]/=response[i]; 
   }
+  for (size_t i = max_i; i < N; i++) 
+  {
+    Y[i] = zero; 
+  }
+
 }
 
 
@@ -53,6 +65,17 @@ UCorrelator::Response::Response(int Nfreq, double df)
 
 }
 
+UCorrelator::Response::Response(const TGraph * timedomain)
+  : Nfreq( timedomain->GetN()/2+1)
+{
+  df = 1./(timedomain->GetN() * (timedomain->GetX()[1] - timedomain->GetX()[0])); 
+  AnalysisWaveform aw(timedomain->GetN(), timedomain->GetY(), timedomain->GetX()[1] - timedomain->GetX()[0], timedomain->GetX()[0]); 
+  aw.padEven(1); 
+  addResponseAtAngle(0,aw.freq()); 
+}
+
+
+
 UCorrelator::Response::Response(int Nfreq, double df, const FFTWComplex * response)  
   : Nfreq(Nfreq),df(df)
 {
@@ -76,33 +99,15 @@ FFTWComplex * UCorrelator::AbstractResponse::getResponseArray(int N, double  df,
 }
 
 
-/*
-static FFTWComplex interpolateBetween(const FFTWComplex *a, const FFTWComplex * b, double frac) 
-{
-
-  double mag = a->getAbs() *(1- frac) + frac * b->getAbs();
-
-  double phaseA = a->getPhase(); 
-  double phaseB = b->getPhase(); 
-
-  double dphase = phaseB-phaseA; 
-  if (dphase > TMath::Pi()) dphase -= 2*TMath::Pi(); 
-  if (dphase < -TMath::Pi()) dphase += 2*TMath::Pi(); 
-
-  double phase = phaseA + dphase * frac; 
-
-  return FFTWComplex(mag*cos(phase), mag*sin(phase)); 
-}
- unneeded right now */
-
 
 void UCorrelator::Response::recompute()  const
 {
 
   int nangles = responses.size(); 
-  phases.SetBins( Nfreq, 0, df * Nfreq,nangles, -90, 90); 
-  mags.SetBins( Nfreq, 0, df * Nfreq, nangles, -90, 90); 
+  real.SetBins( Nfreq, 0, df * Nfreq,nangles, -90, 90); 
+  imag.SetBins( Nfreq, 0, df * Nfreq, nangles, -90, 90); 
   
+
  
   if (nangles > 1) 
   {
@@ -125,21 +130,25 @@ void UCorrelator::Response::recompute()  const
       bin_boundaries[i] = (center_angles[i-1] + center_angles[i])/2; 
     }
 
-    phases.GetYaxis()->Set(nangles, bin_boundaries); 
-    mags.GetYaxis()->Set(nangles, bin_boundaries); 
+    imag.GetYaxis()->Set(nangles, bin_boundaries); 
+    real.GetYaxis()->Set(nangles, bin_boundaries); 
   }
 
   int j = 1; 
 
   for (std::map<double, FFTWComplex *>::const_iterator it = responses.begin(); it!=responses.end(); it++)
   {
-    for (int i = 0; i <= Nfreq; i++) 
+    for (int i = 0; i <  Nfreq; i++) 
     {
-      phases.SetBinContent(i+1,j, it->second[i].getPhase() ); 
-      mags.SetBinContent(i+1,j, it->second[i].getAbs() ); 
+      imag.SetBinContent(i+1,j, it->second[i].im); 
+      real.SetBinContent(i+1,j, it->second[i].re); 
     }
     j++; 
   }
+
+//  imag.Print(); 
+
+  dirty = false; 
 }
 
 FFTWComplex UCorrelator::CompositeResponse::getResponse(double f, double angle )  const
@@ -153,35 +162,21 @@ FFTWComplex UCorrelator::CompositeResponse::getResponse(double f, double angle )
 
 
 
-double UCorrelator::Response::getPhase(double f, double angle ) const
-{
-  if (dirty)
-  {
-    recompute(); 
-  }
-
-  return phases.Interpolate(f,angle); 
-}
-
-
-double UCorrelator::Response::getMagnitude(double f, double angle ) const
-{
-  if (dirty)
-  {
-    recompute(); 
-  }
-
-  return mags.Interpolate(f,angle);  
-}
-
 
 
 FFTWComplex UCorrelator::Response::getResponse(double f, double angle ) const
 {
+  if (dirty)
+  {
+    recompute(); 
+  }
 
-  double mag = getMagnitude(f,angle); 
-  double phase = getPhase(f,angle); 
-  return FFTWComplex(mag * cos(phase) , mag * sin(phase)); 
+//  printf("%f %f %f %f %f %f\n", f, angle, real.GetXaxis()->GetXmin(), real.GetXaxis()->GetXmax(), real.GetYaxis()->GetXmin(), real.GetYaxis()->GetXmax()); 
+  double re = real.Interpolate(f,angle); 
+  double im = imag.Interpolate(f,angle); 
+//  printf("%f %f %f\n", f, re, im); 
+  
+  return FFTWComplex(re,im); 
 }
 
 double UCorrelator::AbstractResponse::getMagnitude(double f, double angle) const 
@@ -199,11 +194,18 @@ double UCorrelator::AbstractResponse::getPhase(double f, double angle) const
 
 
 
+AnalysisWaveform* UCorrelator::AbstractResponse::impulseResponse(double dt, int N )  const
+{
+  AnalysisWaveform * out = new AnalysisWaveform(N, dt); 
+  out->updateEven()->GetY()[N/2] = 1; 
+  convolveInPlace(out,0); 
+  return out; 
+}
 
 void UCorrelator::AbstractResponse::convolveInPlace(AnalysisWaveform * wf, double angle)  const
 {
   int old_size = wf->Neven(); 
-  wf->padEven(2); 
+//  wf->padEven(2); 
   int nf = wf->Nfreq(); 
   double df = wf->deltaF(); 
   FFTWComplex * fft = wf->updateFreq(); 
@@ -234,7 +236,8 @@ AnalysisWaveform * UCorrelator::AbstractResponse::deconvolve(const AnalysisWavef
 
 void UCorrelator::AbstractResponse::deconvolveInPlace(AnalysisWaveform * wf,  const DeconvolutionMethod * method, double off_axis_angle) const
 {
-  wf->padEven(2); 
+  int old_size = wf->Neven(); 
+//  wf->padEven(2); 
   int nf = wf->Nfreq();
   double df = wf->deltaF(); 
   std::vector<FFTWComplex> R(nf); 
@@ -244,5 +247,7 @@ void UCorrelator::AbstractResponse::deconvolveInPlace(AnalysisWaveform * wf,  co
   }
     
   method->deconvolve(nf,df, wf->updateFreq(), &R[0]); 
+
+  wf->updateEven()->Set(old_size); 
 
 }

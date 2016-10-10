@@ -1,33 +1,36 @@
 #ifndef UCORRELATOR_WAVEFORM_COMBINER_H
 #define UCORRELATOR_WAVEFORM_COMBINER_H
 
+/** This combines multiple waveforms. It uses supersampling and interpolation, but could in principle use a Fourier phase shift 
+ *
+ *  Cosmin Deaconu <cozzyd@kicp.uchicago.edu> 
+ **/
 
 #include "AnalysisWaveform.h"
 #include "AnitaConventions.h"
-class FilteredAnitaEvent; 
+#include <vector> 
 #include <stdint.h>
 
 
+class FilteredAnitaEvent; 
+
 namespace UCorrelator
 {
-  class AbstractResponse; 
+  class ResponseManager; 
 
-  /** This combines multiple waveforms. It uses supersampling and interpolation, but could in principle use a Fourier phase shift */
   class WaveformCombiner
   {
 
     public: 
 
-      WaveformCombiner(int nantennas = 10, int npad = 3, bool useUnfiltered = true, bool deconvolve = false, const char * responseDir = ""); 
+      WaveformCombiner(int nantennas = 10, int npad = 3, bool useUnfiltered = true, bool deconvolve = false, const ResponseManager * response = 0); 
 
       /** Sets the responses used when deconvolving. 
        * If a response is 0, nothing is done. 
        * Responses may be set globally, globally for polarizations or per antenna 
        */ 
-      void setResponse(const AbstractResponse * response = 0, AnitaPol::AnitaPol_t pol = AnitaPol::kNotAPol, int antenna = -1); 
 
-      /** not implemented yet */
-      void loadResponsesFromDir(const char * dir); 
+      void setResponseManager(const ResponseManager * rm)  { responses = rm;} 
 
       virtual ~WaveformCombiner(); 
 
@@ -44,6 +47,7 @@ namespace UCorrelator
       void setUseUnfiltered(bool raw_opt) {use_raw = raw_opt;}
       void setGroupDelayFlag(bool opt) { enable_group_delay = opt; } 
 
+      /** Static helper used to combine arbitrary waveforms */
       static AnalysisWaveform *  combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0); 
 
     private: 
@@ -55,7 +59,7 @@ namespace UCorrelator
       TGraphAligned deconvolved_avg_spectrum; 
 
 
-      const AbstractResponse * responses[2][NUM_SEAVEYS]; 
+      const ResponseManager * responses; 
       int npad; 
       int nant; 
       bool use_raw; 

@@ -3,11 +3,14 @@
 #include <vector> 
 #include "FilteredAnitaEvent.h"
 #include "FFTtools.h"
+#include "ResponseManager.h" 
 #include "SystemResponse.h"
 #include "DeltaT.h"
+#include <dirent.h>
+#include <sys/types.h>
+#include <stdio.h>
 
-
-UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool useUnfiltered, bool deconvolve, const char * responseDir)
+UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool useUnfiltered, bool deconvolve, const ResponseManager * response)
   : coherent(260), deconvolved(260) 
 {
   setNAntennas(nantennas); 
@@ -16,25 +19,17 @@ UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool us
   setUseUnfiltered(useUnfiltered); 
   setGroupDelayFlag(true); 
   
-  memset(responses,0, sizeof(responses)); 
+  setResponseManager(response); 
 
-  if (responseDir) 
-  {
-    loadResponsesFromDir(responseDir);
-  }
+  
 }
 
 
-void UCorrelator::WaveformCombiner::loadResponsesFromDir(const char * dir)
-{
 
-    fprintf(stderr,"WARNING! loadResponsesFromDir has not been implemented!\n"); 
-}
  
 
 UCorrelator::WaveformCombiner::~WaveformCombiner()
 {
-
 }
 
 const AnalysisWaveform * UCorrelator::WaveformCombiner::getDeconvolved() const 
@@ -47,39 +42,6 @@ const AnalysisWaveform * UCorrelator::WaveformCombiner::getDeconvolved() const
   }
 
   return &deconvolved; 
-}
-
-
-void UCorrelator::WaveformCombiner::setResponse(const AbstractResponse * response, AnitaPol::AnitaPol_t pol, int antenna)
-{
-  if (antenna >= 0)
-  {
-    if (pol == AnitaPol::kNotAPol)
-    {
-      fprintf(stderr,"WARNING! Seems strange to set the same response for both polarizations of a particular antenna. n"); 
-      responses[0][antenna] = response; 
-      responses[1][antenna] = response; 
-    }
-    else
-    {
-      responses[pol][antenna] = response; 
-    }
-  }
-  else
-  {
-    for (int i = 0; i < NUM_SEAVEYS; i++)
-    {
-      if (pol == AnitaPol::kNotAPol)
-      {
-        responses[0][i] = response; 
-        responses[1][i] = response; 
-      }
-      else
-      {
-        responses[pol][i] = response; 
-      }
-    }
-  }
 }
 
 
@@ -143,7 +105,7 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
     {
      deconv[i].~AnalysisWaveform(); 
       new (&deconv[i]) AnalysisWaveform(*event->getRawGraph(antennas[i],pol));
-      responses[pol][antennas[i]]->deconvolveInPlace(&deconv[i]); //TODO add angle 
+      responses->response(pol,antennas[i])->deconvolveInPlace(&deconv[i]); //TODO add angle 
       if (i == 0)
       {
         deconvolved_avg_spectrum= *(deconv[i].power()); 

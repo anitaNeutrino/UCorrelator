@@ -27,6 +27,7 @@
 #pragma link C++ class UCorrelator::WaveformCombiner;
 #pragma link C++ class UCorrelator::Analyzer;
 #pragma link C++ class UCorrelator::AnalysisConfig;
+#pragma link C++ class UCorerlator::ResponseManager; 
 
 
 #endif

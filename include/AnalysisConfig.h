@@ -36,6 +36,7 @@ namespace UCorrelator
 
       unsigned combine_nantennas;  /// number of antennas used to create coherent / deconvolved waveforms
       unsigned combine_npad;  /// supersampling factor for combining waveforms (i.e. how many times to pad in fourier domain. npad = 1 is super sample by 100%) 
+      bool combine_unfiltered; // Use unfiltered waveforms for combining 
 
 
       double saturation_threshold; /// threshold to consider a waveform saturated 
@@ -55,6 +56,17 @@ namespace UCorrelator
         FinePeakFindingQuadraticFit16, ///quadratic fit near peak, using 16 bins
         FinePeakFindingQuadraticFit25, ///quadratic fit near peak, using 25 bins
       } fine_peak_finding_option; 
+
+      static const char * getPeakFindingString(FinePeakFindingOption_t opt); 
+
+      enum ResponseOption_t
+      {
+        ResponseNone ,  
+        ResponseSingleBRotter, /// Ben's unified respone 
+        ResponseIndividualBRotter ///Ben's individual responses 
+      } response_option;  
+
+      static const char * getResponseString(ResponseOption_t opt); 
 
 
       int nmaxima; ///number of maxima computed

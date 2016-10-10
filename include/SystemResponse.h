@@ -12,7 +12,9 @@
 #include "TH2.h" 
 #include "FFTWComplex.h" 
 #include <map>
+
 class AnalysisWaveform; 
+class TGraph; 
 
 namespace UCorrelator
 {
@@ -63,7 +65,8 @@ namespace UCorrelator
   }; 
 
 
-  static BandLimitedDeconvolution kDefaultDeconvolution(0.2,1.2); 
+  static BandLimitedDeconvolution kDefaultDeconvolution(.18,10); 
+//  static NaiveDeconvolution kDefaultDeconvolution; 
 
 
 
@@ -72,32 +75,39 @@ namespace UCorrelator
 
    public: 
       virtual FFTWComplex getResponse(double f, double angle = 0) const = 0; 
-      virtual FFTWComplex * getResponseArray(int N, const double  * f, double angle = 0) const = 0; 
-      virtual FFTWComplex * getResponseArray(int N, double df, double angle = 0) const = 0; 
+      virtual FFTWComplex * getResponseArray(int N, const double  * f, double angle = 0) const; 
+      virtual FFTWComplex * getResponseArray(int N, double df, double angle = 0) const ; 
       virtual double getMagnitude(double f, double angle= 0) const;  
       virtual double getPhase(double f, double angle = 0) const; 
 
+      virtual AnalysisWaveform * impulseResponse(double dt = 1./2.6, int N = 256) const; 
       virtual AnalysisWaveform * convolve(const AnalysisWaveform * wf, double angle = 0) const; 
       virtual AnalysisWaveform * deconvolve(const AnalysisWaveform * wf, const DeconvolutionMethod * method = &kDefaultDeconvolution, double angle = 0) const; 
       virtual void convolveInPlace(AnalysisWaveform * wf, double angle = 0) const; 
       virtual void deconvolveInPlace(AnalysisWaveform * wf, const DeconvolutionMethod * method = &kDefaultDeconvolution, double angle = 0) const; 
 
+      virtual ~AbstractResponse() { ; } 
+
   };
 
+  /** This class is a bit over-engineered right now since it supports
+   *  responses at different angles */ 
   class Response : public AbstractResponse
   {
     public: 
       Response(int NFreq, double df); 
+      Response(const TGraph * time_domain); 
       Response(int Nfreq, double df, int nangles, const double * angles, const FFTWComplex ** responses);  
       Response(int Nfreq, double df, const FFTWComplex * response);  
 
       void addResponseAtAngle(double angle, const FFTWComplex * response); 
 
       virtual FFTWComplex getResponse(double f, double angle = 0) const; 
-      virtual double getMagnitude(double f, double angle= 0) const; 
-      virtual double getPhase(double f, double angle = 0) const; 
        
       
+      const TH2 * getReal() const { return &real; } 
+      const TH2 * getImag() const { return &imag; } 
+
       virtual ~Response() { ; } 
 
     protected: 
@@ -105,8 +115,8 @@ namespace UCorrelator
       double df; 
       int nangles; 
       std::map<double, FFTWComplex *> responses; 
-      mutable TH2D phases; 
-      mutable TH2D mags; 
+      mutable TH2D real; 
+      mutable TH2D imag; 
       mutable bool dirty; 
       void recompute() const; 
   }; 

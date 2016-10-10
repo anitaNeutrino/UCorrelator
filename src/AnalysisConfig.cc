@@ -1,5 +1,10 @@
 #include "AnalysisConfig.h" 
 
+static const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25" }; 
+static const char * responses[] = {"None","SingleBRotter","IndividualBRotter"}; 
+
+
+
 
 #ifdef ENABLE_LIBCONFIG
 #include "libconfig.h++"
@@ -33,6 +38,7 @@ void lookupEnum(libconfig::Config * cfg, const char * key, int * val, int N, con
 
   fprintf(stderr, "\n But %s was given.", (const char * ) set); 
 
+}
 
 
 AnalysisConfig::loadFromFile(const char * config_file) 
@@ -55,6 +61,7 @@ AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(zoomed_nant); 
   LOOKUP(combine_nantennas); 
   LOOKUP(combine_npad); 
+  LOOKUP(combine_unfiltered); 
   LOOKUP(saturation_threshold); 
   LOOKUP(peak_isolation_requirement); 
   LOOKUP(nmaxima); 
@@ -69,8 +76,6 @@ AnalysisConfig::loadFromFile(const char * config_file)
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", &start_pol, 2,pols); 
   lookupEnum(&cfg, "end_pol", &end_pol, 2,pols); 
-
-  const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25" }; 
   lookupEnum(&cfg, "fine_peak_finding_option", fine_peak_finding_option, 6, peakfinders); 
 
 }
@@ -109,6 +114,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
 
   combine_nantennas = 10; 
   combine_npad = 3; 
+  combine_unfiltered = true; 
 
   saturation_threshold = 2500; 
 
@@ -128,10 +134,25 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
   noise_estimate_t0 = 70; 
   noise_estimate_t1 = 100; 
 
+  response_option = ResponseNone; 
+
 #ifdef ENABLE_LIBCONFIG
 
   if (config) loadFromFile(config);
 #endif
 
 }
+
+
+const char * UCorrelator::AnalysisConfig::getPeakFindingString(FinePeakFindingOption_t opt) 
+{
+  return peakfinders[opt]; 
+}
+
+const char * UCorrelator::AnalysisConfig::getResponseString(ResponseOption_t opt) 
+{
+  return responses[opt]; 
+}
+
+
 

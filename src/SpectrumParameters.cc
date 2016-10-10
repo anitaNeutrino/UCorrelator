@@ -7,19 +7,19 @@
 
 
 
-/** This is a shitty first pass algorithm 
+/** 
  *
- * Do line fit
- *  Find max subtracting
- *  Take out that peak and surrounding points 
- *  iterate 
+ *
+ *  -Subtract baseline
+ *  - Get rid of biggest peaks
+ *  - Do a line fit for spectrum slope / intercept
  *
  *
  */ 
 
 static __thread TLinearFitter * fitter = 0; 
 
-void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, const TGraph * average, 
+void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, const TGraph * baseline, 
                                                    AnitaEventSummary::WaveformInfo * winfo,
                                                    const AnalysisConfig * config) 
 {
@@ -51,10 +51,10 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, cons
   memcpy(&y[0], yy, N * sizeof(double)); 
 
 
-  //subtract off average spectrum 
+  //subtract off baseline spectrum 
   for (size_t i = 0; i < x.size(); i++) 
   {
-    y[i] -= average->GetY()[i+low]; 
+    y[i] -= baseline->GetY()[i+low]; 
   }
 
   double m = 0; 
@@ -114,7 +114,7 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, cons
      int j = maxes[i]; 
      winfo->peakFrequency[i] = xx[j]; 
 //     printf("peak freq: %f\n", xx[j]); 
-     double max_val = yy[j] - (m*xx[j] + b) - average->GetY()[j+low]; 
+     double max_val = yy[j] - (m*xx[j] + b) - baseline->GetY()[j+low]; 
      int how_far = 1; 
      int index_bounds[2] = {j,j}; 
      double power = TMath::Power(10,max_val/10); 
@@ -123,7 +123,7 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, cons
      {
         int jj = j + how_far * sign; 
         if (jj < 0 || jj >= N) continue; 
-        double val = yy[j] - (m*xx[jj]+ b) - average->GetY()[j+low]; 
+        double val = yy[j] - (m*xx[jj]+ b) - baseline->GetY()[j+low]; 
         if (max_val - val > config->bw_ndb)
         {
           index_bounds[(sign+1)/2] = jj;

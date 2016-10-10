@@ -39,8 +39,9 @@ static int instance_counter = 0;
 UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive) 
   : cfg(conf ? conf: &defaultConfig),
     corr(cfg->correlator_nphi,0,360,  cfg->correlator_ntheta, -cfg->correlator_theta_lowest, cfg->correlator_theta_highest) , 
-    wfcomb(cfg->combine_nantennas, cfg->combine_npad), 
-    wfcomb_xpol(cfg->combine_nantennas, cfg->combine_npad), 
+    responses(cfg->response_option), 
+    wfcomb(cfg->combine_nantennas, cfg->combine_npad, cfg->combine_unfiltered, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
+    wfcomb_xpol(cfg->combine_nantennas, cfg->combine_npad, cfg->combine_unfiltered, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
     zoomed(TString::Format("zoomed_%d", instance_counter), "Zoomed!", cfg->zoomed_nphi, 0 ,1, cfg->zoomed_ntheta, 0, 1),
    interactive(interactive)  
 {
@@ -183,6 +184,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       //now make the combined waveforms 
       wfcomb.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
       wfcomb_xpol.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
+
       fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol); 
       fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol); 
 
@@ -206,6 +208,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
           deconvolved[pol][i]->~AnalysisWaveform(); 
           deconvolved[pol][i] = new (deconvolved[pol][i]) AnalysisWaveform(*wfcomb.getDeconvolved()); 
           deconvolved[pol][i]->updateEven()->SetLineColor(2); 
+          deconvolved[pol][i]->updateEven()->SetMarkerColor(2); 
 
           deconvolved_power[pol][i]->~TGraphAligned(); 
           deconvolved_power[pol][i] = new (deconvolved_power[pol][i]) TGraphAligned(*wfcomb.getDeconvolvedAvgSpectrum()); 
@@ -237,6 +240,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
           deconvolved_xpol[pol][i] = new (deconvolved_xpol[pol][i]) AnalysisWaveform(*wfcomb_xpol.getDeconvolved()); 
 
           deconvolved_xpol[pol][i]->updateEven()->SetLineColor(45); 
+          deconvolved_xpol[pol][i]->updateEven()->SetMarkerColor(45); 
           deconvolved_xpol[pol][i]->updateEven()->SetLineStyle(3); 
           deconvolved_power_xpol[pol][i]->~TGraphAligned(); 
           deconvolved_power_xpol[pol][i] = new (deconvolved_power_xpol[pol][i]) TGraphAligned(*wfcomb_xpol.getDeconvolvedAvgSpectrum()); 
@@ -450,10 +454,12 @@ void UCorrelator::Analyzer::clearInteractiveMemory() const
 }
 
 
+/* Nevermind this... wanted to zoom in on analyzer canvas on click, but too much work :( 
 static void setOnClickHandler(TPad * pad) 
 {
 
 }
+*/
 
 
 
@@ -503,7 +509,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
     }
 
 
-    pads[ipol]->cd(2)->Divide(last.nPeaks[ipol], 3); 
+    pads[ipol]->cd(2)->Divide(last.nPeaks[ipol], interactive_deconvolved ? 5 : 3); 
 
     for (int i = 0; i < last.nPeaks[ipol]; i++) 
     {
@@ -528,27 +534,18 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       pads[ipol]->cd(2)->cd(i+last.nPeaks[ipol]+1); 
 
 
-      ((TGraph*) coherent[ipol][i]->even())->SetTitle(TString::Format ( "Coherent%s (+ xpol) %d", interactive_deconvolved ? " / Deconvolved (+ xpol)" : "", i+1)); 
+      ((TGraph*) coherent[ipol][i]->even())->SetTitle(TString::Format ( "Coherent (+ xpol) %d", i+1)); 
       coherent[ipol][i]->drawEven("al"); 
 
 
-      if (interactive_deconvolved)
-      {
-        deconvolved[ipol][i]->drawEven("lsame"); 
-      }
 
       coherent_xpol[ipol][i]->drawEven("lsame"); 
-
-      if (interactive_xpol_deconvolved)
-      {
-        deconvolved_xpol[ipol][i]->drawEven("lsame"); 
-      }
 
 
       pads[ipol]->cd(2)->cd(i+2*last.nPeaks[ipol]+1); 
 
 
-      (((TGraph*)coherent_power[ipol][i]))->SetTitle(TString::Format ( "Power Coherent%s (+ xpol) %d", interactive_deconvolved ? " / Deconvolved (+ xpol)" : "", i+1)); 
+      (((TGraph*)coherent_power[ipol][i]))->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
       ((TGraph*)coherent_power[ipol][i])->Draw("al"); 
 
 
@@ -559,8 +556,6 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       spectral_slope->SetParameter(0, last.coherent[ipol][i].spectrumIntercept) ;
       spectral_slope->SetParameter(1, last.coherent[ipol][i].spectrumSlope) ;
 
-//      spectral_slope->SetLineColor(2); 
-//      spectral_slope->Draw("lsame"); 
 
       TGraphErrors *gbw = new TGraphErrors(AnitaEventSummary::peaksPerSpectrum); 
       gbw->SetTitle("Bandwidth Peaks"); 
@@ -573,24 +568,34 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       gbw->SetMarkerColor(4); 
       gbw->SetMarkerStyle(20); 
       gbw->Draw("psame"); 
-//      gbw->Print(); 
 
 
       delete_list.push_back(spectral_slope); 
       delete_list.push_back(gbw);
 
-       
+      
       if (interactive_deconvolved)
       {
-        ((TGraph*)deconvolved_power[ipol][i])->Draw("lsame");; 
-      }
+        pads[ipol]->cd(2)->cd(i+3*last.nPeaks[ipol]+1); 
+        ((TGraph*) deconvolved[ipol][i]->even())->SetTitle(TString::Format ( "Deconvolved (+ xpol) %d", i+1)); 
+        deconvolved[ipol][i]->drawEven("alp"); 
+        if (interactive_xpol_deconvolved)
+        {
+            deconvolved_xpol[ipol][i]->drawEven("lsame"); 
+        }
 
-      ((TGraph*)coherent_power_xpol[ipol][i])->Draw("lsame"); 
+        pads[ipol]->cd(2)->cd(i+4*last.nPeaks[ipol]+1); 
 
-      if (interactive_xpol_deconvolved)
-      {
-        ((TGraph*)deconvolved_power_xpol[ipol][i])->Draw("lsame"); 
+        (((TGraph*)deconvolved_power[ipol][i]))->SetTitle(TString::Format ( "Power Deconvolved (+ xpol) %d", i+1)); 
+        ((TGraph*)deconvolved_power[ipol][i])->Draw();; 
+        if (interactive_xpol_deconvolved)
+        {
+          ((TGraph*)deconvolved_power_xpol[ipol][i])->Draw("lsame"); 
+        }
+
+
       }
+       
     }
   }
 }

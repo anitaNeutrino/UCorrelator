@@ -500,7 +500,7 @@ void UCorrelator::SineSubtractFilter::fillOutput(unsigned ui, double * vars) con
        int freqi = ii /3; 
 //       printf("%d\n", freqi); 
 
-       if (freqi >= r->freqs.size())
+       if (freqi >= (int) r->freqs.size())
        {
          vars[j] = -1; 
          continue; 

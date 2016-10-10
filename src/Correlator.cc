@@ -479,7 +479,7 @@ void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol
   //TODO: make sure this is doing what we need... 
   #pragma omp parallel for 
 #endif
-  for (int it = 0; it < nit; it++)
+  for (unsigned it = 0; it < nit; it++)
   {
      doAntennas(pairs[it].first, pairs[it].second, hist, norm, trigcache); 
   }

@@ -3,16 +3,17 @@
 #include "BasicFilters.h"
 #include "AnalysisConfig.h"
 #include "UCFilters.h"
+#include "SystemResponse.h"
 #include "FFTtools.h"
 
-UCorrelator::Analyzer *doInteractive(int run = 352, int event = 60832108, bool decimated = false )
+UCorrelator::Analyzer *doInteractive(int run = 352, int event = 60849734, bool decimated = false )
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
   FilterStrategy strategy; 
- // strategy.addOperation(new SimplePassBandFilter(0.2,1.3)); 
  
   strategy.addOperation(new UCorrelator::SineSubtractFilter);
+//  strategy.addOperation(new SimplePassBandFilter(0.2,1.2)); 
   strategy.addOperation(new ALFAFilter); 
 
   AnitaDataset d(run,decimated);
@@ -22,12 +23,26 @@ UCorrelator::Analyzer *doInteractive(int run = 352, int event = 60832108, bool d
   FilteredAnitaEvent ev(d.useful(),&strategy, d.gps(), d.header()); 
 
   UCorrelator::AnalysisConfig cfg; 
-  cfg.nmaxima = 5; 
+  cfg.nmaxima = 2; 
+  cfg.response_option = UCorrelator::AnalysisConfig::ResponseSingleBRotter; 
+  //cfg.combine_unfiltered = false; 
+
   UCorrelator::Analyzer * analyzer = new UCorrelator::Analyzer(&cfg,true); 
 
   AnitaEventSummary sum; 
   analyzer->analyze(&ev,&sum); 
   analyzer->drawSummary(); 
+  TCanvas * c2 = new TCanvas; 
+  c2->Divide(2,1); 
+  const UCorrelator::AbstractResponse * response = analyzer->getResponseManager()->response(0,0); 
+  AnalysisWaveform * imp =response->impulseResponse(0.1, 981); 
+  c2->cd(1); 
+  imp->drawEven(); 
+  AnalysisWaveform * deconv = response->deconvolve(imp); 
+  c2->cd(2); 
+  deconv->drawEven(); 
+
+
   FFTtools::saveWisdom("wisdom.dat"); 
   return analyzer; 
 }
