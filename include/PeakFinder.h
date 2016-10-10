@@ -64,6 +64,10 @@ namespace UCorrelator
 
     /** 2D gaussian fit to histogram.... this will be pretty slow */ 
     void doPeakFindingGaussian(const TH2D* hist, FineMaximum * peak);
+
+
+    /** Fool-proof but stupid method of using histogram  */ 
+    void doPeakFindingHistogram(const TH2D* hist, FineMaximum * peak); 
   }
 
 }

@@ -1,0 +1,38 @@
+This will attempt to describe how the responses are stored in data
+
+Each response type will have a name, which is used in the enum allowing selection, the directory where data is stored and the name of the option in the config file. 
+
+e.g. enum value ResponseSingleBRotter -> /data/SingleBRotter  -> "SingleBRotter" in config file 
+
+The files will be plain text files, but of different types. The type is encoded by the suffix. 
+
+
+Suffix:          Meaning and Format: 
+
+  .imp           Impulse response, in mV andns, in a format that can be read in the TGraph constructor (e.g. whitespcae separated ns mV values) 
+  .freq          Frequency response, in GHz, dB and radians (whitespace separated) 
+  .iir           IIR transfer function. The b coefficients on one line and the a coefficients on the next. 
+
+
+The prefix denotes what the impulse applies to. It could be: 
+
+  all - This response will be used for everything
+  allHpol   - this response will be used for all HPol 
+  allVpol   - this response will be used for all VPol 
+  [01..16]{B,M,T}{H,V} - This response will be used for this channel e.g. 13BV 
+
+
+In addition there is in theory support for off-axis responses. These are denoted with an underscore after the prefix followed by the angle in degrees. 
+If no underscore is used, it is equivalent to _0. 
+ 
+  
+
+
+
+
+
+
+
+
+
+

@@ -114,6 +114,8 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     UShort_t triggeredPhiL1 = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->l1TrigMaskH : event->getHeader()->l1TrigMask;  
     UShort_t maskedPhi = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->phiTrigMaskH : event->getHeader()->phiTrigMask; 
 
+
+    //TODO: check this 
     TVector2 triggerAngle; 
 
     int ntriggered = __builtin_popcount(triggeredPhi); 
@@ -268,6 +270,16 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
 }
 
+static bool outside(const TH2 * h, double x, double y) 
+{
+
+  return x > h->GetXaxis()->GetXmax() || 
+         x < h->GetXaxis()->GetXmin() || 
+         y < h->GetYaxis()->GetXmin() ||
+         y > h->GetYaxis()->GetXmax(); 
+
+}
+
 void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_theta, AnitaEventSummary::PointingHypothesis * point, 
                                              UsefulAdu5Pat * pat, double hwPeakAngle, UShort_t triggered_sectors, UShort_t masked_sectors)
 {
@@ -286,6 +298,9 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
         case AnalysisConfig::FinePeakFindingBicubic: 
           UCorrelator::peakfinder::doInterpolationPeakFindingBicubic(&zoomed, &max); 
           break; 
+        case AnalysisConfig::FinePeakFindingHistogram: 
+          UCorrelator::peakfinder::doPeakFindingHistogram(&zoomed, &max); 
+          break; 
         case AnalysisConfig::FinePeakFindingQuadraticFit16: 
           UCorrelator::peakfinder::doPeakFindingQuadratic16(&zoomed, &max); 
           break; 
@@ -300,11 +315,25 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
           UCorrelator::peakfinder::doPeakFindingQuadratic9(&zoomed, &max); 
           break; 
       }; 
+
+
+      //Check to make sure that fine max isn't OUTSIDE of zoomed window
+      // If it is, revert to very stupid method  of just using histogram 
+      
+      if (outside(&zoomed, max.x, max.y))
+      {
+        UCorrelator::peakfinder::doPeakFindingHistogram(&zoomed, &max); 
+      }
+      
+
+
       
       max.copyToPointingHypothesis(point); 
 
       //snr is ratio of point value to map rms
       point->snr = point->value / maprms; 
+      point->dphi_rough = FFTtools::wrap(point->phi - rough_phi, 360,0); 
+      point->dtheta_rough = FFTtools::wrap(point->theta - rough_theta, 360,0); 
 
       point->hwAngle = FFTtools::wrap(point->phi - hwPeakAngle,360,0); 
       int sector = fmod(point->phi + 11.25,360) / 22.5; 
@@ -318,10 +347,12 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
         point->latitude = -9999; 
         point->longitude = -9999;  
         point->altitude = -9999; 
+        point->distanceToSource = -9999; 
         point->theta_adjustment_needed = -9999; 
       }
       else
       {
+        point->distanceToSource=pat->getDistanceFromSource(point->latitude, point->longitude, point->altitude); 
         point->theta_adjustment_needed *= RAD2DEG; 
       }
 }
@@ -562,7 +593,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       for (int bwpeak = 0; bwpeak < AnitaEventSummary::peaksPerSpectrum; bwpeak++) 
       {
         double bwf = last.coherent[ipol][i].peakFrequency[bwpeak]; 
-        gbw->SetPoint(bwpeak, bwf, avg_spectra[ipol]->Eval(bwf)+ spectral_slope->Eval(bwf)+ last.coherent[ipol][i].peakPower[bwpeak]); 
+        gbw->SetPoint(bwpeak, bwf, avg_spectra[ipol]->Eval(bwf)+ last.coherent[ipol][i].peakPower[bwpeak]); 
         gbw->SetPointError(bwpeak  , last.coherent[ipol][i].bandwidth[bwpeak]/2,0);
       }
       gbw->SetMarkerColor(4); 

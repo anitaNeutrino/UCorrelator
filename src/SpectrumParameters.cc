@@ -7,19 +7,15 @@
 
 
 
-/** 
+/** This algorithm is kinda crappy right now. 
  *
- *
- *  -Subtract baseline
- *  - Get rid of biggest peaks
- *  - Do a line fit for spectrum slope / intercept
- *
+ * Cosmin Deaconu <cozzyd@kicp.uchicago.edu> 
  *
  */ 
 
 static __thread TLinearFitter * fitter = 0; 
 
-void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, const TGraph * baseline, 
+void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, const TGraph * average, 
                                                    AnitaEventSummary::WaveformInfo * winfo,
                                                    const AnalysisConfig * config) 
 {
@@ -51,54 +47,78 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, cons
   memcpy(&y[0], yy, N * sizeof(double)); 
 
 
-  //subtract off baseline spectrum 
+  //subtract off average spectrum 
   for (size_t i = 0; i < x.size(); i++) 
   {
-    y[i] -= baseline->GetY()[i+low]; 
+    y[i] -= average->Eval(x[i]); 
   }
 
   double m = 0; 
   double b = 0; 
 
-  std::vector<int> maxes; 
+  std::vector<bool> used(x.size(), false); 
 
   for (int i = 0; i < AnitaEventSummary::peaksPerSpectrum; i++) 
   {
-
-//     fitter->ClearPoints(); 
-//     fitter->AssignData(x.size(),1,&x[0] ,&y[0]); 
-//     fitter->Eval(); 
-
-//     m = fitter->GetParameter(1); 
-//     b = fitter->GetParameter(0); 
-
      double max_val = -DBL_MAX; 
-     int max_i = -1; 
      int max_j = -1; 
 
      for (unsigned j = 0; j < x.size(); j++) 
      {
+       if (used[j]) continue; 
        double val =  y[j];// - (m * x[j] + b); 
 //       printf("%d |   %f, %f\n", i, x[j], val); 
        if (val > max_val) 
        {
-         max_val = val; 
-         max_i = (x[j]-f0)/df-low; 
          max_j = j; 
+         max_val = val; 
        }
      }
 
 //     printf("\t max_i: %f\n", xx[max_i]); 
-     maxes.push_back(max_i); 
 
-     //now remove adjacents 
-     int start = max_j > 1 ? max_j-2 : 0; 
-     int end = max_j+3; 
-     if (end > (int) x.size()) end = (int) x.size(); 
+     int index_bounds[2] = {max_j,max_j}; 
+     double power = TMath::Power(10,max_val/10); 
 
-     x.erase(x.begin() + start, x.begin() + end); 
-     y.erase(y.begin() + start, y.begin() + end); 
+     for (int sign = -1; sign <=1; sign+=2)
+     {
+        int how_far = 1; 
+        while(true) 
+        {
+          int jj = max_j + how_far * sign; 
+          double val = y[jj]; 
+//          printf("%f\n",max_val - val); 
+          if (jj < 0 || jj >=N || max_val - val > config->bw_ndb || used[jj])
+          {
+            index_bounds[(sign+1)/2] = jj;
+            break; 
+          }
+          power += TMath::Power(10,val/10); 
+          how_far++; 
+        }
+     }
+     winfo->peakPower[i] = 10 * log10(power); 
+
+     int start = index_bounds[0];
+     int end = index_bounds[1]; 
+     if (start < 0) start = 0; 
+     if (end > x.size()) end = x.size(); 
+
+     winfo->bandwidth[i] = x[end] - x[start]; 
+     winfo->peakFrequency[i] = (x[start] + x[end])/2;
+
+
+//     printf("%d %d\n",start,end); 
+//     printf("%f %f\n", power, x[max_j]); 
+//     printf("%f %f\n", x[end]-x[start],winfo->peakFrequency[i] ); 
+
+     
+     //now remove adjacents up to ndb below 
+
+     for (int u= start; u < end; u++) used[u] = true; 
+     
    }
+
 
    // fit for slope 
    fitter->ClearPoints(); 
@@ -106,36 +126,6 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, cons
    fitter->Eval(); 
    m = fitter->GetParameter(1); 
    b = fitter->GetParameter(0); 
-
-  // now let's evaluate things 
-
-  for (int i = 0; i < AnitaEventSummary::peaksPerSpectrum; i++) 
-  {
-     int j = maxes[i]; 
-     winfo->peakFrequency[i] = xx[j]; 
-//     printf("peak freq: %f\n", xx[j]); 
-     double max_val = yy[j] - (m*xx[j] + b) - baseline->GetY()[j+low]; 
-     int how_far = 1; 
-     int index_bounds[2] = {j,j}; 
-     double power = TMath::Power(10,max_val/10); 
-
-     for (int sign = -1; sign <=1; sign+=2)
-     {
-        int jj = j + how_far * sign; 
-        if (jj < 0 || jj >= N) continue; 
-        double val = yy[j] - (m*xx[jj]+ b) - baseline->GetY()[j+low]; 
-        if (max_val - val > config->bw_ndb)
-        {
-          index_bounds[(sign+1)/2] = jj;
-          continue; 
-        }
-        power += TMath::Power(10,val/10); 
-        how_far++; 
-     }
-
-     winfo->peakPower[i] = 10 * log10(power); 
-     winfo->bandwidth[i] = xx[index_bounds[1]] - xx[index_bounds[0]]; 
-   }
 
    winfo->spectrumSlope = m; 
    winfo->spectrumIntercept = b; 

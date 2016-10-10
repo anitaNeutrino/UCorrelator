@@ -1,6 +1,6 @@
 #include "AnalysisConfig.h" 
 
-static const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25" }; 
+static const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25", "Histogram" }; 
 static const char * responses[] = {"None","SingleBRotter","IndividualBRotter"}; 
 
 
@@ -76,7 +76,7 @@ AnalysisConfig::loadFromFile(const char * config_file)
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", &start_pol, 2,pols); 
   lookupEnum(&cfg, "end_pol", &end_pol, 2,pols); 
-  lookupEnum(&cfg, "fine_peak_finding_option", fine_peak_finding_option, 6, peakfinders); 
+  lookupEnum(&cfg, "fine_peak_finding_option", fine_peak_finding_option, sizeof(peakfinders)/sizeof(char *), peakfinders); 
 
 }
 #endif
@@ -126,6 +126,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
   fine_peak_finding_option = FinePeakFindingQuadraticFit25; 
   nmaxima = 2; 
   use_bin_center = false; 
+  scale_by_cos_theta = false; 
 
   bw_ndb = 6; 
   spectral_fit_start = 0.22; 

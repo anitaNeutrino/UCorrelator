@@ -826,4 +826,43 @@ void UCorrelator::peakfinder::doInterpolationPeakFindingBicubic(const TH2D * zoo
 }
 
 
+void UCorrelator::peakfinder::doPeakFindingHistogram(const TH2D* hist, FineMaximum * peak) 
+{
+
+  int max_bin = hist->GetMaximumBin(); 
+  int bx,by,bz; 
+  hist->GetBinXYZ(max_bin,bx,by,bz); 
+
+  peak->val = hist->GetBinContent(bx,by); 
+  peak->x =  hist->GetXaxis()->GetBinCenter(bx); 
+  peak->y =  hist->GetYaxis()->GetBinCenter(by); 
+
+  //compute covariance matrix around point 
+  
+  double var_x = 0;
+  double var_y = 0; 
+  double covar = 0; 
+  double total = 0; 
+
+  for (int i = 1; i <= hist->GetNbinsX(); i++)
+  {
+    for (int j = 1; j <= hist->GetNbinsY(); j++)
+    {
+      double val = hist->GetBinContent(i,j); 
+      double x = hist->GetXaxis()->GetBinCenter(i); 
+      double y = hist->GetYaxis()->GetBinCenter(j); 
+
+      total += val; 
+      var_x += val  * (x-peak->x) * (x-peak->x); 
+      var_y += val  * (y-peak->y) * (y-peak->y); 
+      covar += val  * (y-peak->y) * (x-peak->x); 
+    }
+  }
+
+
+  peak->sigma_x = sqrt( var_x / (total-1)); 
+  peak->sigma_y = sqrt( var_y / (total-1)); 
+  peak->covar =  covar / (total - 1); 
+  peak->chisq = 0;  
+}
 
