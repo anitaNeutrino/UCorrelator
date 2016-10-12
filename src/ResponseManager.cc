@@ -15,7 +15,7 @@
 
 
 
-int UCorrelator::ResponseManager::loadResponsesFromDir(const char * raw_dir)
+int UCorrelator::ResponseManager::loadResponsesFromDir(const char * raw_dir, int npad)
 {
   DIR *dp; 
   struct dirent *ep; 
@@ -106,13 +106,13 @@ int UCorrelator::ResponseManager::loadResponsesFromDir(const char * raw_dir)
       TGraph imp(fname); 
       if (!r) 
       {
-        r = new Response(&imp); 
+        r = new Response(&imp, npad); 
         response_store.push_back(r); 
       }
       else
       {
         AnalysisWaveform aw (imp.GetN(), imp.GetY(), imp.GetX()[1] - imp.GetX()[0], imp.GetX()[0]); 
-        aw.padEven(1); 
+        aw.padEven(npad); 
         ((UCorrelator::Response*) r)->addResponseAtAngle(angle, aw.freq()); 
       }
     }
@@ -223,21 +223,21 @@ int UCorrelator::ResponseManager::loadResponsesFromDir(const char * raw_dir)
   return 0; 
 }
 
-UCorrelator::ResponseManager::ResponseManager(UCorrelator::AnalysisConfig::ResponseOption_t opt) 
+UCorrelator::ResponseManager::ResponseManager(const UCorrelator::AnalysisConfig *cfg ) 
 {
   memset(responses,0,sizeof(responses)); 
 
-  if (opt)
+  if (cfg->response_option)
   {
-    loadResponsesFromDir(AnalysisConfig::getResponseString(opt)); 
+    loadResponsesFromDir(AnalysisConfig::getResponseString(cfg->response_option),cfg->response_npad); 
   }
 
 }
 
-UCorrelator::ResponseManager::ResponseManager(const char * dir) 
+UCorrelator::ResponseManager::ResponseManager(const char * dir, int npad) 
 {
   memset(responses,0,sizeof(responses)); 
-  loadResponsesFromDir(dir); 
+  loadResponsesFromDir(dir,npad); 
 }
 
 UCorrelator::ResponseManager::~ResponseManager() 
