@@ -20,8 +20,8 @@ namespace UCorrelator
 
     public: 
 
-      ResponseManager(AnalysisConfig::ResponseOption_t option); 
-      ResponseManager(const char * responseDir); 
+      ResponseManager(const UCorrelator::AnalysisConfig * cfg); 
+      ResponseManager(const char * responseDir, int npad); 
 
       const AbstractResponse * response(int pol, int iant) const { return responses[iant][pol]; } 
 
@@ -29,7 +29,7 @@ namespace UCorrelator
 
       
      private: 
-     int loadResponsesFromDir(const char * dir); 
+     int loadResponsesFromDir(const char * dir, int npad); 
      const AbstractResponse* responses[NUM_SEAVEYS][2]; 
      std::vector<AbstractResponse*> response_store; 
 

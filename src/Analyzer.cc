@@ -39,7 +39,7 @@ static int instance_counter = 0;
 UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive) 
   : cfg(conf ? conf: &defaultConfig),
     corr(cfg->correlator_nphi,0,360,  cfg->correlator_ntheta, -cfg->correlator_theta_lowest, cfg->correlator_theta_highest) , 
-    responses(cfg->response_option), 
+    responses(cfg), 
     wfcomb(cfg->combine_nantennas, cfg->combine_npad, cfg->combine_unfiltered, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
     wfcomb_xpol(cfg->combine_nantennas, cfg->combine_npad, cfg->combine_unfiltered, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
     zoomed(TString::Format("zoomed_%d", instance_counter), "Zoomed!", cfg->zoomed_nphi, 0 ,1, cfg->zoomed_ntheta, 0, 1),

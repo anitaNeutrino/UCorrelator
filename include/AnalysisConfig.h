@@ -64,10 +64,12 @@ namespace UCorrelator
       {
         ResponseNone ,  
         ResponseSingleBRotter, /// Ben's unified respone 
-        ResponseIndividualBRotter ///Ben's individual responses 
+        ResponseIndividualBRotter, ///Ben's individual responses 
+        ResponseHarmSignalOnly ///Harm's signal chain only thing (currently used in icemc) 
       } response_option;  
 
       static const char * getResponseString(ResponseOption_t opt); 
+      int response_npad; //number of times to pad (in freq domain) the response 
 
 
       int nmaxima; ///number of maxima computed

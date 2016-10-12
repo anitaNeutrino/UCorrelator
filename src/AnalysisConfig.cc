@@ -1,7 +1,7 @@
 #include "AnalysisConfig.h" 
 
 static const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25", "Histogram" }; 
-static const char * responses[] = {"None","SingleBRotter","IndividualBRotter"}; 
+static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","HarmSignalOnly"}; 
 
 
 
@@ -71,12 +71,14 @@ AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(spectral_fit_stop); 
   LOOKUP(noise_estimate_t0); 
   LOOKUP(noise_estimate_t1); 
-
+  LOOKUP(response_npad); 
+  LOOKUP(scale_by_cos_theta); 
 
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", &start_pol, 2,pols); 
   lookupEnum(&cfg, "end_pol", &end_pol, 2,pols); 
   lookupEnum(&cfg, "fine_peak_finding_option", fine_peak_finding_option, sizeof(peakfinders)/sizeof(char *), peakfinders); 
+  lookupEnum(&cfg, "response_option", response_option, sizeof(responses)/sizeof(char *), responses); 
 
 }
 #endif
@@ -136,6 +138,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
   noise_estimate_t1 = 100; 
 
   response_option = ResponseNone; 
+  response_npad = 50; 
 
 #ifdef ENABLE_LIBCONFIG
 

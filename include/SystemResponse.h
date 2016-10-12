@@ -65,7 +65,7 @@ namespace UCorrelator
   }; 
 
 
-  static BandLimitedDeconvolution kDefaultDeconvolution(.18,10); 
+  static BandLimitedDeconvolution kDefaultDeconvolution(.18,1.0); 
 //  static NaiveDeconvolution kDefaultDeconvolution; 
 
 
@@ -96,7 +96,7 @@ namespace UCorrelator
   {
     public: 
       Response(int NFreq, double df); 
-      Response(const TGraph * time_domain); 
+      Response(const TGraph * time_domain, int npad); 
       Response(int Nfreq, double df, int nangles, const double * angles, const FFTWComplex ** responses);  
       Response(int Nfreq, double df, const FFTWComplex * response);  
 

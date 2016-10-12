@@ -65,12 +65,13 @@ UCorrelator::Response::Response(int Nfreq, double df)
 
 }
 
-UCorrelator::Response::Response(const TGraph * timedomain)
-  : Nfreq( timedomain->GetN()/2+1)
+UCorrelator::Response::Response(const TGraph * timedomain, int npad)
 {
-  df = 1./(timedomain->GetN() * (timedomain->GetX()[1] - timedomain->GetX()[0])); 
-  AnalysisWaveform aw(timedomain->GetN(), timedomain->GetY(), timedomain->GetX()[1] - timedomain->GetX()[0], timedomain->GetX()[0]); 
-  aw.padEven(1); 
+  AnalysisWaveform aw(timedomain->GetN(), timedomain->GetX(), timedomain->GetY(), timedomain->GetX()[1] - timedomain->GetX()[0]); 
+  aw.padEven(npad); 
+  (void)  aw.freq(); 
+  df = aw.deltaF(); 
+  Nfreq = aw.Nfreq(); 
   addResponseAtAngle(0,aw.freq()); 
 }
 
@@ -197,7 +198,7 @@ double UCorrelator::AbstractResponse::getPhase(double f, double angle) const
 AnalysisWaveform* UCorrelator::AbstractResponse::impulseResponse(double dt, int N )  const
 {
   AnalysisWaveform * out = new AnalysisWaveform(N, dt); 
-  out->updateEven()->GetY()[N/2] = 1; 
+  out->updateEven()->GetY()[1] = 1; 
   convolveInPlace(out,0); 
   return out; 
 }
@@ -237,7 +238,7 @@ AnalysisWaveform * UCorrelator::AbstractResponse::deconvolve(const AnalysisWavef
 void UCorrelator::AbstractResponse::deconvolveInPlace(AnalysisWaveform * wf,  const DeconvolutionMethod * method, double off_axis_angle) const
 {
   int old_size = wf->Neven(); 
-//  wf->padEven(2); 
+  wf->padEven(3,0); 
   int nf = wf->Nfreq();
   double df = wf->deltaF(); 
   std::vector<FFTWComplex> R(nf); 
@@ -248,6 +249,6 @@ void UCorrelator::AbstractResponse::deconvolveInPlace(AnalysisWaveform * wf,  co
     
   method->deconvolve(nf,df, wf->updateFreq(), &R[0]); 
 
-  wf->updateEven()->Set(old_size); 
+ // wf->updateEven()->Set(old_size); 
 
 }
