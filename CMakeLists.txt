@@ -160,6 +160,7 @@ if(ENABLE_OPENMP)
   endif() 
 endif() 
 
+install (DIRECTORY data/ DESTINATION ${UTIL_SHARE_DIR}/UCorrelator)
 
 set (BINSRCDIR drivers) 
 
