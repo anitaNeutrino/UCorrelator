@@ -634,12 +634,17 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary::EventFlags * flags, UsefulAdu5Pat * pat) 
 {
 
-  //TODO 
+  //TODO  most of these 
+  
+
   flags->isVarner = false; 
   flags->isVarner2 = false; 
   flags->nadirFlag = true; 
   flags->strongCWFlag = false; 
 
+
+  flags->meanPower = fae->getAveragePower(); 
+  flags->medianPower = fae->getMedianPower(); 
 
   if ( isLDBHPol(pat, fae->getHeader(), cfg) || isLDBVPol (pat, fae->getHeader(), cfg))
   {
