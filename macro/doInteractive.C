@@ -12,6 +12,9 @@ UCorrelator::Analyzer *doInteractive(int run = 352, int event = 60849734, bool d
   FFTtools::loadWisdom("wisdom.dat"); 
   FilterStrategy strategy; 
  
+  TF1 fn("foo"," (x < 0.2) * exp((x-0.2)/0.01)  + (x > 0.2 && x < 1.2) * (1-0.05*x) + (x > 1.2) * exp((1.2-x)/0.02)", 0,2); 
+
+
   strategy.addOperation(new UCorrelator::SineSubtractFilter);
 //  strategy.addOperation(new SimplePassBandFilter(0.2,1.2)); 
   strategy.addOperation(new ALFAFilter); 
@@ -22,9 +25,13 @@ UCorrelator::Analyzer *doInteractive(int run = 352, int event = 60849734, bool d
 
   FilteredAnitaEvent ev(d.useful(),&strategy, d.gps(), d.header()); 
 
+
+
   UCorrelator::AnalysisConfig cfg; 
-  cfg.nmaxima = 2; 
+  cfg.nmaxima = 1; 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseSingleBRotter; 
+  cfg.deconvolution_method = new UCorrelator::WienerDeconvolution(&fn); 
+//  cfg.response_option = UCorrelator::AnalysisConfig::ResponseHarmSignalOnly; 
   //cfg.combine_unfiltered = false; 
 
   UCorrelator::Analyzer * analyzer = new UCorrelator::Analyzer(&cfg,true); 
@@ -33,14 +40,16 @@ UCorrelator::Analyzer *doInteractive(int run = 352, int event = 60849734, bool d
   analyzer->analyze(&ev,&sum); 
   analyzer->drawSummary(); 
   TCanvas * c2 = new TCanvas; 
-  c2->Divide(2,1); 
+  c2->Divide(3,1); 
   const UCorrelator::AbstractResponse * response = analyzer->getResponseManager()->response(0,0); 
   AnalysisWaveform * imp =response->impulseResponse(0.1, 981); 
   c2->cd(1); 
   imp->drawEven(); 
-  AnalysisWaveform * deconv = response->deconvolve(imp); 
+  AnalysisWaveform * deconv = response->deconvolve(imp,cfg.deconvolution_method); 
   c2->cd(2); 
   deconv->drawEven(); 
+  c2->cd(3); 
+  fn.DrawCopy(); 
 
 
   FFTtools::saveWisdom("wisdom.dat"); 

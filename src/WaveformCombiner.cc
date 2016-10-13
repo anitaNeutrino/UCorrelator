@@ -105,7 +105,7 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
     {
      deconv[i].~AnalysisWaveform(); 
       new (&deconv[i]) AnalysisWaveform(*event->getRawGraph(antennas[i],pol));
-      responses->response(pol,antennas[i])->deconvolveInPlace(&deconv[i]); //TODO add angle 
+      responses->response(pol,antennas[i])->deconvolveInPlace(&deconv[i], responses->getDeconvolutionMethod(), theta ); //TODO add angle  
       if (i == 0)
       {
         deconvolved_avg_spectrum= *(deconv[i].power()); 

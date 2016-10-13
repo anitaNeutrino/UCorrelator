@@ -15,6 +15,7 @@
 
 class AnalysisWaveform; 
 class TGraph; 
+class TF1; 
 
 namespace UCorrelator
 {
@@ -44,6 +45,39 @@ namespace UCorrelator
 
   }; 
 
+  /** Wiener Deconvolution where the SNR is given as a TGraph or a TF1 
+   *
+   * */ 
+
+  class WienerDeconvolution : public DeconvolutionMethod
+  {
+
+    public: 
+      /** Construct a Wiener Deconvolution where the SNR is given as a TGraph. 
+       * This TGraph may be modified externally, but must exist for the lifetime of this object.
+       * as the deconvolution does not own it. 
+       *
+       * Optionally, a pointer to a scale value may be given, which may also be modified externally, and must also exist for the lifetime of this object. */
+      WienerDeconvolution (const TGraph * g_snr, const double * scale = 0); 
+
+      /** Construct a WienerDeconvolution where the SNR is given as a TF1. This function may be modified externally but must exist for the lifetime of this object. */
+      WienerDeconvolution (const TF1 * f); 
+
+
+      virtual void deconvolve(size_t N, double df, FFTWComplex * Y, 
+                              const FFTWComplex * response) const ; 
+
+    protected: 
+      virtual double snr(double f) const; 
+
+    private: 
+      const TGraph * snr_graph;
+      const double * scale; 
+      const TF1 * snr_function; 
+      double min, max; 
+
+  }; 
+
   class BandLimitedDeconvolution : public DeconvolutionMethod
   {
     public: 
@@ -64,11 +98,7 @@ namespace UCorrelator
       int edge_order;
   }; 
 
-
-  static BandLimitedDeconvolution kDefaultDeconvolution(.18,1.0); 
-//  static NaiveDeconvolution kDefaultDeconvolution; 
-
-
+  extern DeconvolutionMethod & kDefaultDeconvolution; 
 
   class AbstractResponse
   {

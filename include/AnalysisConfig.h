@@ -6,6 +6,8 @@
 namespace UCorrelator
 {
 
+  class DeconvolutionMethod; 
+
   /** This class (really, it should be a struct but for CINT) stores configuration parameters that influence the behavior of th Analyzer. The defaults are defined
    * within AnalysisConfig.cc */ 
   class AnalysisConfig
@@ -96,6 +98,8 @@ namespace UCorrelator
       }; 
 
       Pulser wais_hpol, wais_vpol, ldb_hpol, ldb_vpol;  
+
+      DeconvolutionMethod * deconvolution_method; 
   };
 }
 

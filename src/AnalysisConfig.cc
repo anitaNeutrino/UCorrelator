@@ -1,4 +1,5 @@
 #include "AnalysisConfig.h" 
+#include "SystemResponse.h" 
 
 static const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25", "Histogram" }; 
 static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","HarmSignalOnly"}; 
@@ -145,6 +146,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
   if (config) loadFromFile(config);
 #endif
 
+  deconvolution_method = &kDefaultDeconvolution; 
 }
 
 

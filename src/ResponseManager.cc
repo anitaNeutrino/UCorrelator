@@ -232,12 +232,15 @@ UCorrelator::ResponseManager::ResponseManager(const UCorrelator::AnalysisConfig 
     loadResponsesFromDir(AnalysisConfig::getResponseString(cfg->response_option),cfg->response_npad); 
   }
 
+  method = cfg->deconvolution_method; 
+
 }
 
 UCorrelator::ResponseManager::ResponseManager(const char * dir, int npad) 
 {
   memset(responses,0,sizeof(responses)); 
   loadResponsesFromDir(dir,npad); 
+  method = &kDefaultDeconvolution; 
 }
 
 UCorrelator::ResponseManager::~ResponseManager() 

@@ -1,9 +1,73 @@
 #include "SystemResponse.h" 
 #include "FFTtools.h" 
+#include "TF1.h" 
 
 #include "AnalysisWaveform.h" 
 
 
+static UCorrelator::BandLimitedDeconvolution bld(0.18,1.1); 
+UCorrelator::DeconvolutionMethod & UCorrelator::kDefaultDeconvolution = bld; 
+
+void UCorrelator::WienerDeconvolution::deconvolve(size_t N, double df, FFTWComplex * Y, const FFTWComplex * response) const 
+{
+
+  FFTWComplex zero(0,0); 
+  for (unsigned i = 0; i < N; i++) 
+  {
+    double f = i * df; 
+
+    double SNR = snr(f); 
+    printf("SNR(%f) = %f\n", f, SNR); 
+
+    if (SNR <=0)  Y[i] = zero; 
+    else
+    {
+      double H2 = response[i].getAbsSq(); 
+      Y[i] = Y[i] / response[i] * ( H2 / (H2 + 1./SNR)); 
+    }
+  }
+}
+
+
+UCorrelator::WienerDeconvolution::WienerDeconvolution(const TGraph *g, const double * sc) 
+{
+  snr_graph = g; 
+  min = g->GetX()[0]; 
+  max = g->GetX()[g->GetN()-1]; 
+  snr_function = 0; 
+  scale = sc; 
+}
+
+UCorrelator::WienerDeconvolution::WienerDeconvolution(const TF1 *f) 
+{
+  snr_function = f; 
+  f->GetRange(min,max); 
+  snr_graph = 0;
+  scale = 0; 
+}
+
+
+
+double UCorrelator::WienerDeconvolution::snr(double f) const
+{
+
+  if (f < min || f > max ) return 0; 
+
+  if (snr_graph)
+  {
+    double sc = scale ? *scale : 1; 
+    return sc*snr_graph->Eval(f); 
+  }
+  else if (snr_function) 
+  {
+    printf("%f\n",f); 
+    return snr_function->Eval(f); 
+  }
+ 
+  fprintf(stderr,"Something's wrong...\n"); 
+
+  return -1; 
+}
 
 
 void UCorrelator::NaiveDeconvolution::deconvolve(size_t N, double df, FFTWComplex * Y, const FFTWComplex * response) const 
@@ -237,6 +301,7 @@ AnalysisWaveform * UCorrelator::AbstractResponse::deconvolve(const AnalysisWavef
 
 void UCorrelator::AbstractResponse::deconvolveInPlace(AnalysisWaveform * wf,  const DeconvolutionMethod * method, double off_axis_angle) const
 {
+//  printf("method: %p\n", method); 
   int old_size = wf->Neven(); 
   wf->padEven(3,0); 
   int nf = wf->Nfreq();
