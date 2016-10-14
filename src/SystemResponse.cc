@@ -17,7 +17,7 @@ void UCorrelator::WienerDeconvolution::deconvolve(size_t N, double df, FFTWCompl
     double f = i * df; 
 
     double SNR = snr(f); 
-    printf("SNR(%f) = %f\n", f, SNR); 
+//    printf("SNR(%f) = %f\n", f, SNR); 
 
     if (SNR <=0)  Y[i] = zero; 
     else
@@ -60,7 +60,7 @@ double UCorrelator::WienerDeconvolution::snr(double f) const
   }
   else if (snr_function) 
   {
-    printf("%f\n",f); 
+//    printf("%f\n",f); 
     return snr_function->Eval(f); 
   }
  
