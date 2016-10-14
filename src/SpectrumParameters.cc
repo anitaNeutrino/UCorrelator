@@ -86,9 +86,9 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, cons
         while(true) 
         {
           int jj = max_j + how_far * sign; 
-          double val = y[jj]; 
+          double val = 0; 
 //          printf("%f\n",max_val - val); 
-          if (jj < 0 || jj >=N || max_val - val > config->bw_ndb || used[jj])
+          if (jj <= 0 || jj >=N-1 || max_val - val > config->bw_ndb || used[jj])
           {
             index_bounds[(sign+1)/2] = jj;
             break; 
