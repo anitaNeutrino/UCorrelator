@@ -640,11 +640,13 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   flags->isVarner = false; 
   flags->isVarner2 = false; 
   flags->nadirFlag = true; 
-  flags->strongCWFlag = false; 
+  flags->strongCWFlag = false;  
 
 
   flags->meanPower = fae->getAveragePower(); 
   flags->medianPower = fae->getMedianPower(); 
+  flags->meanPowerFiltered = fae->getAveragePower(AnitaPol::kNotAPol, true); 
+  flags->medianPowerFiltered = fae->getMedianPower(AnitaPol::kNotAPol, true); 
 
   if ( isLDBHPol(pat, fae->getHeader(), cfg) || isLDBVPol (pat, fae->getHeader(), cfg))
   {
