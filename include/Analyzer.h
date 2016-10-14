@@ -47,15 +47,15 @@ namespace UCorrelator
 
       /** Retrieve the internal correlator. Note that if multiple polarizations are analyzed, the Correlator's internal state
        *  will be related to the last polarization used. */ 
-      const Correlator * getCorrelator() const { return &corr; } 
+      Correlator * getCorrelator() { return &corr; } 
 
       /** Retrieve the internal waveform combiner. Note that if multiple polarizations are analyzed, the WaveformCombiner's internal state
        *  will be related to the last polarization used. */ 
-      const WaveformCombiner * getWaveformCombiner() const { return &wfcomb; } 
+      WaveformCombiner * getWaveformCombiner() { return &wfcomb; } 
 
       /** Retrieve the internal xpol waveform combiner. Note that if multiple polarizations are analyzed, the WaveformCombiner's internal state
        *  will be related to the last polarization used. */ 
-      const WaveformCombiner * getXPolWaveformCombiner() const { return &wfcomb_xpol; } 
+      WaveformCombiner * getXPolWaveformCombiner() { return &wfcomb_xpol; } 
 
 
       /** Return the correlation map for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
@@ -82,7 +82,7 @@ namespace UCorrelator
        /** Return the ith deconvolved averaged power for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
       const TGraphAligned * getDeconvolvedPower(AnitaPol::AnitaPol_t pol, int i) const { return deconvolved_power[pol][i]; } 
 
-      const ResponseManager * getResponseManager() const { return &responses; } 
+      ResponseManager * getResponseManager() { return &responses; } 
 
 
 
