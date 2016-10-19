@@ -15,7 +15,12 @@ namespace UCorrelator
 
     public: 
       /** Retrieve an instance */ 
-      static const AntennaPositions * instance() { if (!theInstance) theInstance = new AntennaPositions ; return theInstance; }
+      static const AntennaPositions * instance()
+      { 
+        if (__builtin_expect(!theInstance,0)) //apparently this call takes 2 percent of the runtime of everything!!! 
+          theInstance = new AntennaPositions; 
+        return theInstance;
+      }
 
       /** Find closest N antennas to phi. Results put into closest, which should have sufficient room. Disallowed is a bitmap of antenna numbers that should be excluded. */
       void getClosestAntennas(double phi, int N, int * closest, uint64_t disallowed = 0) const; 
