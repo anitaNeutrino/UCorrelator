@@ -284,7 +284,7 @@ static void doQuadraticPeakFinding(const TH2D * hist, UCorrelator::peakfinder::F
 #ifdef UCORRELATOR_USE_EIGEN_FOR_PEAK_FINDER
   Eigen::Matrix<double,6,1> B = svd.solve(Z); 
 #else
-  bool ok; 
+  bool ok = true; 
   TVectorD B = ((TDecompSVD & )svd).Solve(Z,ok);  // I think this is effectively const since the matrix is fixed, but maybe it'll backfire with multiple threads. In that case, use EIGEN I guess?  
   if (!ok) 
   {

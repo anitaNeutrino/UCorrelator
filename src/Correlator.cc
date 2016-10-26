@@ -26,6 +26,10 @@ namespace UCorrelator
       omp_lock_t waveform_locks[NANTENNAS]; 
       omp_lock_t correlation_locks[NANTENNAS][NANTENNAS]; 
 
+      omp_lock_t hist_lock; 
+      omp_lock_t norm_lock; 
+
+
       CorrelatorLocks() 
       {
         for (int i = 0; i < NANTENNAS; i++)
@@ -37,6 +41,10 @@ namespace UCorrelator
             omp_init_lock(&correlation_locks[i][j]);
           }
         }
+
+        omp_init_lock(&hist_lock); 
+        omp_init_lock(&norm_lock); 
+
 
       }
       ~CorrelatorLocks() 
@@ -50,6 +58,9 @@ namespace UCorrelator
             omp_destroy_lock(&correlation_locks[i][j]);
           }
         }
+
+        omp_destroy_lock(&hist_lock); 
+        omp_destroy_lock(&norm_lock); 
       }
 #endif
   };
@@ -303,23 +314,33 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
 
   int n2loop = nant ? nant : NANTENNAS;  
 
+  std::vector<std::pair<int,int> > pairs; 
+  pairs.reserve(n2loop); 
+
   double center_point[2];
   center_point[0] = phi; 
   center_point[1] = theta; 
 
-#ifdef UCORRELATOR_OPENMP
-#pragma omp parallel for
-#endif
   for (int ant_i = 0; ant_i < n2loop; ant_i++)
   {
     int ant1 = nant ? closest[ant_i] : ant_i; 
     for (int ant_j = ant_i +1; ant_j < n2loop; ant_j++)
     {
       int ant2 = nant ? closest[ant_j] : ant_j; 
-   //   printf("%d %d\n", ant1,ant2); 
-      doAntennas(ant1, ant2, answer, &zoomed_norm, &cache, center_point); 
+      pairs.push_back(std::pair<int,int>(ant1,ant2));
     }
   }
+ 
+  unsigned nit = pairs.size(); 
+
+#ifdef UCORRELATOR_OPENMP
+#pragma omp parallel for
+#endif
+  for (unsigned it = 0; it < nit; it++)
+  {
+     doAntennas(pairs[it].first, pairs[it].second, answer, &zoomed_norm, &cache, center_point); 
+  }
+
 
   int nonzero = 0;
   //only keep values with at least  contributing antennas 
@@ -354,7 +375,6 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
 {
    int allowedFlag; 
    double lowerAngleThis, higherAngleThis, centerTheta1, centerTheta2, centerPhi1, centerPhi2;
-//   cache = 0; // REMOVE THIS AFTER TESTING
 
    allowedFlag=allowedPhisPairOfAntennas(lowerAngleThis,higherAngleThis, 
                     centerTheta1, centerTheta2, centerPhi1, centerPhi2, 
@@ -380,6 +400,23 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
    if (last_phi_bin == hist->GetNbinsX()+1) last_phi_bin = hist->GetNbinsX(); 
    bool must_wrap = (last_phi_bin < first_phi_bin) ; 
 
+
+   //So the maximum number of bins is going to be the total number of bins in the histogram. We probably won't fill all of them, 
+   //but memory is cheap and std::vector is slow  
+
+   int maxsize = hist->GetNbinsY() * hist->GetNbinsX(); 
+
+
+   //This is bikeshedding, but allocate it all contiguosly 
+   int * alloc = new int[3*maxsize]; 
+   int * phibins = alloc;
+   int * thetabins = alloc + maxsize; 
+   int * bins_to_fill = alloc + 2 *maxsize; 
+
+   int nbins_used =0; 
+
+
+  
    for (int phibin = first_phi_bin; (phibin <= last_phi_bin) || must_wrap; phibin++)
    {
      if (must_wrap && phibin == nphibins-1)
@@ -389,20 +426,22 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
      }
      
 
-     double phi = cache? cache->phi[phibin-1] :  ( use_bin_center ? hist->GetXaxis()->GetBinCenter(phibin) : hist->GetXaxis()->GetBinLowEdge(phibin));
+     double phi =  cache->phi[phibin-1] ; 
 //     double phi4width = center_point ? center_point[0] : phi; 
      double dphi1 = center_point ? 0 : FFTtools::wrap(phi - centerPhi1,360,0); 
      double dphi2 = center_point ? 0 : FFTtools::wrap(phi - centerPhi2,360,0); 
 
+
+     //Check if in beam width in phi 
+     if (!center_point && fabs(dphi1)  > max_phi) continue; 
+     if (!center_point && fabs(dphi2)  > max_phi) continue; 
+
      int ny = hist->GetNbinsY(); 
 
-     int nused = 0; 
-     int bins_to_fill[ny]; 
-     double vals_to_fill[ny]; 
 
      for (int thetabin = 1; thetabin <= ny; thetabin++)
      {
-       double theta = cache ? cache->theta[thetabin-1] : -( use_bin_center ? hist->GetYaxis()->GetBinCenter(thetabin) : hist->GetYaxis()->GetBinLowEdge(thetabin) ); //doh
+       double theta =  cache->theta[thetabin-1]; 
 //       double theta4width = center_point ? center_point[1] : theta; 
        double dtheta1 = center_point ? 0 : FFTtools::wrap(theta- centerTheta1,360,0); 
        double dtheta2 = center_point ? 0 : FFTtools::wrap(theta- centerTheta2,360,0); 
@@ -411,38 +450,59 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
        if (!center_point && dphi1*dphi1 + dtheta1*dtheta1 > max_phi * max_phi) continue; 
        if (!center_point && dphi2*dphi2 + dtheta2*dtheta2 > max_phi * max_phi) continue; 
 
-       //TODO vectorize this
-       double timeExpected = cache? getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag)
-                                  : getDeltaT(ant1, ant2, phi, theta,pol, groupDelayFlag); 
-
-         
-       //TODO: add additional interpolation methods
-       double val = correlation->evalEven(timeExpected); 
-
-       if (scale_cos_theta) val *= cache ? cache->cos_theta[thetabin-1] : cos(hist->GetYaxis()->GetBinCenter(thetabin) * M_PI/180); 
-
-       int bin = phibin + thetabin * nphibins ; 
-       bins_to_fill[nused] = bin; 
-       vals_to_fill[nused] = val; 
-       nused++;
-     }
-
-     for (int bi = 0; bi < nused; bi++)
-     {
-       double val = vals_to_fill[bi]; 
-       int bin = bins_to_fill[bi]; 
-
-#ifdef UCORRELATOR_OPENMP
-#pragma omp atomic
-#endif
-         hist->GetArray()[bin]+= val; 
-
-#ifdef UCORRELATOR_OPENMP
-#pragma omp atomic
-#endif
-         norm->GetArray()[bin]++;
+       phibins[nbins_used] = phibin; 
+       thetabins[nbins_used] = thetabin; 
+       bins_to_fill[nbins_used] = phibin + thetabin * nphibins;
+       nbins_used++; 
      }
    }
+
+
+   double * dalloc = new double[2 *nbins_used]; 
+   double * vals_to_fill = dalloc; 
+   double * times_to_fill = dalloc + nbins_used; 
+
+  //TODO vectorize this
+   for (int i = 0; i < nbins_used; i++)
+   {
+       
+       int phibin = phibins[i];; 
+       int thetabin = thetabins[i]; 
+       times_to_fill[i] = getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag); 
+//       vals_to_fill[i] = correlation->evalEven(times_to_fill[i]); 
+   }
+
+   correlation->evalEven(nbins_used, times_to_fill, vals_to_fill); 
+
+
+   if (scale_cos_theta)
+   {
+     for(int i = 0; i < nbins_used; i++)
+     {
+       vals_to_fill[i] = cache->cos_theta[thetabins[i]-1];
+     }
+   }
+
+
+   omp_set_lock(&locks->hist_lock); 
+   for (int bi = 0; bi < nbins_used; bi++)
+   {
+       double val = vals_to_fill[bi]; 
+       int bin = bins_to_fill[bi]; 
+       hist->GetArray()[bin]+= val; 
+   }
+   omp_unset_lock(&locks->hist_lock); 
+
+   omp_set_lock(&locks->norm_lock); 
+   for (int bi = 0; bi < nbins_used; bi++)
+   {
+       int bin = bins_to_fill[bi]; 
+       norm->GetArray()[bin]++;
+   }
+   omp_unset_lock(&locks->norm_lock); 
+
+   delete [] alloc; 
+   delete [] dalloc; 
 }
 
 void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t whichpol) 
@@ -479,7 +539,6 @@ void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol
   unsigned nit = pairs.size(); 
 
 #ifdef UCORRELATOR_OPENMP
-  //TODO: make sure this is doing what we need... 
   #pragma omp parallel for 
 #endif
   for (unsigned it = 0; it < nit; it++)

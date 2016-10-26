@@ -73,6 +73,7 @@ double UCorrelator::WienerDeconvolution::snr(double f) const
 void UCorrelator::NaiveDeconvolution::deconvolve(size_t N, double df, FFTWComplex * Y, const FFTWComplex * response) const 
 {
 
+  (void) df; 
   for (unsigned i = 0; i < N; i++) 
   {
     Y[i]/=response[i]; 
@@ -302,7 +303,7 @@ AnalysisWaveform * UCorrelator::AbstractResponse::deconvolve(const AnalysisWavef
 void UCorrelator::AbstractResponse::deconvolveInPlace(AnalysisWaveform * wf,  const DeconvolutionMethod * method, double off_axis_angle) const
 {
 //  printf("method: %p\n", method); 
-  int old_size = wf->Neven(); 
+//  int old_size = wf->Neven(); 
   wf->padEven(3,0); 
   int nf = wf->Nfreq();
   double df = wf->deltaF(); 

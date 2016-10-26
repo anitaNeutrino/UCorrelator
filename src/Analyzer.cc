@@ -635,18 +635,29 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
 {
 
   //TODO  most of these 
+  flags->nadirFlag = true; // we should get rid of htis I guess? 
+
   
+  flags->meanPower[0] = fae->getAveragePower(); 
+  flags->medianPower[0] = fae->getMedianPower(); 
+  flags->meanPowerFiltered[0] = fae->getAveragePower(AnitaPol::kNotAPol, AnitaRing::kNotARing, true); 
+  flags->medianPowerFiltered[0] = fae->getMedianPower(AnitaPol::kNotAPol, AnitaRing::kNotARing, true); 
 
-  flags->isVarner = false; 
-  flags->isVarner2 = false; 
-  flags->nadirFlag = true; 
-  flags->strongCWFlag = false;  
+  for (int ring = 0; ring <AnitaRing::kNotARing; ring++)
+  {
+    flags->meanPower[1+ring] = fae->getAveragePower(AnitaPol::kNotAPol, AnitaRing::AnitaRing_t(ring)); 
+    flags->medianPower[1+ring] = fae->getMedianPower(AnitaPol::kNotAPol, AnitaRing::AnitaRing_t(ring)); 
+    flags->meanPowerFiltered[1+ring] = fae->getAveragePower(AnitaPol::kNotAPol, AnitaRing::AnitaRing_t(ring), true); 
+    flags->medianPowerFiltered[1+ring] = fae->getMedianPower(AnitaPol::kNotAPol, AnitaRing::AnitaRing_t(ring), true); 
+  }
 
 
-  flags->meanPower = fae->getAveragePower(); 
-  flags->medianPower = fae->getMedianPower(); 
-  flags->meanPowerFiltered = fae->getAveragePower(AnitaPol::kNotAPol, true); 
-  flags->medianPowerFiltered = fae->getMedianPower(AnitaPol::kNotAPol, true); 
+
+  for (int pol = AnitaPol::kHorizontal; pol <= AnitaPol::kVertical; pol++)
+  {
+     fae->getMinMaxRatio(AnitaPol::AnitaPol_t(pol), &flags->maxBottomToTopRatio[pol], &flags->minBottomToTopRatio[pol], &flags->maxBottomToTopRatioSector[pol], &flags->minBottomToTopRatioSector[pol], AnitaRing::kBottomRing, AnitaRing::kTopRing); 
+  }
+
 
   if ( isLDBHPol(pat, fae->getHeader(), cfg) || isLDBVPol (pat, fae->getHeader(), cfg))
   {
@@ -660,6 +671,10 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   {
     flags->pulser = AnitaEventSummary::EventFlags::NONE; 
   }
+
+  flags->strongCWFlag = false;  
+  flags->isVarner = false; 
+  flags->isVarner2 = false; 
 
   flags->isGood = !flags->isVarner && !flags->isVarner2 && !flags->strongCWFlag; 
 

@@ -65,7 +65,7 @@ namespace UCorrelator
     double part1=ap->zAnt[pol][ant1]*cache->tan_theta[thetabin] - ap->rAnt[pol][ant1] * cache->cos_phi[2*(phibin + nphi * ant1) + pol];
     double part2=ap->zAnt[pol][ant2]*cache->tan_theta[thetabin] - ap->rAnt[pol][ant2] * cache->cos_phi[2*(phibin + nphi * ant2) + pol];
     
-    double geomDelay=1e9*((cache->cos_theta[thetabin] * (part1 - part2))/C_LIGHT);    //returns time in ns
+    double geomDelay=(1.e9/C_LIGHT)*(cache->cos_theta[thetabin] * (part1 - part2));    //returns time in ns
 
 
     if (includeGroupDelay)
