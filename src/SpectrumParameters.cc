@@ -102,7 +102,7 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, cons
      int start = index_bounds[0];
      int end = index_bounds[1]; 
      if (start < 0) start = 0; 
-     if (end > x.size()) end = x.size(); 
+     if (end >= (int) x.size()) end = x.size()-1; 
 
      winfo->bandwidth[i] = x[end] - x[start]; 
      winfo->peakFrequency[i] = (x[start] + x[end])/2;
