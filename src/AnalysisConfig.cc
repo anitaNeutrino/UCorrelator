@@ -9,16 +9,13 @@ static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","H
 
 #ifdef ENABLE_LIBCONFIG
 #include "libconfig.h++"
-
-
 #define LOOKUP(X) cfg.lookupValue(#X,X) 
-
 
 void lookupEnum(libconfig::Config * cfg, const char * key, int * val, int N, const char ** allowed) 
 {
   if (!cfg->exists(key)) return; 
 
-  libconfig::Setting set = cfg->lookup(key); 
+  libconfig::Setting & set = cfg->lookup(key); 
 
   for (int i = 0; i < N; i++)
   {
@@ -29,7 +26,7 @@ void lookupEnum(libconfig::Config * cfg, const char * key, int * val, int N, con
     }
   }
 
-  fprintf(stderr,"Config Parse Error on line %d: %s must be one of: \n\t", set.getSourceLine() key); 
+  fprintf(stderr,"Config Parse Error on line %d: %s must be one of: \n\t", set.getSourceLine(), key); 
 
 
   for (int i = 0; i < N; i++)
@@ -42,7 +39,7 @@ void lookupEnum(libconfig::Config * cfg, const char * key, int * val, int N, con
 }
 
 
-AnalysisConfig::loadFromFile(const char * config_file) 
+void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file) 
 {
 
   libconfig::Config cfg; 
@@ -57,7 +54,7 @@ AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(enable_group_delay); 
   LOOKUP(zoomed_nphi); 
   LOOKUP(zoomed_ntheta); 
-  LOOKUP(zoomed_dpi); 
+  LOOKUP(zoomed_dphi); 
   LOOKUP(zoomed_dtheta); 
   LOOKUP(zoomed_nant); 
   LOOKUP(combine_nantennas); 
@@ -76,11 +73,19 @@ AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(scale_by_cos_theta); 
 
   const char * pols[] = {"horizontal", "vertical" }; 
-  lookupEnum(&cfg, "start_pol", &start_pol, 2,pols); 
-  lookupEnum(&cfg, "end_pol", &end_pol, 2,pols); 
-  lookupEnum(&cfg, "fine_peak_finding_option", fine_peak_finding_option, sizeof(peakfinders)/sizeof(char *), peakfinders); 
-  lookupEnum(&cfg, "response_option", response_option, sizeof(responses)/sizeof(char *), responses); 
+  lookupEnum(&cfg, "start_pol", (int*) &start_pol, 2,pols); 
+  lookupEnum(&cfg, "end_pol", (int*) &end_pol, 2,pols); 
+  lookupEnum(&cfg, "fine_peak_finding_option", (int*) &fine_peak_finding_option, sizeof(peakfinders)/sizeof(char *), peakfinders); 
+  lookupEnum(&cfg, "response_option", (int*) &response_option, sizeof(responses)/sizeof(char *), responses); 
 
+}
+
+#else
+void AnalysisConfig::loadFromFile(const char * config_file) 
+{
+
+  fprintf(stderr, "Not compiled with support for reading config files. You need libconfig for that.\n"); 
+  (void) config_file; 
 }
 #endif
 
@@ -90,11 +95,7 @@ const int wais_vpol_time_offset = -99757;
 const int ldb_hpol_time_offset = 0;  //TODO
 const int ldb_vpol_time_offset = 0; 
 
-#ifdef ENABLE_LIBCONFIG
 UCorrelator::AnalysisConfig::AnalysisConfig(const char * config) 
-#else
-UCorrelator::AnalysisConfig::AnalysisConfig() 
-#endif
   : 
     wais_hpol(wais_hpol_time_offset, 800e3, 1e3), 
     wais_vpol(wais_vpol_time_offset, 800e3, 1e3), 
@@ -141,10 +142,8 @@ UCorrelator::AnalysisConfig::AnalysisConfig()
   response_option = ResponseNone; 
   response_npad = 50; 
 
-#ifdef ENABLE_LIBCONFIG
 
   if (config) loadFromFile(config);
-#endif
 
   deconvolution_method = &kDefaultDeconvolution; 
 }

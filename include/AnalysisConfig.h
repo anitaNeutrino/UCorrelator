@@ -13,16 +13,13 @@ namespace UCorrelator
   class AnalysisConfig
   {
     public: 
-    /** Create a default config */
-#ifdef ENABLE_LIBCONFIG
-      /** (NOT IMPLEMENTED YET) construct from file */ 
-      AnalysisConfig(const char * config_file = 0); 
-      /** (NOT IMPLEMENTED YET) load options from file */ 
-      void loadFromFile(const char * config_file); 
-#else
-      AnalysisConfig(); 
-#endif
 
+
+      /** construct from file */ 
+      AnalysisConfig(const char * config_file = 0); 
+
+      /** load options from file */ 
+      void loadFromFile(const char * config_file); 
 
       unsigned correlator_nphi; /// Number of phi bins in rough correlation map 
       unsigned correlator_ntheta;  /// Number of theta bins in rough correlation map 

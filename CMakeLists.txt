@@ -5,6 +5,7 @@ project(UCorrelator)
 
 set(libname "UCorrelator")
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 # You need to tell CMake where to find the ROOT installation. This can be done in a number of ways:
 #   - ROOT built with classic configure/make use the provided $ROOTSYS/etc/cmake/FindROOT.cmake
@@ -161,15 +162,33 @@ if(ENABLE_OPENMP)
 endif() 
 
 install (DIRECTORY data/ DESTINATION ${UTIL_SHARE_DIR}/UCorrelator)
+install (FILES cmake/modules/FindLibConfig.cmake DESTINATION ${UTIL_SHARE_DIR}/cmake/modules)
 
 set (BINSRCDIR drivers) 
 
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 
+option ( ENABLE_LIBCONFIG "Enable reading from config file (requires libconfig)" ON ) 
+
+
+if (ENABLE_LIBCONFIG)
+  find_package(LibConfig) 
+  if (LIBCONFIG_FOUND) 
+    message( "Found libconfig. Support of reading configuration files enabld") 
+    add_definitions( -DENABLE_LIBCONFIG) 
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LIBCONFIG_EXE_LINKER_FLAGS}")
+  else() 
+    message("Could not find libonfig. Support of reading config is disabled") 
+  endif() 
+endif() 
+
+
 macro(do_driver driver_name) 
   add_executable(${driver_name} ${BINSRCDIR}/${driver_name}.cc) 
   target_link_libraries(${driver_name}  ${ROOT_LIBRARIES} ${FFTW_LIBRARIES} ${libname})
 endmacro() 
+
+
 
 
 do_driver(doWais) 
