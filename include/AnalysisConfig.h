@@ -82,6 +82,13 @@ namespace UCorrelator
       double noise_estimate_t1;  ///this is used to pick parts of the waveform for calcuating the N in SNR
 
       bool scale_by_cos_theta;  // Scale peak values by cos theta when picking max (due to different bin sizes) 
+      bool use_offline_mask; // use offline phi masking / l1 triggers (default true)  
+
+
+      //payload blast cuts (if 0, then ignored) 
+      double max_mean_power_filtered;  
+      double max_median_power_filtered; 
+      double max_bottom_to_top_ratio; 
 
 
       /** Used to define when a waveform is likely from a cal pulser */
@@ -96,6 +103,7 @@ namespace UCorrelator
 
       Pulser wais_hpol, wais_vpol, ldb_hpol, ldb_vpol;  
 
+      /** TODO: this has to be loaded from file somehow */ 
       DeconvolutionMethod * deconvolution_method; 
   };
 }

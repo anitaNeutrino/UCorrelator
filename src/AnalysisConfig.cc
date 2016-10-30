@@ -71,6 +71,10 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(noise_estimate_t1); 
   LOOKUP(response_npad); 
   LOOKUP(scale_by_cos_theta); 
+  LOOKUP(use_offline_mask); 
+  LOOKUP(max_mean_power_filtered); 
+  LOOKUP(max_median_power_filtered); 
+  LOOKUP(max_bottom_to_top_ratio); 
 
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", (int*) &start_pol, 2,pols); 
@@ -107,8 +111,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   correlator_theta_lowest = 60; 
   correlator_theta_highest = 25; 
   enable_group_delay = true; 
-
-
+  use_offline_mask = true; 
   zoomed_nphi = 60; 
   zoomed_ntheta = 60; 
   zoomed_dphi = 0.5; 
@@ -142,6 +145,9 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   response_option = ResponseNone; 
   response_npad = 50; 
 
+  max_mean_power_filtered = 1e6; 
+  max_median_power_filtered = 1e6; 
+  max_bottom_to_top_ratio = 5; 
 
   if (config) loadFromFile(config);
 

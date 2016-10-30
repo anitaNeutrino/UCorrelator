@@ -92,8 +92,14 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
 void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEventSummary * summary) 
 {
   
+
+  const RawAnitaHeader * hdr = event->getHeader(); 
+
+  //we need a UsefulAdu5Pat for this event
+  UsefulAdu5Pat * pat =  (UsefulAdu5Pat*) event->getGPS();  //unconstifying it .. hopefully that won't cause problems
+ 
   /* Initialize the summary */ 
-  summary = new (summary) AnitaEventSummary(event->getHeader(), (UsefulAdu5Pat*) event->getGPS()); 
+  summary = new (summary) AnitaEventSummary(hdr, (UsefulAdu5Pat*) event->getGPS()); 
 
   //check for saturation
   uint64_t saturated[2] = {0,0}; 
@@ -102,21 +108,32 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
                                       &saturated[AnitaPol::kVertical], 
                                       cfg->saturation_threshold); 
 
-  //we need a UsefulAdu5Pat for this event
-  UsefulAdu5Pat * pat =  (UsefulAdu5Pat*) event->getGPS();  //unconstifying it .. hopefully that won't cause problems
-  
+ 
 
   // loop over wanted polarizations 
   for (int pol = cfg->start_pol; pol <= cfg->end_pol; pol++) 
   {
 
     UShort_t triggeredPhi = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->l3TrigPatternH : event->getHeader()->l3TrigPattern; 
-    UShort_t triggeredPhiL1 = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->l1TrigMaskH : event->getHeader()->l1TrigMask;  
-    UShort_t maskedPhi = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->phiTrigMaskH : event->getHeader()->phiTrigMask; 
+
+
+    UShort_t triggeredPhiL1 = 0;   
+    UShort_t maskedPhi = 0 ; 
+    if (cfg->use_offline_mask) 
+    {
+      maskedPhi = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->phiTrigMaskHOffline : event->getHeader()->phiTrigMaskOffline; 
+      triggeredPhiL1 = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->l1TrigMaskHOffline : event->getHeader()->l1TrigMaskOffline;  
+    }
+    else
+    {
+      maskedPhi = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->phiTrigMaskH : event->getHeader()->phiTrigMask; 
+      triggeredPhiL1 = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->l1TrigMaskH : event->getHeader()->l1TrigMask;  
+    }
+
 
 
     //TODO: check this 
-    TVector2 triggerAngle; 
+    TVector2 triggerAngle(0,0); 
 
     int ntriggered = __builtin_popcount(triggeredPhi); 
     int ntriggeredL1 = ntriggered ? 0 : __builtin_popcount(triggeredPhiL1); 
@@ -124,16 +141,19 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     UShort_t which_trigger = ntriggered ? triggeredPhi : triggeredPhiL1; 
     int which_ntriggered = ntriggered ? ntriggered : ntriggeredL1; 
 
+    const double phi_sector_width = 360. / NUM_PHI; 
+
     for (int i = 0; i < NUM_PHI; i++) 
     {
       if (which_trigger & (1 << i))
       {
-         double ang = (i * 22.5) * TMath::Pi()/180;
+        //TODO: this 45 is hardcoded here. Should come from GeomTool or something... 
+         double ang = (i * phi_sector_width - 45) * TMath::Pi()/180;
          triggerAngle += TVector2(cos(ang), sin(ang)) / which_ntriggered; 
       }
     }
 
-    double avgHwAngle = triggerAngle.Phi(); 
+    double avgHwAngle = triggerAngle.Phi() * RAD2DEG; 
 
     // tell the correlator not to use saturated events and make the correlation map
     corr.setDisallowedAntennas(saturated[pol]); 
@@ -175,7 +195,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
       //fill in separation 
       summary->peak[pol][i].phi_separation = 1000; 
-      for (int j = 1; j < i; j++)
+      for (int j = 0; j < i; j++)
       {
         summary->peak[pol][i].phi_separation = TMath::Min(summary->peak[pol][i].phi_separation, fabs(FFTtools::wrap(summary->peak[pol][i].phi - summary->peak[pol][j].phi, 360, 0))); 
       }
@@ -336,7 +356,9 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
       point->dtheta_rough = FFTtools::wrap(point->theta - rough_theta, 360,0); 
 
       point->hwAngle = FFTtools::wrap(point->phi - hwPeakAngle,360,0); 
-      int sector = fmod(point->phi + 11.25,360) / 22.5; 
+
+      //TODO: I don't believe this really yet
+      int sector = 2+fmod(point->phi + 11.25,360) / 22.5; 
 
       point->masked = masked_sectors & ( 1 << sector); 
       point->triggered = triggered_sectors & ( 1 << sector); 
@@ -634,7 +656,6 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary::EventFlags * flags, UsefulAdu5Pat * pat) 
 {
 
-  //TODO  most of these 
   flags->nadirFlag = true; // we should get rid of htis I guess? 
 
   
@@ -650,7 +671,6 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
     flags->meanPowerFiltered[1+ring] = fae->getAveragePower(AnitaPol::kNotAPol, AnitaRing::AnitaRing_t(ring), true); 
     flags->medianPowerFiltered[1+ring] = fae->getMedianPower(AnitaPol::kNotAPol, AnitaRing::AnitaRing_t(ring), true); 
   }
-
 
 
   for (int pol = AnitaPol::kHorizontal; pol <= AnitaPol::kVertical; pol++)
@@ -672,7 +692,15 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
     flags->pulser = AnitaEventSummary::EventFlags::NONE; 
   }
 
-  flags->strongCWFlag = false;  
+  // more than 80 percent filterd out 
+  flags->strongCWFlag = flags->medianPowerFiltered[0] / flags->medianPower[0] < 0.2; 
+
+  flags->isPayloadBlast =  
+    (cfg->max_mean_power_filtered && flags->medianPowerFiltered[0] > cfg->max_mean_power_filtered) ||
+    (cfg->max_median_power_filtered && flags->medianPowerFiltered[0] > cfg->max_median_power_filtered) ||
+    (cfg->max_bottom_to_top_ratio && flags->maxBottomToTopRatio[0] > cfg->max_bottom_to_top_ratio) || 
+    (cfg->max_bottom_to_top_ratio && flags->maxBottomToTopRatio[1] > cfg->max_bottom_to_top_ratio); 
+
   flags->isVarner = false; 
   flags->isVarner2 = false; 
 
