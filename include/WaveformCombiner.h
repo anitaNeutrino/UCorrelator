@@ -23,7 +23,7 @@ namespace UCorrelator
 
     public: 
 
-      WaveformCombiner(int nantennas = 10, int npad = 3, bool useUnfiltered = true, bool deconvolve = false, const ResponseManager * response = 0); 
+      WaveformCombiner(int nantennas = 10, int npad = 3, bool useUnfiltered = true, bool deconvolve = false, const ResponseManager * response = 0, bool enableALFAHack=true); 
 
       /** Sets the responses used when deconvolving. 
        * If a response is 0, nothing is done. 
@@ -46,6 +46,7 @@ namespace UCorrelator
       void setDeconvolve(bool deconvolve) {do_deconvolution = deconvolve ;}
       void setUseUnfiltered(bool raw_opt) {use_raw = raw_opt;}
       void setGroupDelayFlag(bool opt) { enable_group_delay = opt; } 
+      bool wasAlfaFiltered(); 
 
       /** Static helper used to combine arbitrary waveforms */
       static AnalysisWaveform *  combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0); 
@@ -59,13 +60,14 @@ namespace UCorrelator
       TGraphAligned deconvolved_avg_spectrum; 
 
 
+      const AnalysisWaveform * wf(const FilteredAnitaEvent*, int ant, AnitaPol::AnitaPol_t pol); 
       const ResponseManager * responses; 
       int npad; 
       int nant; 
       bool use_raw; 
       bool do_deconvolution; 
       bool enable_group_delay; 
-
+      bool alfa_hack; 
   };
 
 }

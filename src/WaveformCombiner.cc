@@ -1,6 +1,7 @@
 #include "WaveformCombiner.h" 
 #include "AntennaPositions.h" 
 #include <vector> 
+#include "BasicFilters.h" 
 #include "FilteredAnitaEvent.h"
 #include "FFTtools.h"
 #include "ResponseManager.h" 
@@ -10,17 +11,16 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool useUnfiltered, bool deconvolve, const ResponseManager * response)
-  : coherent(260), deconvolved(260) 
+UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool useUnfiltered, bool deconvolve, const ResponseManager * response, bool alfa_hack)
+  : coherent(260), deconvolved(260), alfa_hack(alfa_hack) 
 {
   setNAntennas(nantennas); 
   setNPad(npad); 
   setDeconvolve(deconvolve); 
   setUseUnfiltered(useUnfiltered); 
   setGroupDelayFlag(true); 
-  
+  use_raw= useUnfiltered; 
   setResponseManager(response); 
-
   
 }
 
@@ -68,6 +68,17 @@ static void addToGraph(TGraph * g, const TGraph * h)
   }
 }
 
+
+const AnalysisWaveform * UCorrelator::WaveformCombiner::wf (const FilteredAnitaEvent * event, int ant, AnitaPol::AnitaPol_t pol) 
+{
+  return use_raw ? event->getRawGraph(ant, pol) : event->getFilteredGraph(ant,pol); 
+
+
+}
+
+
+static SimplePassBandFilter alfa_filter(0,0.6);  
+
 void UCorrelator::WaveformCombiner::combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, uint64_t disallowed)
 {
 
@@ -85,18 +96,24 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
   for (int i = 0; i < nant; i++) 
   {
     //ensure transform already calculated so we don't have to repeat when deconvolving
-    (void) event->getRawGraph(antennas[i],pol)->freq(); 
+    (void) wf(event,antennas[i],pol)->freq(); 
 
     padded[i].~AnalysisWaveform(); 
-    new (&padded[i]) AnalysisWaveform(*event->getRawGraph(antennas[i],pol));
+    new (&padded[i]) AnalysisWaveform(*wf(event,antennas[i],pol));
 
     if (i == 0)
     {
-      coherent_avg_spectrum = *(event->getRawGraph(antennas[0],pol)->power());
+      coherent_avg_spectrum = *(wf(event,antennas[0],pol)->power());
     }
     else
     {
-      addToGraph(&coherent_avg_spectrum, event->getRawGraph(antennas[0],pol)->power()); 
+      addToGraph(&coherent_avg_spectrum,wf(event,antennas[0],pol)->power()); 
+    }
+
+    //ALFA HACK IS HERE 
+    if (alfa_hack && pol == AnitaPol::kHorizontal && (antennas[i] == 4 || antennas[i] == 12))
+    {
+      alfa_filter.processOne(&padded[i]); 
     }
 
     padded[i].padFreq(npad);
@@ -104,7 +121,7 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
     if (do_deconvolution)
     {
      deconv[i].~AnalysisWaveform(); 
-      new (&deconv[i]) AnalysisWaveform(*event->getRawGraph(antennas[i],pol));
+      new (&deconv[i]) AnalysisWaveform(*wf(event,antennas[i],pol));
       responses->response(pol,antennas[i])->deconvolveInPlace(&deconv[i], responses->getDeconvolutionMethod(), theta ); //TODO add angle  
       if (i == 0)
       {
