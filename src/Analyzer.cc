@@ -127,7 +127,8 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     else
     {
       maskedPhi = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->phiTrigMaskH : event->getHeader()->phiTrigMask; 
-      triggeredPhiL1 = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->l1TrigMaskH : event->getHeader()->l1TrigMask;  
+      triggeredPhiL1 = event->getHeader()->getL1Mask(AnitaPol::AnitaPol_t(pol));
+      //	AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? ->l1TrigMaskH : event->getHeader()->l1TrigMask;  
     }
 
 
