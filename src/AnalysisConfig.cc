@@ -85,7 +85,7 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
 }
 
 #else
-void AnalysisConfig::loadFromFile(const char * config_file) 
+void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file) 
 {
 
   fprintf(stderr, "Not compiled with support for reading config files. You need libconfig for that.\n"); 

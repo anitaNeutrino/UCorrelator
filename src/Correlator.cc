@@ -483,24 +483,27 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
      }
    }
 
-
-   omp_set_lock(&locks->hist_lock); 
+#ifdef UCORRELATOR_OPENMP
+   omp_set_lock(&locks->hist_lock);
+#endif
    for (int bi = 0; bi < nbins_used; bi++)
    {
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi]; 
        hist->GetArray()[bin]+= val; 
    }
+#ifdef UCORRELATOR_OPENMP
    omp_unset_lock(&locks->hist_lock); 
-
-   omp_set_lock(&locks->norm_lock); 
+   omp_set_lock(&locks->norm_lock);
+#endif   
    for (int bi = 0; bi < nbins_used; bi++)
    {
        int bin = bins_to_fill[bi]; 
        norm->GetArray()[bin]++;
    }
+#ifdef UCORRELATOR_OPENMP
    omp_unset_lock(&locks->norm_lock); 
-
+#endif
    delete [] alloc; 
    delete [] dalloc; 
 }
