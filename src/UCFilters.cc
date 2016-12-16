@@ -535,7 +535,8 @@ void UCorrelator::SineSubtractFilter::process(FilteredAnitaEvent * ev)
     {
       AnalysisWaveform * wf = getWf(ev, i, AnitaPol::AnitaPol_t(pol)); 
       TGraph * g = wf->updateUneven(); 
-      subs[pol][i]->subtractCW(1,&g, 1/2.6); 
+      if (g->GetRMS(2) > 0) 
+        subs[pol][i]->subtractCW(1,&g, 1/2.6); 
     }
   }
 }
