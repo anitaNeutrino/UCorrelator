@@ -110,6 +110,9 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
  
 
+  //also disable missing sectors 
+  UCorrelator::flags::checkEmpty(event->getUsefulAnitaEvent(), &saturated[AnitaPol::kHorizontal], &saturated[AnitaPol::kVertical]); 
+
   // loop over wanted polarizations 
   for (int pol = cfg->start_pol; pol <= cfg->end_pol; pol++) 
   {
@@ -489,17 +492,17 @@ UCorrelator::Analyzer::~Analyzer()
       }
     }
 
-    clearInteractiveMemory(); 
+    clearInteractiveMemory(1); 
   }
 
   if (power_filter)
     delete power_filter; 
 }
 
-void UCorrelator::Analyzer::clearInteractiveMemory() const
+void UCorrelator::Analyzer::clearInteractiveMemory(double frac) const
 {
 
-  for (unsigned i = 0; i < delete_list.size(); i++) 
+  for (unsigned i = (1-frac) * delete_list.size(); i < delete_list.size(); i++) 
   {
     delete delete_list[i]; 
   }
@@ -606,6 +609,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       ((TGraph*)avg_spectra[ipol])->SetLineColor(2); 
       ((TGraph*)avg_spectra[ipol])->Draw("lsame"); 
 
+      /*
       TF1 * spectral_slope = new TF1(TString::Format("__slope_%d", i), "pol1",0.2,0.7); 
       spectral_slope->SetParameter(0, last.coherent[ipol][i].spectrumIntercept) ;
       spectral_slope->SetParameter(1, last.coherent[ipol][i].spectrumSlope) ;
@@ -627,6 +631,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       delete_list.push_back(spectral_slope); 
       delete_list.push_back(gbw);
 
+      */  
       
       if (interactive_deconvolved)
       {

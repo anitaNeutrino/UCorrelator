@@ -307,7 +307,7 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   if (nant) 
   {
     memset(closest,0,sizeof(closest)); 
-    ap->getClosestAntennas(phi, nant, closest, disallowed_antennas); 
+    nant = ap->getClosestAntennas(phi, nant, closest, disallowed_antennas); 
   }
 
   TrigCache cache(nphi, dphi, phi0, ntheta,dtheta,theta0, ap, true,nant, nant ? closest : 0); 

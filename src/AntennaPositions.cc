@@ -32,7 +32,7 @@ UCorrelator::AntennaPositions::AntennaPositions()
 
 
 
-void UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * closest, uint64_t disallowed ) const
+int UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * closest, uint64_t disallowed ) const
 {
 
   assert(N < NUM_SEAVEYS); 
@@ -51,10 +51,13 @@ void UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * 
   for (std::multimap<double,int>::const_iterator it = dphis.begin(); it !=dphis.end(); it++) 
   {
 //    printf("  %d %f\n", (*it).second, (*it).first); 
+    
+    if ((*it).second >=360) break; 
     closest[Nused++] = (*it).second; 
     if (Nused == N) break; 
   }
 //  printf("\n"); 
+  return Nused; 
 }
 
 

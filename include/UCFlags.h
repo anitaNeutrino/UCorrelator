@@ -15,6 +15,8 @@ namespace UCorrelator
      */
     int checkSaturation(const UsefulAnitaEvent *ev, uint64_t *hsat = 0, uint64_t * vsat = 0, double threshold_in_mV = 1500); 
 
+    /** Checks for missing antennas and marks the bitmasks */ 
+    int checkEmpty(const UsefulAnitaEvent *ev,  uint64_t *hempty, uint64_t *vempty); 
 
 
   }

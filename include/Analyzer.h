@@ -95,7 +95,7 @@ namespace UCorrelator
       double getRoughPhi(AnitaPol::AnitaPol_t pol, int i) const { return rough_peaks[pol][i].first; }
       double getRoughTheta(AnitaPol::AnitaPol_t pol, int i) const { return -rough_peaks[pol][i].second; }
 
-      void clearInteractiveMemory() const; 
+      void clearInteractiveMemory(double frac = 0.5) const; 
     private:
 
       void fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph * power, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol); 
