@@ -51,6 +51,8 @@ namespace UCorrelator
         tan_theta[i] = tan(theta[i] * DEG2RAD);  //naturally, we reverse the sign... 
       }
 
+      this->ap = ap; 
+
     }; 
 
 
@@ -77,6 +79,7 @@ namespace UCorrelator
     double * cos_theta; 
     double * tan_theta;
 
+    const AntennaPositions * ap; 
 
   }; 
 

@@ -33,7 +33,7 @@ namespace UCorrelator
   inline double getDeltaT(int ant1, int ant2, double phi, double theta, AnitaPol::AnitaPol_t pol, bool includeGroupDelay = false) 
   {
     double th = theta * DEG2RAD; 
-    static const AntennaPositions * ap = AntennaPositions::instance(); 
+    const AntennaPositions * ap = AntennaPositions::instance(); 
     double ph1_deg = (phi- ap->phiAnt[pol][ant1]) ; 
     double ph2_deg = (phi- ap->phiAnt[pol][ant2]) ; 
     double ph1  = ph1_deg * DEG2RAD; 
@@ -60,7 +60,7 @@ namespace UCorrelator
    * */ 
   inline double getDeltaTFast(int ant1, int ant2, int phibin, int thetabin, AnitaPol::AnitaPol_t pol, const TrigCache * cache, bool includeGroupDelay = false) 
   {
-    static const AntennaPositions * ap = AntennaPositions::instance(); 
+    const AntennaPositions * ap = cache->ap; 
     const int nphi = cache->nphi; 
     double part1=ap->zAnt[pol][ant1]*cache->tan_theta[thetabin] - ap->rAnt[pol][ant1] * cache->cos_phi[2*(phibin + nphi * ant1) + pol];
     double part2=ap->zAnt[pol][ant2]*cache->tan_theta[thetabin] - ap->rAnt[pol][ant2] * cache->cos_phi[2*(phibin + nphi * ant2) + pol];

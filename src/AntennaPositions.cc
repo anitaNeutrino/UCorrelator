@@ -5,7 +5,6 @@
 #include <map>
 
 
-UCorrelator::AntennaPositions * UCorrelator::AntennaPositions::theInstance = 0; 
 
 #ifndef RAD2DEG
 #define RAD2DEG (180/M_PI)
@@ -13,8 +12,10 @@ UCorrelator::AntennaPositions * UCorrelator::AntennaPositions::theInstance = 0;
 
 
 
+const UCorrelator::AntennaPositions * UCorrelator::AntennaPositions::instances[NUM_ANITAS+1] = {0}; 
 
-UCorrelator::AntennaPositions::AntennaPositions()
+
+UCorrelator::AntennaPositions::AntennaPositions(int version)
 {
 
   for (int pol = AnitaPol::kHorizontal; pol <= AnitaPol::kVertical; pol++)
@@ -22,7 +23,7 @@ UCorrelator::AntennaPositions::AntennaPositions()
     for (int ant  = 0; ant < NUM_SEAVEYS; ant++) 
     {
 //      printf("%d %d\n",pol,ant); 
-      AnitaGeomTool * geom = AnitaGeomTool::Instance(); 
+      AnitaGeomTool * geom = AnitaGeomTool::Instance(version); 
       phiAnt[pol][ant] = geom->getAntPhiPositionRelToAftFore(ant,(AnitaPol::AnitaPol_t)pol) * RAD2DEG; 
       rAnt[pol][ant] = geom->getAntR(ant,(AnitaPol::AnitaPol_t) pol); 
       zAnt[pol][ant] = geom->getAntZ(ant,(AnitaPol::AnitaPol_t) pol); 

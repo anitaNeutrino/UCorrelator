@@ -68,8 +68,7 @@ namespace UCorrelator
       TH2D *hist; //wow, apparently sizeof(TH2D) is huge... that's why this is on the heap 
       TH2I *norm; 
 
-
-      TrigCache * trigcache; 
+      TrigCache * trigcache[NUM_ANITAS+1]; 
       double rms[NANTENNAS]; 
 
       double max_phi, max_phi2;

@@ -2,6 +2,7 @@
 #define _UCORRELATOR_ANTENNA_POSITIONS_H
 
 #include "AnitaConventions.h" 
+#include "AnitaVersion.h" 
 #include "stdint.h"
 
 namespace UCorrelator
@@ -10,16 +11,26 @@ namespace UCorrelator
   class AntennaPositions
   {
 
-    static AntennaPositions * theInstance; 
-    AntennaPositions(); 
+    static const AntennaPositions * instances[NUM_ANITAS+1]; 
+
+    AntennaPositions(int v); 
 
     public: 
       /** Retrieve an instance */ 
-      static const AntennaPositions * instance()
+      static const AntennaPositions * instance(int version = 0)
       { 
-        if (__builtin_expect(!theInstance,0)) //apparently this call takes 2 percent of the runtime of everything!!! 
-          theInstance = new AntennaPositions; 
-        return theInstance;
+
+        if (__builtin_expect(!version, 1)) 
+        {
+          version = AnitaVersion::get();  
+        }
+
+        if (__builtin_expect(!instances[version],0)) 
+        {
+          instances[version] = new AntennaPositions(version); 
+        }
+
+        return instances[version];
       }
 
       /** Find closest N antennas to phi. Results put into closest, which should have sufficient room. Disallowed is a bitmap of antenna numbers that should be excluded. Returns number found (could be less than number requested if too many disallowed)*/

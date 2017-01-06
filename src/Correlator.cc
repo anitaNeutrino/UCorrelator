@@ -73,7 +73,6 @@ static int count_the_correlators = 1;
 
 static int count_the_zoomed_correlators = 1; 
 
-static const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions::instance(); 
 
 
 
@@ -97,7 +96,9 @@ UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, in
   hist->GetYaxis()->SetTitle("-#theta"); 
   
   use_bin_center = use_center;
-  trigcache = new TrigCache(nphi, (phi_max-phi_min)/nphi, phi_min, ntheta, (theta_max - theta_min)/ntheta,theta_min, ap, use_center); 
+  memset(trigcache,0, sizeof(trigcache)); 
+
+
 
   disallowed_antennas = 0; 
   pad_factor = 3; 
@@ -140,6 +141,9 @@ static int allowedPhisPairOfAntennas(double &lowerAngle, double &higherAngle, do
   }
   
   double centerAngle1, centerAngle2;
+
+  const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions::instance(); 
+
   if (allowedFlag==1)
   {
     centerAngle1=ap->phiAnt[pol][ant1]; 
@@ -302,6 +306,8 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   
   answer->GetXaxis()->SetTitle("#phi"); 
   answer->GetYaxis()->SetTitle("-#theta"); 
+
+  const AntennaPositions * ap = AntennaPositions::instance(); 
 
   int closest[nant]; // is it a problem if nant is 0? 
   if (nant) 
@@ -508,6 +514,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
    delete [] dalloc; 
 }
 
+
 void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t whichpol) 
 {
 
@@ -518,6 +525,24 @@ void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol
   hist->Reset(); 
   norm->Reset(); 
   reset(); 
+
+  //alright, we have to be able to dispatch between different versions 
+  //because who knows what crazy things we might be asked to do. 
+  // I suppose we could just require the user to make a different Correlator for each ANITA version... but whatever
+  
+  int v = event->getAnitaVersion(); 
+  AnitaVersion::set(v); 
+
+  if (! trigcache[v])
+  {
+    int nphi = hist->GetNbinsX(); 
+    double phi_max = hist->GetXaxis()->GetXmax(); 
+    double phi_min = hist->GetXaxis()->GetXmin(); 
+    int ntheta = hist->GetNbinsY(); 
+    double theta_max = hist->GetYaxis()->GetXmax(); 
+    double theta_min = hist->GetYaxis()->GetXmin(); 
+    trigcache[v] = new TrigCache(nphi, (phi_max-phi_min)/nphi, phi_min, ntheta, (theta_max - theta_min)/ntheta,theta_min, UCorrelator::AntennaPositions::instance(v), use_bin_center); 
+  }
 
 
   //precompute antenna combinations 
@@ -546,7 +571,7 @@ void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol
 #endif
   for (unsigned it = 0; it < nit; it++)
   {
-     doAntennas(pairs[it].first, pairs[it].second, hist, norm, trigcache); 
+     doAntennas(pairs[it].first, pairs[it].second, hist, norm, trigcache[v]); 
   }
 
 
@@ -573,7 +598,14 @@ void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol
 UCorrelator::Correlator::~Correlator()
 {
 
-  delete trigcache; 
+  for (int i = 0; i < NUM_ANITAS+1; i++) 
+  {
+    if (trigcache[i])
+    {
+      delete trigcache[i]; 
+    }
+  }
+
   reset(); 
   delete hist; 
   delete norm; 
@@ -612,6 +644,8 @@ void UCorrelator::Correlator::dumpDeltaTs(const char * fname) const
   positions->Branch("r",&ant_r); 
   positions->Branch("z",&ant_z); 
   positions->Branch("pol",&pol); 
+
+  const AntennaPositions * ap = AntennaPositions::instance(); 
 
   for (pol = 0; pol < 2; pol++)
   {
