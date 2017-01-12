@@ -75,6 +75,7 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(max_mean_power_filtered); 
   LOOKUP(max_median_power_filtered); 
   LOOKUP(max_bottom_to_top_ratio); 
+  LOOKUP(baseline_weight); 
 
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", (int*) &start_pol, 2,pols); 
@@ -148,6 +149,8 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   max_mean_power_filtered = 1e6; 
   max_median_power_filtered = 1e6; 
   max_bottom_to_top_ratio = 5; 
+
+  baseline_weight = 0; 
 
   if (config) loadFromFile(config);
 

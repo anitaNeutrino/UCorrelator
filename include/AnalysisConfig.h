@@ -83,6 +83,7 @@ namespace UCorrelator
 
       bool scale_by_cos_theta;  // Scale peak values by cos theta when picking max (due to different bin sizes) 
       bool use_offline_mask; // use offline phi masking / l1 triggers (default true)  
+      double baseline_weight; //exponent for baseline weighting of correlation maps (since longer baselines give you better resolution) 
 
 
       //payload blast cuts (if 0, then ignored) 

@@ -23,7 +23,7 @@ namespace UCorrelator
   {
     public:
       /** Create a correlator with the following options for the rough map */ 
-      Correlator(int nphi, double phimin, double phimax, int ntheta, double theta_lowest, double theta_highest, bool use_bin_center = false, bool scale_by_cos_theta = false); 
+      Correlator(int nphi, double phimin, double phimax, int ntheta, double theta_lowest, double theta_highest, bool use_bin_center = false, bool scale_by_cos_theta = false, double baseline_weight = 0); 
 
       /** Compute the rough correlation map for the event and pol */ 
       void compute(const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol); 
@@ -79,6 +79,7 @@ namespace UCorrelator
       bool groupDelayFlag; 
       bool use_bin_center; 
       bool scale_cos_theta; 
+      double baselineWeight;
 
       AnalysisWaveform * getCorrelation(int ant1, int ant2); 
       void doAntennas(int ant1, int ant2, TH2D * hist, TH2I * norm, const TrigCache * tc, const double * center_point  = 0); 

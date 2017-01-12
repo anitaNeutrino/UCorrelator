@@ -29,20 +29,23 @@ UCorrelator::AntennaPositions::AntennaPositions(int version)
       zAnt[pol][ant] = geom->getAntZ(ant,(AnitaPol::AnitaPol_t) pol); 
     }
   }
+
+  v = version; 
 }
 
 
 
-int UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * closest, uint64_t disallowed ) const
+int UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * closest, uint64_t disallowed , AnitaPol::AnitaPol_t pol) const
 {
 
   assert(N < NUM_SEAVEYS); 
 
+  int pol_ind = pol == AnitaPol::kHorizontal ? 0 : 1; 
   std::multimap<double,int> dphis; 
   for (int i = 0; i < NUM_SEAVEYS; i++) 
   {
 
-    double dphi = disallowed & (1 << i) ? 360 : fabs(FFTtools::wrap(phi-phiAnt[0][i], 360, 0)); 
+    double dphi = disallowed & (1 << i) ? 360 : fabs(FFTtools::wrap(phi-phiAnt[pol_ind][i], 360, 0)); 
     dphis.insert(std::pair<double,int>(dphi,i)); 
   }
 
@@ -62,4 +65,22 @@ int UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * c
 }
 
 
+
+double UCorrelator::AntennaPositions::distance(int i, int j, AnitaPol::AnitaPol_t pol) const
+{
+
+  AnitaGeomTool * geom = AnitaGeomTool::Instance(v); 
+
+  double x0,y0,z0; 
+  double x1,y1,z1; 
+  geom->getAntXYZ(i,x0,y0,z0, pol); 
+  geom->getAntXYZ(j,x1,y1,z1, pol); 
+
+
+  double dx = x0-x1; 
+  double dy = y0-y1; 
+  double dz = z0-z1; 
+  return sqrt( dx*dx + dy*dy + dz*dz); 
+
+}
 

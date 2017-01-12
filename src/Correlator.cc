@@ -84,8 +84,8 @@ static int count_the_zoomed_correlators = 1;
 
 
 
-UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, int ntheta, double theta_min, double theta_max, bool use_center, bool scale_by_cos_theta)
-  : scale_cos_theta(scale_by_cos_theta) 
+UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, int ntheta, double theta_min, double theta_max, bool use_center, bool scale_by_cos_theta, double baseline_weight)
+  : scale_cos_theta(scale_by_cos_theta) , baselineWeight(baseline_weight)
 {
   TString histname = TString::Format("ucorr_corr_%d",count_the_correlators);
   TString normname = TString::Format("ucorr_norm_%d",count_the_correlators++);
@@ -477,7 +477,6 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
        int phibin = phibins[i];; 
        int thetabin = thetabins[i]; 
        times_to_fill[i] = getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag); 
-//       vals_to_fill[i] = correlation->evalEven(times_to_fill[i]); 
    }
 
    correlation->evalEven(nbins_used, times_to_fill, vals_to_fill); 
@@ -487,7 +486,17 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
    {
      for(int i = 0; i < nbins_used; i++)
      {
-       vals_to_fill[i] = cache->cos_theta[thetabins[i]-1];
+       vals_to_fill[i] *= cache->cos_theta[thetabins[i]-1];
+     }
+   }
+
+
+   if (baselineWeight)
+   {
+     double wgt = TMath::Power(cache->ap->distance(ant1, ant2, pol), baselineWeight); 
+     for (int i = 0; i < nbins_used; i++) 
+     {
+       vals_to_fill[i] *= wgt; 
      }
    }
 
