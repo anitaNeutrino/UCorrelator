@@ -386,8 +386,11 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
 
 void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph* pwr, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol)
 {
-  if (!wf)
+  if (!wf || wf->Neven() == 0)
   {
+    if (wf && !wf->Neven()) 
+      fprintf(stderr,"wf passed to fillWaveformInfo has no points\n");  
+
     memset(info, 0, sizeof(AnitaEventSummary::WaveformInfo)); 
     return; 
   }

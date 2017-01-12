@@ -330,9 +330,12 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   for (int ant_i = 0; ant_i < n2loop; ant_i++)
   {
     int ant1 = nant ? closest[ant_i] : ant_i; 
+    if (!nant && disallowed_antennas & (1 << ant1)) continue; 
     for (int ant_j = ant_i +1; ant_j < n2loop; ant_j++)
     {
       int ant2 = nant ? closest[ant_j] : ant_j; 
+      if (!nant && disallowed_antennas & (1 << ant2)) continue; 
+
       pairs.push_back(std::pair<int,int>(ant1,ant2));
     }
   }
@@ -431,7 +434,6 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
        must_wrap = false; 
      }
      
-
      double phi =  cache->phi[phibin-1] ; 
 //     double phi4width = center_point ? center_point[0] : phi; 
      double dphi1 = center_point ? 0 : FFTtools::wrap(phi - centerPhi1,360,0); 
