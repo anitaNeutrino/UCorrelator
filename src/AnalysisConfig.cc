@@ -116,10 +116,10 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   zoomed_ntheta = 60; 
   zoomed_dphi = 0.5; 
   zoomed_dtheta = 0.5; 
-  zoomed_nant = 0; 
+  zoomed_nant = 12; 
 
 
-  combine_nantennas = 10; 
+  combine_nantennas = 12; 
   combine_npad = 3; 
   combine_unfiltered = true; 
 
