@@ -23,7 +23,17 @@ UCorrelator::AntennaPositions::AntennaPositions(int version)
     for (int ant  = 0; ant < NUM_SEAVEYS; ant++) 
     {
 //      printf("%d %d\n",pol,ant); 
-      AnitaGeomTool * geom = AnitaGeomTool::Instance(version); 
+//
+#ifdef MULTIVERSION_ANITA_ENABLED 
+      AnitaGeomTool * geom = AnitaGeomTool::Instance(v); 
+#else
+      int old_ver = AnitaVersion::get(); 
+      AnitaVersion::set(v); 
+      AnitaGeomTool * geom = AnitaGeomTool::Instance(); 
+      AnitaVersion::set(old_ver); 
+#endif
+
+
       phiAnt[pol][ant] = geom->getAntPhiPositionRelToAftFore(ant,(AnitaPol::AnitaPol_t)pol) * RAD2DEG; 
       rAnt[pol][ant] = geom->getAntR(ant,(AnitaPol::AnitaPol_t) pol); 
       zAnt[pol][ant] = geom->getAntZ(ant,(AnitaPol::AnitaPol_t) pol); 
@@ -69,7 +79,14 @@ int UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * c
 double UCorrelator::AntennaPositions::distance(int i, int j, AnitaPol::AnitaPol_t pol) const
 {
 
+#ifdef MULTIVERSION_ANITA_ENABLED 
   AnitaGeomTool * geom = AnitaGeomTool::Instance(v); 
+#else
+  int old_ver = AnitaVersion::get(); 
+  AnitaVersion::set(v); 
+  AnitaGeomTool * geom = AnitaGeomTool::Instance(); 
+  AnitaVersion::set(old_ver); 
+#endif
 
   double x0,y0,z0; 
   double x1,y1,z1; 

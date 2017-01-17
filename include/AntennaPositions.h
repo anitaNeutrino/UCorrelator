@@ -11,6 +11,9 @@ namespace UCorrelator
   class AntennaPositions
   {
 
+#ifndef NUM_ANITAS
+#define NUM_ANITAS 4
+#endif
     static const AntennaPositions * instances[NUM_ANITAS+1]; 
 
     AntennaPositions(int v); 
