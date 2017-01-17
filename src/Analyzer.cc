@@ -2,6 +2,7 @@
 #include "AnalysisConfig.h" 
 #include "TPaveText.h"
 #include "AnalysisWaveform.h"
+#include "AnitaVersion.h" 
 #include "TCanvas.h"
 #include "TStyle.h"
 #include "TMarker.h"
@@ -110,37 +111,103 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
  
 
+  //also disable missing sectors 
+  UCorrelator::flags::checkEmpty(event->getUsefulAnitaEvent(), &saturated[AnitaPol::kHorizontal], &saturated[AnitaPol::kVertical]); 
+
   // loop over wanted polarizations 
   for (int pol = cfg->start_pol; pol <= cfg->end_pol; pol++) 
   {
 
     UShort_t triggeredPhi = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->l3TrigPatternH : event->getHeader()->l3TrigPattern; 
+    UShort_t triggeredPhiXpol = AnitaPol::AnitaPol_t(pol) == AnitaPol::kVertical ? event->getHeader()->l3TrigPatternH : event->getHeader()->l3TrigPattern; 
 
 
-    UShort_t triggeredPhiL1 = 0;   
+    UShort_t maskedL2 = 0;   
     UShort_t maskedPhi = 0 ; 
+    UShort_t maskedL2Xpol = 0;   
+    UShort_t maskedPhiXpol = 0 ; 
+
     if (cfg->use_offline_mask) 
     {
       maskedPhi = event->getHeader()->getPhiMaskOffline(AnitaPol::AnitaPol_t(pol));
-      triggeredPhiL1 = event->getHeader()->getL1MaskOffline(AnitaPol::AnitaPol_t(pol));
+      maskedPhiXpol = event->getHeader()->getPhiMaskOffline(AnitaPol::AnitaPol_t(1-pol));
+
+      if (AnitaVersion::get() == 3) 
+      {
+        maskedL2 = event->getHeader()->getL1MaskOffline(AnitaPol::AnitaPol_t(pol));
+        maskedL2Xpol = event->getHeader()->getL1MaskOffline(AnitaPol::AnitaPol_t(1-pol));
+      }
+      else 
+      {
+
+        //for now do this  until we merge anita_3and4 to master
+#ifdef MULTIVERSION_ANITA_ENABLED
+        maskedL2 = event->getHeader()->getL2Mask(); 
+#else
+        maskedL2 = event->getHeader()->l2TrigMask;
+#endif
+        maskedL2Xpol = maskedL2; 
+
+      }
     }
     else
     {
       maskedPhi = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->phiTrigMaskH : event->getHeader()->phiTrigMask; 
-      triggeredPhiL1 = event->getHeader()->getL1Mask(AnitaPol::AnitaPol_t(pol));
-      //	AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? ->l1TrigMaskH : event->getHeader()->l1TrigMask;  
+      maskedPhiXpol = AnitaPol::AnitaPol_t(pol) == AnitaPol::kVertical ? event->getHeader()->phiTrigMaskH : event->getHeader()->phiTrigMask; 
+
+      if (AnitaVersion::get() == 3) 
+      {
+        maskedL2 = event->getHeader()->getL1Mask(AnitaPol::AnitaPol_t(pol));
+        maskedL2Xpol = event->getHeader()->getL1Mask(AnitaPol::AnitaPol_t(1-pol));
+      }
+      else
+      {
+
+        //for now do this  until we merge anita_3and4 to master
+#ifdef MULTIVERSION_ANITA_ENABLED
+        maskedL2 = event->getHeader()->getL2Mask(); 
+#else
+        maskedL2 = event->getHeader()->l2TrigMask;
+#endif
+ 
+        maskedL2Xpol = maskedL2; 
+      }
+
+
     }
 
 
+    //alright, we need a little song and dance here to combine Phi masks and L2 masks 
+    //
+    //  Someone should check my logic here. 
+    //
+    // An L2 mask effectively masks both phi sector N and N+1 (since it'll prevent L3 triggers in both). 
+    // An L3 mask has contributions from both phi sector N and N-1. 
+    //
+    // I'm going to take the aggressive approach where an L3 mask means we mark a pointing hypothesis as masked
+    // if it falls in phi sector N or N-1. 
+   
+
+    static_assert(sizeof(maskedPhi == NUM_PHI),"masked phi must be same size as num phi "); 
+     
+    maskedPhi |= ( (maskedPhi >> 1) | ( maskedPhi << (NUM_PHI-1))) ; 
+    //or with l2 mask
+    maskedPhi |= maskedL2; 
+
+
+    static_assert(sizeof(maskedPhiXpol == NUM_PHI),"masked phi xpol must be same size as num phi "); 
+    //ditto for xpol 
+    maskedPhiXpol |=  (maskedPhiXpol >> 1) | ((maskedPhiXpol << (NUM_PHI-1))); 
+    maskedPhiXpol |= maskedL2Xpol; 
 
     //TODO: check this 
     TVector2 triggerAngle(0,0); 
 
     int ntriggered = __builtin_popcount(triggeredPhi); 
-    int ntriggeredL1 = ntriggered ? 0 : __builtin_popcount(triggeredPhiL1); 
+    int ntriggered_xpol = __builtin_popcount(triggeredPhi); 
 
-    UShort_t which_trigger = ntriggered ? triggeredPhi : triggeredPhiL1; 
-    int which_ntriggered = ntriggered ? ntriggered : ntriggeredL1; 
+    UShort_t which_trigger = ntriggered ? triggeredPhi : triggeredPhiXpol; 
+    int which_ntriggered = ntriggered ?: ntriggered_xpol; 
 
     const double phi_sector_width = 360. / NUM_PHI; 
 
@@ -191,7 +258,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
       rough_peaks[pol].push_back(std::pair<double,double>(maxima[i].x, maxima[i].y)); 
 
-      fillPointingInfo(maxima[i].x, maxima[i].y, &summary->peak[pol][i], pat, avgHwAngle, triggeredPhi, maskedPhi); 
+      fillPointingInfo(maxima[i].x, maxima[i].y, &summary->peak[pol][i], pat, avgHwAngle, triggeredPhi, maskedPhi, triggeredPhiXpol, maskedPhiXpol); 
 
 
       //fill in separation 
@@ -302,7 +369,7 @@ static bool outside(const TH2 * h, double x, double y)
 }
 
 void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_theta, AnitaEventSummary::PointingHypothesis * point, 
-                                             UsefulAdu5Pat * pat, double hwPeakAngle, UShort_t triggered_sectors, UShort_t masked_sectors)
+                                             UsefulAdu5Pat * pat, double hwPeakAngle, UShort_t triggered_sectors, UShort_t masked_sectors, UShort_t triggered_sectors_xpol, UShort_t masked_sectors_xpol)
 {
       corr.computeZoomed(rough_phi, rough_theta, cfg->zoomed_nphi, cfg->zoomed_dphi,  cfg->zoomed_ntheta, cfg->zoomed_dtheta, cfg->zoomed_nant, &zoomed); 
 
@@ -363,6 +430,8 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
 
       point->masked = masked_sectors & ( 1 << sector); 
       point->triggered = triggered_sectors & ( 1 << sector); 
+      point->masked_xpol = masked_sectors_xpol & ( 1 << sector); 
+      point->triggered_xpol = triggered_sectors_xpol & ( 1 << sector); 
 
       //Compute intersection with continent, or set values to -9999 if no intersection
       if (!pat->traceBackToContinent(point->phi * DEG2RAD, point->theta * DEG2RAD, &point->longitude, &point->latitude, &point->altitude, &point->theta_adjustment_needed)) 
@@ -383,8 +452,11 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
 
 void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph* pwr, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol)
 {
-  if (!wf)
+  if (!wf || wf->Neven() == 0)
   {
+    if (wf && !wf->Neven()) 
+      fprintf(stderr,"wf passed to fillWaveformInfo has no points\n");  
+
     memset(info, 0, sizeof(AnitaEventSummary::WaveformInfo)); 
     return; 
   }
@@ -489,17 +561,17 @@ UCorrelator::Analyzer::~Analyzer()
       }
     }
 
-    clearInteractiveMemory(); 
+    clearInteractiveMemory(1); 
   }
 
   if (power_filter)
     delete power_filter; 
 }
 
-void UCorrelator::Analyzer::clearInteractiveMemory() const
+void UCorrelator::Analyzer::clearInteractiveMemory(double frac) const
 {
 
-  for (unsigned i = 0; i < delete_list.size(); i++) 
+  for (unsigned i = (1-frac) * delete_list.size(); i < delete_list.size(); i++) 
   {
     delete delete_list[i]; 
   }
@@ -606,6 +678,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       ((TGraph*)avg_spectra[ipol])->SetLineColor(2); 
       ((TGraph*)avg_spectra[ipol])->Draw("lsame"); 
 
+      /*
       TF1 * spectral_slope = new TF1(TString::Format("__slope_%d", i), "pol1",0.2,0.7); 
       spectral_slope->SetParameter(0, last.coherent[ipol][i].spectrumIntercept) ;
       spectral_slope->SetParameter(1, last.coherent[ipol][i].spectrumSlope) ;
@@ -627,6 +700,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       delete_list.push_back(spectral_slope); 
       delete_list.push_back(gbw);
 
+      */  
       
       if (interactive_deconvolved)
       {

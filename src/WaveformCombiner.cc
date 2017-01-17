@@ -45,7 +45,6 @@ const AnalysisWaveform * UCorrelator::WaveformCombiner::getDeconvolved() const
 }
 
 
-static const UCorrelator::AntennaPositions * antpos = UCorrelator::AntennaPositions::instance(); 
 
 
 static void scaleGraph(TGraph * g, double C)
@@ -88,8 +87,8 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
   std::vector<AnalysisWaveform> deconv(numDeconv);
   // AnalysisWaveform deconv[do_deconvolution ? nant : 0];
 
-
-  antpos->getClosestAntennas(phi, nant, antennas, disallowed); 
+  const UCorrelator::AntennaPositions * antpos = UCorrelator::AntennaPositions::instance(); 
+  nant = antpos->getClosestAntennas(phi, nant, antennas, disallowed); 
   double delays[nant]; 
 
 

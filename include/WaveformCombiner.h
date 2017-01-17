@@ -46,7 +46,7 @@ namespace UCorrelator
       void setDeconvolve(bool deconvolve) {do_deconvolution = deconvolve ;}
       void setUseUnfiltered(bool raw_opt) {use_raw = raw_opt;}
       void setGroupDelayFlag(bool opt) { enable_group_delay = opt; } 
-      bool wasAlfaFiltered(); 
+      bool wasAlfaFiltered() { return alfa_hack; } 
 
       /** Static helper used to combine arbitrary waveforms */
       static AnalysisWaveform *  combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0); 

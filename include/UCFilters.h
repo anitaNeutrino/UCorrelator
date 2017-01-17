@@ -122,6 +122,7 @@ namespace UCorrelator
       unsigned outputLength(unsigned i) const{ return i == 0 ? 1 : NUM_SEAVEYS; } 
       void fillOutput(unsigned i, double * vars) const; 
       virtual void process(FilteredAnitaEvent * ev); 
+      const FFTtools::SineSubtract* sinsub(AnitaPol::AnitaPol_t pol, int ant) const { return subs[pol][ant] ;} 
     private:
       FFTtools::SineSubtract * subs[2][NUM_SEAVEYS]; 
       TString desc_string; 
