@@ -4,7 +4,7 @@
 #SBATCH --time=03:00:00
 #SBATCH --account=kicp
 #SBATCH --partition=kicp
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=16
 
 
 echo $@
@@ -12,7 +12,10 @@ source /home/cozzyd/anita/env.sh
 
 RUN=$1
 N=${2-0}
-SINSUB=${3-1}
+DECONV=${3-1}
 
-srun bin/doWais $RUN $N $SINSUB
+
+export OMP_NUM_THREADS=16 
+
+srun bin/doWais $RUN $N $DECONV
 
