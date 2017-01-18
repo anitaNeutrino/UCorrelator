@@ -3,16 +3,20 @@
 #include "assert.h"
 #include "FFTtools.h"
 #include <map>
-
+#include "TMutex.h"
 
 
 #ifndef RAD2DEG
 #define RAD2DEG (180/M_PI)
 #endif
 
+#ifndef NUM_ANITAS
+#define NUM_ANITAS 4
+#endif
 
 
-const UCorrelator::AntennaPositions * UCorrelator::AntennaPositions::instances[NUM_ANITAS+1] = {0}; 
+
+static const UCorrelator::AntennaPositions *instances[NUM_ANITAS+1] = {0,0,0,0,0}; 
 
 
 UCorrelator::AntennaPositions::AntennaPositions(int version)
@@ -25,10 +29,10 @@ UCorrelator::AntennaPositions::AntennaPositions(int version)
 //      printf("%d %d\n",pol,ant); 
 //
 #ifdef MULTIVERSION_ANITA_ENABLED 
-      AnitaGeomTool * geom = AnitaGeomTool::Instance(v); 
+      AnitaGeomTool * geom = AnitaGeomTool::Instance(version); 
 #else
       int old_ver = AnitaVersion::get(); 
-      AnitaVersion::set(v); 
+      AnitaVersion::set(version); 
       AnitaGeomTool * geom = AnitaGeomTool::Instance(); 
       AnitaVersion::set(old_ver); 
 #endif
@@ -101,3 +105,29 @@ double UCorrelator::AntennaPositions::distance(int i, int j, AnitaPol::AnitaPol_
 
 }
 
+static TMutex instance_lock; 
+
+const UCorrelator::AntennaPositions * UCorrelator::AntennaPositions::instance(int v)
+{ 
+  if (!v) v = AnitaVersion::get(); 
+
+  const AntennaPositions * tmp = instances[v]; 
+  __asm__ __volatile__ ("" ::: "memory"); //memory fence! 
+  if (!tmp) 
+  {
+    instance_lock.Lock(); 
+    tmp = instances[v]; 
+    if (!tmp) 
+    {
+      tmp = new AntennaPositions(v); 
+      __asm__ __volatile__ ("" ::: "memory");
+      instances[v] = tmp; 
+    }
+    instance_lock.UnLock(); 
+  }
+
+  return instances[v];
+
+
+}
+     

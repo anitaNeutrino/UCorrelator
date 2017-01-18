@@ -11,32 +11,14 @@ namespace UCorrelator
   class AntennaPositions
   {
 
-#ifndef NUM_ANITAS
-#define NUM_ANITAS 4
-#endif
-    static const AntennaPositions * instances[NUM_ANITAS+1]; 
-
     AntennaPositions(int v); 
 
     public: 
+
+      static const AntennaPositions * instance (int version = 0); 
+
       /** Retrieve an instance */ 
-      static const AntennaPositions * instance(int version = 0)
-      { 
-
-        if (__builtin_expect(!version, 1)) 
-        {
-          version = AnitaVersion::get();  
-        }
-
-        if (__builtin_expect(!instances[version],0)) 
-        {
-          instances[version] = new AntennaPositions(version); 
-        }
-
-        return instances[version];
-      }
-
-      /** Find closest N antennas to phi. Results put into closest, which should have sufficient room. Disallowed is a bitmap of antenna numbers that should be excluded. Returns number found (could be less than number requested if too many disallowed)*/
+     /** Find closest N antennas to phi. Results put into closest, which should have sufficient room. Disallowed is a bitmap of antenna numbers that should be excluded. Returns number found (could be less than number requested if too many disallowed)*/
       int getClosestAntennas(double phi, int N, int * closest, uint64_t disallowed = 0, AnitaPol::AnitaPol_t pol = AnitaPol::kHorizontal) const; 
 
       /** antenna phi positions (degrees)*/
