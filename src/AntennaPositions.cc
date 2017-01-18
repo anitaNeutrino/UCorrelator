@@ -21,6 +21,19 @@ static const UCorrelator::AntennaPositions *instances[NUM_ANITAS+1] = {0,0,0,0,0
 
 UCorrelator::AntennaPositions::AntennaPositions(int version)
 {
+  v = version; 
+  printf("AntennaPositions(%d)\n",version); 
+
+#ifdef MULTIVERSION_ANITA_ENABLED 
+        AnitaGeomTool * geom = AnitaGeomTool::Instance(version); 
+#else
+        int old_ver = AnitaVersion::get(); 
+        AnitaVersion::set(version); 
+        AnitaGeomTool * geom = AnitaGeomTool::Instance(); 
+        AnitaVersion::set(old_ver); 
+#endif
+
+
 
   for (int pol = AnitaPol::kHorizontal; pol <= AnitaPol::kVertical; pol++)
   {
@@ -28,23 +41,12 @@ UCorrelator::AntennaPositions::AntennaPositions(int version)
     {
 //      printf("%d %d\n",pol,ant); 
 //
-#ifdef MULTIVERSION_ANITA_ENABLED 
-      AnitaGeomTool * geom = AnitaGeomTool::Instance(version); 
-#else
-      int old_ver = AnitaVersion::get(); 
-      AnitaVersion::set(version); 
-      AnitaGeomTool * geom = AnitaGeomTool::Instance(); 
-      AnitaVersion::set(old_ver); 
-#endif
-
-
       phiAnt[pol][ant] = geom->getAntPhiPositionRelToAftFore(ant,(AnitaPol::AnitaPol_t)pol) * RAD2DEG; 
       rAnt[pol][ant] = geom->getAntR(ant,(AnitaPol::AnitaPol_t) pol); 
       zAnt[pol][ant] = geom->getAntZ(ant,(AnitaPol::AnitaPol_t) pol); 
     }
   }
 
-  v = version; 
 }
 
 
