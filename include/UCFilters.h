@@ -114,6 +114,7 @@ namespace UCorrelator
       SineSubtractFilter(double min_power_ratio = 0.05, int max_failed_iter = 0, double oversample_factor = 4, int nfreq_bands = 0, const double *  freq_bands_start = 0, const double * freq_bands_end = 0, int nstored_freqs = 5); 
 
       virtual ~SineSubtractFilter();  
+      void setInteractive(bool set); 
 
       const char * tag() const { return "SineSubtractFilter"; }
       const char * description() const { return desc_string.Data(); } 
