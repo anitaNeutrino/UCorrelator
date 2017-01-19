@@ -188,14 +188,19 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     // if it falls in phi sector N or N-1. 
    
 
+#ifdef __cpp_static_assert
     static_assert(sizeof(maskedPhi == NUM_PHI),"masked phi must be same size as num phi "); 
+#endif
      
     maskedPhi |= ( (maskedPhi >> 1) | ( maskedPhi << (NUM_PHI-1))) ; 
     //or with l2 mask
     maskedPhi |= maskedL2; 
 
 
+#ifdef __cpp_static_assert
     static_assert(sizeof(maskedPhiXpol == NUM_PHI),"masked phi xpol must be same size as num phi "); 
+#endif
+
     //ditto for xpol 
     maskedPhiXpol |=  (maskedPhiXpol >> 1) | ((maskedPhiXpol << (NUM_PHI-1))); 
     maskedPhiXpol |= maskedL2Xpol; 
