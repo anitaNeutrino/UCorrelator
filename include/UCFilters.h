@@ -130,7 +130,31 @@ namespace UCorrelator
       int nstored_freqs; 
   };
 
-  
+
+  class CombinedSineSubtractFilter
+    : public FilterOperation
+  {
+    public: 
+      CombinedSineSubtractFilter(double min_power_ratio = 0.05, int max_failed_iter = 0, double oversample_factor = 4, int nfreq_bands = 0, const double *  freq_bands_start = 0, const double * freq_bands_end = 0, int nstored_freqs = 5); 
+
+      virtual ~CombinedSineSubtractFilter();  
+
+      const char * tag() const { return "CombinedSineSubtractFilter"; }
+      const char * description() const { return desc_string.Data(); } 
+      unsigned nOutputs() const { return 1+(2+3*nstored_freqs); }
+      const char * outputName(unsigned i) const{ return output_names[i].Data(); }
+      unsigned outputLength(unsigned i) const; 
+      void fillOutput(unsigned i, double * vars) const; 
+      virtual void process(FilteredAnitaEvent * ev); 
+      const FFTtools::SineSubtract* sinsub(int phi) const { return subs[phi] ;} 
+    private:
+      FFTtools::SineSubtract * subs[NUM_PHI]; 
+      TString desc_string; 
+      std::vector<TString> output_names;
+      int nstored_freqs; 
+  };
+
+ 
 }
 
 
