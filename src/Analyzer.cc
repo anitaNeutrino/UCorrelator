@@ -421,7 +421,7 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
       //snr is ratio of point value to map rms
       point->snr = point->value / maprms; 
       point->dphi_rough = FFTtools::wrap(point->phi - rough_phi, 360,0); 
-      point->dtheta_rough = FFTtools::wrap(point->theta - rough_theta, 360,0); 
+      point->dtheta_rough = FFTtools::wrap(point->theta - (-rough_theta), 360,0); //sign reversal. doh. 
 
       point->hwAngle = FFTtools::wrap(point->phi - hwPeakAngle,360,0); 
 
@@ -750,7 +750,7 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
 
   for (int pol = AnitaPol::kHorizontal; pol <= AnitaPol::kVertical; pol++)
   {
-     fae->getMinMaxRatio(AnitaPol::AnitaPol_t(pol), &flags->maxBottomToTopRatio[pol], &flags->minBottomToTopRatio[pol], &flags->maxBottomToTopRatioSector[pol], &flags->minBottomToTopRatioSector[pol], AnitaRing::kBottomRing, AnitaRing::kTopRing); 
+     fae->getMinMaxRatio(AnitaPol::AnitaPol_t(pol), &flags->maxBottomToTopRatio[pol], &flags->minBottomToTopRatio[pol], &flags->maxBottomToTopRatioSector[pol], &flags->minBottomToTopRatioSector[pol], AnitaRing::kBottomRing, AnitaRing::kTopRing,1); 
   }
 
 
@@ -771,7 +771,7 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   flags->strongCWFlag = flags->medianPowerFiltered[0] / flags->medianPower[0] < 0.2; 
 
   flags->isPayloadBlast =  
-    (cfg->max_mean_power_filtered && flags->medianPowerFiltered[0] > cfg->max_mean_power_filtered) ||
+    (cfg->max_mean_power_filtered && flags->meanPowerFiltered[0] > cfg->max_mean_power_filtered) ||
     (cfg->max_median_power_filtered && flags->medianPowerFiltered[0] > cfg->max_median_power_filtered) ||
     (cfg->max_bottom_to_top_ratio && flags->maxBottomToTopRatio[0] > cfg->max_bottom_to_top_ratio) || 
     (cfg->max_bottom_to_top_ratio && flags->maxBottomToTopRatio[1] > cfg->max_bottom_to_top_ratio); 
