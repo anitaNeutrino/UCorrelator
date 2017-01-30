@@ -41,8 +41,10 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
   : cfg(conf ? conf: &defaultConfig),
     corr(cfg->correlator_nphi,0,360,  cfg->correlator_ntheta, -cfg->correlator_theta_lowest, cfg->correlator_theta_highest) , 
     responses(cfg), 
-    wfcomb(cfg->combine_nantennas, cfg->combine_npad, cfg->combine_unfiltered, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
-    wfcomb_xpol(cfg->combine_nantennas, cfg->combine_npad, cfg->combine_unfiltered, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
+    wfcomb(cfg->combine_nantennas, cfg->combine_npad, true, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
+    wfcomb_xpol(cfg->combine_nantennas, cfg->combine_npad, true, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
+    wfcomb_filtered(cfg->combine_nantennas, cfg->combine_npad, false, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
+    wfcomb_xpol_filtered(cfg->combine_nantennas, cfg->combine_npad, false, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
     zoomed(TString::Format("zoomed_%d", instance_counter), "Zoomed!", cfg->zoomed_nphi, 0 ,1, cfg->zoomed_ntheta, 0, 1),
    interactive(interactive)  
 {
@@ -53,6 +55,8 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
   corr.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_xpol.setGroupDelayFlag(cfg->enable_group_delay); 
+  wfcomb_filtered.setGroupDelayFlag(cfg->enable_group_delay); 
+  wfcomb_xpol_filtered.setGroupDelayFlag(cfg->enable_group_delay); 
   instance_counter++; 
   power_filter = new FFTtools::GaussianFilter(2,3) ; //TODO make this configurable
 
@@ -65,23 +69,21 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
     {
       zoomed_correlation_maps[0].push_back(new TH2D); 
       zoomed_correlation_maps[1].push_back(new TH2D); 
-      coherent[0].push_back(new AnalysisWaveform); 
-      coherent[1].push_back(new AnalysisWaveform); 
-      deconvolved[0].push_back(new AnalysisWaveform); 
-      deconvolved[1].push_back(new AnalysisWaveform); 
-      coherent_xpol[0].push_back(new AnalysisWaveform); 
-      coherent_xpol[1].push_back(new AnalysisWaveform); 
-      deconvolved_xpol[0].push_back(new AnalysisWaveform); 
-      deconvolved_xpol[1].push_back(new AnalysisWaveform); 
 
-      coherent_power[0].push_back(new TGraphAligned); 
-      coherent_power[1].push_back(new TGraphAligned); 
-      deconvolved_power[0].push_back(new TGraphAligned); 
-      deconvolved_power[1].push_back(new TGraphAligned); 
-      coherent_power_xpol[0].push_back(new TGraphAligned); 
-      coherent_power_xpol[1].push_back(new TGraphAligned); 
-      deconvolved_power_xpol[0].push_back(new TGraphAligned); 
-      deconvolved_power_xpol[1].push_back(new TGraphAligned); 
+      for (int ipol =0; ipol <2;ipol++)
+      {
+        for (int ifilt = 0; ifilt <2; filt++) 
+        {
+          coherent[ipol][ifilt].push_back(new AnalysisWaveform); 
+          deconvolved[ipol][ifilt].push_back(new AnalysisWaveform); 
+          coherent_xpol[ipol][ifilt].push_back(new AnalysisWaveform); 
+          deconvolved_xpol[ipol][ifilt].push_back(new AnalysisWaveform); 
+          coherent_power[ipol][ifilt].push_back(new TGraphAligned); 
+          deconvolved_power[ipol][ifilt].push_back(new TGraphAligned); 
+          coherent_power_xpol[ipol][ifilt].push_back(new TGraphAligned); 
+          deconvolved_power_xpol[ipol][ifilt].push_back(new TGraphAligned); 
+        }
+      }
     }
   }
 }
@@ -275,6 +277,9 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       wfcomb.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
       wfcomb_xpol.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
 
+      wfcomb_filtered.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
+      wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
+
       fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol); 
       fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol); 
 
@@ -285,25 +290,43 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
         zoomed_correlation_maps[pol][i]->~TH2D(); 
         zoomed_correlation_maps[pol][i] = new (zoomed_correlation_maps[pol][i]) TH2D(zoomed); 
 
-        coherent[pol][i]->~AnalysisWaveform(); 
-        coherent[pol][i] = new (coherent[pol][i]) AnalysisWaveform(*wfcomb.getCoherent()); 
+        coherent[pol][0][i]->~AnalysisWaveform(); 
+        coherent[pol][0][i] = new (coherent[pol][0][i]) AnalysisWaveform(*wfcomb.getCoherent()); 
 
-        coherent_power[pol][i]->~TGraphAligned(); 
-        coherent_power[pol][i] = new (coherent_power[pol][i]) TGraphAligned(*wfcomb.getCoherentAvgSpectrum()); 
-        coherent_power[pol][i]->dBize(); 
+        coherent[pol][1][i]->~AnalysisWaveform(); 
+        coherent[pol][1][i] = new (coherent[pol][1][i]) AnalysisWaveform(*wfcomb_filtered.getCoherent()); 
+
+        coherent_power[pol][0][i]->~TGraphAligned(); 
+        coherent_power[pol][0][i] = new (coherent_power[pol][0][i]) TGraphAligned(*wfcomb.getCoherentAvgSpectrum()); 
+        coherent_power[pol][0][i]->dBize(); 
+
+        coherent_power[pol][1][i]->~TGraphAligned(); 
+        coherent_power[pol][1][i] = new (coherent_power[pol][1][i]) TGraphAligned(*wfcomb_filtered.getCoherentAvgSpectrum()); 
+        coherent_power[pol][1][i]->dBize(); 
 
 
         if (wfcomb.getDeconvolved())
         {
-          deconvolved[pol][i]->~AnalysisWaveform(); 
-          deconvolved[pol][i] = new (deconvolved[pol][i]) AnalysisWaveform(*wfcomb.getDeconvolved()); 
-          deconvolved[pol][i]->updateEven()->SetLineColor(2); 
-          deconvolved[pol][i]->updateEven()->SetMarkerColor(2); 
+          deconvolved[pol][0][i]->~AnalysisWaveform(); 
+          deconvolved[pol][0][i] = new (deconvolved[pol][0][i]) AnalysisWaveform(*wfcomb.getDeconvolved()); 
+          deconvolved[pol][0][i]->updateEven()->SetLineColor(2); 
+          deconvolved[pol][0][i]->updateEven()->SetMarkerColor(2); 
 
-          deconvolved_power[pol][i]->~TGraphAligned(); 
-          deconvolved_power[pol][i] = new (deconvolved_power[pol][i]) TGraphAligned(*wfcomb.getDeconvolvedAvgSpectrum()); 
-          deconvolved_power[pol][i]->dBize(); 
-          deconvolved_power[pol][i]->SetLineColor(2); 
+          deconvolved[pol][1][i]->~AnalysisWaveform(); 
+          deconvolved[pol][1][i] = new (deconvolved[pol][1][i]) AnalysisWaveform(*wfcomb_filtered.getDeconvolved()); 
+          deconvolved[pol][1][i]->updateEven()->SetLineColor(2); 
+          deconvolved[pol][1][i]->updateEven()->SetMarkerColor(2); 
+
+          deconvolved_power[pol][0][i]->~TGraphAligned(); 
+          deconvolved_power[pol][0][i] = new (deconvolved_power[pol][0][i]) TGraphAligned(*wfcomb.getDeconvolvedAvgSpectrum()); 
+          deconvolved_power[pol][0][i]->dBize(); 
+          deconvolved_power[pol][0][i]->SetLineColor(2); 
+
+          deconvolved_power[pol][1][i]->~TGraphAligned(); 
+          deconvolved_power[pol][1][i] = new (deconvolved_power[pol][1][i]) TGraphAligned(*wfcomb_filtered.getDeconvolvedAvgSpectrum()); 
+          deconvolved_power[pol][1][i]->dBize(); 
+          deconvolved_power[pol][1][i]->SetLineColor(2); 
+ 
           interactive_deconvolved = true; 
         }
         else
@@ -312,31 +335,58 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
         }
 
 
-        coherent_xpol[pol][i]->~AnalysisWaveform(); 
-        coherent_xpol[pol][i] = new (coherent_xpol[pol][i]) AnalysisWaveform(*wfcomb_xpol.getCoherent()); 
-        coherent_xpol[pol][i]->updateEven()->SetLineColor(11); 
-        coherent_xpol[pol][i]->updateEven()->SetLineStyle(3); 
+        coherent_xpol[pol][0][i]->~AnalysisWaveform(); 
+        coherent_xpol[pol][0][i] = new (coherent_xpol[pol][i]) AnalysisWaveform(*wfcomb_xpol.getCoherent()); 
+        coherent_xpol[pol][0][i]->updateEven()->SetLineColor(11); 
+        coherent_xpol[pol][0][i]->updateEven()->SetLineStyle(3); 
+
+        coherent_xpol[pol][1][i]->~AnalysisWaveform(); 
+        coherent_xpol[pol][1][i] = new (coherent_xpol[pol][i]) AnalysisWaveform(*wfcomb_xpol_filtered.getCoherent()); 
+        coherent_xpol[pol][1][i]->updateEven()->SetLineColor(11); 
+        coherent_xpol[pol][1][i]->updateEven()->SetLineStyle(3); 
+ 
         
-        coherent_power_xpol[pol][i]->~TGraphAligned(); 
-        coherent_power_xpol[pol][i] = new (coherent_power_xpol[pol][i]) TGraphAligned(*wfcomb_xpol.getCoherentAvgSpectrum()); 
-        coherent_power_xpol[pol][i]->dBize(); 
-        coherent_power_xpol[pol][i]->SetLineStyle(3); 
-        coherent_power_xpol[pol][i]->SetLineColor(11); 
+        coherent_power_xpol[pol][0][i]->~TGraphAligned(); 
+        coherent_power_xpol[pol][0][i] = new (coherent_power_xpol[pol][0][i]) TGraphAligned(*wfcomb_xpol.getCoherentAvgSpectrum()); 
+        coherent_power_xpol[pol][0][i]->dBize(); 
+        coherent_power_xpol[pol][0][i]->SetLineStyle(3); 
+        coherent_power_xpol[pol][0][i]->SetLineColor(11); 
+
+        coherent_power_xpol[pol][1][i]->~TGraphAligned(); 
+        coherent_power_xpol[pol][1][i] = new (coherent_power_xpol[pol][1][i]) TGraphAligned(*wfcomb_xpol_filtered.getCoherentAvgSpectrum()); 
+        coherent_power_xpol[pol][1][i]->dBize(); 
+        coherent_power_xpol[pol][1][i]->SetLineStyle(3); 
+        coherent_power_xpol[pol][1][i]->SetLineColor(11); 
 
 
         if (wfcomb_xpol.getDeconvolved())
         {
-          deconvolved_xpol[pol][i]->~AnalysisWaveform(); 
-          deconvolved_xpol[pol][i] = new (deconvolved_xpol[pol][i]) AnalysisWaveform(*wfcomb_xpol.getDeconvolved()); 
+          deconvolved_xpol[pol][0][i]->~AnalysisWaveform(); 
+          deconvolved_xpol[pol][0][i] = new (deconvolved_xpol[pol][0][i]) AnalysisWaveform(*wfcomb_xpol.getDeconvolved()); 
+          deconvolved_xpol[pol][0][i]->updateEven()->SetLineColor(45); 
+          deconvolved_xpol[pol][0][i]->updateEven()->SetMarkerColor(45); 
+          deconvolved_xpol[pol][0][i]->updateEven()->SetLineStyle(3); 
 
-          deconvolved_xpol[pol][i]->updateEven()->SetLineColor(45); 
-          deconvolved_xpol[pol][i]->updateEven()->SetMarkerColor(45); 
-          deconvolved_xpol[pol][i]->updateEven()->SetLineStyle(3); 
-          deconvolved_power_xpol[pol][i]->~TGraphAligned(); 
-          deconvolved_power_xpol[pol][i] = new (deconvolved_power_xpol[pol][i]) TGraphAligned(*wfcomb_xpol.getDeconvolvedAvgSpectrum()); 
-          deconvolved_power_xpol[pol][i]->dBize(); 
-          deconvolved_power_xpol[pol][i]->SetLineStyle(3); 
-          deconvolved_power_xpol[pol][i]->SetLineColor(46); 
+          deconvolved_power_xpol[pol][0][i]->~TGraphAligned(); 
+          deconvolved_power_xpol[pol][0][i] = new (deconvolved_power_xpol[pol][0][i]) TGraphAligned(*wfcomb_xpol.getDeconvolvedAvgSpectrum()); 
+          deconvolved_power_xpol[pol][0][i]->dBize(); 
+          deconvolved_power_xpol[pol][0][i]->SetLineStyle(3); 
+          deconvolved_power_xpol[pol][0][i]->SetLineColor(46); 
+
+          deconvolved_xpol[pol][1][i]->~AnalysisWaveform(); 
+          deconvolved_xpol[pol][1][i] = new (deconvolved_xpol[pol][1][i]) AnalysisWaveform(*wfcomb_xpol_filtered.getDeconvolved()); 
+          deconvolved_xpol[pol][1][i]->updateEven()->SetLineColor(45); 
+          deconvolved_xpol[pol][1][i]->updateEven()->SetMarkerColor(45); 
+          deconvolved_xpol[pol][1][i]->updateEven()->SetLineStyle(3); 
+
+          deconvolved_power_xpol[pol][1][i]->~TGraphAligned(); 
+          deconvolved_power_xpol[pol][1][i] = new (deconvolved_power_xpol[pol][1][i]) TGraphAligned(*wfcomb_xpol_filtered.getDeconvolvedAvgSpectrum()); 
+          deconvolved_power_xpol[pol][1][i]->dBize(); 
+          deconvolved_power_xpol[pol][1][i]->SetLineStyle(3); 
+          deconvolved_power_xpol[pol][1][i]->SetLineColor(46); 
+
+
+
           interactive_xpol_deconvolved = true; 
         }
         else

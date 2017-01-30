@@ -65,22 +65,22 @@ namespace UCorrelator
       const TH2 * getZoomedCorrelationMap(AnitaPol::AnitaPol_t pol, int i) const { return zoomed_correlation_maps[pol][i]; }
 
       /** Return the ith coherent waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const AnalysisWaveform * getCoherent(AnitaPol::AnitaPol_t pol, int i) const { return coherent[pol][i]; } 
+      const AnalysisWaveform * getCoherent(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent[pol][i][filtered ? 1 : 0]; } 
 
        /** Return the ith deconvolved waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const AnalysisWaveform * getDeconvolved(AnitaPol::AnitaPol_t pol, int i) const { return deconvolved[pol][i]; } 
+      const AnalysisWaveform * getDeconvolved(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved[pol][i][filtered ? 1: 0]; } 
 
       /** Return the ith coherent xpol waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const AnalysisWaveform * getCoherentXpol(AnitaPol::AnitaPol_t pol, int i) const { return coherent_xpol[pol][i]; } 
+      const AnalysisWaveform * getCoherentXpol(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent_xpol[pol][i][filtered ? 1: 0]; } 
 
        /** Return the ith deconvolved xpol waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const AnalysisWaveform * getDeconvolvedXpol(AnitaPol::AnitaPol_t pol, int i) const { return deconvolved_xpol[pol][i]; } 
+      const AnalysisWaveform * getDeconvolvedXpol(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_xpol[pol][i][filtered ? 1: 0]; } 
 
       /** Return the ith coherent averaged power for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const TGraphAligned * getCoherentPower(AnitaPol::AnitaPol_t pol, int i) const { return coherent_power[pol][i]; } 
+      const TGraphAligned * getCoherentPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent_power[pol][i][filtered ? 1: 0]; } 
 
        /** Return the ith deconvolved averaged power for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const TGraphAligned * getDeconvolvedPower(AnitaPol::AnitaPol_t pol, int i) const { return deconvolved_power[pol][i]; } 
+      const TGraphAligned * getDeconvolvedPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_power[pol][i][filtered ? 1: 0]; } 
 
       ResponseManager * getResponseManager() { return &responses; } 
 
@@ -105,14 +105,14 @@ namespace UCorrelator
 
       TH2D* correlation_maps[2]; 
       std::vector<TH2D*>  zoomed_correlation_maps[2]; 
-      std::vector<AnalysisWaveform *> coherent[2]; 
-      std::vector<AnalysisWaveform *> deconvolved[2]; 
-      std::vector<TGraphAligned *> coherent_power[2]; 
-      std::vector<TGraphAligned *> deconvolved_power[2]; 
-      std::vector<AnalysisWaveform *> coherent_xpol[2]; 
-      std::vector<AnalysisWaveform *> deconvolved_xpol[2]; 
-      std::vector<TGraphAligned *> coherent_power_xpol[2]; 
-      std::vector<TGraphAligned *> deconvolved_power_xpol[2]; 
+      std::vector<AnalysisWaveform *> coherent[2][2]; 
+      std::vector<AnalysisWaveform *> deconvolved[2][2]; 
+      std::vector<TGraphAligned *> coherent_power[2][2]; 
+      std::vector<TGraphAligned *> deconvolved_power[2][2]; 
+      std::vector<AnalysisWaveform *> coherent_xpol[2][2]; 
+      std::vector<AnalysisWaveform *> deconvolved_xpol[2][2]; 
+      std::vector<TGraphAligned *> coherent_power_xpol[2][2]; 
+      std::vector<TGraphAligned *> deconvolved_power_xpol[2][2]; 
       std::vector<std::pair<double,double> > rough_peaks[2]; 
       AnitaEventSummary last; //used in interactive mode by drawSummary
       TGraph*  avg_spectra[2]; 
@@ -122,6 +122,8 @@ namespace UCorrelator
       ResponseManager responses; 
       WaveformCombiner wfcomb; 
       WaveformCombiner wfcomb_xpol; 
+      WaveformCombiner wfcomb_filtered; 
+      WaveformCombiner wfcomb_xpol_filtered; 
       TH2D zoomed; 
       double maprms; 
       FFTtools::DigitalFilter *  power_filter; 

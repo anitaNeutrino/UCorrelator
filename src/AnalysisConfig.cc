@@ -59,7 +59,6 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(zoomed_nant); 
   LOOKUP(combine_nantennas); 
   LOOKUP(combine_npad); 
-  LOOKUP(combine_unfiltered); 
   LOOKUP(saturation_threshold); 
   LOOKUP(peak_isolation_requirement); 
   LOOKUP(nmaxima); 
@@ -108,9 +107,9 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
     ldb_vpol(ldb_vpol_time_offset, 800e3, 1e3) 
 {
   correlator_nphi = 180; 
-  correlator_ntheta = 90; 
+  correlator_ntheta = 100; 
   correlator_theta_lowest = 60; 
-  correlator_theta_highest = 25; 
+  correlator_theta_highest = 40; 
   enable_group_delay = true; 
   use_offline_mask = true; 
   zoomed_nphi = 60; 
@@ -122,7 +121,6 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
 
   combine_nantennas = 12; 
   combine_npad = 3; 
-  combine_unfiltered = true; 
 
   saturation_threshold = 2500; 
 

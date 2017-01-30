@@ -35,7 +35,6 @@ namespace UCorrelator
 
       unsigned combine_nantennas;  /// number of antennas used to create coherent / deconvolved waveforms
       unsigned combine_npad;  /// supersampling factor for combining waveforms (i.e. how many times to pad in fourier domain. npad = 1 is super sample by 100%) 
-      bool combine_unfiltered; // Use unfiltered waveforms for combining 
 
 
       double saturation_threshold; /// threshold to consider a waveform saturated 
