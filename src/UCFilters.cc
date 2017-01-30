@@ -566,3 +566,168 @@ void UCorrelator::SineSubtractFilter::setInteractive(bool set)
 
 
 }
+
+//Combined Sine Subtract 
+
+UCorrelator::CombinedSineSubtractFilter::CombinedSineSubtractFilter(double min_power_ratio, int max_failed_iter, double oversample_factor, int nfreq_bands, const double * fmin, const double * fmax, int nstored_freqs)
+  : nstored_freqs(nstored_freqs) 
+{
+ desc_string.Form("CombinedSineSubtract with min_power_ratio=%f, max_failed_iter =%d, oversample_factor = %f and %d frequency bands", min_power_ratio, max_failed_iter,oversample_factor, nfreq_bands);
+ if (nfreq_bands)
+ {
+   desc_string += ". The bands are: "; 
+   for (int i = 0; i < nfreq_bands; i++)
+   {
+     desc_string += TString::Format ("(%f -> %f)", fmin[i], fmax[i]); 
+   }
+ }
+ 
+
+ output_names.push_back(TString("total_power_removed")); 
+
+ for (int i = 0; i < NUM_PHI; i++) 
+ {
+     subs[i] = new FFTtools::SineSubtract(max_failed_iter, min_power_ratio); 
+     subs[i]->setOversampleFactor(oversample_factor); 
+     subs[i]->setFreqLimits(nfreq_bands, fmin, fmax); 
+ }
+
+ output_names.push_back("niter"); 
+ output_names.push_back("power_removed"); 
+
+ for (int j = 0; j < nstored_freqs; j++)
+ {
+     output_names.push_back(TString::Format("freq%d",j)); 
+     output_names.push_back(TString::Format("A%d",j)); 
+     output_names.push_back(TString::Format("phase%d",j)); 
+ }
+}
+
+
+void UCorrelator::CombinedSineSubtractFilter::fillOutput(unsigned ui, double * vars) const 
+{
+//  printf("fillOutput(%u)\n",ui); 
+
+  int i = int(ui);  //cheat; 
+  if (i == 0)
+  {
+    double total_power_initial = 0; 
+    double total_power_final = 0; 
+
+    for (int i = 0; i < NUM_PHI; i++) 
+    {
+        const FFTtools::SineSubtractResult *r =  subs[i]->getResult(); 
+        double pinit = r->powers[0]; 
+        double pfinal = r->powers[r->powers.size()-1]; 
+        total_power_initial += pinit;
+        total_power_final += pfinal; 
+    }
+    *vars = 1. - total_power_final / total_power_initial; 
+    return; 
+  }
+
+
+  for (int j = 0; j < NUM_PHI; j++) 
+  {
+     const FFTtools::SineSubtractResult *r =  subs[j]->getResult(); 
+
+
+     if (i == 1) 
+     {
+       vars[j] = (double) r->freqs.size(); 
+     }
+     else if (i == 2) 
+     {
+       vars[j] = (double) r->powers[r->powers.size()-1] - r->powers[0]; 
+     }
+     else 
+     {
+       int ii =i -  3; 
+
+       int freqi = ii /3; 
+//       printf("%d\n", freqi); 
+
+       if (freqi >= (int) r->freqs.size())
+       {
+         vars[j] = -1; 
+         continue; 
+       }
+
+       if (ii%3 ==0 ) 
+       {
+         vars[j] = r->freqs[freqi]; 
+       }
+
+       else 
+       {
+         for (unsigned k = 0; k < 6; k++)
+         {
+           int jj = j *6 +  k; 
+
+           if (ii %3 == 1) 
+           {
+             vars[jj] = r->amps.size() <= k ? 0 : r->amps[k][freqi]; 
+           }
+           else
+           {
+             vars[jj] = r->phases.size() <=k ? 0 : r->phases[k][freqi]; 
+           }
+         }
+       }
+     }
+  }
+}
+
+unsigned UCorrelator::CombinedSineSubtractFilter::outputLength(unsigned i) const
+{
+
+  if ( i == 0) return 1;  //total power removed
+  if (i == 1 || i == 2) return NUM_PHI;  //power removed and niter per phi sector
+
+  i-=3; 
+  if (i % 3 == 0) return NUM_PHI; //frequency per phi sector
+
+  return NUM_PHI * 6; //phase and amp per antenna 
+}
+
+void UCorrelator::CombinedSineSubtractFilter::process(FilteredAnitaEvent * ev) 
+{
+
+#ifdef UCORRELATOR_OPENMP
+#pragma omp parallel for
+#endif
+  for (int i = 0; i < NUM_PHI; i++) 
+  {
+      TGraph *gs[6]; //nrings * npol 
+      int ng = 0; 
+
+      for (int pol = 0; pol < 2; pol++)
+      {
+        for (int ring = 0; ring < 3; ring++)
+        {
+          AnalysisWaveform * wf = getWf(ev, i+ring*NUM_PHI, AnitaPol::AnitaPol_t(pol)); 
+          TGraph * g = wf->updateUneven(); 
+          if (g->GetRMS(2) > 0) 
+            gs[ng++] = g; 
+        }
+      }
+      subs[i]->subtractCW(ng,gs, 1/2.6); 
+   }
+}
+
+UCorrelator::CombinedSineSubtractFilter::~CombinedSineSubtractFilter()
+{
+   for (int i = 0; i < NUM_PHI; i++) 
+   {
+     delete subs[i]; 
+   }
+}
+
+
+void UCorrelator::CombinedSineSubtractFilter::setInteractive(bool set) 
+{
+   for (int i = 0; i < NUM_PHI; i++) 
+   {
+     subs[i]->setStore(set); 
+   }
+}
