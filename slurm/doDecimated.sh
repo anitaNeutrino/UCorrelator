@@ -14,5 +14,5 @@ RUN=$1
 N=${2-0}
 SINSUB=${3-1}
 
-srun bin/doDecimated $RUN $N SINSUB
+srun bin/doDecimated $RUN $N $SINSUB
 

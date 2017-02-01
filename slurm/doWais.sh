@@ -4,7 +4,7 @@
 #SBATCH --time=03:00:00
 #SBATCH --account=kicp
 #SBATCH --partition=kicp
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=4
 
 
 echo $@
@@ -15,7 +15,7 @@ N=${2-0}
 DECONV=${3-1}
 
 
-export OMP_NUM_THREADS=16 
+export OMP_NUM_THREADS=4 
 
 srun bin/doWais $RUN $N $DECONV
 
