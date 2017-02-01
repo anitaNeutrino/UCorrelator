@@ -146,9 +146,9 @@ namespace UCorrelator
       unsigned outputLength(unsigned i) const; 
       void fillOutput(unsigned i, double * vars) const; 
       virtual void process(FilteredAnitaEvent * ev); 
-      const FFTtools::SineSubtract* sinsub(int phi) const { return subs[phi] ;} 
+      const FFTtools::SineSubtract* sinsub(AnitaPol::AnitaPol_t pol, int phi) const { return subs[phi][pol] ;} 
     private:
-      FFTtools::SineSubtract * subs[NUM_PHI]; 
+      FFTtools::SineSubtract * subs[NUM_PHI][2]; 
       TString desc_string; 
       std::vector<TString> output_names;
       int nstored_freqs; 

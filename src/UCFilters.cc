@@ -574,9 +574,12 @@ UCorrelator::CombinedSineSubtractFilter::CombinedSineSubtractFilter(double min_p
 
  for (int i = 0; i < NUM_PHI; i++) 
  {
-     subs[i] = new FFTtools::SineSubtract(max_failed_iter, min_power_ratio); 
-     subs[i]->setOversampleFactor(oversample_factor); 
-     subs[i]->setFreqLimits(nfreq_bands, fmin, fmax); 
+   for (int ipol = 0; ipol < 2; ipol++)
+   {
+     subs[i][ipol] = new FFTtools::SineSubtract(max_failed_iter, min_power_ratio); 
+     subs[i][ipol]->setOversampleFactor(oversample_factor); 
+     subs[i][ipol]->setFreqLimits(nfreq_bands, fmin, fmax); 
+   }
  }
 
  output_names.push_back("niter"); 
@@ -603,12 +606,16 @@ void UCorrelator::CombinedSineSubtractFilter::fillOutput(unsigned ui, double * v
 
     for (int i = 0; i < NUM_PHI; i++) 
     {
-        const FFTtools::SineSubtractResult *r =  subs[i]->getResult(); 
+      for (int ipol = 0; ipol < 2; ipol++) 
+      {
+        const FFTtools::SineSubtractResult *r =  subs[i][ipol]->getResult(); 
         double pinit = r->powers[0]; 
         double pfinal = r->powers[r->powers.size()-1]; 
         total_power_initial += pinit;
         total_power_final += pfinal; 
+      }
     }
+
     *vars = 1. - total_power_final / total_power_initial; 
     return; 
   }
@@ -616,52 +623,55 @@ void UCorrelator::CombinedSineSubtractFilter::fillOutput(unsigned ui, double * v
 
   for (int j = 0; j < NUM_PHI; j++) 
   {
-     const FFTtools::SineSubtractResult *r =  subs[j]->getResult(); 
+    for (int ipol = 0; ipol < 2; ipol++) 
+    {
 
+      const FFTtools::SineSubtractResult *r =  subs[j][ipol]->getResult(); 
 
-     if (i == 1) 
-     {
-       vars[j] = (double) r->freqs.size(); 
-     }
-     else if (i == 2) 
-     {
-       vars[j] = (double) r->powers[r->powers.size()-1] - r->powers[0]; 
-     }
-     else 
-     {
-       int ii =i -  3; 
+      if (i == 1) 
+      {
+        vars[j + ipol * NUM_PHI] = (double) r->freqs.size(); 
+      }
+      else if (i == 2) 
+      {
+        vars[j + ipol * NUM_PHI] = (double) r->powers[r->powers.size()-1] - r->powers[0]; 
+      }
+      else 
+      {
+        int ii =i -  3; 
 
-       int freqi = ii /3; 
-//       printf("%d\n", freqi); 
+        int freqi = ii /3; 
+//        printf("%d\n", freqi); 
 
-       if (freqi >= (int) r->freqs.size())
-       {
-         vars[j] = -1; 
-         continue; 
-       }
+        if (freqi >= (int) r->freqs.size())
+        {
+          vars[j] = -1; 
+          continue; 
+        }
 
-       if (ii%3 ==0 ) 
-       {
-         vars[j] = r->freqs[freqi]; 
-       }
+        if (ii%3 ==0 ) 
+        {
+          vars[j + ipol * NUM_PHI] = r->freqs[freqi]; 
+        }
 
-       else 
-       {
-         for (unsigned k = 0; k < 6; k++)
-         {
-           int jj = j *6 +  k; 
+        else 
+        {
+          for (unsigned k = 0; k < 3; k++)
+          {
+            int jj = j *3 +  k + ipol * NUM_PHI * 3; 
 
-           if (ii %3 == 1) 
-           {
-             vars[jj] = r->amps.size() <= k ? 0 : r->amps[k][freqi]; 
-           }
-           else
-           {
-             vars[jj] = r->phases.size() <=k ? 0 : r->phases[k][freqi]; 
-           }
-         }
-       }
-     }
+            if (ii %3 == 1) 
+            {
+              vars[jj] = r->amps.size() <= k ? 0 : r->amps[k][freqi]; 
+            }
+            else
+            {
+              vars[jj] = r->phases.size() <=k ? 0 : r->phases[k][freqi]; 
+            }
+          }
+        }
+      }
+    }
   }
 }
 
@@ -669,10 +679,10 @@ unsigned UCorrelator::CombinedSineSubtractFilter::outputLength(unsigned i) const
 {
 
   if ( i == 0) return 1;  //total power removed
-  if (i == 1 || i == 2) return NUM_PHI;  //power removed and niter per phi sector
+  if (i == 1 || i == 2) return NUM_PHI*2;  //power removed and niter per phi sector/ pol
 
   i-=3; 
-  if (i % 3 == 0) return NUM_PHI; //frequency per phi sector
+  if (i % 3 == 0) return NUM_PHI*2; //frequency per phi sector /pol
 
   return NUM_PHI * 6; //phase and amp per antenna 
 }
@@ -685,11 +695,12 @@ void UCorrelator::CombinedSineSubtractFilter::process(FilteredAnitaEvent * ev)
 #endif
   for (int i = 0; i < NUM_PHI; i++) 
   {
-      TGraph *gs[6]; //nrings * npol 
-      int ng = 0; 
-
       for (int pol = 0; pol < 2; pol++)
       {
+
+        TGraph *gs[3]; //nrings * npol 
+        int ng = 0; 
+
         for (int ring = 0; ring < 3; ring++)
         {
           AnalysisWaveform * wf = getWf(ev, i+ring*NUM_PHI, AnitaPol::AnitaPol_t(pol)); 
@@ -697,8 +708,8 @@ void UCorrelator::CombinedSineSubtractFilter::process(FilteredAnitaEvent * ev)
           if (g->GetRMS(2) > 0) 
             gs[ng++] = g; 
         }
+        subs[i][pol]->subtractCW(ng,gs, 1/2.6); 
       }
-      subs[i]->subtractCW(ng,gs, 1/2.6); 
    }
 }
 
@@ -706,7 +717,10 @@ UCorrelator::CombinedSineSubtractFilter::~CombinedSineSubtractFilter()
 {
    for (int i = 0; i < NUM_PHI; i++) 
    {
-     delete subs[i]; 
+     for (int ipol = 0; ipol < 2; ipol++) 
+     {
+       delete subs[i][ipol]; 
+     }
    }
 }
 
