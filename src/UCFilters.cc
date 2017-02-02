@@ -553,8 +553,21 @@ UCorrelator::SineSubtractFilter::~SineSubtractFilter()
 }
 
 
-//Combined Sine Subtract 
 
+void UCorrelator::SineSubtractFilter::setInteractive(bool set) 
+{
+ for (int pol = 0; pol < 2; pol++)
+ {
+   for (int i = 0; i < NUM_SEAVEYS; i++) 
+   {
+     subs[pol][i]->setStore(set); 
+   }
+ }
+
+
+}
+
+//Combined Sine Subtract 
 
 UCorrelator::CombinedSineSubtractFilter::CombinedSineSubtractFilter(double min_power_ratio, int max_failed_iter, double oversample_factor, int nfreq_bands, const double * fmin, const double * fmax, int nstored_freqs)
   : nstored_freqs(nstored_freqs) 
@@ -725,4 +738,13 @@ UCorrelator::CombinedSineSubtractFilter::~CombinedSineSubtractFilter()
 }
 
 
-
+void UCorrelator::CombinedSineSubtractFilter::setInteractive(bool set) 
+{
+   for (int i = 0; i < NUM_PHI; i++) 
+   {
+     for (int ipol = 0; ipol < 2; ipol++) 
+     {
+       subs[i][ipol]->setStore(set); 
+     }
+   }
+}

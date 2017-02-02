@@ -6,7 +6,7 @@
 #include "SystemResponse.h"
 #include "FFTtools.h"
 
-UCorrelator::Analyzer *doInteractive(int run = 352, int event = 60849734, bool decimated = false )
+UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool decimated = false )
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
@@ -15,7 +15,11 @@ UCorrelator::Analyzer *doInteractive(int run = 352, int event = 60849734, bool d
   TF1 fn("foo"," (x < 0.2) * exp((x-0.2)/0.01)  + (x > 0.2 && x < 1.2) * (1-0.05*x) + (x > 1.2) * exp((1.2-x)/0.02)", 0,2); 
 
 
-  strategy.addOperation(new UCorrelator::SineSubtractFilter);
+  UCorrelator::CombinedSineSubtractFilter * ssf = new UCorrelator::CombinedSineSubtractFilter(0.01);
+  ssf->setInteractive(true); 
+
+  printf("UCorrelator::CombinedSineSubtractFilter* ssf = (UCorrelator::CombinedSineSubtractFilter*) %p\n", ssf); 
+  strategy.addOperation(ssf);
 //  strategy.addOperation(new SimplePassBandFilter(0.2,1.2)); 
   strategy.addOperation(new ALFAFilter); 
 
@@ -23,7 +27,9 @@ UCorrelator::Analyzer *doInteractive(int run = 352, int event = 60849734, bool d
 
   event > 0 ? d.getEvent(event) : d.getEntry(-event); 
 
-  FilteredAnitaEvent ev(d.useful(),&strategy, d.gps(), d.header()); 
+  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),&strategy, d.gps(), d.header()); 
+
+//  ev->plotSummary(0,0); 
 
 
 
@@ -37,7 +43,7 @@ UCorrelator::Analyzer *doInteractive(int run = 352, int event = 60849734, bool d
   UCorrelator::Analyzer * analyzer = new UCorrelator::Analyzer(&cfg,true); 
 
   AnitaEventSummary sum; 
-  analyzer->analyze(&ev,&sum); 
+  analyzer->analyze(ev,&sum); 
   analyzer->drawSummary(); 
   TCanvas * c2 = new TCanvas; 
   c2->Divide(3,1); 
