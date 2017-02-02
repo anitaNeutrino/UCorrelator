@@ -10,11 +10,13 @@
 #pragma link C++ namespace UCorrelator::peakfinder;
 #pragma link C++ namespace UCorrelator::shape;
 #pragma link C++ namespace UCorrelator::spectrum;
+#pragma link C++ namespace UCorrelator::image;
 
 #pragma link C++ class UCorrelator::peakfinder::FineMaximum;
 #pragma link C++ class UCorrelator::peakfinder::RoughMaximum;
 #pragma link C++ class UCorrelator::AntennaPositions;
 #pragma link C++ class UCorrelator::Baseline;
+#pragma link C++ class UCorrelator::SpectrumAverage;
 #pragma link C++ class UCorrelator::Correlator;
 #pragma link C++ class UCorrelator::DeconvolutionMethod;
 #pragma link C++ class UCorrelator::NaiveDeconvolution;
