@@ -122,7 +122,9 @@ void doTMVA(int decimated_start = 130, int decimated_stop=439, int nworkers = 1)
   //setup methods 
 
   factory->BookMethod(dl, TMVA::Types::kFisher, "Fisher"); 
-  factory->BookMethod(dl, TMVA::Types::kKNN, "kNN"); 
+//  factory->BookMethod(dl, TMVA::Types::kKNN, "kNN"); 
+  factory->BookMethod(dl, TMVA::Types::kBDT, "BDT"); 
+  factory->BookMethod(dl, TMVA::Types::kMLP, "MLP"); 
 
 
   factory->TrainAllMethods(); 
