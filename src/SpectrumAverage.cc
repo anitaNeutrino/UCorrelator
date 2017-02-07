@@ -24,14 +24,27 @@ static int computeAverage(int run, int nsecs, const char * selection, double max
 {
 
   AnitaDataset d(run); 
+#ifdef MULTIVERSION_ANITA_ENABLED
   if (selection) d.setCut(selection); 
+#else
+  if (selection) fprintf("selection not supported with this version of AnitaDataset\n"); 
+#endif
+
 
 
   //figure out how long it is. 
 
+#ifdef MULTIVERSION_ANITA_ENABLED
   selection ? d.firstInCut() : d.first(); 
+#else
+  d.first(); 
+#endif
   double startTime = d.header()->triggerTime; 
+#ifdef MULTIVERSION_ANITA_ENABLED
   selection ? d.lastInCut() : d.last(); 
+#else
+  d.last();
+#endif
   double endTime = d.header()->triggerTime+1; 
 
   int nbins = (startTime - endTime) / nsecs; 
@@ -58,11 +71,19 @@ static int computeAverage(int run, int nsecs, const char * selection, double max
   if (AnitaVersion::get() == 3) str.addOperation(&alfa); 
 
 
+#ifdef MULTIVERSION_ANITA_ENABLED
   int N = selection ? d.NInCut():  d.N(); 
+#else
+  int N = d.N(); 
+#endif
 
   for (int i = 0; i < N; i++)
   {
+#ifdef MULTIVERSION_ANITA_ENABLED
     selection ? d.nthInCut(i) : d.getEntry(i);
+#else
+    d.getEntry(i); 
+#endif 
     FilteredAnitaEvent ev(d.useful(), &str, d.gps(), d.header()); 
     
     //cut out possible blasts 
