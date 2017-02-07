@@ -27,7 +27,7 @@ static int computeAverage(int run, int nsecs, const char * selection, double max
 #ifdef MULTIVERSION_ANITA_ENABLED
   if (selection) d.setCut(selection); 
 #else
-  if (selection) fprintf("selection not supported with this version of AnitaDataset\n"); 
+  if (selection) fprintf(stderr,"selection not supported with this version of AnitaDataset\n"); 
 #endif
 
 
