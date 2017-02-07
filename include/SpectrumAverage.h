@@ -43,9 +43,9 @@ namespace UCorrelator
        * */ 
       void saveToDir(const char * dir); 
 
-      TH2 *getSpectrumAverage(AnitaPol::AnitaPol_t pol, int ant, double t);  
-      TH2 *getSpectrumPercentile(AnitaPol::AnitaPol_t pol, int ant, double pct = 0.1); 
-      const TH2 * getSpectogram() const; 
+      TH2 *getSpectrumAverage(AnitaPol::AnitaPol_t pol, int ant, double t) { return 0;  }
+      TH2 *getSpectrumPercentile(AnitaPol::AnitaPol_t pol, int ant, double pct = 0.1) {return 0;} 
+      const TH2 * getSpectogram() const {return 0; } 
 
     private: 
       TH2 * avgs[NUM_SEAVEYS][2]; 
