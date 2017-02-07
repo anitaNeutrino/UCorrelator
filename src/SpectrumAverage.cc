@@ -37,13 +37,13 @@ static int computeAverage(int run, int nsecs, const char * selection, double max
 #ifdef MULTIVERSION_ANITA_ENABLED
   selection ? d.firstInCut() : d.first(); 
 #else
-  d.first(); 
+  d.getEntry(0); 
 #endif
   double startTime = d.header()->triggerTime; 
 #ifdef MULTIVERSION_ANITA_ENABLED
   selection ? d.lastInCut() : d.last(); 
 #else
-  d.last();
+  d.getEntry(d.N()-1);
 #endif
   double endTime = d.header()->triggerTime+1; 
 
