@@ -44,7 +44,7 @@ void doDecimatedNoFilter(int run = 352, int max = 0)
   for (int i =0 ; i < d.N(); i++)
   {
 
-  printf("----(%d)-----\n",i); 
+    printf("----(%d)-----\n",i); 
     d.getEntry(i); 
 //    printf("%d\n",i); 
     FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
