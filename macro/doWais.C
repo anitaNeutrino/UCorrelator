@@ -1,4 +1,3 @@
-
 #include "FFTtools.h"
 #include "Analyzer.h"
 #include "FilteredAnitaEvent.h"
@@ -72,7 +71,8 @@ void doWais(int run = 352, int max = 0, bool sine_subtract = true)
 
       analyzer.analyze(&ev, sum); 
       ofile.cd(); 
-      header = d.header(); 
+      hdr = d.header();
+//      header = d.header(); 
       patptr = &pat; 
       tree->Fill(); 
       ndone++; 

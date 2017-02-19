@@ -1,6 +1,16 @@
-#include "FFTtools.h" 
+#include "FFTtools.h"
+#include "Analyzer.h"
+#include "FilteredAnitaEvent.h"
 #include "AnitaDataset.h" 
-#include "Analyzer.h" 
+#include "RawAnitaHeader.h"
+#include "AnalysisConfig.h"
+#include "UCFilters.h"
+#include "BasicFilters.h"
+#include "Util.h"
+#include "FilterStrategy.h"
+// #include "FFTtools.h" 
+// #include "AnitaDataset.h" 
+// #include "Analyzer.h" 
 
 void doDecimatedNoFilter(int run = 352, int max = 0)
 {
@@ -20,7 +30,8 @@ void doDecimatedNoFilter(int run = 352, int max = 0)
   TTree * tree = new TTree("decimated_no_filter","decimated_no_filter"); 
   AnitaEventSummary * sum = new AnitaEventSummary; 
   FilterStrategy strategy; 
-  strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2,1.3)); 
+  strategy.addOperation(new SimplePassBandFilter(0.2,1.3)); 
+//  strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2,1.3)); 
 
 
   tree->Branch("summary",&sum); 
@@ -35,11 +46,12 @@ void doDecimatedNoFilter(int run = 352, int max = 0)
 
   printf("----(%d)-----\n",i); 
     d.getEntry(i); 
-    printf("%d\n",i); 
+//    printf("%d\n",i); 
     FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
     analyzer->analyze(&ev, sum); 
     ofile.cd(); 
-    header = d.header(); 
+    hdr = d.header();
+//    header = d.header(); 
     pat = d.gps(); 
     tree->Fill(); 
     ndone++; 

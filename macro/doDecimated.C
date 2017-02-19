@@ -1,3 +1,13 @@
+#include "FFTtools.h"
+#include "Analyzer.h"
+#include "FilteredAnitaEvent.h"
+#include "AnitaDataset.h" 
+#include "RawAnitaHeader.h"
+#include "AnalysisConfig.h"
+#include "UCFilters.h"
+#include "BasicFilters.h"
+#include "Util.h"
+#include "FilterStrategy.h"
 
 void doDecimated(int run = 352, int max = 0, bool sine_subtract = false)
 {
@@ -24,7 +34,8 @@ void doDecimated(int run = 352, int max = 0, bool sine_subtract = false)
     double fmins[1] = {0.2}; 
     double fmaxs[1] = {1.3}; 
     strategy.addOperation(new UCorrelator::SineSubtractFilter(0.05, 0, 4,1,fmins,fmaxs)); 
-    strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2.1.3)); 
+    strategy.addOperation(new SimplePassBandFilter(0.2, 1.3)); 
+//    strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2.1.3)); 
   }
   else
   {
@@ -35,8 +46,10 @@ void doDecimated(int run = 352, int max = 0, bool sine_subtract = false)
 //  printf("Strategy applied!\n"); 
 
   tree->Branch("summary",&sum); 
-  RawAnitaHeader *hdr; 
-  Adu5Pat *pat; 
+  RawAnitaHeader *hdr = 0; 
+  Adu5Pat *pat = 0; 
+//  RawAnitaHeader *hdr; 
+//  Adu5Pat *pat; 
   tree->Branch("header",&hdr); 
   tree->Branch("pat",&pat); 
 
@@ -50,7 +63,8 @@ void doDecimated(int run = 352, int max = 0, bool sine_subtract = false)
     FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
     analyzer.analyze(&ev, sum); 
     ofile.cd(); 
-    header = d.header(); 
+    hdr = d.header();
+//    header = d.header(); 
     pat = d.gps(); 
     tree->Fill(); 
     ndone++; 
