@@ -46,7 +46,8 @@ AnitaEventSummary * tryEvent(int run = 352, int event = 60832108, bool nofilter 
   }
   else
   {
-    strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2,1.3)); 
+    strategy.addOperation(new SimplePassBandFilter(0.2,1.3)); 
+//    strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2,1.3)); 
 //    UCorrelator::applyAbbysFilterStrategy(&strategy); 
   }
 
