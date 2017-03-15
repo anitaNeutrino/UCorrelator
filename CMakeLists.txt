@@ -196,6 +196,8 @@ do_driver(doSimulated)
 do_driver(doDecimated) 
 do_driver(doDecimatedNoFilter)
 do_driver(doLDB) 
+do_driver(doAll) 
+do_driver(evaluateFiltersA3) 
 
 
 
