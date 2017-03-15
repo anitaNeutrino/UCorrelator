@@ -1,5 +1,7 @@
 #include "AnalysisConfig.h" 
 #include "SystemResponse.h" 
+#include "TFile.h" 
+#include "TH2.h" 
 
 static const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25", "Histogram" }; 
 static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","HarmSignalOnly"}; 
@@ -96,15 +98,11 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
 
 const int wais_hpol_time_offset = 93; 
 const int wais_vpol_time_offset = -99757; 
-const int ldb_hpol_time_offset = 0;  //TODO
-const int ldb_vpol_time_offset = 0; 
 
 UCorrelator::AnalysisConfig::AnalysisConfig(const char * config) 
   : 
     wais_hpol(wais_hpol_time_offset, 800e3, 1e3), 
-    wais_vpol(wais_vpol_time_offset, 800e3, 1e3), 
-    ldb_hpol(ldb_hpol_time_offset, 800e3, 1e3), 
-    ldb_vpol(ldb_vpol_time_offset, 800e3, 1e3) 
+    wais_vpol(wais_vpol_time_offset, 800e3, 1e3) 
 {
   correlator_nphi = 180; 
   correlator_ntheta = 100; 
@@ -153,6 +151,26 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   if (config) loadFromFile(config);
 
   deconvolution_method = &kDefaultDeconvolution; 
+
+  //Try to load the LDB Pulser info. 
+  
+  TString fname; 
+  fname.Form("%s/share/UCorrelator/ldbSelection.root", getenv("ANITA_UTIL_INSTALL_DIR")); 
+  TFile f(fname); 
+
+  if (!f.IsOpen())
+  {
+    fprintf(stderr,"WARNING: data/ldbSelection.root doesn't exist. This is probably because you haven't generated it.\n. If you don't care about LDB pulsers, ignore this. Otherwise, you can generate one using the makeLDBSelection.C macro.\n"); 
+    ldb_hist = 0; 
+  }
+  else
+  {
+    ldb_hist = (TH2*) f.Get("ldbHist")->Clone("LDBHistogram"); 
+    ldb_hist->SetDirectory(0); 
+  }
+
+  ldb_max_run = 160; 
+
 }
 
 

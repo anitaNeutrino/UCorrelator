@@ -27,11 +27,9 @@ namespace UCorrelator
   /** Returns true if we think it's a WAIS hpol cal pulse */ 
   bool isWAISHPol(const UsefulAdu5Pat * pat, const RawAnitaHeader * hdr, const AnalysisConfig * cfg = 0) ; 
 
-  /** Returns true if we think it's a LDB vpol cal pulse */ 
-  bool isLDBVPol(const UsefulAdu5Pat * pat, const RawAnitaHeader * hdr, const AnalysisConfig * cfg = 0) ; 
+  /** Returns true if we think it's a LDB cal pulse */ 
+  bool isLDB(const RawAnitaHeader * hdr, const AnalysisConfig * cfg = 0) ; 
 
-  /** Returns true if we think it's a LDB hpol cal pulse */ 
-  bool isLDBHPol(const UsefulAdu5Pat * pat, const RawAnitaHeader * hdr, const AnalysisConfig * cfg = 0) ; 
 
 
   // /** Returns 0 if misses continent, 1 if it hits, 2 if it hits after adjusting theta */ 

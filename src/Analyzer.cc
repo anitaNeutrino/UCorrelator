@@ -8,7 +8,7 @@
 #include "TMarker.h"
 #include "TEllipse.h"
 #include "FilteredAnitaEvent.h"
-#include "Util.h"
+#include "UCUtil.h"
 #include "DigitalFilter.h" 
 #include "FFTtools.h" 
 #include "UsefulAdu5Pat.h"
@@ -815,7 +815,7 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   }
 
 
-  if ( isLDBHPol(pat, fae->getHeader(), cfg) || isLDBVPol (pat, fae->getHeader(), cfg))
+  if ( isLDB(fae->getHeader(), cfg))
   {
     flags->pulser = AnitaEventSummary::EventFlags::LDB; 
   }
