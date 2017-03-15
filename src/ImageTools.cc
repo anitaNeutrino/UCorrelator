@@ -2,6 +2,7 @@
 #include "UCImageTools.h" 
 #include "TString.h" 
 #include <algorithm>
+#include <set>
 
 
 
@@ -41,7 +42,7 @@ static const TAxis * getAxis(const TH2* H, int axis)
 }
 
 
-TH1* UCorrelator::image::getPctileProjection(const TH2 * H, int axis, double pct) 
+TH1* UCorrelator::image::getPctileProjection(const TH2 * H, int axis, double pct, bool ignoreEmpty) 
 {
   TString name; 
   TString title; 
@@ -52,15 +53,42 @@ TH1* UCorrelator::image::getPctileProjection(const TH2 * H, int axis, double pct
 
   int nOrth = getAxis(H,3-axis)->GetNbins(); 
 
+  std::set<int> ignore; 
+
+  if (ignoreEmpty) 
+  {
+    for (int j = 1; j <= nOrth; j++) 
+    {
+      bool empty = true; 
+
+      for (int i =1; i <= h->GetNbinsX(); i++) 
+      {
+        if( H->GetBinContent( axis == 1 ? i : j, axis == 1 ? j : i))
+        {
+          empty = false; 
+          break; 
+        }
+      }
+
+      if (empty) 
+        ignore.insert(j); 
+    }
+
+  }
+
   for (int i = 1; i <= h->GetNbinsX(); i++) 
   {
-    std::vector<double> v(nOrth); 
+    std::vector<double> v;
+    v.reserve(nOrth); 
     for (int j = 1; j <= nOrth; j++)
     {
-      v[j-1] = H->GetBinContent( axis == 1 ? i : j, axis == 1 ? j : i); 
+      if (ignore.count(j)) 
+        continue; 
+
+      v.push_back( H->GetBinContent( axis == 1 ? i : j, axis == 1 ? j : i)); 
     }
-    std::nth_element(v.begin(), v.begin() + (nOrth-1) * pct, v.end()); 
-    h->SetBinContent(i, v[(nOrth-1)*pct]); 
+    std::nth_element(v.begin(), v.begin() + (v.size()-1) * pct, v.end()); 
+    h->SetBinContent(i, v[(v.size()-1)*pct]); 
   }
 
   return h; 

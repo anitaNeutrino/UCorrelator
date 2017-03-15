@@ -18,7 +18,7 @@ namespace UCorrelator
   namespace image
   {
 
-    TH1 * getPctileProjection(const TH2 * h, int axis = 1, double pct = 0.5); 
+    TH1 * getPctileProjection(const TH2 * h, int axis = 1, double pct = 0.5, bool ignoreEmpty = true); 
 
   }; 
 }; 
