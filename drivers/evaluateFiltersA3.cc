@@ -24,6 +24,7 @@
 #include "AnalysisConfig.h"
 #include "AnitaDataset.h"
 #include "RawAnitaHeader.h"
+#include "SpectrumAverage.h" 
 
 
 
@@ -44,27 +45,41 @@ void addStrategy( FilterStrategy * s, const char * name) { strategies.push_back(
 
 /** add filter strategies here ! */ 
 
-void setupFilters(TFile* out) 
+void setupFilters(TFile* out, int run) 
 {
 
   /** Sine subtraction */ 
   FilterStrategy * sinsub= new FilterStrategy; 
-  double fmins[1] = {0.18}; 
-  double fmaxs[1] = {1.3}; 
-  sinsub->addOperation(new UCorrelator::SineSubtractFilter(0.05, 0, 4,1,fmins,fmaxs)); 
+  sinsub->addOperation(new UCorrelator::SineSubtractFilter(0.05, 0)); 
   sinsub->addOperation(new ALFAFilter); 
   addStrategy(sinsub, "sinsub"); 
 
+  UCorrelator::SpectrumAverage *  avg  = new UCorrelator::SpectrumAverage(run,60,"specavg"); //TODO use defualt dir for this 
+  avg->computePeakiness(); 
 
   /** Peakiness Detecting Sine Subtraction */ 
+  FilterStrategy * adsinsub= new FilterStrategy; 
+  UCorrelator::SineSubtractFilter * adssf = new UCorrelator::SineSubtractFilter(0.05, 0); 
+  adssf->makeAdaptive(avg); 
+  adsinsub->addOperation(adssf); 
+  adsinsub->addOperation(new ALFAFilter); 
+  addStrategy(adsinsub, "adsinsub"); 
 
 
 
   /** Adaptive Butterworth Filter */ 
+  FilterStrategy * butter = new  FilterStrategy; 
+  butter->addOperation(new UCorrelator::AdaptiveButterworthFilter(avg)); 
+  sinsub->addOperation(new ALFAFilter); 
+  addStrategy(butter, "butter"); 
 
 
+  /** Adaptive Minimum Phase **/ 
+  FilterStrategy * minphase = new  FilterStrategy; 
+  minphase->addOperation(new UCorrelator::AdaptiveMinimumPhaseFilter(avg)); 
+  sinsub->addOperation(new ALFAFilter); 
+  addStrategy(minphase, "minphase"); 
 
-  /** Minimum Phase **/ 
 
 }
 
@@ -77,8 +92,8 @@ int main(int nargs, char ** args)
   FFTtools::loadWisdom("wisdom.dat"); 
   int run = atoi(args[1]); 
 
-  bool isWAIS = run <=min_wais && run >= max_wais; 
-  bool isLDB = run <=min_ldb && run >= max_ldb; 
+  bool isWAIS = run >=min_wais && run <= max_wais; 
+  bool isLDB = run >=min_ldb && run <= max_ldb; 
   bool isBG  = !isWAIS && !isLDB; 
 
   AnitaDataset d(run, isBG); //only use decimated if background 
@@ -92,7 +107,7 @@ int main(int nargs, char ** args)
   else outname.Form("filter/%d_%s_max_%d.root", run, label, max); 
 
   TFile ofile(outname, "RECREATE"); 
-  setupFilters(&ofile); 
+  setupFilters(&ofile, run); 
 
 
   if (!ofile.IsOpen())
@@ -107,7 +122,7 @@ int main(int nargs, char ** args)
   RawAnitaHeader *hdr = 0 ; 
   UsefulAdu5Pat *patptr = 0; 
 
-  std::vector<TTree*> trees; 
+  std::vector<TTree*> trees(strategies.size()); 
 
   TTree * friendly = new TTree("aux", "Auxdata (headers/gps)"); 
   friendly->Branch("header",&hdr); 
@@ -161,11 +176,13 @@ int main(int nargs, char ** args)
     //loop over strategies 
     for (size_t s = 0; s < strategies.size(); s++) 
     {
+      printf (" %s...", names[s].c_str()); 
       FilteredAnitaEvent ev(d.useful(), strategies[s], d.gps(), d.header()); 
       analyzer.analyze(&ev, sum); 
       ofile.cd(); 
       trees[s]->Fill(); 
     }
+    printf("\n"); 
 
     if (max && ndone > max) break; 
     ndone++; 
@@ -174,8 +191,8 @@ int main(int nargs, char ** args)
 
   ofile.cd(); 
 
-//  friendly->Write(); 
-//  for (size_t i = 0; i < trees.size(); i++) trees[i]-Write(); 
+  friendly->Write(); 
+  for (size_t i = 0; i < trees.size(); i++) trees[i]->Write(); 
 
   FFTtools::saveWisdom("wisdom.dat"); 
   ofile.Write(); 
