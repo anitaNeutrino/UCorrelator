@@ -16,9 +16,6 @@ namespace UCorrelator
   /** Get difference in time between trigger time and expected arrival of a WAIS cal pulse */
   double getWAISDt(const UsefulAdu5Pat * pat, const RawAnitaHeader *hdr, AnitaPol::AnitaPol_t pol = AnitaPol::kHorizontal, const AnalysisConfig * cfg = 0, double * distance = 0); 
 
-  /** Get difference in time between trigger time and expected arrival of an LDB cal pulse */
-  double getLDBDt(const UsefulAdu5Pat * pat, const RawAnitaHeader *hdr, AnitaPol::AnitaPol_t pol = AnitaPol::kHorizontal, const AnalysisConfig * cfg = 0, double * distance = 0); 
-
 
   /** Returns true if we think it's a WAIS vpol cal pulse */ 
   bool isWAISVPol(const UsefulAdu5Pat * pat, const RawAnitaHeader * hdr, const AnalysisConfig * cfg = 0) ; 
