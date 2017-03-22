@@ -25,7 +25,10 @@
 #pragma link C++ class UCorrelator::CompositeResponse;
 #pragma link C++ class UCorrelator::ComplicatedNotchFilter;
 #pragma link C++ class UCorrelator::SineSubtractFilter;
-#pragma link C++ class UCorrelator::AdaptiveFilter;
+#pragma link C++ class UCorrelator::AdaptiveFilterAbby;
+#pragma link C++ class UCorrelator::CombinedSineSubtractFilter;
+#pragma link C++ class UCorrelator::AdaptiveMinimumPhaseFilter;
+#pragma link C++ class UCorrelator::AdaptiveButterworthFilter;
 #pragma link C++ class UCorrelator::WaveformCombiner;
 #pragma link C++ class UCorrelator::Analyzer;
 #pragma link C++ class UCorrelator::AnalysisConfig;

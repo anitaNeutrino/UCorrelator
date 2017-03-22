@@ -1,6 +1,7 @@
 #include "FFTtools.h" 
 #include "FilterStrategy.h"
 #include "UCFilters.h" 
+#include "SpectrumAverage.h" 
 #include "BasicFilters.h" 
 #include "TGraph.h" 
 #include "AnalysisWaveform.h" 
@@ -32,7 +33,7 @@ void UCorrelator::applyAbbysFilterStrategy(FilterStrategy * strategy)
 
 
   //add adaptive filter 
-  strategy->addOperation(new AdaptiveFilter(2, getenv("UCORRELATOR_BASELINE_DIR"))); 
+  strategy->addOperation(new AdaptiveFilterAbby(2, getenv("UCORRELATOR_BASELINE_DIR"))); 
 }
 
 
@@ -165,7 +166,7 @@ static void interpolateFreqsBetween(TGraph * g, double fmin, double fmax)
 static std::vector<TString> hpol_freq_names; 
 static std::vector<TString> vpol_freq_names; 
 
-const char * UCorrelator::AdaptiveFilter::outputName(unsigned i) const
+const char * UCorrelator::AdaptiveFilterAbby::outputName(unsigned i) const
 {
 
   switch(i) 
@@ -190,7 +191,7 @@ const char * UCorrelator::AdaptiveFilter::outputName(unsigned i) const
 }
 
 
-void UCorrelator::AdaptiveFilter::fillOutput(unsigned  i, double *vals) const
+void UCorrelator::AdaptiveFilterAbby::fillOutput(unsigned  i, double *vals) const
 {
 
   switch(i) 
@@ -214,9 +215,9 @@ void UCorrelator::AdaptiveFilter::fillOutput(unsigned  i, double *vals) const
   }
 }
 
-void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event) 
+void UCorrelator::AdaptiveFilterAbby::process(FilteredAnitaEvent * event) 
 {
-//  printf("AdaptiveFilter::process!\n"); 
+//  printf("AdaptiveFilterAbby::process!\n"); 
   /* Here we do all the same processing to the baseline as Abby does */ 
   if (run < 0 || run != event->getHeader()->run)
   {
@@ -412,8 +413,11 @@ void UCorrelator::AdaptiveFilter::process(FilteredAnitaEvent * event)
 
 
 UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int max_failed_iter, double oversample_factor, int nfreq_bands, const double * fmin, const double * fmax, int nstored_freqs)
-  : nstored_freqs(nstored_freqs) 
+  : min_power_ratio(min_power_ratio), spec(0), last_t(0), nstored_freqs(nstored_freqs)
 {
+
+ memset(reduction,0,sizeof(reduction)); 
+
  desc_string.Form("SineSubtract with min_power_ratio=%f, max_failed_iter =%d, oversample_factor = %f and %d frequency bands", min_power_ratio, max_failed_iter,oversample_factor, nfreq_bands);
  if (nfreq_bands)
  {
@@ -534,11 +538,44 @@ void UCorrelator::SineSubtractFilter::process(FilteredAnitaEvent * ev)
     for (int pol = 0; pol < 2; pol++)
     {
       AnalysisWaveform * wf = getWf(ev, i, AnitaPol::AnitaPol_t(pol)); 
+
+
+      if (spec) 
+      {
+        // use peakiness to tune aggressivness
+        if (ev->getHeader()->triggerTime > last_t)
+        {
+          TH2 * peaky = (TH2*) spec->getPeakiness(AnitaPol::AnitaPol_t(pol), i); 
+
+          if (reduction[pol][i])
+            delete reduction[pol][i]; 
+
+          reduction[pol][i] = new TGraph(peaky->GetNbinsX()); 
+
+          for (int j = 0; j < reduction[pol][i]->GetN(); j++) 
+          {
+            reduction[pol][i]->GetX()[j] = peaky->GetXaxis()->GetBinLowEdge(j+1); 
+            double how_peaky = peaky->Interpolate(peaky->GetXaxis()->GetBinCenter(j+1), ev->getHeader()->triggerTime); 
+            if (how_peaky < 1) how_peaky = 1; 
+            reduction[pol][i]->GetY()[j] = min_power_ratio/how_peaky; 
+          }
+        }
+
+        subs[pol][i]->setMinPowerReduction(reduction[pol][i]); 
+      }
+      else
+      {
+        subs[pol][i]->setMinPowerReduction(min_power_ratio); 
+      }
+
+
       TGraph * g = wf->updateUneven(); 
       if (g->GetRMS(2) > 0) 
         subs[pol][i]->subtractCW(1,&g, 1/2.6); 
     }
   }
+
+  last_t = ev->getHeader()->triggerTime; 
 }
 
 UCorrelator::SineSubtractFilter::~SineSubtractFilter()
@@ -548,6 +585,9 @@ UCorrelator::SineSubtractFilter::~SineSubtractFilter()
    for (int i = 0; i < NUM_SEAVEYS; i++) 
    {
      delete subs[pol][i]; 
+
+     if (reduction[pol][i]) 
+       delete reduction[pol][i]; 
    }
  }
 }
@@ -566,6 +606,13 @@ void UCorrelator::SineSubtractFilter::setInteractive(bool set)
 
 
 }
+
+
+void UCorrelator::SineSubtractFilter::makeAdaptive(const SpectrumAverage * s) 
+{
+  spec = s; 
+}
+
 
 //Combined Sine Subtract 
 
@@ -748,3 +795,180 @@ void UCorrelator::CombinedSineSubtractFilter::setInteractive(bool set)
      }
    }
 }
+
+
+
+
+UCorrelator::AdaptiveMinimumPhaseFilter::AdaptiveMinimumPhaseFilter(const SpectrumAverage *avg, double exponent,int npad)
+ : avg(avg),npad(npad), exponent(exponent), last_bin(-1) 
+{
+  desc_string.Form("Adaptive Minimum Phase Filter with SpectrumAverage(%d,%d) and exponent %g", avg->getRun(), avg->getNsecs(), exponent); 
+  memset(filt,0,sizeof(filt)); 
+  memset(size,0,sizeof(size)); 
+}
+
+UCorrelator::AdaptiveMinimumPhaseFilter::~AdaptiveMinimumPhaseFilter() 
+{
+  for (int i = 0; i < 2; i++) 
+  {
+    for (int j = 0; j < NUM_SEAVEYS; j++) 
+    {
+      if (filt[i][j]) delete filt[i][j]; 
+    }
+  }
+}
+
+
+void UCorrelator::AdaptiveMinimumPhaseFilter::process(FilteredAnitaEvent * ev) 
+{
+
+  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
+  int bin = avg->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
+
+
+  for (int ipol = 0; ipol < 2; ipol++) 
+  {
+    AnitaPol::AnitaPol_t pol = AnitaPol::AnitaPol_t(ipol); 
+    for (int i = 0; i < NUM_SEAVEYS; i++) 
+    {
+      AnalysisWaveform * wf = getWf(ev,i,pol); 
+
+
+      //have to recalculate the filter
+      if (last_bin != bin || wf->Neven() != size[ipol][i]) 
+      {
+
+        if (filt[ipol][i]) delete filt[ipol][i]; 
+        double tmid = avg->getPeakiness(pol,i)->GetYaxis()->GetBinCenter(bin); 
+        size[ipol][i] = wf->Neven(); 
+        int fft_size = (size[ipol][i] * (1+npad))/2 +1; 
+
+        double G[fft_size]; 
+        for (int j = 0; j < fft_size; j++)
+        {
+          double f = 0.01/(1.+npad) *j; //TODO
+//          printf("%g %g %g\n",f,tmid,t); 
+          double peaky = ((TH2*)avg->getPeakiness(pol,i))->Interpolate(f,tmid);  //why isn't this const? ?!?? 
+          if (peaky < 1 || isnan(peaky) || f < 0.16) peaky = 1; 
+          G[j] = TMath::Power(peaky, exponent)*( j > 0 && j < fft_size-1 ? sqrt(2) : 1); 
+        }
+
+        filt[ipol][i] = FFTtools::makeMinimumPhase(fft_size,G); 
+      }
+
+      //zero pad? 
+      if (npad) 
+        wf->padEven(npad); 
+
+      FFTWComplex * update = wf->updateFreq(); 
+      for (int j = 0; j <size[ipol][i]*(1+npad)/2+1; j++) update[j] *= filt[ipol][i][j]; 
+
+      //truncate
+      if (npad) 
+        wf->forceEvenSize(wf->Neven()/(1.+npad)); 
+
+    }
+  }
+
+  last_bin = bin; 
+
+}
+
+TGraph * UCorrelator::AdaptiveMinimumPhaseFilter::getCurrentFilterTimeDomain(AnitaPol::AnitaPol_t pol, int i) const 
+{
+  int  N = size[pol][i] * (1+npad); 
+  double * y = FFTtools::doInvFFT(N,filt[pol][i]); 
+
+  TGraph * g = new TGraph(N); 
+
+  for (int j = 0; j < N; j++)
+  {
+    g->GetX()[j]=j/(2.6); 
+    g->GetY()[j]=y[j]; 
+  }
+  delete y; 
+  return g; 
+}
+
+
+TGraph * UCorrelator::AdaptiveMinimumPhaseFilter::getCurrentFilterPower(AnitaPol::AnitaPol_t pol, int i) const 
+{
+  //TODO make right size0
+
+  int N = size[pol][i] * (1+npad) / 2 + 1; 
+  
+  TGraph * g = new TGraph(N); 
+
+  for (int j = 0; j < N; j++)
+  {
+    g->GetX()[j]=j * 0.01 / (1+npad); 
+    g->GetY()[j]=filt[pol][i][j].getAbsSq(); 
+  }
+  return g; 
+}
+
+
+
+
+UCorrelator::AdaptiveButterworthFilter::AdaptiveButterworthFilter(const SpectrumAverage *avg,
+                                                                  double peakiness_threshold ,
+                                                                  int order , double width) 
+            : avg(avg), threshold(peakiness_threshold), order(order), width(width)  
+{ 
+  desc_string.Form("AdaptiveButterworthFilter with SpectrumAverage(%d,%d), th=%g, order=%d, width=%g)",
+                    avg->getRun(), avg->getNsecs(), threshold, order, width);
+}
+
+void UCorrelator::AdaptiveButterworthFilter::process(FilteredAnitaEvent * ev) 
+{
+
+  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
+  int bin = avg->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
+
+
+  for (int ipol = 0; ipol < 2; ipol++) 
+  {
+    AnitaPol::AnitaPol_t pol = AnitaPol::AnitaPol_t(ipol); 
+    for (int i = 0; i < NUM_SEAVEYS; i++) 
+    {
+
+      if (last_bin != bin) 
+      {
+        filters[ipol][i].clear();
+        TH1 * proj = avg->getPeakiness(pol,i)->ProjectionX("tmp", bin,bin);  
+
+        for (int j =1; j <= proj->GetNbinsX(); j++) 
+        {
+          if (proj->GetBinContent(j) < threshold)
+          {
+            continue; 
+          }
+
+           int low = j; 
+           while (proj->GetBinContent(j++) > threshold) continue; 
+           int high = j; 
+
+           double fmax = proj->GetXaxis()->GetXmax(); 
+           double freq_low = proj->GetBinLowEdge(low); 
+           double freq_high = proj->GetBinLowEdge(high); 
+           double freq_center = (freq_low+freq_high)/2; 
+           double freq_width = width + freq_high - freq_low; 
+           filters[ipol][i].add(new FFTtools::ButterworthFilter(FFTtools::NOTCH, order, freq_center/fmax, freq_width/(2*fmax)),true); 
+        }
+
+        delete proj; 
+      }
+
+
+
+      AnalysisWaveform * wf = getWf(ev,i,pol); 
+      TGraph * update = wf->updateEven(); 
+      filters[pol][i].filterGraph(update); 
+     
+    }
+  }
+
+  last_bin = bin; 
+
+}
+

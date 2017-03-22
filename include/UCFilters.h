@@ -8,6 +8,7 @@
 #include "FilteredAnitaEvent.h" 
 #include "FilterOperation.h" 
 #include "TString.h" 
+#include "DigitalFilter.h" 
 #include "Baseline.h"
 #include "SineSubtract.h" 
 #include "AnalysisWaveform.h" 
@@ -15,7 +16,9 @@
 namespace UCorrelator 
 {
 
-  /*** Apply the series of filters originally implemented in MyCorrelator to the filter strategy */ 
+  class SpectrumAverage; 
+
+  /*** Apply the series of filters originally implemented in MyCorrelator to the filter strategy . Note that this doesn't really do the right thing for A3. */ 
   void applyAbbysFilterStrategy(FilterStrategy * strategy); 
 
   /** Condition used for satellite filter */ 
@@ -47,23 +50,23 @@ namespace UCorrelator
   }; 
 
   /** Attempted reimplementation of Abby's Adaptive Filter. Dont' know if it works fully yet... */
-  class AdaptiveFilter : public FilterOperation
+  class AdaptiveFilterAbby : public FilterOperation
   {
 
     public: 
 
-      AdaptiveFilter(double dbCut, const char * baseline_dir, int navg = 1000, 
+      AdaptiveFilterAbby(double dbCut, const char * baseline_dir, int navg = 1000, 
         double fmin = 0.2, double fmax = 1.2, double bandwidth = 0.026, int nFreqs = 5, double temperature = 340, double gain = 75 ) 
         : dbCut(dbCut), run(-1), navg(navg), baseline_dir(baseline_dir), baseline(0), fmin(fmin), fmax(fmax), bw(bandwidth), nfreq(nFreqs), hpol_avg(0), vpol_avg(0), 
         temperature(temperature), gain(gain)
       {
-        desc_string.Form("Adaptive filter with BW %f using Baselines with %d averages and a db cut of %f\n",bw,  navg, dbCut); 
+        desc_string.Form("Abby's adaptive filter with BW %f using Baselines with %d averages and a db cut of %f\n",bw,  navg, dbCut); 
         freqs[0] = new double[nfreq]; 
         freqs[1] = new double[nfreq]; 
       }
 
 
-      virtual ~AdaptiveFilter() { if (baseline) delete baseline; delete [] freqs[0]; delete [] freqs[1]; } 
+      virtual ~AdaptiveFilterAbby() { if (baseline) delete baseline; delete [] freqs[0]; delete [] freqs[1]; } 
 
       const char * tag() const { return "AdaptiveFilter"; } 
       const char * description() const { return desc_string.Data(); }
@@ -107,11 +110,15 @@ namespace UCorrelator
 
 
 
+
   class SineSubtractFilter
     : public FilterOperation
   {
     public: 
       SineSubtractFilter(double min_power_ratio = 0.05, int max_failed_iter = 0, double oversample_factor = 4, int nfreq_bands = 0, const double *  freq_bands_start = 0, const double * freq_bands_end = 0, int nstored_freqs = 5); 
+
+      /** Make the filter adaptive using a SpectrumAverage. If null passed, adaptiveness turned off.  */ 
+      void makeAdaptive(const SpectrumAverage *avg = 0); 
 
       virtual ~SineSubtractFilter();  
       void setInteractive(bool set); 
@@ -126,10 +133,61 @@ namespace UCorrelator
       const FFTtools::SineSubtract* sinsub(AnitaPol::AnitaPol_t pol, int ant) const { return subs[pol][ant] ;} 
     private:
       FFTtools::SineSubtract * subs[2][NUM_SEAVEYS]; 
+      double min_power_ratio; 
+      const SpectrumAverage * spec; 
+      TGraph * reduction[2][NUM_SEAVEYS]; 
+      unsigned last_t; 
       TString desc_string; 
       std::vector<TString> output_names;
       int nstored_freqs; 
   };
+
+
+  class AdaptiveMinimumPhaseFilter : public FilterOperation
+  {
+
+    public: 
+      AdaptiveMinimumPhaseFilter(const SpectrumAverage * avg, double exponent = -2, int npad =3); 
+
+      const char * tag() const { return "AdaptiveMinimumPhaseFilter"; } 
+      const char * description() const{ return desc_string.Data(); } 
+      virtual void process(FilteredAnitaEvent *ev); 
+      virtual ~AdaptiveMinimumPhaseFilter();  
+      TGraph * getCurrentFilterTimeDomain(AnitaPol::AnitaPol_t pol, int i) const; 
+      TGraph * getCurrentFilterPower(AnitaPol::AnitaPol_t pol, int i) const; 
+
+    private: 
+      TString desc_string; 
+      const SpectrumAverage * avg; 
+      int npad; 
+      double exponent; 
+      int last_bin; 
+      FFTWComplex * filt[2][NUM_SEAVEYS]; 
+      int size[2][NUM_SEAVEYS]; 
+  }; 
+
+
+  class AdaptiveButterworthFilter : public FilterOperation 
+  {
+    public: 
+      AdaptiveButterworthFilter(const SpectrumAverage *avg, double peakiness_threshold = 2, int order = 2, double width = 0.05) ; 
+
+      virtual void process(FilteredAnitaEvent *ev) ; 
+      virtual ~AdaptiveButterworthFilter() {; } 
+      const char * tag() const { return "AdaptiveButterworthFilter"; } 
+      const char * description() const{ return desc_string.Data(); } 
+      const FFTtools::DigitalFilterSeries * getFilter(AnitaPol::AnitaPol_t pol, int ant) const { return &filters[pol][ant]; } 
+
+    private: 
+      TString desc_string; 
+      const SpectrumAverage * avg; 
+      double threshold; 
+      int last_bin; 
+      int order; 
+      double width; 
+      FFTtools::DigitalFilterSeries filters[2][NUM_SEAVEYS]; 
+  }; 
+
 
 
   class CombinedSineSubtractFilter
