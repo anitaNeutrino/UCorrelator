@@ -33,7 +33,7 @@ void doDecimated(int run = 352, int max = 0, bool sine_subtract = false)
   {
     double fmins[1] = {0.2}; 
     double fmaxs[1] = {1.3}; 
-    strategy.addOperation(new UCorrelator::SineSubtractFilter(0.05, 0, 4,1,fmins,fmaxs)); 
+    strategy.addOperation(new UCorrelator::SineSubtractFilter(0.05, 0, 1,fmins,fmaxs)); 
     strategy.addOperation(new SimplePassBandFilter(0.2, 1.3)); 
 //    strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2.1.3)); 
   }

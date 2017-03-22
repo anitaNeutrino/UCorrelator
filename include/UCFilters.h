@@ -115,7 +115,7 @@ namespace UCorrelator
     : public FilterOperation
   {
     public: 
-      SineSubtractFilter(double min_power_ratio = 0.05, int max_failed_iter = 0, double oversample_factor = 4, int nfreq_bands = 0, const double *  freq_bands_start = 0, const double * freq_bands_end = 0, int nstored_freqs = 5); 
+      SineSubtractFilter(double min_power_ratio = 0.05, int max_failed_iter = 0,  int nfreq_bands = 0, const double *  freq_bands_start = 0, const double * freq_bands_end = 0, int nstored_freqs = 5); 
 
       /** Make the filter adaptive using a SpectrumAverage. If null passed, adaptiveness turned off.  */ 
       void makeAdaptive(const SpectrumAverage *avg = 0); 
@@ -194,7 +194,7 @@ namespace UCorrelator
     : public FilterOperation
   {
     public: 
-      CombinedSineSubtractFilter(double min_power_ratio = 0.05, int max_failed_iter = 0, double oversample_factor = 4, int nfreq_bands = 0, const double *  freq_bands_start = 0, const double * freq_bands_end = 0, int nstored_freqs = 5); 
+      CombinedSineSubtractFilter(double min_power_ratio = 0.05, int max_failed_iter = 0, int nfreq_bands = 0, const double *  freq_bands_start = 0, const double * freq_bands_end = 0, int nstored_freqs = 5); 
 
       virtual ~CombinedSineSubtractFilter();  
 

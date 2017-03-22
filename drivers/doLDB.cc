@@ -41,7 +41,7 @@ void doLDB(int run = 135, int max = 0, int filter_mode = 0)
     printf("Using Sine Subtract + ALFA filter"); 
     double fmins[1] = {0.18}; 
     double fmaxs[1] = {1.3}; 
-    strategy.addOperation(new UCorrelator::SineSubtractFilter(0.05, 0, 4,1,fmins,fmaxs)); 
+    strategy.addOperation(new UCorrelator::SineSubtractFilter(0.05, 0, 1,fmins,fmaxs)); 
     strategy.addOperation(new ALFAFilter); 
   }
   else

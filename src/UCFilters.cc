@@ -412,13 +412,13 @@ void UCorrelator::AdaptiveFilterAbby::process(FilteredAnitaEvent * event)
 //
 
 
-UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int max_failed_iter, double oversample_factor, int nfreq_bands, const double * fmin, const double * fmax, int nstored_freqs)
+UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int max_failed_iter,  int nfreq_bands, const double * fmin, const double * fmax, int nstored_freqs)
   : min_power_ratio(min_power_ratio), spec(0), last_t(0), nstored_freqs(nstored_freqs)
 {
 
  memset(reduction,0,sizeof(reduction)); 
 
- desc_string.Form("SineSubtract with min_power_ratio=%f, max_failed_iter =%d, oversample_factor = %f and %d frequency bands", min_power_ratio, max_failed_iter,oversample_factor, nfreq_bands);
+ desc_string.Form("SineSubtract with min_power_ratio=%f, max_failed_iter =%d, and %d frequency bands", min_power_ratio, max_failed_iter, nfreq_bands);
  if (nfreq_bands)
  {
    desc_string += ". The bands are: "; 
@@ -437,7 +437,6 @@ UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int 
    for (int i = 0; i < NUM_SEAVEYS; i++) 
    {
      subs[pol][i] = new FFTtools::SineSubtract(max_failed_iter, min_power_ratio); 
-     subs[pol][i]->setOversampleFactor(oversample_factor); 
      subs[pol][i]->setFreqLimits(nfreq_bands, fmin, fmax); 
 
    }
@@ -616,10 +615,10 @@ void UCorrelator::SineSubtractFilter::makeAdaptive(const SpectrumAverage * s)
 
 //Combined Sine Subtract 
 
-UCorrelator::CombinedSineSubtractFilter::CombinedSineSubtractFilter(double min_power_ratio, int max_failed_iter, double oversample_factor, int nfreq_bands, const double * fmin, const double * fmax, int nstored_freqs)
+UCorrelator::CombinedSineSubtractFilter::CombinedSineSubtractFilter(double min_power_ratio, int max_failed_iter, int nfreq_bands, const double * fmin, const double * fmax, int nstored_freqs)
   : nstored_freqs(nstored_freqs) 
 {
- desc_string.Form("CombinedSineSubtract with min_power_ratio=%f, max_failed_iter =%d, oversample_factor = %f and %d frequency bands", min_power_ratio, max_failed_iter,oversample_factor, nfreq_bands);
+ desc_string.Form("CombinedSineSubtract with min_power_ratio=%f, max_failed_iter =%d, and %d frequency bands", min_power_ratio, max_failed_iter, nfreq_bands);
  if (nfreq_bands)
  {
    desc_string += ". The bands are: "; 
@@ -637,7 +636,6 @@ UCorrelator::CombinedSineSubtractFilter::CombinedSineSubtractFilter(double min_p
    for (int ipol = 0; ipol < 2; ipol++)
    {
      subs[i][ipol] = new FFTtools::SineSubtract(max_failed_iter, min_power_ratio); 
-     subs[i][ipol]->setOversampleFactor(oversample_factor); 
      subs[i][ipol]->setFreqLimits(nfreq_bands, fmin, fmax); 
    }
  }

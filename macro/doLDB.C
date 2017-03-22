@@ -1,16 +1,16 @@
 
-void doWais(int run = 352, int max = 0, bool sine_subtract = false)
+int opt 
+
+
+
+void doLDB(int run = 135, int max = 0, int filter_opt = 0)
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
 
-//  /*AnalysisWaveform::InterpolationType*/ AnalysisWaveform::defaultInterpolationType = AnalysisWaveform::REGULARIZED_SPARSE_YEN; 
 
   AnitaDataset d(run); 
   UCorrelator::AnalysisConfig cfg; 
-  cfg.start_pol = AnitaPol::kHorizontal; 
-  
-
   UCorrelator::Analyzer analyzer(&cfg); 
 
   TString outname; 
