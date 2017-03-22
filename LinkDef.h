@@ -34,6 +34,7 @@
 #pragma link C++ class UCorrelator::AnalysisConfig;
 #pragma link C++ class UCorrelator::ResponseManager; 
 #pragma link C++ class UCorrelator::WienerDeconvolution; 
+#pragma link C++ class UCorrelator::AllPassDeconvolution; 
 
 
 #endif

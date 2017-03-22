@@ -98,6 +98,18 @@ namespace UCorrelator
       int edge_order;
   }; 
 
+
+  class AllPassDeconvolution : public DeconvolutionMethod
+  {
+    public: 
+      AllPassDeconvolution() { ; } 
+      virtual void deconvolve(size_t N, double df, FFTWComplex * Y, 
+                              const FFTWComplex * response) const; 
+
+      virtual ~AllPassDeconvolution() { ; } 
+
+  }; 
+
   extern DeconvolutionMethod & kDefaultDeconvolution; 
 
   class AbstractResponse

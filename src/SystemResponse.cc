@@ -69,6 +69,19 @@ double UCorrelator::WienerDeconvolution::snr(double f) const
   return -1; 
 }
 
+void UCorrelator::AllPassDeconvolution::deconvolve(size_t N, double df, FFTWComplex * Y, const FFTWComplex * response) const 
+{
+
+  (void) df; 
+  for (unsigned i = 0; i < N; i++) 
+  {
+    FFTWComplex r = response[i]; 
+    r/= r.getAbs(); 
+    Y[i]/=r; 
+  }
+}
+
+
 
 void UCorrelator::NaiveDeconvolution::deconvolve(size_t N, double df, FFTWComplex * Y, const FFTWComplex * response) const 
 {
