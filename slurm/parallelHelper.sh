@@ -5,7 +5,6 @@
 #SBATCH --output=./log/anitaJob%j.log #
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
-#SBATCH --exclusive
 
 module load parallel 
 
