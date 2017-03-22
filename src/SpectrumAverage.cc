@@ -231,8 +231,7 @@ UCorrelator::SpectrumAverage::SpectrumAverage(int run, int nsecs, const char * p
     if (persistdir) saveToDir(persistdir); 
   }
 
-  computePeakiness(); 
-
+  memset(peakiness,0,sizeof(peakiness)); 
 }
             
 
@@ -314,7 +313,7 @@ void UCorrelator::SpectrumAverage::computePeakiness(const SpectrumAverage * ther
   if (!thermalSpec)
   {
     TString dir; 
-    dir.Form("%s/UCorrelator/data/terminated_noise/", getenv("ANITA_UTIL_INSTALL_DIR")); 
+    dir.Form("%s/share/UCorrelator/terminated_noise/", getenv("ANITA_UTIL_INSTALL_DIR")); 
 
     defaultThermal = new SpectrumAverage(11382,60, dir.Data()); 
 
@@ -378,6 +377,8 @@ void UCorrelator::SpectrumAverage::computePeakiness(const SpectrumAverage * ther
         for (int jj = 1; jj < peakiness[ant][ipol]->GetNbinsY(); jj++)
         {
           peakiness[ant][ipol]->SetBinContent(ii,jj, avgs[ant][ipol]->GetBinContent(ii,jj)  / ( ratio * thermal->GetBinContent(ii))); 
+          if (isnan(peakiness[ant][ipol]->GetBinContent(ii,jj)))
+              peakiness[ant][ipol]->SetBinContent(ii,jj); 
         }
       }
 
