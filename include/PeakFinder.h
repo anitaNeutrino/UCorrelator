@@ -6,7 +6,7 @@ class TH2D;
 
 /** \file 
  *  
- *  This file contains various peak finding routines
+ *  This file contains various (2d) peak finding routines
  *
  */ 
 namespace UCorrelator
