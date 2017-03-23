@@ -245,10 +245,12 @@ FFTWComplex UCorrelator::CompositeResponse::getResponse(double f, double angle )
 
 FFTWComplex UCorrelator::Response::getResponse(double f, double angle ) const
 {
+  lock.Lock();
   if (dirty)
   {
     recompute(); 
   }
+  lock.UnLock(); 
 
 //  printf("%f %f %f %f %f %f\n", f, angle, real.GetXaxis()->GetXmin(), real.GetXaxis()->GetXmax(), real.GetYaxis()->GetXmin(), real.GetYaxis()->GetXmax()); 
   double re = real.Interpolate(f,angle); 
