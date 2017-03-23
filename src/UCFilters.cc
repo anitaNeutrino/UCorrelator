@@ -9,7 +9,8 @@
 #include "TRandom.h"
 #include "Adu5Pat.h"
 #include "DigitalFilter.h"
-#include "AntennaPositions.h" 
+#include <math.h>// for isnan
+#include "AntennaPositions.h"
 #ifdef UCORRELATOR_OPENMP
 #include "omp.h"
 #endif
@@ -847,7 +848,7 @@ void UCorrelator::AdaptiveMinimumPhaseFilter::process(FilteredAnitaEvent * ev)
           double f = 0.01/(1.+npad) *j; //TODO
 //          printf("%g %g %g\n",f,tmid,t); 
           double peaky = ((TH2*)avg->getPeakiness(pol,i))->Interpolate(f,tmid);  //why isn't this const? ?!?? 
-          if (peaky < 1 || isnan(peaky) || f < 0.16) peaky = 1; 
+          if (peaky < 1 || std::isnan(peaky) || f < 0.16) peaky = 1; 
           G[j] = TMath::Power(peaky, exponent)*( j > 0 && j < fft_size-1 ? sqrt(2) : 1); 
         }
 
