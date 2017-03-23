@@ -19,6 +19,7 @@
 #include "SpectrumParameters.h" 
 #include "TF1.h" 
 #include "TGraphErrors.h"
+#include "simpleStructs.h"
 
 
 static UCorrelator::AnalysisConfig defaultConfig; 
