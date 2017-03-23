@@ -5,6 +5,7 @@
 #include "WaveformCombiner.h"
 #include <vector>
 #include "TH2D.h"
+#include "simpleStructs.h"
 
 #include "AnitaEventSummary.h" 
 #include "ResponseManager.h" 
