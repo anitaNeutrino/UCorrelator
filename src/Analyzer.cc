@@ -21,6 +21,13 @@
 #include "TGraphErrors.h"
 #include "simpleStructs.h"
 
+#ifdef UCORRELATOR_OPENMP
+#include <omp.h>
+
+#define SECTIONS _Pragma("omp parallel sections")
+#define SECTION _Pragma("omp section") 
+
+#endif 
 
 static UCorrelator::AnalysisConfig defaultConfig; 
 static int instance_counter = 0; 
@@ -295,29 +302,29 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       //now make the combined waveforms 
      
       
-#pragma omp parallel sections
-      {
-#pragma omp section
+SECTIONS
+{
+SECTION
       wfcomb.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
-#pragma omp section
+SECTION
       wfcomb_xpol.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
-#pragma omp section
+SECTION
       wfcomb_filtered.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
-#pragma omp section
+SECTION
       wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
-      }
+}
 
-#pragma omp sections
-      {
-#pragma omp section
+SECTIONS 
+{
+SECTION
       fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol); 
-#pragma omp section
+SECTION
       fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol); 
-#pragma omp section
+SECTION
       fillWaveformInfo(wfcomb_filtered.getCoherent(), wfcomb_xpol_filtered.getCoherent(), wfcomb_filtered.getCoherentAvgSpectrum(), &summary->coherent_filtered[pol][i], (AnitaPol::AnitaPol_t) pol); 
-#pragma omp section
+SECTION
       fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol); 
-      }
+}
 
       if (interactive) //copy everything
       {
