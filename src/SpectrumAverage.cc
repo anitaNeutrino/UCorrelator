@@ -1,5 +1,3 @@
-
-
 #include "SpectrumAverage.h" 
 #include "AnitaVersion.h" 
 #include "TFile.h" 
@@ -14,7 +12,7 @@
 #include "TCut.h" 
 #include "FilteredAnitaEvent.h" 
 #include "BasicFilters.h"
-
+#include <math.h>// for isnan
 
 
 static ALFAFilter alfa; 
@@ -377,7 +375,7 @@ void UCorrelator::SpectrumAverage::computePeakiness(const SpectrumAverage * ther
         for (int jj = 1; jj < peakiness[ant][ipol]->GetNbinsY(); jj++)
         {
           peakiness[ant][ipol]->SetBinContent(ii,jj, avgs[ant][ipol]->GetBinContent(ii,jj)  / ( ratio * thermal->GetBinContent(ii))); 
-          if (isnan(peakiness[ant][ipol]->GetBinContent(ii,jj)))
+          if (std::isnan(peakiness[ant][ipol]->GetBinContent(ii,jj)))
               peakiness[ant][ipol]->SetBinContent(ii,jj); 
         }
       }
