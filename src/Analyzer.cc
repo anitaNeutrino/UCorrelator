@@ -147,7 +147,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 #ifdef MULTIVERSION_ANITA_ENABLED
         maskedL2 = event->getHeader()->getL2Mask(); 
 #else
-#if VER_ANITA_HEADER>=40
+#if VER_EVENT_HEADER>=40
         maskedL2 = event->getHeader()->l2TrigMask;
 #else
         maskedL2 = event->getHeader()->l1TrigMask;
@@ -174,7 +174,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 #ifdef MULTIVERSION_ANITA_ENABLED
         maskedL2 = event->getHeader()->getL2Mask(); 
 #else
-#if VER_ANITA_HEADER>=40
+#if VER_EVENT_HEADER>=40
         maskedL2 = event->getHeader()->l2TrigMask;
 #else
         maskedL2 = event->getHeader()->l1TrigMask;
@@ -267,12 +267,12 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     event->getMedianSpectrum(avg_spectra[pol], AnitaPol::AnitaPol_t(pol),0.5); 
 
     // Loop over found peaks 
+#pragma omp parallel for 
     for (int i = 0; i < npeaks; i++) 
     {
       // zoom in on the values 
 //      printf("rough phi:%f, rough theta: %f\n", maxima[i].x, -maxima[i].y); 
 
-      rough_peaks[pol].push_back(std::pair<double,double>(maxima[i].x, maxima[i].y)); 
 
       fillPointingInfo(maxima[i].x, maxima[i].y, &summary->peak[pol][i], pat, avgHwAngle, triggeredPhi, maskedPhi, triggeredPhiXpol, maskedPhiXpol); 
 
@@ -287,17 +287,37 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 //      printf("phi:%f, theta:%f\n", summary->peak[pol][i].phi, summary->peak[pol][i].theta); 
 
 
-      //now make the combined waveforms 
-      wfcomb.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
-      wfcomb_xpol.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
-      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol); 
-      fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol); 
+    }
 
+    for (int i = 0; i < npeaks; i++) 
+    {
+      rough_peaks[pol].push_back(std::pair<double,double>(maxima[i].x, maxima[i].y)); 
+      //now make the combined waveforms 
+     
       
+#pragma omp parallel sections
+      {
+#pragma omp section
+      wfcomb.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
+#pragma omp section
+      wfcomb_xpol.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
+#pragma omp section
       wfcomb_filtered.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
+#pragma omp section
       wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
+      }
+
+#pragma omp sections
+      {
+#pragma omp section
+      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol); 
+#pragma omp section
+      fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol); 
+#pragma omp section
       fillWaveformInfo(wfcomb_filtered.getCoherent(), wfcomb_xpol_filtered.getCoherent(), wfcomb_filtered.getCoherentAvgSpectrum(), &summary->coherent_filtered[pol][i], (AnitaPol::AnitaPol_t) pol); 
+#pragma omp section
       fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol); 
+      }
 
       if (interactive) //copy everything
       {
