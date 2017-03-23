@@ -174,7 +174,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 #ifdef MULTIVERSION_ANITA_ENABLED
         maskedL2 = event->getHeader()->getL2Mask(); 
 #else
-#if VER_ANITA_HEADER>=40
+#if VER_EVENT_HEADER>=40
         maskedL2 = event->getHeader()->l2TrigMask;
 #else
         maskedL2 = event->getHeader()->l1TrigMask;
