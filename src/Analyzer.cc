@@ -712,7 +712,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 
     pads[ipol]->cd(1)->cd(1); 
     correlation_maps[ipol]->SetTitle(ipol == 0 ? "HPol map" : "VPol map" ); 
-    correlation_maps[ipol]->Draw("colz"); 
+    correlation_maps[ipol]->Draw("colz2"); 
 
     for (int i = 0; i < last.nPeaks[ipol]; i++) 
     {
@@ -741,7 +741,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
     {
       pads[ipol]->cd(2)->cd(i+1); 
       zoomed_correlation_maps[ipol][i]->SetTitle(TString::Format("Zoomed peak %d", i+1)); 
-      zoomed_correlation_maps[ipol][i]->Draw("colz"); 
+      zoomed_correlation_maps[ipol][i]->Draw("colz2"); 
       const AnitaEventSummary::PointingHypothesis & p = last.peak[ipol][i]; 
       TMarker * m = new TMarker(p.phi, -p.theta,2); 
       delete_list.push_back(m); 
