@@ -132,6 +132,7 @@ namespace UCorrelator
       virtual void process(FilteredAnitaEvent * ev); 
       const FFTtools::SineSubtract* sinsub(AnitaPol::AnitaPol_t pol, int ant) const { return subs[pol][ant] ;} 
     private:
+      void processOne(AnalysisWaveform* wf,const RawAnitaHeader* h,int i, int pol); 
       FFTtools::SineSubtract * subs[2][NUM_SEAVEYS]; 
       double min_power_ratio; 
       const SpectrumAverage * spec; 
