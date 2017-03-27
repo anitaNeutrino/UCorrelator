@@ -23,6 +23,7 @@
 
 #ifdef UCORRELATOR_OPENMP
 #include <omp.h>
+#include "TThread.h" 
 
 #define SECTIONS _Pragma("omp parallel sections")
 #define SECTION _Pragma("omp section") 
@@ -56,6 +57,10 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
     zoomed(TString::Format("zoomed_%d", instance_counter), "Zoomed!", cfg->zoomed_nphi, 0 ,1, cfg->zoomed_ntheta, 0, 1),
    interactive(interactive)  
 {
+
+#ifdef UCORRELATOR_OPENMP
+  TThread::Initialize(); 
+#endif
 
   avg_spectra[0] = 0; 
   avg_spectra[1] = 0; 
@@ -274,7 +279,6 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     event->getMedianSpectrum(avg_spectra[pol], AnitaPol::AnitaPol_t(pol),0.5); 
 
     // Loop over found peaks 
-#pragma omp parallel for 
     for (int i = 0; i < npeaks; i++) 
     {
       // zoom in on the values 
@@ -612,7 +616,6 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   double rms = TMath::RMS(n, even->GetY() + i0); 
   
   info->snr = info->peakVal / rms; 
-
   TGraphAligned power(*pwr); 
   power.dBize(); 
 
