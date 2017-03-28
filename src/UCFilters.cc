@@ -3,6 +3,8 @@
 #include "UCFilters.h" 
 #include "SpectrumAverage.h" 
 #include "BasicFilters.h" 
+#include "ResponseManager.h" 
+#include "SystemResponse.h" 
 #include "TGraph.h" 
 #include "AnalysisWaveform.h" 
 #include "RawAnitaHeader.h"
@@ -973,4 +975,21 @@ void UCorrelator::AdaptiveButterworthFilter::process(FilteredAnitaEvent * ev)
   last_bin = bin; 
 
 }
+
+
+void UCorrelator::DeconvolveFilter::process(FilteredAnitaEvent * ev) 
+{
+
+#ifdef UCORRELATOR_OPENMP
+#pragma omp parallel for 
+#endif
+  for (int i = 0; i < 2*NUM_SEAVEYS; i++) 
+  {
+    AnitaPol::AnitaPol_t pol = AnitaPol::AnitaPol_t( i %2); 
+    int ant = i /2; 
+    rm->response(pol,ant)->deconvolveInPlace(getWf(ev,ant,pol), dm); 
+
+  }
+}
+
 
