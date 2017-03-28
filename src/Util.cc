@@ -56,11 +56,11 @@ bool UCorrelator::isLDB(const RawAnitaHeader * hdr, const AnalysisConfig * cfg )
   if (!cfg) cfg = &defaultConfig; 
 
   if (hdr->run > cfg->ldb_max_run) return false; 
-  if (! cfg->ldb_hist) return false; 
+  if (! cfg->ldb_hist()) return false; 
 
-  int binx = cfg->ldb_hist->GetXaxis()->FindBin(hdr->triggerTime); 
-  int biny = cfg->ldb_hist->GetYaxis()->FindBin(hdr->triggerTimeNs); 
-  return cfg->ldb_hist->GetBinContent(binx,biny); 
+  int binx = cfg->ldb_hist()->GetXaxis()->FindFixBin(hdr->triggerTime); 
+  int biny = cfg->ldb_hist()->GetYaxis()->FindFixBin(hdr->triggerTimeNs); 
+  return cfg->ldb_hist()->GetBinContent(binx,biny); 
 }
 
 
