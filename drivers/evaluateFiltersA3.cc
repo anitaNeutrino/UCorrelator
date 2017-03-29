@@ -24,6 +24,7 @@
 #include "AnalysisConfig.h"
 #include "AnitaDataset.h"
 #include "RawAnitaHeader.h"
+#include "WaveformCombiner.h" 
 #include "SpectrumAverage.h" 
 
 
@@ -39,7 +40,6 @@ std::vector<FilterStrategy*> strategies;
 std::vector<std::string> names; 
 
 void addStrategy( FilterStrategy * s, const char * name) { strategies.push_back(s); names.push_back(name); } 
-
 
 
 /** add filter strategies here ! */ 
@@ -104,12 +104,12 @@ void setupFilters(TFile* out, int run)
   FilterStrategy * butter_2 = new  FilterStrategy; 
   butter_2->addOperation(new UCorrelator::AdaptiveButterworthFilter(avg,2)); 
   butter_2->addOperation(new ALFAFilter); 
-  addStrategy(butter_2, "butter"); 
+  addStrategy(butter_2, "butter_2"); 
 
   FilterStrategy * butter_15 = new  FilterStrategy; 
   butter_15->addOperation(new UCorrelator::AdaptiveButterworthFilter(avg,1.5)); 
   butter_15->addOperation(new ALFAFilter); 
-  addStrategy(butter_15, "butter"); 
+  addStrategy(butter_15, "butter_15"); 
 
 
 
