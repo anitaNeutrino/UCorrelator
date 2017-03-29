@@ -28,6 +28,11 @@
 #define SECTIONS _Pragma("omp parallel sections")
 #define SECTION _Pragma("omp section") 
 
+#else 
+
+#define SECTIONS if(true) 
+#define SECTION if(true) 
+
 #endif 
 
 static UCorrelator::AnalysisConfig defaultConfig; 
