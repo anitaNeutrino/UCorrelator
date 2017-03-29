@@ -21,6 +21,19 @@
 #include "TGraphErrors.h"
 #include "simpleStructs.h"
 
+#ifdef UCORRELATOR_OPENMP
+#include <omp.h>
+#include "TThread.h" 
+
+#define SECTIONS _Pragma("omp parallel sections")
+#define SECTION _Pragma("omp section") 
+
+#else 
+
+#define SECTIONS if(true) 
+#define SECTION if(true) 
+
+#endif 
 
 static UCorrelator::AnalysisConfig defaultConfig; 
 static int instance_counter = 0; 
@@ -49,6 +62,10 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
     zoomed(TString::Format("zoomed_%d", instance_counter), "Zoomed!", cfg->zoomed_nphi, 0 ,1, cfg->zoomed_ntheta, 0, 1),
    interactive(interactive)  
 {
+
+#ifdef UCORRELATOR_OPENMP
+  TThread::Initialize(); 
+#endif
 
   avg_spectra[0] = 0; 
   avg_spectra[1] = 0; 
@@ -272,7 +289,6 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       // zoom in on the values 
 //      printf("rough phi:%f, rough theta: %f\n", maxima[i].x, -maxima[i].y); 
 
-      rough_peaks[pol].push_back(std::pair<double,double>(maxima[i].x, maxima[i].y)); 
 
       fillPointingInfo(maxima[i].x, maxima[i].y, &summary->peak[pol][i], pat, avgHwAngle, triggeredPhi, maskedPhi, triggeredPhiXpol, maskedPhiXpol); 
 
@@ -287,17 +303,37 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 //      printf("phi:%f, theta:%f\n", summary->peak[pol][i].phi, summary->peak[pol][i].theta); 
 
 
-      //now make the combined waveforms 
-      wfcomb.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
-      wfcomb_xpol.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
-      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol); 
-      fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol); 
+    }
 
+    for (int i = 0; i < npeaks; i++) 
+    {
+      rough_peaks[pol].push_back(std::pair<double,double>(maxima[i].x, maxima[i].y)); 
+      //now make the combined waveforms 
+     
       
+SECTIONS
+{
+SECTION
+      wfcomb.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
+SECTION
+      wfcomb_xpol.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
+SECTION
       wfcomb_filtered.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
+SECTION
       wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, -summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
+}
+
+SECTIONS 
+{
+SECTION
+      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol); 
+SECTION
+      fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol); 
+SECTION
       fillWaveformInfo(wfcomb_filtered.getCoherent(), wfcomb_xpol_filtered.getCoherent(), wfcomb_filtered.getCoherentAvgSpectrum(), &summary->coherent_filtered[pol][i], (AnitaPol::AnitaPol_t) pol); 
+SECTION
       fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol); 
+}
 
       if (interactive) //copy everything
       {
@@ -585,7 +621,6 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   double rms = TMath::RMS(n, even->GetY() + i0); 
   
   info->snr = info->peakVal / rms; 
-
   TGraphAligned power(*pwr); 
   power.dBize(); 
 
@@ -682,7 +717,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 
     pads[ipol]->cd(1)->cd(1); 
     correlation_maps[ipol]->SetTitle(ipol == 0 ? "HPol map" : "VPol map" ); 
-    correlation_maps[ipol]->Draw("colz"); 
+    correlation_maps[ipol]->Draw("colz2"); 
 
     for (int i = 0; i < last.nPeaks[ipol]; i++) 
     {
@@ -711,7 +746,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
     {
       pads[ipol]->cd(2)->cd(i+1); 
       zoomed_correlation_maps[ipol][i]->SetTitle(TString::Format("Zoomed peak %d", i+1)); 
-      zoomed_correlation_maps[ipol][i]->Draw("colz"); 
+      zoomed_correlation_maps[ipol][i]->Draw("colz2"); 
       const AnitaEventSummary::PointingHypothesis & p = last.peak[ipol][i]; 
       TMarker * m = new TMarker(p.phi, -p.theta,2); 
       delete_list.push_back(m); 

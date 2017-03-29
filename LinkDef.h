@@ -29,6 +29,7 @@
 #pragma link C++ class UCorrelator::CombinedSineSubtractFilter;
 #pragma link C++ class UCorrelator::AdaptiveMinimumPhaseFilter;
 #pragma link C++ class UCorrelator::AdaptiveButterworthFilter;
+#pragma link C++ class UCorrelator::DeconvolveFilter;
 #pragma link C++ class UCorrelator::WaveformCombiner;
 #pragma link C++ class UCorrelator::Analyzer;
 #pragma link C++ class UCorrelator::AnalysisConfig;

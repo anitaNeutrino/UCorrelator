@@ -67,6 +67,16 @@ namespace UCorrelator
 }
 
 
+static int gettid() 
+{
+#ifdef UCORRELATOR_OPENMP
+  return omp_get_thread_num(); 
+#else
+  return 0;
+#endif
+}
+
+
 
 
 static int count_the_correlators = 1; 
@@ -288,7 +298,7 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   double phi1 = phi + dphi * nphi/2; 
   double theta0 = theta - dtheta * ntheta/2; 
   double theta1 = theta + dtheta * ntheta/2; 
-  TH2I zoomed_norm(TString::Format("zoomed_norm_%d",count_the_zoomed_correlators), "Zoomed Correlation Normalization", 
+  TH2I zoomed_norm(TString::Format("zoomed_norm_%d_%u",count_the_zoomed_correlators,gettid()), "Zoomed Correlation Normalization", 
                     nphi, phi0,phi1, 
                     ntheta, theta0, theta1); 
   if (answer) 
@@ -299,7 +309,7 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   }
   else
   {
-    answer = new TH2D(TString::Format("zoomed_corr_%d", count_the_zoomed_correlators++), "Zoomed Correlation", 
+    answer = new TH2D(TString::Format("zoomed_corr_%d_%u", count_the_zoomed_correlators++,gettid()), "Zoomed Correlation", 
                     nphi, phi0, phi1, 
                     ntheta, theta0, theta1); 
   }

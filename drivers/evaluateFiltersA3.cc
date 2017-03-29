@@ -24,8 +24,8 @@
 #include "AnalysisConfig.h"
 #include "AnitaDataset.h"
 #include "RawAnitaHeader.h"
+#include "WaveformCombiner.h" 
 #include "SpectrumAverage.h" 
-
 
 
 
@@ -42,42 +42,81 @@ std::vector<std::string> names;
 void addStrategy( FilterStrategy * s, const char * name) { strategies.push_back(s); names.push_back(name); } 
 
 
-
 /** add filter strategies here ! */ 
 
 void setupFilters(TFile* out, int run) 
 {
 
   /** Sine subtraction */ 
-  FilterStrategy * sinsub= new FilterStrategy; 
-  sinsub->addOperation(new UCorrelator::SineSubtractFilter(0.05, 0)); 
-  sinsub->addOperation(new ALFAFilter); 
-  addStrategy(sinsub, "sinsub"); 
+  FilterStrategy * sinsub_05_0= new FilterStrategy; 
+  sinsub_05_0->addOperation(new UCorrelator::SineSubtractFilter(0.05, 0)); 
+  sinsub_05_0->addOperation(new ALFAFilter); 
+  addStrategy(sinsub_05_0, "sinsub_05_0"); 
 
-  UCorrelator::SpectrumAverage *  avg  = new UCorrelator::SpectrumAverage(run,60,"specavg"); //TODO use defualt dir for this 
+  FilterStrategy * sinsub_03_0= new FilterStrategy; 
+  sinsub_03_0->addOperation(new UCorrelator::SineSubtractFilter(0.03, 0)); 
+  sinsub_03_0->addOperation(new ALFAFilter); 
+  addStrategy(sinsub_03_0, "sinsub_03_0"); 
+
+
+  FilterStrategy * sinsub_10_0= new FilterStrategy; 
+  sinsub_10_0->addOperation(new UCorrelator::SineSubtractFilter(0.1, 0)); 
+  sinsub_10_0->addOperation(new ALFAFilter); 
+  addStrategy(sinsub_10_0, "sinsub_10_0"); 
+
+  FilterStrategy * sinsub_05_3= new FilterStrategy; 
+  sinsub_05_3->addOperation(new UCorrelator::SineSubtractFilter(0.05, 3)); 
+  sinsub_05_3->addOperation(new ALFAFilter); 
+  addStrategy(sinsub_05_3, "sinsub_05_3"); 
+
+
+  UCorrelator::SpectrumAverage *  avg  = new UCorrelator::SpectrumAverage(run,60,"specavg"); //TODO use default dir for this 
   avg->computePeakiness(); 
 
   /** Peakiness Detecting Sine Subtraction */ 
-  FilterStrategy * adsinsub= new FilterStrategy; 
+
+  FilterStrategy * adsinsub_05_0= new FilterStrategy; 
   UCorrelator::SineSubtractFilter * adssf = new UCorrelator::SineSubtractFilter(0.05, 0); 
   adssf->makeAdaptive(avg); 
-  adsinsub->addOperation(adssf); 
-  adsinsub->addOperation(new ALFAFilter); 
-  addStrategy(adsinsub, "adsinsub"); 
+  adsinsub_05_0->addOperation(adssf); 
+  adsinsub_05_0->addOperation(new ALFAFilter); 
+  addStrategy(adsinsub_05_0, "adsinsub_05_0"); 
+
+  FilterStrategy * adsinsub_10_0= new FilterStrategy; 
+  adssf = new UCorrelator::SineSubtractFilter(0.10, 0); 
+  adssf->makeAdaptive(avg); 
+  adsinsub_10_0->addOperation(adssf); 
+  adsinsub_10_0->addOperation(new ALFAFilter); 
+  addStrategy(adsinsub_10_0, "adsinsub_10_0"); 
+
+  FilterStrategy * adsinsub_10_3= new FilterStrategy; 
+  adssf = new UCorrelator::SineSubtractFilter(0.10, 3); 
+  adssf->makeAdaptive(avg); 
+  adsinsub_10_3->addOperation(adssf); 
+  adsinsub_10_3->addOperation(new ALFAFilter); 
+  addStrategy(adsinsub_10_3, "adsinsub_10_3"); 
+
+
 
 
 
   /** Adaptive Butterworth Filter */ 
-  FilterStrategy * butter = new  FilterStrategy; 
-  butter->addOperation(new UCorrelator::AdaptiveButterworthFilter(avg)); 
-  sinsub->addOperation(new ALFAFilter); 
-  addStrategy(butter, "butter"); 
+  FilterStrategy * butter_2 = new  FilterStrategy; 
+  butter_2->addOperation(new UCorrelator::AdaptiveButterworthFilter(avg,2)); 
+  butter_2->addOperation(new ALFAFilter); 
+  addStrategy(butter_2, "butter_2"); 
+
+  FilterStrategy * butter_15 = new  FilterStrategy; 
+  butter_15->addOperation(new UCorrelator::AdaptiveButterworthFilter(avg,1.5)); 
+  butter_15->addOperation(new ALFAFilter); 
+  addStrategy(butter_15, "butter_15"); 
+
 
 
   /** Adaptive Minimum Phase **/ 
   FilterStrategy * minphase = new  FilterStrategy; 
   minphase->addOperation(new UCorrelator::AdaptiveMinimumPhaseFilter(avg)); 
-  sinsub->addOperation(new ALFAFilter); 
+  minphase->addOperation(new ALFAFilter); 
   addStrategy(minphase, "minphase"); 
 
 
@@ -127,6 +166,7 @@ int main(int nargs, char ** args)
   TTree * friendly = new TTree("aux", "Auxdata (headers/gps)"); 
   friendly->Branch("header",&hdr); 
   friendly->Branch("pat",&patptr); 
+  friendly->SetAutoSave(500); 
 
   for (size_t i = 0; i < strategies.size(); i++) 
   {
@@ -134,6 +174,7 @@ int main(int nargs, char ** args)
     trees[i] = new TTree(names[i].c_str(),tname.Data()); 
     trees[i]->Branch("summary",sum); 
     trees[i]->AddFriend(friendly); 
+    trees[i]->SetAutoSave(500); 
   }
 
 
@@ -173,7 +214,11 @@ int main(int nargs, char ** args)
     patptr = &pat; 
     friendly->Fill(); 
 
-    //loop over strategies 
+    //preload all this stuff 
+    d.useful(); 
+    d.gps(); 
+    d.header(); 
+
     for (size_t s = 0; s < strategies.size(); s++) 
     {
       printf (" %s...", names[s].c_str()); 

@@ -152,25 +152,34 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
 
   deconvolution_method = &kDefaultDeconvolution; 
 
-  //Try to load the LDB Pulser info. 
   
+  the_ldb_hist = 0; 
+
+  ldb_max_run = 160; 
+}
+
+static int nag = 0; 
+TH2 * UCorrelator::AnalysisConfig::ldb_hist() const 
+{
+  if (the_ldb_hist) return the_ldb_hist; 
+
   TString fname; 
   fname.Form("%s/share/UCorrelator/ldbSelection.root", getenv("ANITA_UTIL_INSTALL_DIR")); 
   TFile f(fname); 
 
   if (!f.IsOpen())
   {
-    fprintf(stderr,"WARNING: data/ldbSelection.root doesn't exist. This is probably because you haven't generated it.\n. If you don't care about LDB pulsers, ignore this. Otherwise, you can generate one using the makeLDBSelection.C macro.\n"); 
-    ldb_hist = 0; 
+    if (nag++ < 3) 
+      fprintf(stderr,"WARNING: data/ldbSelection.root doesn't exist. This is probably because you haven't generated it.\n. If you don't care about LDB pulsers, ignore this. Otherwise, you can generate one using the makeLDBSelection.C macro.\n"); 
+
+    the_ldb_hist = 0; 
   }
   else
   {
-    ldb_hist = (TH2*) f.Get("ldbHist")->Clone("LDBHistogram"); 
-    ldb_hist->SetDirectory(0); 
+    the_ldb_hist = (TH2*) f.Get("ldbHist")->Clone("LDBHistogram"); 
+    the_ldb_hist->SetDirectory(0); 
   }
-
-  ldb_max_run = 160; 
-
+  return the_ldb_hist; 
 }
 
 
@@ -185,4 +194,8 @@ const char * UCorrelator::AnalysisConfig::getResponseString(ResponseOption_t opt
 }
 
 
+UCorrelator::AnalysisConfig::~AnalysisConfig()
+{
+  if (the_ldb_hist) delete the_ldb_hist; 
+}
 

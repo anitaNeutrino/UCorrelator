@@ -245,10 +245,12 @@ FFTWComplex UCorrelator::CompositeResponse::getResponse(double f, double angle )
 
 FFTWComplex UCorrelator::Response::getResponse(double f, double angle ) const
 {
+  lock.Lock();
   if (dirty)
   {
     recompute(); 
   }
+  lock.UnLock(); 
 
 //  printf("%f %f %f %f %f %f\n", f, angle, real.GetXaxis()->GetXmin(), real.GetXaxis()->GetXmax(), real.GetYaxis()->GetXmin(), real.GetYaxis()->GetXmax()); 
   double re = real.Interpolate(f,angle); 
@@ -313,21 +315,34 @@ AnalysisWaveform * UCorrelator::AbstractResponse::deconvolve(const AnalysisWavef
   return out; 
 }
 
+
+/** caching vars */ 
+static __thread const UCorrelator::AbstractResponse *cache_response = 0; 
+static __thread int cache_Nf= 0; 
+static __thread double cache_df= 0; 
+static __thread double cache_angle= 0; 
+static __thread FFTWComplex *cache_V = 0; 
+
+
 void UCorrelator::AbstractResponse::deconvolveInPlace(AnalysisWaveform * wf,  const DeconvolutionMethod * method, double off_axis_angle) const
 {
 //  printf("method: %p\n", method); 
-//  int old_size = wf->Neven(); 
-  wf->padEven(3,0); 
+  int old_size = wf->Neven(); 
+  wf->padEven(1); 
   int nf = wf->Nfreq();
   double df = wf->deltaF(); 
-  std::vector<FFTWComplex> R(nf); 
-  for (int i = 0; i < nf; i++) 
+  if (!cache_response || cache_Nf != nf || cache_df != df || !cache_V || cache_angle != off_axis_angle) 
   {
-    R[i] =getResponse(i * df, off_axis_angle);
+    cache_response = this; 
+    cache_Nf = nf; 
+    cache_df = df; 
+    cache_angle = off_axis_angle; 
+    if (cache_V) delete [] cache_V; 
+    cache_V = getResponseArray(nf,df,off_axis_angle);
   }
     
-  method->deconvolve(nf,df, wf->updateFreq(), &R[0]); 
+  method->deconvolve(nf,df, wf->updateFreq(), cache_V); 
 
- // wf->updateEven()->Set(old_size); 
+  wf->updateEven()->Set(old_size); 
 
 }

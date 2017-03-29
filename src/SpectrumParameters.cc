@@ -1,6 +1,7 @@
 #include "SpectrumParameters.h" 
 #include "TGraph.h" 
 #include "TLinearFitter.h"
+#include "TMutex.h"
 #include "AnalysisConfig.h"
 #include <cfloat>
 #include "TMath.h"
@@ -14,13 +15,20 @@
  */ 
 
 static __thread TLinearFitter * fitter = 0; 
+static TMutex mut; 
 
 void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, const TGraph * average, 
                                                    AnitaEventSummary::WaveformInfo * winfo,
                                                    const AnalysisConfig * config) 
 {
 
-  if (!fitter) fitter = new TLinearFitter(1,"1++x",""); 
+
+  if (!fitter) 
+  {
+    mut.Lock(); 
+    fitter = new TLinearFitter(1,"1++x",""); 
+    mut.UnLock(); 
+  }
 
 
   //TODO don't hardcode these 
@@ -122,7 +130,10 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, cons
 
    // fit for slope 
    fitter->ClearPoints(); 
+
+   //TODO do I need to mutex this?!? 
    fitter->AssignData(x.size(),1,&x[0] ,&y[0]); 
+
    fitter->Eval(); 
    m = fitter->GetParameter(1); 
    b = fitter->GetParameter(0); 

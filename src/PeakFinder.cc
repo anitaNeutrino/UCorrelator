@@ -13,7 +13,7 @@
 #include "TDecompSVD.h"
 #endif 
 
-extern int gErrorIgnoreLevel; // who ordered that? 
+#include "TError.h" 
 
 static bool isLocalMaxima(const TH2D * hist, int bin) 
 {

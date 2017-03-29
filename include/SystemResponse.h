@@ -10,6 +10,7 @@
 #include <vector> 
 #include <complex>
 #include "TH2.h" 
+#include "TMutex.h" 
 #include "FFTWComplex.h" 
 #include <map>
 
@@ -153,6 +154,7 @@ namespace UCorrelator
       virtual ~Response() { ; } 
 
     protected: 
+      mutable TMutex lock; 
       int Nfreq; 
       double df; 
       int nangles; 

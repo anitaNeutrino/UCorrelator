@@ -3,6 +3,7 @@
 #include <vector> 
 #include "BasicFilters.h" 
 #include "FilteredAnitaEvent.h"
+#include "AnitaVersion.h" 
 #include "FFTtools.h"
 #include "ResponseManager.h" 
 #include "SystemResponse.h"
@@ -110,7 +111,7 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
     }
 
     //ALFA HACK IS HERE 
-    if (alfa_hack && pol == AnitaPol::kHorizontal && (antennas[i] == 4 || antennas[i] == 12))
+    if (alfa_hack && AnitaVersion::get() == 3 &&  pol == AnitaPol::kHorizontal && (antennas[i] == 4 || antennas[i] == 12))
     {
       alfa_filter.processOne(&padded[i]); 
     }

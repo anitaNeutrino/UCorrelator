@@ -3,6 +3,8 @@
 #include "UCFilters.h" 
 #include "SpectrumAverage.h" 
 #include "BasicFilters.h" 
+#include "ResponseManager.h" 
+#include "SystemResponse.h" 
 #include "TGraph.h" 
 #include "AnalysisWaveform.h" 
 #include "RawAnitaHeader.h"
@@ -529,53 +531,56 @@ void UCorrelator::SineSubtractFilter::fillOutput(unsigned ui, double * vars) con
 
 void UCorrelator::SineSubtractFilter::process(FilteredAnitaEvent * ev) 
 {
+ const RawAnitaHeader * h = ev->getHeader(); 
 
 #ifdef UCORRELATOR_OPENMP
 #pragma omp parallel for
 #endif
-  for (int i = 0; i < NUM_SEAVEYS; i++) 
+  for (int i = 0; i < 2*NUM_SEAVEYS; i++) 
   {
-    for (int pol = 0; pol < 2; pol++)
-    {
-      AnalysisWaveform * wf = getWf(ev, i, AnitaPol::AnitaPol_t(pol)); 
-
-
-      if (spec) 
-      {
-        // use peakiness to tune aggressivness
-        if (ev->getHeader()->triggerTime > last_t)
-        {
-          TH2 * peaky = (TH2*) spec->getPeakiness(AnitaPol::AnitaPol_t(pol), i); 
-
-          if (reduction[pol][i])
-            delete reduction[pol][i]; 
-
-          reduction[pol][i] = new TGraph(peaky->GetNbinsX()); 
-
-          for (int j = 0; j < reduction[pol][i]->GetN(); j++) 
-          {
-            reduction[pol][i]->GetX()[j] = peaky->GetXaxis()->GetBinLowEdge(j+1); 
-            double how_peaky = peaky->Interpolate(peaky->GetXaxis()->GetBinCenter(j+1), ev->getHeader()->triggerTime); 
-            if (how_peaky < 1) how_peaky = 1; 
-            reduction[pol][i]->GetY()[j] = min_power_ratio/how_peaky; 
-          }
-        }
-
-        subs[pol][i]->setMinPowerReduction(reduction[pol][i]); 
-      }
-      else
-      {
-        subs[pol][i]->setMinPowerReduction(min_power_ratio); 
-      }
-
-
-      TGraph * g = wf->updateUneven(); 
-      if (g->GetRMS(2) > 0) 
-        subs[pol][i]->subtractCW(1,&g, 1/2.6); 
-    }
+      int pol = i % 2; 
+      AnalysisWaveform * wf = getWf(ev, i/2, AnitaPol::AnitaPol_t(pol)); 
+      processOne(wf,h,i/2,pol); 
   }
 
   last_t = ev->getHeader()->triggerTime; 
+}
+
+void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const RawAnitaHeader * header, int i, int pol)
+{
+
+  if (spec) 
+  {
+    // use peakiness to tune aggressivness
+    if (header->triggerTime > last_t)
+    {
+      TH2 * peaky = (TH2*) spec->getPeakiness(AnitaPol::AnitaPol_t(pol), i); 
+
+      if (reduction[pol][i])
+        delete reduction[pol][i]; 
+
+      reduction[pol][i] = new TGraph(peaky->GetNbinsX()); 
+
+      for (int j = 0; j < reduction[pol][i]->GetN(); j++) 
+      {
+        reduction[pol][i]->GetX()[j] = peaky->GetXaxis()->GetBinLowEdge(j+1); 
+        double how_peaky = peaky->Interpolate(peaky->GetXaxis()->GetBinCenter(j+1), header->triggerTime); 
+        if (how_peaky < 1) how_peaky = 1; 
+        reduction[pol][i]->GetY()[j] = min_power_ratio/how_peaky; 
+      }
+    }
+
+    subs[pol][i]->setMinPowerReduction(reduction[pol][i]); 
+  }
+  else
+  {
+    subs[pol][i]->setMinPowerReduction(min_power_ratio); 
+  }
+
+
+  TGraph * g = wf->updateUneven(); 
+  if (g->GetRMS(2) > 0) 
+    subs[pol][i]->subtractCW(1,&g, 1/2.6); 
 }
 
 UCorrelator::SineSubtractFilter::~SineSubtractFilter()
@@ -970,4 +975,21 @@ void UCorrelator::AdaptiveButterworthFilter::process(FilteredAnitaEvent * ev)
   last_bin = bin; 
 
 }
+
+
+void UCorrelator::DeconvolveFilter::process(FilteredAnitaEvent * ev) 
+{
+
+#ifdef UCORRELATOR_OPENMP
+#pragma omp parallel for 
+#endif
+  for (int i = 0; i < 2*NUM_SEAVEYS; i++) 
+  {
+    AnitaPol::AnitaPol_t pol = AnitaPol::AnitaPol_t( i %2); 
+    int ant = i /2; 
+    rm->response(pol,ant)->deconvolveInPlace(getWf(ev,ant,pol), dm); 
+
+  }
+}
+
 
