@@ -58,7 +58,7 @@ int UCorrelator::ResponseManager::loadResponsesFromDir(const char * raw_dir, int
 
     if (entry[0]=='.') continue; 
 
-    printf("ResponseManager found: %s\n",entry); 
+//    printf("ResponseManager found: %s\n",entry); 
     // find dot
    
     char * dot = strstr(prefix,"."); 
@@ -111,6 +111,7 @@ int UCorrelator::ResponseManager::loadResponsesFromDir(const char * raw_dir, int
       }
       else
       {
+        assert(imp.GetN()); 
         AnalysisWaveform aw (imp.GetN(), imp.GetY(), imp.GetX()[1] - imp.GetX()[0], imp.GetX()[0]); 
         aw.padEven(npad); 
         ((UCorrelator::Response*) r)->addResponseAtAngle(angle, aw.freq()); 
@@ -200,11 +201,12 @@ int UCorrelator::ResponseManager::loadResponsesFromDir(const char * raw_dir, int
           continue; 
       }
 
-      int ant = AnitaGeomTool::Instance()->getAntFromPhiRing(phi, the_ring); 
+      int ant = AnitaGeomTool::Instance()->getAntFromPhiRing(phi-1, the_ring); 
       start_ant = ant; 
       stop_ant = ant; 
     }
 
+//    printf("\t%d %d %d %d\n", start_ant, stop_ant, start_pol, stop_pol); 
     for (int pol = start_pol; pol <= stop_pol; pol++)
     {
       for (int ant = start_ant; ant <= stop_ant; ant++) 
@@ -216,6 +218,19 @@ int UCorrelator::ResponseManager::loadResponsesFromDir(const char * raw_dir, int
 
     free(prefix); 
   }
+
+  for (int ant = 0; ant < NUM_SEAVEYS; ant++)
+  {
+    for (int pol = 0; pol <2; pol++) 
+    {
+      if (! responses[ant][pol])
+      {
+        printf("%d %d\n",ant,pol); 
+      }
+      assert(responses[ant][pol]); 
+    }
+  }
+
 
   closedir(dp); 
 
