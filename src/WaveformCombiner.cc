@@ -86,7 +86,6 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
   std::vector<AnalysisWaveform> padded(nant);
   const int numDeconv = do_deconvolution ? nant : 0;
   std::vector<AnalysisWaveform> deconv(numDeconv);
-  // AnalysisWaveform deconv[do_deconvolution ? nant : 0];
 
   const UCorrelator::AntennaPositions * antpos = UCorrelator::AntennaPositions::instance(); 
   nant = antpos->getClosestAntennas(phi, nant, antennas, disallowed); 
@@ -136,16 +135,10 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
 
     delays[i] = i == 0 ? 0 : getDeltaT(antennas[i], antennas[0], phi, theta, pol, enable_group_delay); 
 
-//    printf("%d\n",antennas[i]); 
-//    printf("%f\n",delays[i]); 
-//    printf("%d\n",padded[i].even()->GetN()); 
   }
 
-
   combineWaveforms(nant, &padded[0], delays,0, &coherent); 
-  
   scaleGraph(&coherent_avg_spectrum, 1./nant); 
-
   if (do_deconvolution)
   {
     combineWaveforms(nant, &deconv[0], delays,0, &deconvolved); 
