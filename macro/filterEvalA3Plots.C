@@ -122,9 +122,16 @@ void filterEvalA3Plots()
 {
   system("mkdir -p filterPlots"); 
 
-  doFilterAlgo("sinsub"); 
-  doFilterAlgo("adsinsub"); 
+  doFilterAlgo("sinsub_05_0"); 
+  doFilterAlgo("sinsub_03_0"); 
+  doFilterAlgo("sinsub_10_0"); 
+  doFilterAlgo("sinsub_05_3"); 
+  doFilterAlgo("adsinsub_05_0"); 
+  doFilterAlgo("adsinsub_10_0"); 
+  doFilterAlgo("adsinsub_10_3"); 
   doFilterAlgo("butter"); 
   doFilterAlgo("minphase"); 
 
 }
+
+

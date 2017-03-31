@@ -36,16 +36,19 @@ int min_wais = 332;
 int max_wais = 354; 
 
 
+FilterStrategy justAlfa; 
 std::vector<FilterStrategy*> strategies; 
 std::vector<std::string> names; 
 
 void addStrategy( FilterStrategy * s, const char * name) { strategies.push_back(s); names.push_back(name); } 
 
+UCorrelator::WaveformCombiner wc(12); //this code is so shitty 
 
 /** add filter strategies here ! */ 
 
 void setupFilters(TFile* out, int run) 
 {
+  justAlfa.addOperation(new ALFAFilter); 
 
   /** Sine subtraction */ 
   FilterStrategy * sinsub_05_0= new FilterStrategy; 
@@ -128,6 +131,7 @@ void setupFilters(TFile* out, int run)
 int main(int nargs, char ** args) 
 {
 
+  AnitaVersion::set(3); 
   FFTtools::loadWisdom("wisdom.dat"); 
   int run = atoi(args[1]); 
 
@@ -163,9 +167,13 @@ int main(int nargs, char ** args)
 
   std::vector<TTree*> trees(strategies.size()); 
 
+  double pulserH=0, pulserV=0; 
+
   TTree * friendly = new TTree("aux", "Auxdata (headers/gps)"); 
   friendly->Branch("header",&hdr); 
   friendly->Branch("pat",&patptr); 
+  friendly->Branch("peakPulserH",&pulserH); 
+  friendly->Branch("peakPulserV",&pulserV); 
   friendly->SetAutoSave(500); 
 
   for (size_t i = 0; i < strategies.size(); i++) 
@@ -190,6 +198,17 @@ int main(int nargs, char ** args)
       if (UCorrelator::isLDB(d.header()))
       {
          printf("----(LDB event %d ( idx=%d))-----\n",hdr->eventNumber,i); 
+         FilteredAnitaEvent ev(d.useful(), &justAlfa, d.gps(), d.header()); 
+         double phi,theta; 
+         patptr->getThetaAndPhiWaveLDB(theta,phi);
+         phi *= 180/TMath::Pi(); 
+         theta *= 180/TMath::Pi(); 
+         wc.combine(phi,theta,&ev,AnitaPol::kHorizontal); 
+         pulserH = FFTtools::getPeakVal(wc.getCoherent()->hilbertEnvelope()); 
+         wc.combine(phi,theta,&ev,AnitaPol::kVertical); 
+         pulserV = FFTtools::getPeakVal(wc.getCoherent()->hilbertEnvelope()); 
+         printf("  Pulser H: %g, Pulser V: %g\n", pulserH, pulserV); 
+
       }
       else continue; 
     }
@@ -201,6 +220,17 @@ int main(int nargs, char ** args)
       if (UCorrelator::isWAISHPol(&pat, d.header()))
       {
          printf("----(WAIS event %d (idx=%d))-----\n",hdr->eventNumber,i); 
+         FilteredAnitaEvent ev(d.useful(), &justAlfa, d.gps(), d.header()); 
+         double phi,theta; 
+         patptr->getThetaAndPhiWaveWaisDivide(theta,phi);
+         phi *= 180/TMath::Pi(); 
+         theta *= 180/TMath::Pi(); 
+         wc.combine(phi,theta,&ev,AnitaPol::kHorizontal); 
+         pulserH = FFTtools::getPeakVal(wc.getCoherent()->hilbertEnvelope()); 
+         wc.combine(phi,theta,&ev,AnitaPol::kVertical); 
+         pulserV = FFTtools::getPeakVal(wc.getCoherent()->hilbertEnvelope()); 
+         printf("  Pulser H: %g, Pulser V: %g\n", pulserH, pulserV); 
+
       }
       else continue; 
     }
@@ -209,6 +239,7 @@ int main(int nargs, char ** args)
     {
       printf("----(event %d (idx=%d))-----\n",hdr->eventNumber,i); 
     }
+
 
     ofile.cd(); 
     patptr = &pat; 
@@ -224,6 +255,7 @@ int main(int nargs, char ** args)
       printf (" %s...", names[s].c_str()); 
       FilteredAnitaEvent ev(d.useful(), strategies[s], d.gps(), d.header()); 
       analyzer.analyze(&ev, sum); 
+      printf("[%g,%g]",sum->coherent[0][0].peakHilbert, sum->coherent[1][0].peakHilbert);
       ofile.cd(); 
       trees[s]->Fill(); 
     }
