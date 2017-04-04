@@ -59,13 +59,15 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive)
     wfcomb_xpol(cfg->combine_nantennas, cfg->combine_npad, true, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
     wfcomb_filtered(cfg->combine_nantennas, cfg->combine_npad, false, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
     wfcomb_xpol_filtered(cfg->combine_nantennas, cfg->combine_npad, false, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
-    zoomed(TString::Format("zoomed_%d", instance_counter), "Zoomed!", cfg->zoomed_nphi, 0 ,1, cfg->zoomed_ntheta, 0, 1),
+    
    interactive(interactive)  
 {
-
 #ifdef UCORRELATOR_OPENMP
   TThread::Initialize(); 
 #endif
+
+  zoomed = new TH2D(TString::Format("zoomed_%d", instance_counter), "Zoomed!", cfg->zoomed_nphi, 0 ,1, cfg->zoomed_ntheta, 0, 1);
+  zoomed->SetDirectory(0); 
 
   avg_spectra[0] = 0; 
   avg_spectra[1] = 0; 
@@ -339,7 +341,7 @@ SECTION
       {
 
         zoomed_correlation_maps[pol][i]->~TH2D(); 
-        zoomed_correlation_maps[pol][i] = new (zoomed_correlation_maps[pol][i]) TH2D(zoomed); 
+        zoomed_correlation_maps[pol][i] = new (zoomed_correlation_maps[pol][i]) TH2D(*zoomed); 
 
         coherent[pol][0][i]->~AnalysisWaveform(); 
         coherent[pol][0][i] = new (coherent[pol][0][i]) AnalysisWaveform(*wfcomb.getCoherent()); 
@@ -472,7 +474,7 @@ static bool outside(const TH2 * h, double x, double y)
 void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_theta, AnitaEventSummary::PointingHypothesis * point, 
                                              UsefulAdu5Pat * pat, double hwPeakAngle, UShort_t triggered_sectors, UShort_t masked_sectors, UShort_t triggered_sectors_xpol, UShort_t masked_sectors_xpol)
 {
-      corr.computeZoomed(rough_phi, rough_theta, cfg->zoomed_nphi, cfg->zoomed_dphi,  cfg->zoomed_ntheta, cfg->zoomed_dtheta, cfg->zoomed_nant, &zoomed); 
+      corr.computeZoomed(rough_phi, rough_theta, cfg->zoomed_nphi, cfg->zoomed_dphi,  cfg->zoomed_ntheta, cfg->zoomed_dtheta, cfg->zoomed_nant, zoomed); 
 
       //get pointer to the pointing hypothesis we are about to fill 
 
@@ -482,26 +484,26 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
       switch (cfg->fine_peak_finding_option)
       {
         case AnalysisConfig::FinePeakFindingAbby: 
-          UCorrelator::peakfinder::doInterpolationPeakFindingAbby(&zoomed, &max); 
+          UCorrelator::peakfinder::doInterpolationPeakFindingAbby(zoomed, &max); 
           break; 
         case AnalysisConfig::FinePeakFindingBicubic: 
-          UCorrelator::peakfinder::doInterpolationPeakFindingBicubic(&zoomed, &max); 
+          UCorrelator::peakfinder::doInterpolationPeakFindingBicubic(zoomed, &max); 
           break; 
         case AnalysisConfig::FinePeakFindingHistogram: 
-          UCorrelator::peakfinder::doPeakFindingHistogram(&zoomed, &max); 
+          UCorrelator::peakfinder::doPeakFindingHistogram(zoomed, &max); 
           break; 
         case AnalysisConfig::FinePeakFindingQuadraticFit16: 
-          UCorrelator::peakfinder::doPeakFindingQuadratic16(&zoomed, &max); 
+          UCorrelator::peakfinder::doPeakFindingQuadratic16(zoomed, &max); 
           break; 
         case AnalysisConfig::FinePeakFindingQuadraticFit25: 
-          UCorrelator::peakfinder::doPeakFindingQuadratic25(&zoomed, &max); 
+          UCorrelator::peakfinder::doPeakFindingQuadratic25(zoomed, &max); 
           break; 
         case AnalysisConfig::FinePeakFindingGaussianFit: 
-          UCorrelator::peakfinder::doPeakFindingGaussian(&zoomed, &max); 
+          UCorrelator::peakfinder::doPeakFindingGaussian(zoomed, &max); 
           break; 
         case AnalysisConfig::FinePeakFindingQuadraticFit9: 
         default: 
-          UCorrelator::peakfinder::doPeakFindingQuadratic9(&zoomed, &max); 
+          UCorrelator::peakfinder::doPeakFindingQuadratic9(zoomed, &max); 
           break; 
       }; 
 
@@ -509,9 +511,9 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
       //Check to make sure that fine max isn't OUTSIDE of zoomed window
       // If it is, revert to very stupid method  of just using histogram 
       
-      if (outside(&zoomed, max.x, max.y))
+      if (outside(zoomed, max.x, max.y))
       {
-        UCorrelator::peakfinder::doPeakFindingHistogram(&zoomed, &max); 
+        UCorrelator::peakfinder::doPeakFindingHistogram(zoomed, &max); 
       }
       
 
@@ -635,6 +637,8 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 
 UCorrelator::Analyzer::~Analyzer()
 {
+
+  delete zoomed; 
   if (interactive)
   {
     delete correlation_maps[0];

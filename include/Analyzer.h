@@ -125,7 +125,7 @@ namespace UCorrelator
       WaveformCombiner wfcomb_xpol; 
       WaveformCombiner wfcomb_filtered; 
       WaveformCombiner wfcomb_xpol_filtered; 
-      TH2D zoomed; 
+      TH2D *zoomed; 
       double maprms; 
       FFTtools::DigitalFilter *  power_filter; 
       bool interactive; 
