@@ -21,7 +21,7 @@ int UCorrelator::flags::checkSaturation(const UsefulAnitaEvent *ev, uint64_t * s
       {
         if (fabs(yh[j]) > thresh)
         {
-          hsat &= 1 << i; 
+          hsat |= 1 << i; 
           totalsat ++; 
           break; 
         }
@@ -31,7 +31,7 @@ int UCorrelator::flags::checkSaturation(const UsefulAnitaEvent *ev, uint64_t * s
       {
         if (fabs(yv[j]) > thresh)
         {
-          vsat &= 1 << i; 
+          vsat |= 1 << i; 
           totalsat ++; 
           break; 
         }
