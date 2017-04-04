@@ -65,8 +65,11 @@ namespace UCorrelator
       AnalysisWaveform* padded_waveforms[NANTENNAS]; 
       AnalysisWaveform* correlations[NANTENNAS][NANTENNAS]; 
 
-      TH2D *hist; //wow, apparently sizeof(TH2D) is huge... that's why this is on the heap 
+      TH2D *hist; 
       TH2I *norm; 
+
+      std::vector<TH2D*> hists; 
+      std::vector<TH2I*> norms; 
 
 #ifndef NUM_ANITAS
 #define NUM_ANITAS 4
@@ -85,7 +88,7 @@ namespace UCorrelator
       double baselineWeight;
 
       AnalysisWaveform * getCorrelation(int ant1, int ant2); 
-      void doAntennas(int ant1, int ant2, TH2D * hist, TH2I * norm, const TrigCache * tc, const double * center_point  = 0); 
+      void doAntennas(int ant1, int ant2, TH2D ** hist, TH2I ** norm, const TrigCache * tc, const double * center_point  = 0); 
       void reset(); 
 
       CorrelatorLocks * locks; 

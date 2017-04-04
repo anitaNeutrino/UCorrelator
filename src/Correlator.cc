@@ -14,6 +14,16 @@
 
 #ifdef UCORRELATOR_OPENMP
 #include <omp.h>
+
+#define SECTIONS _Pragma("omp parallel sections")
+#define SECTION _Pragma("omp section") 
+
+#else 
+
+#define SECTIONS if(true) 
+#define SECTION if(true) 
+
+
 #endif
 
 namespace UCorrelator
@@ -26,8 +36,6 @@ namespace UCorrelator
       omp_lock_t waveform_locks[NANTENNAS]; 
       omp_lock_t correlation_locks[NANTENNAS][NANTENNAS]; 
 
-      omp_lock_t hist_lock; 
-      omp_lock_t norm_lock; 
 
 
       CorrelatorLocks() 
@@ -42,8 +50,6 @@ namespace UCorrelator
           }
         }
 
-        omp_init_lock(&hist_lock); 
-        omp_init_lock(&norm_lock); 
 
 
       }
@@ -59,12 +65,21 @@ namespace UCorrelator
           }
         }
 
-        omp_destroy_lock(&hist_lock); 
-        omp_destroy_lock(&norm_lock); 
       }
 #endif
   };
 }
+
+static int nthreads() 
+{
+#ifdef UCORRELATOR_OPENMP
+  return omp_get_max_threads(); 
+#else
+  return 1;
+#endif
+}
+
+
 
 
 static int gettid() 
@@ -85,6 +100,25 @@ static int count_the_zoomed_correlators = 1;
 
 
 
+/*Add all histograms to the first one ... quickly... assuming they're the same size and type */
+template<class T,class A> 
+static void combineHists(int N, T ** hists )
+{
+  if (N <2) return; 
+  int nbins = (hists[0]->GetNbinsX() +2) * (hists[0]->GetNbinsY()+2); 
+  __restrict A* sum = hists[0]->GetArray(); 
+  for (int i = 1; i <N; i++ )
+  {
+    __restrict A* v = hists[i]->GetArray(); 
+#pragma omp simd 
+    for(int j = 0; j < nbins; j++) 
+    {
+      sum[j]+=v[j]; 
+    }
+  }
+}
+
+
 
 #ifndef RAD2DEG
 #define RAD2DEG (180/M_PI)
@@ -99,15 +133,34 @@ UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, in
 {
   TString histname = TString::Format("ucorr_corr_%d",count_the_correlators);
   TString normname = TString::Format("ucorr_norm_%d",count_the_correlators++);
+
   hist = new TH2D(histname.Data(),"Correlator", nphi, phi_min, phi_max, ntheta, theta_min, theta_max); 
+  hist->SetDirectory(0); 
   norm = new TH2I(normname.Data(),"Normalization", nphi, phi_min, phi_max, ntheta, theta_min, theta_max);
-    
+  norm->SetDirectory(0); 
+
   hist->GetXaxis()->SetTitle("#phi"); 
   hist->GetYaxis()->SetTitle("-#theta"); 
-  
+
+  hists.resize(nthreads()); 
+  norms.resize(nthreads()); 
+  hists[0] = hist;
+  norms[0] = norm;
+
+//  printf(":: %p %p\n",hists[0],norms[0]); 
+  for (int i= 1; i < nthreads();i++)
+  {
+    hists[i] = (TH2D*) hist->Clone(TString(hist->GetName()) + TString::Format("_%d",i)); 
+    hists[i]->SetDirectory(0); 
+    norms[i] = (TH2I*) norm->Clone(TString(norm->GetName()) + TString::Format("_%d",i)); 
+    norms[i]->SetDirectory(0); 
+//    printf(":: %p %p\n",hists[i],norms[i]); 
+  }
+
+
+
   use_bin_center = use_center;
   memset(trigcache,0, sizeof(trigcache)); 
-
 
 
   disallowed_antennas = 0; 
@@ -176,7 +229,7 @@ static int allowedPhisPairOfAntennas(double &lowerAngle, double &higherAngle, do
     
   }
   else
-  {
+ {
 
     centerAngle1= 0; 
     centerAngle2= 0; 
@@ -298,9 +351,11 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   double phi1 = phi + dphi * nphi/2; 
   double theta0 = theta - dtheta * ntheta/2; 
   double theta1 = theta + dtheta * ntheta/2; 
-  TH2I zoomed_norm(TString::Format("zoomed_norm_%d_%u",count_the_zoomed_correlators,gettid()), "Zoomed Correlation Normalization", 
+  TH2I* zoomed_norm = new TH2I(TString::Format("zoomed_norm_%d",count_the_zoomed_correlators), "Zoomed Correlation Normalization", 
                     nphi, phi0,phi1, 
                     ntheta, theta0, theta1); 
+  zoomed_norm->SetDirectory(0); 
+
   if (answer) 
   {
     answer->SetBins(nphi, phi0, phi1, 
@@ -309,9 +364,10 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   }
   else
   {
-    answer = new TH2D(TString::Format("zoomed_corr_%d_%u", count_the_zoomed_correlators++,gettid()), "Zoomed Correlation", 
+    answer = new TH2D(TString::Format("zoomed_corr_%d", count_the_zoomed_correlators++), "Zoomed Correlation", 
                     nphi, phi0, phi1, 
                     ntheta, theta0, theta1); 
+    answer->SetDirectory(0); 
   }
   
   answer->GetXaxis()->SetTitle("#phi"); 
@@ -352,12 +408,50 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
  
   unsigned nit = pairs.size(); 
 
+ 
+
+  /* lock contention for the hist / norm lock is killing parallelization */ 
+  std::vector<TH2D*> zoomed_hists(nthreads()); 
+  std::vector<TH2I*> zoomed_norms(nthreads()); 
+
+  zoomed_hists[0] = answer;
+  zoomed_norms[0] = zoomed_norm;
+
+//  printf(":: %p %p\n",hists[0],norms[0]); 
+  for (int i= 1; i < nthreads();i++)
+  {
+    zoomed_hists[i] = (TH2D*) answer->Clone(TString(answer->GetName()) + TString::Format("_%d",i)); 
+    zoomed_hists[i]->SetDirectory(0); 
+    zoomed_norms[i] = (TH2I*) zoomed_norm->Clone(TString(norm->GetName()) + TString::Format("_%d",i)); 
+    norms[i]->SetDirectory(0); 
+//  zoomed_  printf(":: %p %p\n",hists[i],norms[i]); 
+  }
+
+
 #ifdef UCORRELATOR_OPENMP
 #pragma omp parallel for
 #endif
   for (unsigned it = 0; it < nit; it++)
   {
-     doAntennas(pairs[it].first, pairs[it].second, answer, &zoomed_norm, &cache, center_point); 
+     doAntennas(pairs[it].first, pairs[it].second, &zoomed_hists[0], &zoomed_norms[0], &cache, center_point); 
+  }
+
+
+  /* combine histograms */ 
+  
+SECTIONS
+  {
+SECTION
+    combineHists<TH2D,double>(nthreads(), &zoomed_hists[0]); 
+
+SECTION
+    combineHists<TH2I,int>(nthreads(), &zoomed_norms[0]); 
+  }
+
+  for (int i =1; i < nthreads(); i++) 
+  {
+    delete zoomed_hists[i]; 
+    delete zoomed_norms[i]; 
   }
 
 
@@ -367,13 +461,14 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   {
     double val = answer->GetArray()[i]; 
     if (val == 0) continue;
-    int this_norm = zoomed_norm.GetArray()[i]; 
+    int this_norm = zoomed_norm->GetArray()[i]; 
     answer->GetArray()[i] = this_norm > 0  ? val/this_norm : 0;
     nonzero++; 
   }
 
   answer->SetEntries(nonzero); 
  
+  delete zoomed_norm; 
   return answer;
 }
 
@@ -388,8 +483,8 @@ static inline bool between(double phi, double low, double high)
 }
 
 
-inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist, 
-                                                TH2I * norm, const TrigCache * cache , 
+inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** hists, 
+                                                TH2I ** norms, const TrigCache * cache , 
                                                 const double * center_point )
 {
    int allowedFlag; 
@@ -400,7 +495,12 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
                     ant1,ant2, max_phi, pol);
 
 
+   assert(ant1 < 48); 
+   assert(ant2 < 48); 
    if(!allowedFlag) return; 
+
+   TH2D * hist  = hists[gettid()]; 
+   TH2I * norm  = norms[gettid()]; 
 
 //   printf("lowerAngleThis: %g higherAngleThis: %g\n", lowerAngleThis, higherAngleThis); 
    // More stringent check if we have a center point
@@ -510,27 +610,19 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D * hist,
      }
    }
 
-#ifdef UCORRELATOR_OPENMP
-   omp_set_lock(&locks->hist_lock);
-#endif
+
    for (int bi = 0; bi < nbins_used; bi++)
    {
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi]; 
        hist->GetArray()[bin]+= val; 
    }
-#ifdef UCORRELATOR_OPENMP
-   omp_unset_lock(&locks->hist_lock); 
-   omp_set_lock(&locks->norm_lock);
-#endif   
    for (int bi = 0; bi < nbins_used; bi++)
    {
        int bin = bins_to_fill[bi]; 
        norm->GetArray()[bin]++;
    }
-#ifdef UCORRELATOR_OPENMP
-   omp_unset_lock(&locks->norm_lock); 
-#endif
+
    delete [] alloc; 
    delete [] dalloc; 
 }
@@ -587,13 +679,29 @@ void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol
 
   unsigned nit = pairs.size(); 
 
+  for (int i= 1; i < nthreads();i++)
+  {
+    hists[i]->Reset(); 
+    norms[i]->Reset();
+  }
+
 #ifdef UCORRELATOR_OPENMP
   #pragma omp parallel for 
 #endif
   for (unsigned it = 0; it < nit; it++)
   {
-     doAntennas(pairs[it].first, pairs[it].second, hist, norm, trigcache[v]); 
+     doAntennas(pairs[it].first, pairs[it].second, &hists[0], &norms[0], trigcache[v]); 
   }
+
+  /* combine histograms */ 
+SECTIONS
+{
+
+  SECTION
+    combineHists<TH2D,double>(nthreads(),&hists[0]); 
+  SECTION
+    combineHists<TH2I,int>(nthreads(),&norms[0]); 
+}
 
 
   int nonzero = 0;
@@ -633,6 +741,12 @@ UCorrelator::Correlator::~Correlator()
 
 #ifdef UCORRELATOR_OPENMP
   delete locks; 
+  for (int i = 1; i < nthreads(); i++)
+  {
+    delete hists[i];
+    delete norms[i];
+
+  }
 #endif 
 
 }
