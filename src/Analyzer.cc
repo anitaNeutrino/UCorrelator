@@ -126,12 +126,9 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
   //check for saturation
   uint64_t saturated[2] = {0,0}; 
-  UCorrelator::flags::checkSaturation(event->getUsefulAnitaEvent(), 
-                                      &saturated[AnitaPol::kHorizontal], 
-                                      &saturated[AnitaPol::kVertical], 
-                                      cfg->saturation_threshold); 
-
- 
+  event->checkSaturation( &saturated[AnitaPol::kHorizontal], 
+                          &saturated[AnitaPol::kVertical], 
+                          cfg->saturation_threshold); 
 
   //also disable missing sectors 
   UCorrelator::flags::checkEmpty(event->getUsefulAnitaEvent(), &saturated[AnitaPol::kHorizontal], &saturated[AnitaPol::kVertical]); 

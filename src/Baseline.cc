@@ -1,7 +1,9 @@
 #include "Baseline.h" 
 #include "TGraph.h" 
 #include <cstdio>
+#include "FilteredAnitaEvent.h" 
 #include "TSystem.h" 
+#include "FilterStrategy.h" 
 #include "AnitaDataset.h"
 #include "UsefulAnitaEvent.h"
 #include "FFTtools.h"
@@ -25,6 +27,7 @@ static int makeBaselines(int run, TGraph ** hpol, TGraph ** vpol, int N = 5000)
 
 
   AnitaDataset d(run); 
+  FilterStrategy empty; 
 
   int nevents = 0; 
   int i = 10; 
@@ -39,7 +42,10 @@ static int makeBaselines(int run, TGraph ** hpol, TGraph ** vpol, int N = 5000)
        continue; 
 
     //skip saturated events 
-    if (UCorrelator::flags::checkSaturation(d.useful())) 
+    
+    FilteredAnitaEvent fae(d.useful(), &empty, d.gps(), d.header()); 
+
+    if (fae.checkSaturation()) 
       continue; 
 
     for (int ant = 0; ant < NUM_SEAVEYS; ant++) 
