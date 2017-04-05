@@ -304,23 +304,31 @@ double UCorrelator::SpectrumAverage::getEndTime() const
   return avgs[0][0]->GetYaxis()->GetXmax();   
 }
 
+
+static const UCorrelator::SpectrumAverage* defaultThermalAvg = 0; 
+const UCorrelator::SpectrumAverage* UCorrelator::SpectrumAverage::defaultThermal() 
+{
+  if (defaultThermalAvg) return defaultThermalAvg; 
+
+  //TODO make this a4 compatible as well 
+   if (AnitaVersion::get() == 4) 
+   {
+     fprintf(stderr,"warning: using default terminated thermal spectrum for A3 for peakiness\n"); 
+   }
+
+   TString dir; 
+   dir.Form("%s/share/UCorrelator/terminated_noise/", getenv("ANITA_UTIL_INSTALL_DIR")); 
+
+   defaultThermalAvg = new SpectrumAverage(11382,60, dir.Data()); 
+   return defaultThermalAvg; 
+}
+
+
+
 void UCorrelator::SpectrumAverage::computePeakiness(const SpectrumAverage * thermalSpec, double fractionForNormalization) 
 {
 
-  SpectrumAverage * defaultThermal = 0; 
-  if (!thermalSpec)
-  {
-    TString dir; 
-    dir.Form("%s/share/UCorrelator/terminated_noise/", getenv("ANITA_UTIL_INSTALL_DIR")); 
-
-    defaultThermal = new SpectrumAverage(11382,60, dir.Data()); 
-
-   //TODO need something for A4 here.
-   if (AnitaVersion::get() == 4) 
-   fprintf(stderr,"warning: using default terminated thermal spectrum for A3 for peakiness\n"); 
-   thermalSpec = defaultThermal; 
-  }
-
+  if (!thermalSpec) thermalSpec = defaultThermal(); 
 
   for (int ant  = 0; ant < NUM_SEAVEYS; ant++)
   {
@@ -386,7 +394,6 @@ void UCorrelator::SpectrumAverage::computePeakiness(const SpectrumAverage * ther
     }
   }
 
-  if (defaultThermal) delete defaultThermal; 
 }
 
 

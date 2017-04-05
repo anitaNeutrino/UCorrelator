@@ -7,6 +7,7 @@ class TH2D;
 class TH1; 
 #include "AnitaConventions.h" 
 #include "AnitaGeomTool.h"
+  
 namespace UCorrelator
 {
 
@@ -40,6 +41,7 @@ namespace UCorrelator
                       double max_bottom_top_ratio =1.5); 
 
 
+      static const SpectrumAverage * defaultThermal(); 
       virtual ~SpectrumAverage(); 
 
       /** compute the peakiness with the given thermal spectrum average and fraction of spectrum used for normalization
