@@ -483,8 +483,8 @@ static inline bool between(double phi, double low, double high)
 }
 
 
-inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** hists, 
-                                                TH2I ** norms, const TrigCache * cache , 
+inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** these_hists, 
+                                                TH2I ** these_norms, const TrigCache * cache , 
                                                 const double * center_point )
 {
    int allowedFlag; 
@@ -499,8 +499,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** hist
    assert(ant2 < 48); 
    if(!allowedFlag) return; 
 
-   TH2D * hist  = hists[gettid()]; 
-   TH2I * norm  = norms[gettid()]; 
+   TH2D * the_hist  = these_hists[gettid()]; 
+   TH2I * the_norm  = these_norms[gettid()]; 
 
 //   printf("lowerAngleThis: %g higherAngleThis: %g\n", lowerAngleThis, higherAngleThis); 
    // More stringent check if we have a center point
@@ -508,22 +508,22 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** hist
 
    AnalysisWaveform * correlation = getCorrelation(ant1,ant2); 
    
-   int nphibins = hist->GetNbinsX() + 2; 
+   int nphibins = the_hist->GetNbinsX() + 2; 
 
    //find phi bin corresponding to lowerAngleThis and higherAngleThis
 
-   int first_phi_bin = center_point ? 1 : hist->GetXaxis()->FindFixBin(lowerAngleThis); 
-   int last_phi_bin  = center_point ? hist->GetNbinsX() : hist->GetXaxis()->FindFixBin(higherAngleThis); 
+   int first_phi_bin = center_point ? 1 : the_hist->GetXaxis()->FindFixBin(lowerAngleThis); 
+   int last_phi_bin  = center_point ? the_hist->GetNbinsX() : the_hist->GetXaxis()->FindFixBin(higherAngleThis); 
 
    if (first_phi_bin == 0) first_phi_bin = 1; 
-   if (last_phi_bin == hist->GetNbinsX()+1) last_phi_bin = hist->GetNbinsX(); 
+   if (last_phi_bin == the_hist->GetNbinsX()+1) last_phi_bin = the_hist->GetNbinsX(); 
    bool must_wrap = (last_phi_bin < first_phi_bin) ; 
 
 
    //So the maximum number of bins is going to be the total number of bins in the histogram. We probably won't fill all of them, 
    //but memory is cheap and std::vector is slow  
 
-   int maxsize = hist->GetNbinsY() * hist->GetNbinsX(); 
+   int maxsize = the_hist->GetNbinsY() * the_hist->GetNbinsX(); 
 
 
    //This is bikeshedding, but allocate it all contiguosly 
@@ -554,7 +554,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** hist
      if (!center_point && fabs(dphi1)  > max_phi) continue; 
      if (!center_point && fabs(dphi2)  > max_phi) continue; 
 
-     int ny = hist->GetNbinsY(); 
+     int ny = the_hist->GetNbinsY(); 
 
 
      for (int thetabin = 1; thetabin <= ny; thetabin++)
@@ -615,12 +615,12 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** hist
    {
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi]; 
-       hist->GetArray()[bin]+= val; 
+       the_hist->GetArray()[bin]+= val; 
    }
    for (int bi = 0; bi < nbins_used; bi++)
    {
        int bin = bins_to_fill[bi]; 
-       norm->GetArray()[bin]++;
+       the_norm->GetArray()[bin]++;
    }
 
    delete [] alloc; 
@@ -762,10 +762,10 @@ void UCorrelator::Correlator::dumpDeltaTs(const char * fname) const
 
   TTree * tree = new TTree("delays","Delays"); 
 
-  int ant1, ant2, pol; 
+  int ant1, ant2, ipol; 
   double phi, theta, delta_t, group_delay; 
 
-  tree->Branch("pol",&pol); 
+  tree->Branch("pol",&ipol); 
   tree->Branch("ant1",&ant1); 
   tree->Branch("ant2",&ant2); 
   tree->Branch("phi",&phi); 
@@ -778,17 +778,17 @@ void UCorrelator::Correlator::dumpDeltaTs(const char * fname) const
   positions->Branch("phi",&ant_phi); 
   positions->Branch("r",&ant_r); 
   positions->Branch("z",&ant_z); 
-  positions->Branch("pol",&pol); 
+  positions->Branch("pol",&ipol); 
 
   const AntennaPositions * ap = AntennaPositions::instance(); 
 
-  for (pol = 0; pol < 2; pol++)
+  for (ipol = 0; ipol < 2; ipol++)
   {
     for (ant1= 0; ant1 < NANTENNAS; ant1++) 
     {
-      ant_phi = ap->phiAnt[pol][ant1]; 
-      ant_r = ap->rAnt[pol][ant1]; 
-      ant_z = ap->zAnt[pol][ant1]; 
+      ant_phi = ap->phiAnt[ipol][ant1]; 
+      ant_r = ap->rAnt[ipol][ant1]; 
+      ant_z = ap->zAnt[ipol][ant1]; 
       positions->Fill(); 
 
       for (ant2 = ant1+1; ant2 < NANTENNAS; ant2++)
@@ -797,12 +797,12 @@ void UCorrelator::Correlator::dumpDeltaTs(const char * fname) const
         {
           for (theta = -90; theta <=90; theta +=2) 
           {
-             delta_t = getDeltaT(ant1,ant2,phi,theta,(AnitaPol::AnitaPol_t) pol, groupDelayFlag); 
+             delta_t = getDeltaT(ant1,ant2,phi,theta,(AnitaPol::AnitaPol_t) ipol, groupDelayFlag); 
 
              if (groupDelayFlag)
              {
-                double dphi1 = FFTtools::wrap(phi - ap->phiAnt[pol][ant1],360,0); 
-                double dphi2 = FFTtools::wrap(phi - ap->phiAnt[pol][ant2],360,0); 
+                double dphi1 = FFTtools::wrap(phi - ap->phiAnt[ipol][ant1],360,0); 
+                double dphi2 = FFTtools::wrap(phi - ap->phiAnt[ipol][ant2],360,0); 
                 double delay1=getAntennaGroupDelay(dphi1,theta);
                 double delay2=getAntennaGroupDelay(dphi2,theta);
                 group_delay = delay1-delay2; 
