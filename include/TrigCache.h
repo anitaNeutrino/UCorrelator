@@ -17,8 +17,8 @@ namespace UCorrelator
  **/ 
   struct TrigCache
   {
-    TrigCache(int nphi, double dphi, double phi_start, int ntheta, double dtheta, double theta_start, const AntennaPositions * ap, bool use_bin_center= false, int nant2use = 0, const int * ants = 0) 
-      : nphi(nphi) 
+    TrigCache(int n_phi, double dphi, double phi_start, int ntheta, double dtheta, double theta_start, const AntennaPositions * aps, bool use_bin_center= false, int nant2use = 0, const int * ants = 0) 
+      : nphi(n_phi) ,ap(aps)
     {
 
       phi = new double[nphi]; 
@@ -51,7 +51,6 @@ namespace UCorrelator
         tan_theta[i] = tan(theta[i] * DEG2RAD);  //naturally, we reverse the sign... 
       }
 
-      this->ap = ap; 
 
     }; 
 
