@@ -1,10 +1,6 @@
 
 #include "macro/cuts.C"
-const int IWAIS=0;
-const int IND_WAIS =0;
-
-
-
+#include "sys/wait.h" 
 
 
 
@@ -97,24 +93,35 @@ void makeCutPlot(const char * filter, TChain * bg, TChain * wais, TChain * ldb)
 
 
 
+static std::vector<int> waitforme; 
+
 
 void doFilterAlgo(const char * filter) 
 {
-  TChain cwais(filter); 
-  cwais.Add("filter/*_wais_*.root"); 
+  pid_t pid = fork(); 
+  if (pid == 0)
+  {
+    TChain cwais(filter); 
+    cwais.Add("filter/*_wais_*.root"); 
 
-  doPulserPlots("wais",&cwais); 
+    doPulserPlots("wais",&cwais); 
 
 
-  TChain cldb(filter); 
-  cldb.Add("filter/*_ldb_*.root"); 
+    TChain cldb(filter); 
+    cldb.Add("filter/*_ldb_*.root"); 
 
-  doPulserPlots("ldb",&cldb); 
+    doPulserPlots("ldb",&cldb); 
 
-  TChain cbg(filter); 
-  cbg.Add("filter/*_bg*.root"); 
+    TChain cbg(filter); 
+    cbg.Add("filter/*_bg*.root"); 
 
-  makeCutPlot(filter, &cbg,&cwais,&cldb); 
+    makeCutPlot(filter, &cbg,&cwais,&cldb); 
+    exit(0); 
+  }
+  else
+  {
+    waitforme.push_back(pid); 
+  }
 
 }
 
@@ -129,9 +136,20 @@ void filterEvalA3Plots()
   doFilterAlgo("adsinsub_05_0"); 
   doFilterAlgo("adsinsub_10_0"); 
   doFilterAlgo("adsinsub_10_3"); 
-  doFilterAlgo("butter"); 
-  doFilterAlgo("minphase"); 
+  doFilterAlgo("butter_2"); 
+  doFilterAlgo("butter_15"); 
+  doFilterAlgo("minphase_2"); 
+  doFilterAlgo("minphase_1"); 
+  doFilterAlgo("decon_ss_5_0"); 
+  doFilterAlgo("decon_ss_3_0"); 
+  doFilterAlgo("decon_adss_5_0"); 
 
+  //reap
+  for (unsigned i = 0; i < waitforme.size(); i++)
+  {
+    int dummy; 
+    waitpid(waitforme[i],&dummy,0); 
+  }
 }
 
 
