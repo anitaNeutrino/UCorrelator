@@ -83,8 +83,8 @@ namespace UCorrelator
   {
     public: 
 
-      BandLimitedDeconvolution(double min_freq, double max_freq, int edge_order = 0) 
-        : min_freq(min_freq),max_freq(max_freq), edge_order(edge_order) 
+      BandLimitedDeconvolution(double minfreq, double maxfreq, int edgeorder = 0) 
+        : min_freq(minfreq),max_freq(maxfreq), edge_order(edgeorder) 
       {
       }
 
