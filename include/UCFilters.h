@@ -131,6 +131,7 @@ namespace UCorrelator
       const char * outputName(unsigned i) const{ return output_names[i].Data(); }
       unsigned outputLength(unsigned i) const{ return i == 0 ? 1 : NUM_SEAVEYS; } 
       void fillOutput(unsigned i, double * vars) const; 
+      void setVerbose(bool v); 
       virtual void process(FilteredAnitaEvent * ev); 
       const FFTtools::SineSubtract* sinsub(AnitaPol::AnitaPol_t pol, int ant) const { return subs[pol][ant] ;} 
     private:

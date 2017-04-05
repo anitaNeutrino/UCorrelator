@@ -598,6 +598,19 @@ UCorrelator::SineSubtractFilter::~SineSubtractFilter()
 }
 
 
+void UCorrelator::SineSubtractFilter::setVerbose(bool set) 
+{
+ for (int pol = 0; pol < 2; pol++)
+ {
+   for (int i = 0; i < NUM_SEAVEYS; i++) 
+   {
+     subs[pol][i]->setVerbose(set); 
+   }
+ }
+
+
+}
+
 
 void UCorrelator::SineSubtractFilter::setInteractive(bool set) 
 {
