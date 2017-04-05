@@ -98,7 +98,7 @@ endif()
 message (" Adding new build type") 
 
 set(CMAKE_CXX_FLAGS_DEFAULT 
-  "-Os -g -Wall" 
+  "-Os -g -Wall -Wextra" 
   CACHE STRING "c++ Flags used during default eventReaderRoot builds" 
   FORCE ) 
 
