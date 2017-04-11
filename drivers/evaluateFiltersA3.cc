@@ -252,10 +252,18 @@ int main(int nargs, char ** args)
   }
 
 
+  time_t last_time = time(0); 
+  bool auto_save = false;
   int ndone = 0; 
 
   for (int i = 0; i < d.N(); i++) 
   {
+    if (time(0) - last_time > 1800)
+    {
+      auto_save = true; 
+      last_time = time(0); 
+    }
+
     d.getEntry(i); 
 
     hdr = d.header(); 
@@ -312,6 +320,7 @@ int main(int nargs, char ** args)
     ofile.cd(); 
     patptr = &pat; 
     friendly->Fill(); 
+    if (auto_save) friendly->AutoSave("SaveSelf"); 
 
     //preload all this stuff 
     d.useful(); 
@@ -328,6 +337,7 @@ int main(int nargs, char ** args)
       printf("[%g,%g]",sum->coherent[0][0].peakHilbert, sum->coherent[1][0].peakHilbert);
       ofile.cd(); 
       trees[s]->Fill(); 
+      if (auto_save) trees[s]->AutoSave("SaveSelf"); 
     }
     printf("\n"); 
 
