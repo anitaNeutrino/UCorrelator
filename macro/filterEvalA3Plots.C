@@ -218,12 +218,12 @@ void makeCutPlot(const char * filter, TChain * bg, TChain * wais, TChain * ldb, 
 
   p->Nbg = hbg->Integral(); 
   wais->SetMarkerColor(2); 
-  int N = wais->Draw("coherent[][].peakHilbert:peak[][].value", brightestPeak && "peakPulserCoherentH > 40 && abs(FFTtools::wrap(peak[][].phi-wais.phi,360,0)) < 5 && abs(FFTtools::wrap(peak[][].theta - wais.theta,3600)) < 5","psame"); 
+  int N = wais->Draw("coherent[][].peakHilbert:peak[][].value", brightestPeak && "peakPulserCoherentH > 40 && abs(FFTtools::wrap(peak[][].phi-wais.phi,360,0)) < 5 && abs(FFTtools::wrap(peak[][].theta - wais.theta,360)) < 5","psame"); 
   TGraph  gwais(N, wais->GetV2(), wais->GetV1()); 
   p->Nwais = N;
 
   ldb->SetMarkerColor(3); 
-  N = ldb->Draw("coherent[][].peakHilbert:peak[][].value", brightestPeak && "(peakPulserCoherentH > 40 || peakPulserCoherentV > 40) && abs(FFTtools::wrap(peak[][].phi-ldb.phi,360,0)) < 5 && abs(FFTtools::wrap(peak[][].theta - ldb.theta,3600)) < 5","psame"); 
+  N = ldb->Draw("coherent[][].peakHilbert:peak[][].value", brightestPeak && "(peakPulserCoherentH > 40 || peakPulserCoherentV > 40) && abs(FFTtools::wrap(peak[][].phi-ldb.phi,360,0)) < 5 && abs(FFTtools::wrap(peak[][].theta - ldb.theta,360)) < 5","psame"); 
   TGraph  gldb(N, ldb->GetV2(), ldb->GetV1()); 
 
 
@@ -439,7 +439,8 @@ void doFilterAlgo(const char * filter, const char * description)
 
     }
 
-    exit(0); 
+    printf("Done with %s\n", filter); 
+    _exit(0); 
   }
   else
   {
@@ -584,7 +585,7 @@ void filterEvalA3Plots()
   
 
 
-  //reap??  this seems to crash
+  //reap
   for (unsigned i = 0; i < waitforme.size(); i++)
   {
     int dummy; 
