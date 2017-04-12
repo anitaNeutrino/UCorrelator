@@ -81,13 +81,13 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mo
 
   if (interactive) 
   {
-    correlation_maps[0] = new TH2D; 
-    correlation_maps[1] = new TH2D; 
+    correlation_maps[0] = 0;
+    correlation_maps[1] = 0;
 
     for (int i = 0; i < cfg->nmaxima; i++)
     {
-      zoomed_correlation_maps[0].push_back(new TH2D); 
-      zoomed_correlation_maps[1].push_back(new TH2D); 
+      zoomed_correlation_maps[0].push_back(0); 
+      zoomed_correlation_maps[1].push_back(0); 
 
       for (int ipol =0; ipol <2;ipol++)
       {
@@ -336,8 +336,9 @@ SECTION
       if (interactive) //copy everything
       {
 
-        zoomed_correlation_maps[pol][i]->~TH2D(); 
-        zoomed_correlation_maps[pol][i] = new (zoomed_correlation_maps[pol][i]) TH2D(*zoomed); 
+        if (zoomed_correlation_maps[pol][i]) delete zoomed_correlation_maps[pol][i]; 
+        zoomed_correlation_maps[pol][i] = new gui::Map(*zoomed, event, &wfcomb, &wfcomb_filtered,AnitaPol::AnitaPol_t(pol)); 
+        zoomed_correlation_maps[pol][i]->SetName(TString::Format("zoomed_%d_%d", pol,i)); 
 
         coherent[pol][0][i]->~AnalysisWaveform(); 
         coherent[pol][0][i] = new (coherent[pol][0][i]) AnalysisWaveform(*wfcomb.getCoherent()); 
@@ -446,8 +447,8 @@ SECTION
     }
     if (interactive) 
     {
-       correlation_maps[pol]->~TH2D(); 
-       correlation_maps[pol] = new (correlation_maps[pol]) TH2D(* (TH2D*) corr.getHist()); 
+       if (correlation_maps[pol]) delete correlation_maps[pol];
+       correlation_maps[pol] = new gui::Map(*corr.getHist(), event, &wfcomb, &wfcomb_filtered,AnitaPol::AnitaPol_t(pol) ); 
     }
   }
 
@@ -717,16 +718,11 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 
     pads[ipol]->cd(1)->cd(1); 
     correlation_maps[ipol]->SetTitle(ipol == 0 ? "HPol map" : "VPol map" ); 
-    correlation_maps[ipol]->Draw("colz2"); 
+    correlation_maps[ipol]->addRough(rough_peaks[ipol]); 
+    correlation_maps[ipol]->Draw(); 
 
     for (int i = 0; i < last.nPeaks[ipol]; i++) 
     {
-      pads[ipol]->cd(1)->cd(1); 
-      TMarker * m = new TMarker(rough_peaks[ipol][i].first, rough_peaks[ipol][i].second, 3); 
-      m->SetMarkerSize(last.nPeaks[ipol] -i); 
-      m->Draw(); 
-      delete_list.push_back(m); 
-
       pads[ipol]->cd(1)->cd(2); 
       TPaveText * pt  = new TPaveText(i/double(last.nPeaks[ipol]),0,(i+1)/double(last.nPeaks[ipol]),1); 
       delete_list.push_back(pt); 
@@ -745,29 +741,15 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
     for (int i = 0; i < last.nPeaks[ipol]; i++) 
     {
       pads[ipol]->cd(2)->cd(i+1); 
+
       zoomed_correlation_maps[ipol][i]->SetTitle(TString::Format("Zoomed peak %d", i+1)); 
+      zoomed_correlation_maps[ipol][i]->addFine(last.peak[ipol][i]); 
       zoomed_correlation_maps[ipol][i]->Draw("colz2"); 
-      const AnitaEventSummary::PointingHypothesis & p = last.peak[ipol][i]; 
-      TMarker * m = new TMarker(p.phi, -p.theta,2); 
-      delete_list.push_back(m); 
-
-      double angle = 90. / TMath::Pi()* atan2(2*p.rho * p.sigma_theta * p.sigma_phi, p.sigma_phi * p.sigma_phi - p.sigma_theta * p.sigma_theta);
-      TEllipse *el = new TEllipse(p.phi, -p.theta, p.sigma_phi, p.sigma_theta, 0, 360, angle); 
-      delete_list.push_back(el); 
-
-      el->SetFillStyle(0); 
-      el->SetLineColor(3); 
-      el->Draw(); 
-      m->SetMarkerSize(2); 
-      m->SetMarkerColor(3); 
-      m->Draw(); 
 
       pads[ipol]->cd(2)->cd(i+last.nPeaks[ipol]+1); 
 
-
       ((TGraph*) coherent[ipol][0][i]->even())->SetTitle(TString::Format ( "Coherent (+ xpol) %d", i+1)); 
       coherent[ipol][0][i]->drawEven("al"); 
-
 
 
       coherent_xpol[ipol][0][i]->drawEven("lsame"); 

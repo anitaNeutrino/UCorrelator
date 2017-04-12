@@ -16,7 +16,7 @@
 
 class AnitaEventSummary; 
 class FilteredAnitaEvent; 
-class TCanvas;
+class AnalysisWaveform; 
 
 namespace UCorrelator
 {
@@ -36,6 +36,8 @@ namespace UCorrelator
         void SetUseUnfiltered(); // *MENU*
         void addRough(double x, double y); 
         void addRough(const std::vector<std::pair<double,double> > & rough); 
+        void closeCanvas(); 
+        void drawWf(double theta,double phi); 
         void addFine(const AnitaEventSummary::PointingHypothesis & p); 
         void clear(); 
 
@@ -51,6 +53,9 @@ namespace UCorrelator
         TMarker * clicked; 
         bool use_filtered; 
         AnitaPol::AnitaPol_t pol;
+        AnalysisWaveform * coherent; 
+        AnalysisWaveform * deconvolved; 
+        double last_theta, last_phi; 
 
         ClassDef(Map,1); 
     }; 
