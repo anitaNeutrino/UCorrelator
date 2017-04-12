@@ -6,6 +6,7 @@
 #pragma link off all namespaces;
 
 #pragma link C++ namespace UCorrelator;
+#pragma link C++ namespace UCorrelator::gui;
 #pragma link C++ namespace UCorrelator::flags;
 #pragma link C++ namespace UCorrelator::peakfinder;
 #pragma link C++ namespace UCorrelator::shape;
@@ -37,6 +38,8 @@
 #pragma link C++ class UCorrelator::WienerDeconvolution; 
 #pragma link C++ class UCorrelator::AllPassDeconvolution; 
 
+
+#pragma link C++ class UCorrelator::gui::Map; 
 
 #endif
 

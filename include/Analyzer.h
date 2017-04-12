@@ -3,6 +3,7 @@
 
 #include "Correlator.h" 
 #include "WaveformCombiner.h"
+#include "UCorrelatorGUI.h" 
 #include <vector>
 #include "TH2D.h"
 #include "simpleStructs.h"
@@ -60,10 +61,10 @@ namespace UCorrelator
 
 
       /** Return the correlation map for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const TH2 * getCorrelationMap(AnitaPol::AnitaPol_t pol) const  { return correlation_maps[pol] ; } 
+      const gui::Map * getCorrelationMap(AnitaPol::AnitaPol_t pol) const  { return correlation_maps[pol] ; } 
 
       /** Return the ith zoomed correlation map for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const TH2 * getZoomedCorrelationMap(AnitaPol::AnitaPol_t pol, int i) const { return zoomed_correlation_maps[pol][i]; }
+      const gui::Map * getZoomedCorrelationMap(AnitaPol::AnitaPol_t pol, int i) const { return zoomed_correlation_maps[pol][i]; }
 
       /** Return the ith coherent waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
       const AnalysisWaveform * getCoherent(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent[pol][i][filtered ? 1 : 0]; } 
@@ -104,8 +105,8 @@ namespace UCorrelator
                             UsefulAdu5Pat * pat, double hwAngle, UShort_t triggered_sectors, UShort_t masked_sectors, UShort_t triggered_sectors_xpol, UShort_t masked_sectors_xpol); 
       void fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary::EventFlags * flags, UsefulAdu5Pat * pat); 
 
-      TH2D* correlation_maps[2]; 
-      std::vector<TH2D*>  zoomed_correlation_maps[2]; 
+      gui::Map* correlation_maps[2]; 
+      std::vector<gui::Map*>  zoomed_correlation_maps[2]; 
       std::vector<AnalysisWaveform *> coherent[2][2]; 
       std::vector<AnalysisWaveform *> deconvolved[2][2]; 
       std::vector<TGraphAligned *> coherent_power[2][2]; 
