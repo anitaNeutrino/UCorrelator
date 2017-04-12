@@ -290,6 +290,13 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
       fillPointingInfo(maxima[i].x, maxima[i].y, &summary->peak[pol][i], pat, avgHwAngle, triggeredPhi, maskedPhi, triggeredPhiXpol, maskedPhiXpol); 
 
+      if (interactive) 
+      {
+        if (zoomed_correlation_maps[pol][i]) delete zoomed_correlation_maps[pol][i]; 
+        zoomed_correlation_maps[pol][i] = new gui::Map(*zoomed, event, &wfcomb, &wfcomb_filtered,AnitaPol::AnitaPol_t(pol)); 
+        zoomed_correlation_maps[pol][i]->SetName(TString::Format("zoomed_%d_%d", pol,i)); 
+      }
+
 
       //fill in separation 
       summary->peak[pol][i].phi_separation = 1000; 
@@ -335,11 +342,6 @@ SECTION
 
       if (interactive) //copy everything
       {
-
-        if (zoomed_correlation_maps[pol][i]) delete zoomed_correlation_maps[pol][i]; 
-        zoomed_correlation_maps[pol][i] = new gui::Map(*zoomed, event, &wfcomb, &wfcomb_filtered,AnitaPol::AnitaPol_t(pol)); 
-        zoomed_correlation_maps[pol][i]->SetName(TString::Format("zoomed_%d_%d", pol,i)); 
-
         coherent[pol][0][i]->~AnalysisWaveform(); 
         coherent[pol][0][i] = new (coherent[pol][0][i]) AnalysisWaveform(*wfcomb.getCoherent()); 
 
@@ -744,7 +746,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 
       zoomed_correlation_maps[ipol][i]->SetTitle(TString::Format("Zoomed peak %d", i+1)); 
       zoomed_correlation_maps[ipol][i]->addFine(last.peak[ipol][i]); 
-      zoomed_correlation_maps[ipol][i]->Draw("colz2"); 
+      zoomed_correlation_maps[ipol][i]->Draw(); 
 
       pads[ipol]->cd(2)->cd(i+last.nPeaks[ipol]+1); 
 
