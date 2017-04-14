@@ -42,7 +42,13 @@ FilterStrategy justAlfa;
 std::vector<FilterStrategy*> strategies; 
 std::vector<std::string> names; 
 
-void addStrategy( FilterStrategy * s, const char * name) { strategies.push_back(s); names.push_back(name); } 
+void addStrategy(const char * key, int run)
+{
+
+  strategies.push_back(UCorrelator::getStrategyWithKey(key,run)); 
+  names.push_back(key); 
+
+} 
 UCorrelator::Analyzer * analyzer; 
 UCorrelator::AnalysisConfig cfg; 
 
@@ -51,135 +57,21 @@ UCorrelator::AnalysisConfig cfg;
 
 void setupFilters(TFile* out, int run) 
 {
+
   (void) out; 
   justAlfa.addOperation(new ALFAFilter); 
 
-  /** Sine subtraction */ 
-  FilterStrategy * sinsub_05_0= new FilterStrategy; 
-  UCorrelator::SineSubtractFilter * ssf = new UCorrelator::SineSubtractFilter(0.05, 0); 
-  sinsub_05_0->addOperation(ssf); 
-  sinsub_05_0->addOperation(new ALFAFilter); 
-  addStrategy(sinsub_05_0, "sinsub_05_0"); 
 
-  FilterStrategy * sinsub_03_0= new FilterStrategy; 
-  ssf = new UCorrelator::SineSubtractFilter(0.03, 0); 
-  sinsub_03_0->addOperation(ssf); 
-  sinsub_03_0->addOperation(new ALFAFilter); 
-  addStrategy(sinsub_03_0, "sinsub_03_0"); 
-
-
-  FilterStrategy * sinsub_10_0= new FilterStrategy; 
-  sinsub_10_0->addOperation(new UCorrelator::SineSubtractFilter(0.1, 0)); 
-  sinsub_10_0->addOperation(new ALFAFilter); 
-  addStrategy(sinsub_10_0, "sinsub_10_0"); 
-
-  FilterStrategy * sinsub_05_3= new FilterStrategy; 
-  sinsub_05_3->addOperation(new UCorrelator::SineSubtractFilter(0.05, 3)); 
-  sinsub_05_3->addOperation(new ALFAFilter); 
-  addStrategy(sinsub_05_3, "sinsub_05_3"); 
-
-
-  UCorrelator::SpectrumAverage *  avg  = new UCorrelator::SpectrumAverage(run,60,"specavg"); //TODO use default dir for this 
-  avg->computePeakiness(); 
-
-  /** Peakiness Detecting Sine Subtraction */ 
-
-  FilterStrategy * adsinsub_05_0= new FilterStrategy; 
-  UCorrelator::SineSubtractFilter * adssf = new UCorrelator::SineSubtractFilter(0.05, 0); 
-  adssf->makeAdaptive(avg); 
-  adsinsub_05_0->addOperation(adssf); 
-//  adssf->setVerbose(1); 
-  adsinsub_05_0->addOperation(new ALFAFilter); 
-  addStrategy(adsinsub_05_0, "adsinsub_05_0"); 
-
-  FilterStrategy * adsinsub_10_0= new FilterStrategy; 
-  adssf = new UCorrelator::SineSubtractFilter(0.10, 0); 
-  adssf->makeAdaptive(avg); 
-//  adssf->setVerbose(1); 
-  adsinsub_10_0->addOperation(adssf); 
-  adsinsub_10_0->addOperation(new ALFAFilter); 
-  addStrategy(adsinsub_10_0, "adsinsub_10_0"); 
-
-  FilterStrategy * adsinsub_10_3= new FilterStrategy; 
-  adssf = new UCorrelator::SineSubtractFilter(0.10, 3); 
-  adssf->makeAdaptive(avg); 
-//  adssf->setVerbose(1); 
-  adsinsub_10_3->addOperation(adssf); 
-  adsinsub_10_3->addOperation(new ALFAFilter); 
-  addStrategy(adsinsub_10_3, "adsinsub_10_3"); 
-
-
-
-  /** deconv + sine subtraction */ 
-  FilterStrategy * decon_ss_5_0 = new FilterStrategy; 
-  decon_ss_5_0->addOperation(new UCorrelator::DeconvolveFilter(analyzer->getResponseManager(), cfg.deconvolution_method)); 
-  decon_ss_5_0->addOperation(new ALFAFilter); 
-  decon_ss_5_0->addOperation(new UCorrelator::SineSubtractFilter(0.05,0)); 
-  addStrategy(decon_ss_5_0,"decon_ss_5_0"); 
-
-  FilterStrategy * decon_ss_3_0 = new FilterStrategy; 
-  decon_ss_3_0->addOperation(new UCorrelator::DeconvolveFilter(analyzer->getResponseManager(), cfg.deconvolution_method)); 
-  decon_ss_3_0->addOperation(new ALFAFilter); 
-  decon_ss_3_0->addOperation(new UCorrelator::SineSubtractFilter(0.03,0)); 
-  addStrategy(decon_ss_3_0,"decon_ss_3_0"); 
-
-  FilterStrategy * decon_adss_5_0 = new FilterStrategy; 
-  decon_adss_5_0->addOperation(new UCorrelator::DeconvolveFilter(analyzer->getResponseManager(), cfg.deconvolution_method)); 
-  decon_adss_5_0->addOperation(new ALFAFilter); 
-  adssf = new UCorrelator::SineSubtractFilter(0.05,0); 
-  adssf->makeAdaptive(avg); 
-  decon_adss_5_0->addOperation(adssf); 
- addStrategy(decon_adss_5_0,"decon_adss_5_0"); 
-
-
-  /** Adaptive Butterworth Filter */ 
-  FilterStrategy * butter_2 = new  FilterStrategy; 
-  butter_2->addOperation(new UCorrelator::AdaptiveButterworthFilter(avg,2)); 
-  butter_2->addOperation(new ALFAFilter); 
-  addStrategy(butter_2, "butter_2"); 
-
-  FilterStrategy * butter_15 = new  FilterStrategy; 
-  butter_15->addOperation(new UCorrelator::AdaptiveButterworthFilter(avg,1.5)); 
-  butter_15->addOperation(new ALFAFilter); 
-  addStrategy(butter_15, "butter_15"); 
-
-
-
-  /** Adaptive Minimum Phase exponent = -2**/ 
-  FilterStrategy * minphase_2 = new  FilterStrategy; 
-  minphase_2->addOperation(new UCorrelator::AdaptiveMinimumPhaseFilter(avg,-2)); 
-  minphase_2->addOperation(new ALFAFilter); 
-  addStrategy(minphase_2, "minphase_2"); 
-
-  FilterStrategy * minphase_1 = new  FilterStrategy; 
-  minphase_1->addOperation(new UCorrelator::AdaptiveMinimumPhaseFilter(avg,-1)); 
-  minphase_1->addOperation(new ALFAFilter); 
-  addStrategy(minphase_1, "minphase_1"); 
-
-  /**Geometric Filter */ 
-
-  FilterStrategy * geom = new FilterStrategy; 
-  geom->addOperation(new ALFAFilter); 
-
-  std::vector<std::vector<TGraphAligned* > > noise(48, std::vector<TGraphAligned*>(2)); 
-  for (int ant = 0; ant < 48; ant++)
-  {
-    for (int pol = 0; pol < 2; pol++) 
-    {
-      TH1 * avg = UCorrelator::SpectrumAverage::defaultThermal()->getSpectrumPercentile(AnitaPol::AnitaPol_t(pol), ant,0.5,true); 
-      noise[ant][pol] = new TGraphAligned(avg->GetNbinsX()); 
-      for (int i = 0; i < avg->GetNbinsX(); i++) 
-      {
-        noise[ant][pol]->GetX()[i] = avg->GetBinLowEdge(i+1); 
-        noise[ant][pol]->GetY()[i] = avg->GetBinContent(i+1); 
-      }
-    }
-  }
-
-  FilterOperation * geomfilter = new GeometricFilter(noise); 
-  geom->addOperation(geomfilter); 
-
-  addStrategy(geom,"geom"); 
+  addStrategy("sinsub_10_0",run); 
+  addStrategy("adsinsub_1_10_0",run); 
+  addStrategy("adsinsub_2_10_0",run); 
+  addStrategy("adsinsub_1_10_3",run); 
+  addStrategy("adsinsub_2_10_3",run); 
+  addStrategy("adsinsub_3_10_3",run); 
+  addStrategy("adsinsub_2_20_0",run); 
+  addStrategy("brickwall_2_0",run); 
+  addStrategy("brickwall_2_1",run); 
+  addStrategy("geom", run); 
 
 }
 

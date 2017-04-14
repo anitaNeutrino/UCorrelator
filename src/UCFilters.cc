@@ -2,6 +2,7 @@
 #include "FilterStrategy.h"
 #include "UCFilters.h" 
 #include "SpectrumAverage.h" 
+#include "GeomFilter.h" 
 #include "BasicFilters.h" 
 #include "ResponseManager.h" 
 #include "SystemResponse.h" 
@@ -17,27 +18,257 @@
 #include "omp.h"
 #endif
 
-void UCorrelator::applyAbbysFilterStrategy(FilterStrategy * strategy) 
+
+FilterStrategy * UCorrelator::getStrategyWithKey (const char * key, int run) 
 {
-
-  //passband between 200 and 1200 MHz 
-  strategy->addOperation(new SimplePassBandFilter(0.2, 1.2)); 
-
-  //alfa filter
-  strategy->addOperation(new ALFAFilter); 
-
-  // satellite filter if north facing 
-
-  strategy->addOperation(new ConditionalFilterOperation
-                             (  new ComplicatedNotchFilter(0.26-0.026, 0.26 + 0.026), 
-                                    &UCorrelator::antennaIsNorthFacing, "_north", "if is facing north",true
-                             )
-                        );  
-
-
-  //add adaptive filter 
-  strategy->addOperation(new AdaptiveFilterAbby(2, getenv("UCORRELATOR_BASELINE_DIR"))); 
+  FilterStrategy * s = new FilterStrategy; 
+  fillStrategyWithKey(s,key,run); 
+  return s; 
 }
+
+
+static std::map<const char *, TString> key_descs; 
+static std::map<int, UCorrelator::SpectrumAverage *> avgs; 
+static UCorrelator::ResponseManager * responseManager = 0; 
+static UCorrelator::AllPassDeconvolution allpass; 
+
+const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const char * key, int run) 
+{
+  TString tokens(key); 
+  TString tok; 
+  Ssiz_t from = 0; 
+
+  TString desc = ""; 
+  bool need_description = key_descs.count(key); 
+
+  while (tokens.Tokenize(tok, from,"+"))
+  {
+
+    if (desc.Length() > 0) desc += " + ";  
+
+    if (strcasestr(tok.Data(),"sinsub_") == tok.Data())
+    {
+      int mpr; int iter; 
+      if(sscanf(tok.Data(),"sinsub_%02d_%d",&mpr,&iter)!=2) 
+      {
+        fprintf(stderr,"Problem with token: %s\n", tok.Data()); 
+      }
+      else
+      {
+        if (fillme) 
+          fillme->addOperation(new SineSubtractFilter(mpr/100.,iter)); 
+
+        if (need_description)
+        {
+          desc+= TString::Format("(Sine Subtract Filter with min power reduction %d percent, %d bad iters )",mpr,iter);  
+        }
+      }
+    }
+    else if (strcasestr(tok.Data(),"adsinsub_"))
+    {
+      int exp; int mpr; int iter; 
+      if(sscanf(tok.Data(),"adsinsub_%d_%02d_%d",&exp,&mpr,&iter)!=3) 
+      {
+        fprintf(stderr,"Problem with token: %s\n", tok.Data()); 
+      }
+      else
+      {
+
+        if (!avgs.count(run) && fillme)
+        {
+          avgs[run] = new UCorrelator::SpectrumAverage(run,60); 
+          avgs[run]->computePeakiness(); 
+        }
+
+        double expf = exp; 
+        while (expf > 10) expf /=10; 
+
+        if (fillme) 
+        {
+          UCorrelator::SineSubtractFilter * ssf = new UCorrelator::SineSubtractFilter(mpr/100.,iter); 
+          ssf->makeAdaptive(avgs[run],expf); 
+          fillme->addOperation(ssf); 
+        }
+        if (need_description)
+        {
+          desc+= TString::Format("(Adaptive Sine Subtract Filter with min power reduction %d percent,  %d bad iters )",mpr,iter);  
+        }
+      }
+    }
+
+    else if (strcasestr(tok.Data(),"butter_")) 
+    {
+      int thresh, order; 
+      if(sscanf(tok.Data(),"butter_%d_%d",&thresh,&order)!=2) 
+      {
+        fprintf(stderr,"Problem with token: %s\n", tok.Data()); 
+      }
+      else
+      {
+        if (!avgs.count(run) && fillme)
+        {
+          avgs[run] = new UCorrelator::SpectrumAverage(run,60); 
+          avgs[run]->computePeakiness(); 
+        }
+        double threshf = thresh; 
+        while (threshf > 10) threshf/=10; 
+
+        if (fillme) 
+        {
+          fillme->addOperation(new AdaptiveButterworthFilter(avgs[run],threshf,order)); 
+        }
+        if (need_description) 
+        {
+          desc += TString::Format("(Adaptive Butterworth filter with order %d, peakiness threshold %g)",order,threshf);
+        }
+      }
+    }
+    else if (strcasestr(tok.Data(),"minphase_")) 
+    {
+      int exp;
+      if(sscanf(tok.Data(),"minphase_%d",&exp)!=1) 
+      {
+        fprintf(stderr,"Problem with token: %s\n", tok.Data()); 
+      }
+      else
+      {
+        if (!avgs.count(run) && fillme)
+        {
+          avgs[run] = new UCorrelator::SpectrumAverage(run,60); 
+          avgs[run]->computePeakiness(); 
+        }
+        double expf = exp; 
+        while (expf > 10 )expf/=10; 
+
+        if (fillme) 
+          fillme->addOperation(new AdaptiveMinimumPhaseFilter(avgs[run],-expf)); 
+
+        if (need_description)
+        {
+          desc += TString::Format("(Adaptive minimum phase filter with exp %g)", expf); 
+        }
+      }
+    }
+    else if (strcasestr(tok.Data(),"brickwall_")) 
+    {
+      int thresh;int fill;
+      if(sscanf(tok.Data(),"brickwall_%d_%d",&thresh,&fill)!=2) 
+      {
+        fprintf(stderr,"Problem with token: %s\n", tok.Data()); 
+      }
+      else
+      {
+        if (!avgs.count(run) && fillme)
+        {
+          avgs[run] = new UCorrelator::SpectrumAverage(run,60); 
+          avgs[run]->computePeakiness(); 
+        }
+        double threshf = thresh; 
+        while (threshf > 10 )threshf/=10; 
+
+        if (fillme) 
+          fillme->addOperation(new AdaptiveBrickWallFilter(avgs[run],threshf,fill)); 
+
+        if (need_description)
+        {
+          desc += TString::Format("(Adaptive brick wall filter with thresh %g, filNotch=%d)", threshf,fill); 
+        }
+      }
+    }
+
+
+    else if (strcasestr(tok.Data(),"deconv")) 
+    {
+      //TODO: A4 support 
+      if (!responseManager && fillme ) 
+      {
+        responseManager = new ResponseManager("IndividualBRotter",3); 
+      }
+
+      if (need_description) 
+      {
+        desc += TString::Format("(deconv)"); 
+      }
+
+      if (fillme) 
+        fillme->addOperation( new DeconvolveFilter(responseManager, &allpass)); 
+    }
+
+    else if (strcasestr(tok.Data(),"geom"))
+    {
+      if (fillme) 
+      {
+        std::vector<std::vector<TGraphAligned* > > noise(48, std::vector<TGraphAligned*>(2)); 
+        for (int ant = 0; ant < 48; ant++)
+        {
+          for (int pol = 0; pol < 2; pol++) 
+          {
+            TH1 * avg = UCorrelator::SpectrumAverage::defaultThermal()->getSpectrumPercentile(AnitaPol::AnitaPol_t(pol), ant,0.5,true); 
+            noise[ant][pol] = new TGraphAligned(avg->GetNbinsX()); 
+            for (int i = 0; i < avg->GetNbinsX(); i++) 
+            {
+              noise[ant][pol]->GetX()[i] = avg->GetBinLowEdge(i+1); 
+              noise[ant][pol]->GetY()[i] = avg->GetBinContent(i+1); 
+            }
+          }
+        }
+          fillme->addOperation(new GeometricFilter(noise)); 
+      }
+      if (need_description)
+      {
+        desc += "(GeometricFilter)"; 
+      }
+    }
+
+
+    else if (strcasestr(tok.Data(),"abby"))
+    {
+      if (fillme) 
+      {
+        fillme->addOperation(new SimplePassBandFilter(0.2, 1.2)); 
+
+
+        fillme->addOperation(new ConditionalFilterOperation
+                                     (  new ComplicatedNotchFilter(0.26-0.026, 0.26 + 0.026), 
+                                            &UCorrelator::antennaIsNorthFacing, "_north", "if is facing north",true
+                                     )
+                             );  
+
+        fillme->addOperation(new AdaptiveFilterAbby(2, getenv("UCORRELATOR_BASELINE_DIR"))); 
+
+      }
+      if (need_description)
+      {
+        desc += "(AbbyFilter)"; 
+      }
+    }
+  }
+  
+
+
+  if (AnitaVersion::get()==3) 
+  {
+    //TODO: make this more configurable
+    if (fillme) 
+    {
+      fillme->addOperation(new ALFAFilter); 
+    }
+    if (need_description) 
+    {
+      desc += "(ALFA Filter) "; 
+    }
+  }
+
+  if (need_description) 
+    key_descs[key] = desc; 
+  else
+    desc = key_descs[key]; 
+
+
+  return desc.Data(); 
+}
+
+
 
 
 
@@ -416,7 +647,7 @@ void UCorrelator::AdaptiveFilterAbby::process(FilteredAnitaEvent * event)
 
 
 UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int max_failed_iter,  int nfreq_bands, const double * fmin, const double * fmax, int nstored_freqs)
-  : min_power_ratio(min_power_ratio), spec(0), last_t(0), nstored_freqs(nstored_freqs)
+  : min_power_ratio(min_power_ratio), spec(0), last_t(0), nstored_freqs(nstored_freqs), adaptive_exp(1) 
 {
 
  memset(reduction,0,sizeof(reduction)); 
@@ -566,7 +797,7 @@ void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const Raw
         reduction[pol][i]->GetX()[j] = peaky->GetXaxis()->GetBinLowEdge(j+1); 
         double how_peaky = peaky->Interpolate(peaky->GetXaxis()->GetBinCenter(j+1), header->triggerTime); 
         if (how_peaky < 1) how_peaky = 1; 
-        reduction[pol][i]->GetY()[j] = min_power_ratio/how_peaky; 
+        reduction[pol][i]->GetY()[j] = min_power_ratio/TMath::Power(how_peaky,adaptive_exp); 
       }
     }
 
@@ -626,9 +857,10 @@ void UCorrelator::SineSubtractFilter::setInteractive(bool set)
 }
 
 
-void UCorrelator::SineSubtractFilter::makeAdaptive(const SpectrumAverage * s) 
+void UCorrelator::SineSubtractFilter::makeAdaptive(const SpectrumAverage * s, double peak_exp) 
 {
   spec = s; 
+  adaptive_exp = peak_exp; 
 }
 
 
@@ -816,6 +1048,10 @@ void UCorrelator::CombinedSineSubtractFilter::setInteractive(bool set)
 
 
 
+
+
+
+
 UCorrelator::AdaptiveMinimumPhaseFilter::AdaptiveMinimumPhaseFilter(const SpectrumAverage *avg, double exponent,int npad)
  : avg(avg),npad(npad), exponent(exponent), last_bin(-1) 
 {
@@ -925,6 +1161,97 @@ TGraph * UCorrelator::AdaptiveMinimumPhaseFilter::getCurrentFilterPower(AnitaPol
 }
 
 
+  ////////////////////////
+  ////AdaptiveBrickWall/// 
+  ////////////////////////
+
+
+static int n_adaptive_brickwall = 0; 
+UCorrelator::AdaptiveBrickWallFilter::AdaptiveBrickWallFilter(const SpectrumAverage * spec, double thresh, bool fillNotch) 
+  : avg(spec), threshold(thresh), fill(fillNotch) 
+{
+
+  desc_string.Form("AdaptiveBrickWallFilter with Threshold=%g, fillNotch=%d", thresh,fillNotch); 
+  last_bin = -1; 
+  memset(sp,0,sizeof(sp)); 
+  instance = n_adaptive_brickwall++; 
+}
+
+UCorrelator::AdaptiveBrickWallFilter::~AdaptiveBrickWallFilter()
+{
+
+  for (int i = 0; i < 2; i++) 
+  {
+    for (int j = 0; j < NUM_SEAVEYS; j++) 
+    {
+      if (sp[i][j]) delete sp[i][j]; 
+    }
+  }
+}
+
+void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
+{
+
+  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
+  int bin = avg->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
+
+  for (int ipol = 0; ipol < 2; ipol++) 
+  {
+      AnitaPol::AnitaPol_t pol = AnitaPol::AnitaPol_t(ipol); 
+#ifdef UCORRELATOR_OPENMP
+#pragma omp parallel for 
+#endif
+      for (int i = 0; i < NUM_SEAVEYS; i++) 
+      {
+
+#ifdef UCORRELATOR_OPENMP
+#pragma omp critical (brickwall)
+#endif
+        if (last_bin != bin) 
+        {
+//          printf("%d %d %d \n",bin,ipol,i); 
+          if (sp[ipol][i]) 
+          {
+            delete sp[ipol][i]; 
+          }
+          sp[ipol][i] = avg->getPeakiness(pol,i)->ProjectionX(TString::Format("sp_%d_%d_%d",ipol,i,instance), bin,bin);  
+
+        }
+
+        AnalysisWaveform * wf = getWf(ev,i,pol); 
+        int nf =wf->Nfreq(); 
+        double df = wf->deltaF(); 
+        FFTWComplex * fft = wf->updateFreq(); 
+        for (int j =0; j < nf; j++)
+        {
+          double f = j * df; 
+          double peaky = sp[ipol][i]-> Interpolate(f); 
+
+          if (peaky > threshold) 
+          {
+
+            if (fill)
+            {
+              //random phase
+              double phase = gRandom->Uniform(0, 2*M_PI); 
+              double mag = fft[j].getAbs()/peaky; 
+              fft[j].re = mag * cos(phase); 
+              fft[j].im = mag * sin(phase); 
+            }
+            else
+            {
+              fft[j].re = 0; 
+              fft[j].im = 0; 
+            }
+          }
+        }
+      }
+  }
+     
+  last_bin = bin; 
+
+}
+
 
 
 UCorrelator::AdaptiveButterworthFilter::AdaptiveButterworthFilter(const SpectrumAverage *avg,
@@ -941,7 +1268,6 @@ void UCorrelator::AdaptiveButterworthFilter::process(FilteredAnitaEvent * ev)
 
   double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
   int bin = avg->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
-
 
   for (int ipol = 0; ipol < 2; ipol++) 
   {

@@ -20,12 +20,57 @@ namespace UCorrelator
   class DeconvolutionMethod; 
   class SpectrumAverage; 
 
-  /*** Apply the series of filters originally implemented in MyCorrelator to the filter strategy . Note that this doesn't really do the right thing for A3. */ 
-  void applyAbbysFilterStrategy(FilterStrategy * strategy); 
+
+  /* Convenience function for getting a FilterStrategy with a given string key. 
+   *
+   * Valid keys so far are: 
+   *  
+   *  Run is needed for all adaptive filters. 
+   *
+   *  !!! all of these include an ALFA filter at the very end for A3 !!! 
+   *
+   *  They may be chained together as well (require a + to separate, e.g. decon+sinsub_05_0) 
+   *
+   *  sinsub_%02d_%d  sin subtraction 
+   *      format: (100 * minimum power reduction, num failed iter) 
+   *
+   *  adsinsub_%d_%02d_%d  adaptive sin subtraction 
+   *       format: (peakiness exponent, 100 * minimum power reduction, num failed iter) using peakiness. 
+   *                peakiness exponent is interpreted as necessarily between 1 and 10, so if it's e.g. 15, it becomes 1.5 
+   *
+   *  butter_%d_%d adaptive butterworth
+   *        format : (peakiness threshold,order) 
+   *              peakiness threshold is interpreted as necessarily between 1 and 10, so if it's e.g. 15, it becomes 1.5 
+   *      
+   *  minphase_%d adaptive minimum phase
+   *        format : (peakiness exponent) 
+   *              peakiness exponent is interpreted as necessarily between 1 and 10, so if it's e.g. 15, it becomes 1.5 
+   *
+   *
+   *  brickwall_%d_%d  brick wall with peakiness threshold 
+   *         format (peakiness threshold, fill notch) 
+   *              peakiness threshold is interpreted as necessarily between 1 and 10, so if it's e.g. 15, it becomes 1.5 
+   *              if fill notch not 0, notch is filled according to spectrum average
+   *         
+ 
+   *  decon deconvolve filter  (using ``best'' known response) . Should be used in conjunction with others. 
+   *
+   *  geom  geometric filter ( preliminary support) 
+   *
+   *  abby  attempt at duplicating Abby's filter strategy (probably doesn't work for A3) 
+   *
+   *
+   *  Returns a human readable description.  
+   */ 
+  const char * fillStrategyWithKey(FilterStrategy * fillme, const char * key , int run); 
+
+  /* same as above, but returns a newly allocated strategy and no description */ 
+  FilterStrategy * getStrategyWithKey(const char * key, int run) ; 
+  
+
 
   /** Condition used for satellite filter */ 
   bool antennaIsNorthFacing(FilteredAnitaEvent *ev, int ant, AnitaPol::AnitaPol_t); 
-
 
 
   /** 
@@ -35,7 +80,7 @@ namespace UCorrelator
   {
     public: 
       /** Build a ComplicatedNotchFilter. The temperature and gain are used to model the thermal noise.  */
-      ComplicatedNotchFilter(double minfreqGHz, double maxfreqGHz, double temperature = 340, double gain = 75) 
+      ComplicatedNotchFilter(double minfreqGHz, double maxfreqGHz, double temperature = 170, double gain = 65) 
         : min(minfreqGHz), max(maxfreqGHz), temperature(temperature), gain(gain) 
       {
         desc.Form("Complicated Notch Filter , T = %f K, G = %f dB", temperature, gain); 
@@ -50,6 +95,8 @@ namespace UCorrelator
       double temperature; 
       double gain; 
   }; 
+
+
 
   /** Attempted reimplementation of Abby's Adaptive Filter. Dont' know if it works fully yet... */
   class AdaptiveFilterAbby : public FilterOperation
@@ -120,7 +167,7 @@ namespace UCorrelator
       SineSubtractFilter(double min_power_ratio = 0.05, int max_failed_iter = 0,  int nfreq_bands = 0, const double *  freq_bands_start = 0, const double * freq_bands_end = 0, int nstored_freqs = 5); 
 
       /** Make the filter adaptive using a SpectrumAverage. If null passed, adaptiveness turned off.  */ 
-      void makeAdaptive(const SpectrumAverage *avg = 0); 
+      void makeAdaptive(const SpectrumAverage *avg = 0, double peakiness_exp = 1); 
 
       virtual ~SineSubtractFilter();  
       void setInteractive(bool set); 
@@ -144,7 +191,28 @@ namespace UCorrelator
       TString desc_string; 
       std::vector<TString> output_names;
       int nstored_freqs; 
+      double adaptive_exp; 
   };
+
+  class AdaptiveBrickWallFilter : public FilterOperation
+  {
+    public: 
+      AdaptiveBrickWallFilter(const UCorrelator::SpectrumAverage * spec, double thresh=2, bool fillNotch = true);  
+
+      const char * tag() const { return "AdaptiveBrickWallFilter"; } 
+      const char * description() const{ return desc_string.Data(); } 
+      virtual void process(FilteredAnitaEvent *ev); 
+      virtual ~AdaptiveBrickWallFilter();
+    private:
+      TString desc_string; 
+      const SpectrumAverage * avg; 
+      double threshold; 
+      bool fill; 
+      int last_bin; 
+      int instance; 
+      TH1* sp[2][NUM_SEAVEYS]; 
+  }; 
+
 
 
   class AdaptiveMinimumPhaseFilter : public FilterOperation
