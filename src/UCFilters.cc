@@ -1215,6 +1215,7 @@ void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
             delete sp[ipol][i]; 
           }
           sp[ipol][i] = avg->getPeakiness(pol,i)->ProjectionX(TString::Format("sp_%d_%d_%d",ipol,i,instance), bin,bin);  
+          sp[ipol][i]->SetDirectory(0); 
 
         }
 
