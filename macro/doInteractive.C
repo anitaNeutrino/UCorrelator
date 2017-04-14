@@ -13,10 +13,10 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
   FFTtools::loadWisdom("wisdom.dat"); 
   FilterStrategy *strategy= new FilterStrategy; 
  
-  TF1 fn("foo"," (x < 0.2) * exp((x-0.2)/0.01)  + (x > 0.2 && x < 1.2) * (1-0.05*x) + (x > 1.2) * exp((1.2-x)/0.02)", 0,2); 
+//  TF1 fn("foo"," (x < 0.2) * exp((x-0.2)/0.01)  + (x > 0.2 && x < 1.2) * (1-0.05*x) + (x > 1.2) * exp((1.2-x)/0.02)", 0,2); 
 
-  UCorrelator::SpectrumAverage *avg = new UCorrelator::SpectrumAverage(run,60); 
-  avg->computePeakiness(); 
+//  UCorrelator::SpectrumAverage *avg = new UCorrelator::SpectrumAverage(run,60); 
+//  avg->computePeakiness(); 
 
  // UCorrelator::CombinedSineSubtractFilter * ssf = new UCorrelator::CombinedSineSubtractFilter(0.05,10);
  // ssf->setInteractive(true); 
@@ -24,8 +24,8 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
 //  strategy.addOperation(ssf);
 //  strategy.addOperation(new SimplePassBandFilter(0.2,1.2)); 
 
-  UCorrelator::SineSubtractFilter * ssf = new UCorrelator::SineSubtractFilter(0.10,3);
-  ssf->makeAdaptive(avg); 
+// UCorrelator::SineSubtractFilter * ssf = new UCorrelator::SineSubtractFilter(0.10,3);
+//  ssf->makeAdaptive(avg); 
 //  UCorrelator::AdaptiveMinimumPhaseFilter * mp = new UCorrelator::AdaptiveMinimumPhaseFilter(avg,-2,5); 
 //  printf("UCorrelator::AdaptiveMinimumPhaseFilter * mp = (UCorrelator::AdaptiveMinimumPhaseFilter *) %p\n",mp); 
 //  strategy->addOperation(mp); 
@@ -42,7 +42,7 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
 
 
   UCorrelator::AnalysisConfig cfg; 
-  cfg.nmaxima = 1; 
+  cfg.nmaxima = 2; 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
   cfg.deconvolution_method = new UCorrelator::AllPassDeconvolution; 
 //  cfg.response_option = UCorrelator::AnalysisConfig::ResponseHarmSignalOnly; 
@@ -50,18 +50,19 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
 
   UCorrelator::Analyzer * analyzer = new UCorrelator::Analyzer(&cfg,true); 
 
-  strategy->addOperation(new UCorrelator::DeconvolveFilter(analyzer->getResponseManager(), cfg.deconvolution_method)); 
-  strategy->addOperation(new ALFAFilter); 
-  strategy->addOperation(ssf); 
+//  strategy->addOperation(new UCorrelator::DeconvolveFilter(analyzer->getResponseManager(), cfg.deconvolution_method)); 
+//  strategy->addOperation(new ALFAFilter); 
+//  strategy->addOperation(ssf); 
 
-  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),strategy, d.gps(), d.header()); 
+  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("adsinsub_3_10_3",run), d.gps(), d.header()); 
 
-  ev->plotSummary(0,0); 
+//  ev->plotSummary(0,0); 
 
 
   AnitaEventSummary sum; 
   analyzer->analyze(ev,&sum); 
   analyzer->drawSummary(); 
+  /*
   TCanvas * c2 = new TCanvas; 
   c2->Divide(2,1); 
   const UCorrelator::AbstractResponse * response = analyzer->getResponseManager()->response(0,0); 
@@ -71,6 +72,7 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
   AnalysisWaveform * deconv = response->deconvolve(imp,cfg.deconvolution_method); 
   c2->cd(2); 
   deconv->drawEven(); 
+  */
 
   /*
   TCanvas * filter =  new TCanvas("filter","Filter"); 
