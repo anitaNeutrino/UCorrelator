@@ -5,6 +5,9 @@
 #include "AnalysisConfig.h"
 #include <cfloat>
 #include "TMath.h"
+#ifdef UCORRELATOR_OPENMP
+#include <omp.h>
+#endif
 
 
 
@@ -14,21 +17,42 @@
  *
  */ 
 
-static __thread TLinearFitter * fitter = 0; 
-static TMutex mut; 
+static TLinearFitter ** fitters; 
+
+static void setupFitters() __attribute__((constructor));
+
+void setupFitters() 
+{
+  int nthreads = 1; 
+
+#ifdef UCORRELATOR_OPENMP
+  nthreads = omp_get_max_threads(); 
+#endif
+
+//   printf("set up %d fitters\n", nthreads); 
+  fitters = new TLinearFitter * [nthreads]; 
+  for (int i = 0; i < nthreads; i++)
+  {
+    fitters[i] = new TLinearFitter(1,"1++x","x"); 
+    double dummy_x[5] = {0}; 
+    double dummy_y[5] = {0}; 
+    /* !@#!DSAFSD #!@$ !@#!  %!@$ */ 
+    fitters[i]->AssignData(5,1,dummy_x,dummy_y); 
+
+  }
+}
 
 void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, const TGraph * average, 
                                                    AnitaEventSummary::WaveformInfo * winfo,
                                                    const AnalysisConfig * config) 
 {
+  TLinearFitter* fitter;
 
-
-  if (!fitter) 
-  {
-    mut.Lock(); 
-    fitter = new TLinearFitter(1,"1++x",""); 
-    mut.UnLock(); 
-  }
+#ifdef UCORRELATOR_OPENMP
+  fitter = fitters[omp_get_thread_num()]; 
+#else
+  fitter = fitters[0]; 
+#endif
 
 
   //TODO don't hardcode these 
