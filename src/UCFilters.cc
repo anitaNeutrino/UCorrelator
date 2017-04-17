@@ -1207,9 +1207,6 @@ void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
       for (int i = 0; i < NUM_SEAVEYS; i++) 
       {
 
-#ifdef UCORRELATOR_OPENMP
-#pragma omp critical (brickwall)
-#endif
         if (last_bin != bin) 
         {
 //          printf("%d %d %d \n",bin,ipol,i); 
@@ -1217,8 +1214,14 @@ void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
           {
             delete sp[ipol][i]; 
           }
+
+#ifdef UCORRELATOR_OPENMP
+#pragma omp critical (brickwall)
+#endif
+         {
           sp[ipol][i] = avg->getPeakiness(pol,i)->ProjectionX(TString::Format("sp_%d_%d_%d",ipol,i,instance), bin,bin);  
           sp[ipol][i]->SetDirectory(0); 
+          }
 
         }
 
