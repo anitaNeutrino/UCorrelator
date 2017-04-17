@@ -704,7 +704,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 
   clearInteractiveMemory(); 
 
-  gStyle->SetOptStat(0); 
+//  gStyle->SetOptStat(0); 
   for (int ipol = cfg->start_pol; ipol <= cfg->end_pol; ipol++)
   {
     if (!pads[ipol])
