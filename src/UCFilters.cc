@@ -210,6 +210,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
               noise[ant][pol]->GetX()[i] = avg->GetBinLowEdge(i+1); 
               noise[ant][pol]->GetY()[i] = avg->GetBinContent(i+1); 
             }
+            delete avg; 
           }
         }
           fillme->addOperation(new GeometricFilter(noise)); 
