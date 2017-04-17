@@ -114,7 +114,6 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mo
 void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEventSummary * summary) 
 {
   
-
   const RawAnitaHeader * hdr = event->getHeader(); 
 
   //we need a UsefulAdu5Pat for this event
@@ -621,8 +620,8 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 
   double rms = TMath::RMS(n, even->GetY() + i0); 
   
-  info->snr = info->peakVal / rms; 
-  TGraphAligned power(*pwr); 
+  info->snr = info->peakVal / rms;
+  TGraphAligned power(pwr->GetN(),pwr->GetX(),pwr->GetY()); 
   power.dBize(); 
 
   if (power_filter)
