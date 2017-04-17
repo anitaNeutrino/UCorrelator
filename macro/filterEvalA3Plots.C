@@ -32,6 +32,7 @@ void doPulserPlots(const char * pulser, TChain *c, pointing_info * p)
 {
 
   const char * filter = c->GetName(); 
+  gStyle->SetMarkerStyle(6); 
 
   ////HPOL
   TCanvas * hpol = new TCanvas(TString::Format("%s_hpol_%s", pulser,filter),TString::Format("%s H-Pol with %s",pulser,filter), 1800,900); 
@@ -151,32 +152,32 @@ void doPulserPlots(const char * pulser, TChain *c, pointing_info * p)
   TH1 * h_frac_hpol= new TH1D(TString::Format("h_frac_hpol_%s_%s", pulser, filter ),"Filtered Fraction",100,0,1.2); 
   TH1 * h_frac_vpol= new TH1D(TString::Format("h_frac_vpol_%s_%s", pulser, filter ),"Filtered Fraction",100,0,1.2); 
   TH1 * h_frac_dpol= new TH1D(TString::Format("h_frac_dpol_%s_%s", pulser, filter ),"Filtered Fraction",100,0,1.2); 
+  h_frac_hpol->SetLineColor(2); 
+  h_frac_vpol->SetLineColor(3); 
+  h_frac_dpol->SetLineColor(4); 
   fraction_filtered->cd(2); 
-  c->Draw(TString::Format("coherent_filtered[][].totalPower / coherent[][].totalPower  >> h_frac_%s_%s",pulser,filter),brightestPeak,""); 
-  c->SetLineColor(2); 
+  c->Draw(TString::Format("coherent_filtered[][].peakHilbert / coherent[][].peakHilbert  >> h_frac_%s_%s",pulser,filter),brightestPeak,""); 
 
 
-  c->Draw(TString::Format("coherent_filtered[][].totalPower / coherent[][].totalPower  >> h_frac_hpol_%s_%s",pulser,filter),brightestPeak && is_hpol_pulser,"lsame"); 
+  c->Draw(TString::Format("coherent_filtered[][].peakHilbert / coherent[][].peakHilbert  >> h_frac_hpol_%s_%s",pulser,filter),brightestPeak && is_hpol_pulser,"same"); 
   p->fraction_filtered[0][0] = h_frac_hpol->GetMean(); 
   p->fraction_filtered[0][1] = h_frac_hpol->GetRMS(); 
 
 
-  c->SetLineColor(3); 
-  c->Draw(TString::Format("coherent_filtered[][].totalPower / coherent[][].totalPower  >> h_frac_vpol_%s_%s",pulser,filter),brightestPeak && is_vpol_pulser,"lsame"); 
+  c->Draw(TString::Format("coherent_filtered[][].peakHilbert / coherent[][].peakHilbert  >> h_frac_vpol_%s_%s",pulser,filter),brightestPeak && is_vpol_pulser,"same"); 
   p->fraction_filtered[1][0] = h_frac_vpol->GetMean(); 
   p->fraction_filtered[1][1] = h_frac_vpol->GetRMS(); 
-  c->SetLineColor(4); 
-  c->Draw(TString::Format("coherent_filtered[][].totalPower / coherent[][].totalPower  >> h_frac_dpol_%s_%s",pulser,filter),brightestPeak && is_dpol_pulser,"lsame"); 
+  c->Draw(TString::Format("coherent_filtered[][].peakHilbert / coherent[][].peakHilbert  >> h_frac_dpol_%s_%s",pulser,filter),brightestPeak && is_dpol_pulser,"same"); 
 
   p->fraction_filtered[2][0] = h_frac_dpol->GetMean(); 
   p->fraction_filtered[2][1] = h_frac_dpol->GetRMS(); 
   c->SetLineColor(1); 
 
   fraction_filtered->cd(3); 
-  c->Draw(TString::Format("coherent_filtered[][].totalPower / coherent[][].totalPower: coherent.totalPower"),brightestPeak,"colz"); 
+  c->Draw(TString::Format("coherent_filtered[][].peakHilbert / coherent[][].peakHilbert: coherent.peakHilbert"),brightestPeak,"colz"); 
 
   fraction_filtered->cd(4); 
-  c->Draw(TString::Format("coherent_filtered[][].totalPower / coherent[][].totalPower: coherent.peakHilbert"),brightestPeak,"colz"); 
+  c->Draw(TString::Format("coherent_filtered[][].peakHilbert / coherent[][].peakHilbert: coherent.peakHilbert"),brightestPeak,"colz"); 
 
   fraction_filtered->SaveAs(TString::Format("filterPlots/%s_fraction_%s.png",pulser,filter)); 
 
@@ -187,6 +188,8 @@ void doPulserPlots(const char * pulser, TChain *c, pointing_info * p)
   c->Draw(TString::Format("triggerTimeNs:triggerTime:sqrt(pow(FFTtools::wrap(peak[][].theta - %s.theta,360,0),2) + pow(FFTtools::wrap(peak[][].phi-%s.phi,360,0),2))  >> h_distance_%s_%s",pulser,pulser,pulser,filter),brightestPeak,"colz"); 
   distance_plot->SaveAs(TString::Format("filterPlots/%s_distance_%s.png",pulser,filter)); 
   */
+
+  gStyle->SetMarkerStyle(1); 
 }
 
 double computeOverlap(TH2 * h, TGraph * g) 
@@ -201,7 +204,7 @@ double computeOverlap(TH2 * h, TGraph * g)
   }
   printf("%g\n",overlap); 
   overlap /= g->GetN(); 
-  overlap /= h->GetEntries(); 
+  overlap /= h->Integral(); 
 
   return overlap; 
 }
@@ -214,16 +217,19 @@ void makeCutPlot(const char * filter, TChain * bg, TChain * wais, TChain * ldb, 
   gStyle->SetOptStat(0); 
   TCanvas * c = new TCanvas(TString::Format("ccut_%s",filter), TString::Format("Cutplot %s",filter), 1920,1080); 
   TH2I * hbg = new TH2I(TString::Format("hbg_%s", filter),TString::Format("The standard cut plot for %s; Correlation Map Peak; Coherent Peak Hilbert",filter), 100,0,0.5,100,0,300); 
-  bg->Draw(TString::Format("coherent[][].peakHilbert:peak[][].value >> hbg_%s",filter),brightestPeak && aboveHorizon && blastCut && !isNorth && !isSun,"colz"); 
+  bg->Draw(TString::Format("coherent[][].peakHilbert:peak[][].value >> hbg_%s",filter),
+           brightestPeak && aboveHorizon && blastCut && triggered && notMasked,"colz"); 
 
   p->Nbg = hbg->Integral(); 
-  wais->SetMarkerColor(2); 
-  int N = wais->Draw("coherent[][].peakHilbert:peak[][].value", brightestPeak && "peakPulserCoherentH > 40 && abs(FFTtools::wrap(peak[][].phi-wais.phi,360,0)) < 5 && abs(FFTtools::wrap(peak[][].theta - wais.theta,360)) < 5","psame"); 
+  wais->SetMarkerColorAlpha(30,0.5); 
+
+
+  int N = wais->Draw("coherent[][].peakHilbert:peak[][].value", brightestPeak && "peakPulserCoherentH > 40 && abs(FFTtools::wrap(peak[][].phi-wais.phi,360,0)) < 3 && abs(FFTtools::wrap(peak[][].theta - wais.theta,360,0)) < 3","psame"); 
   TGraph  gwais(N, wais->GetV2(), wais->GetV1()); 
   p->Nwais = N;
 
-  ldb->SetMarkerColor(3); 
-  N = ldb->Draw("coherent[][].peakHilbert:peak[][].value", brightestPeak && "(peakPulserCoherentH > 40 || peakPulserCoherentV > 40) && abs(FFTtools::wrap(peak[][].phi-ldb.phi,360,0)) < 5 && abs(FFTtools::wrap(peak[][].theta - ldb.theta,360)) < 5","psame"); 
+  ldb->SetMarkerColorAlpha(46,0.5); 
+  N = ldb->Draw("coherent[][].peakHilbert:peak[][].value", brightestPeak && "(peakPulserCoherentH > 40 || peakPulserCoherentV > 40) && abs(FFTtools::wrap(peak[][].phi-ldb.phi,360,0)) < 3 && abs(FFTtools::wrap(peak[][].theta - ldb.theta,360,0)) < 3","psame"); 
   TGraph  gldb(N, ldb->GetV2(), ldb->GetV1()); 
 
 
@@ -263,7 +269,6 @@ void doFilterAlgo(const char * filter, const char * description)
     pointing_info ldb_point;
     pointing_info wais_point;
     doPulserPlots("wais",&cwais,&wais_point); 
-
 
     TChain cldb(filter); 
     cldb.Add("filter/*_ldb_*.root"); 
@@ -456,20 +461,15 @@ void filterEvalA3Plots()
   system("mkdir -p filterPlots"); 
   
 
-  doFilterAlgo("sinsub_05_0","Sine Subtract filter, 5\\% min reduction, 0 bad iters"); 
-  doFilterAlgo("sinsub_03_0","Sine Subtract filter, 3\\% min reduction, 0 bad iters"); 
   doFilterAlgo("sinsub_10_0","Sine Subtract filter, 10\\% min reduction, 0 bad iters"); 
-  doFilterAlgo("sinsub_05_3","Sine Subtract filter, 5\\% min reduction, 3 bad iters"); 
-  doFilterAlgo("adsinsub_05_0","Adaptive Sine Subtract filter, 5\\% min reduction, 0 bad iters"); 
-  doFilterAlgo("adsinsub_10_0","Adaptive Sine Subtract filter, 10\\% min reduction, 0 bad iters"); 
-  doFilterAlgo("adsinsub_10_3","Adaptive Sine Subtract filter, 10\\% min reduction, 3 bad iters"); 
-  doFilterAlgo("butter_2","Butterworth filter, notch threshold peakiness=2"); 
-  doFilterAlgo("butter_15","Butterworth filter, notch threshold peakiness=1.5"); 
-  doFilterAlgo("minphase_2","Minimum phase filter with peakiness exp -2"); 
-  doFilterAlgo("minphase_1","Minimum phase filter with peakiness exp -1"); 
-  doFilterAlgo("decon_ss_5_0","Deconvolve + Sine Subtract filter, 5\\% min reduction, 0 bad iters"); 
-  doFilterAlgo("decon_ss_3_0","Deconvolve + Sine Subtract filter, 3\\% min reduction, 0 bad iters"); 
-  doFilterAlgo("decon_adss_5_0","Deconvolve + Adaptive Sine Subtract filter, 5\\% min reduction, 0 bad iters"); 
+  doFilterAlgo("adsinsub_1_10_0","Adaptive Sine Subtract filter, exp=1, 10\\% min reduction, 0 bad iters"); 
+  doFilterAlgo("adsinsub_2_10_0","Adaptive Sine Subtract filter, exp=2, 10\\% min reduction, 0 bad iters"); 
+  doFilterAlgo("adsinsub_2_10_3","Adaptive Sine Subtract filter, exp=2, 10\\% min reduction, 3 bad iters"); 
+  doFilterAlgo("adsinsub_2_10_3","Adaptive Sine Subtract filter, exp=2, 10\\% min reduction, 3 bad iters"); 
+  doFilterAlgo("adsinsub_3_10_3","Adaptive Sine Subtract filter, exp=3, 10\\% min reduction, 3 bad iters"); 
+  doFilterAlgo("adsinsub_2_20_0","Adaptive Sine Subtract filter, exp=2, 20\\% min reduction, 0 bad iters"); 
+  doFilterAlgo("brickwall_2_0","Brickwall filter with peakiness thresh 2"); 
+  doFilterAlgo("brickwall_2_1","Brickwall filter with peakiness thresh 2, filled notch"); 
   doFilterAlgo("geom","Geometric Filter (in progress)"); 
 
   FILE * latex = fopen("filterPlots/slides/slides.tex","w"); 
@@ -502,7 +502,12 @@ void filterEvalA3Plots()
                   "    \\item V-Pol means coherent peak in V-pol is 50 percent more than H-pol in pulser direction (and peak is at least 40). \n"
                   "    \\item D-Pol means not H-pol or V-pol (and peak is at least 40). \n"
                   "    \\item Fraction good are events within 3 degrees in both $\\phi$ and $\\theta$\n " 
-                  "    \\item For background separation plot, cut on pulser events within 3 degrees of expected direction. background events from 10 percent sample where above zero degrees, not north, not sun, not blast.\n" 
+                  "    \\item Fraction filtered based on hilbert peaks. black = total, red = hpol, green = vpol, blue = dpol. \n"
+                  "    \\item For background separation plot:\n"
+                  "       \\begin{itemize}\n"
+                  "          \\item cut on pulser events within 3 degrees of expected direction and above 40 mV hilbert peak in pulser direction.\n"
+                  "          \\item  Background events from 10 percent sample where solution above zero degrees, not payload blasts, not masked, within 60 degrees of triggered phi sector \\alert{previous version of these plots avoided sun and North, not anymore}.\n" 
+                  "      \\end{itemize}\n"
                   "  \\end{itemize}\n"
                   "\\end{frame}\n\n"); 
 
@@ -558,7 +563,7 @@ void filterEvalA3Plots()
 
   for (int i = 0; i < filters.size(); i++) 
   {
-    fprintf(latex,"\\input{%s_ldb-v.row}\\\\\n\\hline\n", filters[i]); 
+    fprintf(latex,"\\input{%s_ldb-d.row}\\\\\n\\hline\n", filters[i]); 
   }
 
   fprintf(latex,"\\end{tabular}\n\\end{frame}\n\n"); 
@@ -582,6 +587,7 @@ void filterEvalA3Plots()
   }
 
   fprintf(latex,"\\end{document}\n"); 
+  fclose(latex); 
   
 
 
@@ -591,6 +597,12 @@ void filterEvalA3Plots()
     int dummy; 
     waitpid(waitforme[i],&dummy,0); 
   }
+
+  //make latex! 
+
+  chdir("filterPlots/slides"); 
+  system("pdflatex slides.tex"); 
+  system("pdflatex slides.tex"); 
 
 }
 
