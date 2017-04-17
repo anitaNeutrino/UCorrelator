@@ -1149,7 +1149,7 @@ TGraph * UCorrelator::AdaptiveMinimumPhaseFilter::getCurrentFilterTimeDomain(Ani
 
 TGraph * UCorrelator::AdaptiveMinimumPhaseFilter::getCurrentFilterPower(AnitaPol::AnitaPol_t pol, int i) const 
 {
-  //TODO make right size0
+  //TODO make right size
 
   int N = size[pol][i] * (1+npad) / 2 + 1; 
   
