@@ -102,7 +102,8 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
 
     if (i == 0)
     {
-      coherent_avg_spectrum = *(wf(event,antennas[0],pol)->power());
+      const TGraphAligned *p = wf(event,antennas[0],pol)->power(); 
+      coherent_avg_spectrum.adopt(p); 
     }
     else
     {
@@ -124,7 +125,8 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
       responses->response(pol,antennas[i])->deconvolveInPlace(&deconv[i], responses->getDeconvolutionMethod(), theta ); //TODO add angle  
       if (i == 0)
       {
-        deconvolved_avg_spectrum= *(deconv[i].power()); 
+        const TGraphAligned *p =deconv[i].power(); 
+        deconvolved_avg_spectrum.adopt(p); 
       }
       else
       {
