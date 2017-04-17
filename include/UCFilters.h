@@ -192,6 +192,7 @@ namespace UCorrelator
       std::vector<TString> output_names;
       int nstored_freqs; 
       double adaptive_exp; 
+      int max_failed; 
   };
 
   class AdaptiveBrickWallFilter : public FilterOperation

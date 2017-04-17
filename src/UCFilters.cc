@@ -647,7 +647,7 @@ void UCorrelator::AdaptiveFilterAbby::process(FilteredAnitaEvent * event)
 
 
 UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int max_failed_iter,  int nfreq_bands, const double * fmin, const double * fmax, int nstored_freqs)
-  : min_power_ratio(min_power_ratio), spec(0), last_t(0), nstored_freqs(nstored_freqs), adaptive_exp(1) 
+  : min_power_ratio(min_power_ratio), spec(0), last_t(0), nstored_freqs(nstored_freqs), adaptive_exp(1), max_failed(max_failed_iter) 
 {
 
  memset(reduction,0,sizeof(reduction)); 
@@ -861,6 +861,8 @@ void UCorrelator::SineSubtractFilter::makeAdaptive(const SpectrumAverage * s, do
 {
   spec = s; 
   adaptive_exp = peak_exp; 
+  //TODO: include frequency bands
+  desc_string.Form("Adaptive SineSubtract with adaptive exponent=%f, min_power_ratio=%f, max_failed_iter =%d", peak_exp, min_power_ratio, max_failed);
 }
 
 
