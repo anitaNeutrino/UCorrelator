@@ -1198,6 +1198,26 @@ void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
   double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
   int bin = avg->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
 
+
+
+  if (last_bin != bin) /* This has to happen in the main thread since ProjectionX() grabs some Mutex */ 
+  {
+    for (int ipol = 0; ipol < 2; ipol++) 
+    {
+      AnitaPol::AnitaPol_t pol = AnitaPol::AnitaPol_t(ipol); 
+
+      for (int i = 0; i < NUM_SEAVEYS; i++) 
+      {
+          if (sp[ipol][i]) 
+          {
+            delete sp[ipol][i]; 
+          }
+          sp[ipol][i] = avg->getPeakiness(pol,i)->ProjectionX(TString::Format("sp_%d_%d_%d",ipol,i,instance), bin,bin);  
+          sp[ipol][i]->SetDirectory(0); 
+      }
+    }
+  }
+
   for (int ipol = 0; ipol < 2; ipol++) 
   {
       AnitaPol::AnitaPol_t pol = AnitaPol::AnitaPol_t(ipol); 
@@ -1206,25 +1226,6 @@ void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
 #endif
       for (int i = 0; i < NUM_SEAVEYS; i++) 
       {
-
-        if (last_bin != bin) 
-        {
-//          printf("%d %d %d \n",bin,ipol,i); 
-          if (sp[ipol][i]) 
-          {
-            delete sp[ipol][i]; 
-          }
-
-#ifdef UCORRELATOR_OPENMP
-#pragma omp critical (brickwall)
-#endif
-         {
-          sp[ipol][i] = avg->getPeakiness(pol,i)->ProjectionX(TString::Format("sp_%d_%d_%d",ipol,i,instance), bin,bin);  
-          sp[ipol][i]->SetDirectory(0); 
-          }
-
-        }
-
         AnalysisWaveform * wf = getWf(ev,i,pol); 
         int nf =wf->Nfreq(); 
         double df = wf->deltaF(); 
