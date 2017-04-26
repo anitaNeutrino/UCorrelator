@@ -21,36 +21,64 @@ namespace UCorrelator
   class SpectrumAverage; 
 
 
-  /* Convenience function for getting a FilterStrategy with a given string key. 
+  /** Convenience function for getting a FilterStrategy with a given string
+   * key. 
    *
-   * Valid keys so far are: 
-   *  
-   *  Run is needed for all adaptive filters. 
+   * Run is needed for all adaptive filters. 
+   *
    *
    *  !!! all of these include an ALFA filter at the very end for A3 !!! 
    *
-   *  They may be chained together as well (require a + to separate, e.g. decon+sinsub_05_0) 
+   *  They may be chained together as well (require a + to separate, e.g.
+   *  decon+sinsub_05_0) 
    *
-   *  sinsub_%02d_%d  sin subtraction 
-   *      format: (100 * minimum power reduction, num failed iter) 
+   * Valid keys so far are: 
    *
-   *  adsinsub_%d_%02d_%d  adaptive sin subtraction 
-   *       format: (peakiness exponent, 100 * minimum power reduction, num failed iter) using peakiness. 
-   *                peakiness exponent is interpreted as necessarily between 1 and 10, so if it's e.g. 15, it becomes 1.5 
+   *  sinsub_%02d_%d[_option]  sin subtraction format: (100 * minimum power
+   *  reduction, num failed iter) 
+   *
+   *  Options include: 
+   *
+   *     _ad_%d Make adaptive (with peakiness exponent). peakiness exponent always between 1 and 10, so if e.g. is 15, interpreted as 1.5
+   *
+   *     Example: sinsub_05_0_ad_2 
+   *       
+   *     _env_%s[_%g_%g]  Use envelope detection. %s should be one of
+   *     "hilbert","rms" or "peak" 
+   *
+   *     If you pass additional parameters they are passed as parameters to 
+   *     setEnvelopeOption(otherwise the defaults are used). 
+   *
+   *     _peakfind_%s[_%g_%g_%g_%g]  Modify peak-finding preferences 
+   *
+   *     %s should be one of "global", "neighbor," "tspectrum",  or "savgolsub" 
+   *
+   *      If you pass additional parameters, they are passed as params to
+   *      setPeakFindingOption (otherwise defaults used)
+   *
+   * 
+   *  adsinsub_%d_%02d_%d  *  adaptive sin subtraction
+   *  Shortcut for to sinsub_%02d_%d_ad_%d  (where the first %d becomes the last %d) 
    *
    *  butter_%d_%d adaptive butterworth
-   *        format : (peakiness threshold,order) 
-   *              peakiness threshold is interpreted as necessarily between 1 and 10, so if it's e.g. 15, it becomes 1.5 
+   *    format : (peakiness threshold,order)
+   * 
+   *    peakiness threshold is interpreted as necessarily between 1 and 10, so if
+   *    it's e.g. 15, it becomes 1.5 
    *      
-   *  minphase_%d adaptive minimum phase
-   *        format : (peakiness exponent) 
-   *              peakiness exponent is interpreted as necessarily between 1 and 10, so if it's e.g. 15, it becomes 1.5 
+   *  minphase_%d adaptive minimum phase 
+   *    format : (peakiness exponent)
+   *
+   *    peakiness exponent is interpreted as necessarily between 1 and 10, so if
+   *    it's e.g. 15, it becomes 1.5 
    *
    *
-   *  brickwall_%d_%d  brick wall with peakiness threshold 
-   *         format (peakiness threshold, fill notch) 
-   *              peakiness threshold is interpreted as necessarily between 1 and 10, so if it's e.g. 15, it becomes 1.5 
-   *              if fill notch not 0, notch is filled according to spectrum average
+   *  brickwall_%d_%d  brick wall with peakiness threshold
+   *    format (peakiness threshold, fill notch)
+   *
+   *   peakiness threshold is interpreted as necessarily
+   *   between 1 and 10, so if it's e.g. 15, it becomes 1.5 
+   *   if fill notch not 0,  notch is filled according to spectrum average
    *         
  
    *  decon deconvolve filter  (using ``best'' known response) . Should be used in conjunction with others. 
@@ -58,7 +86,6 @@ namespace UCorrelator
    *  geom  geometric filter ( preliminary support) 
    *
    *  abby  attempt at duplicating Abby's filter strategy (probably doesn't work for A3) 
-   *
    *
    *  Returns a human readable description.  
    */ 
@@ -179,6 +206,9 @@ namespace UCorrelator
       unsigned outputLength(unsigned i) const{ return i == 0 ? 1 : NUM_SEAVEYS; } 
       void fillOutput(unsigned i, double * vars) const; 
       void setVerbose(bool v); 
+
+      void setPeakFindingOption(FFTtools::SineSubtract::PeakFindingOption option, const double * params = 0);
+      void setEnvelopeOption(FFTtools::SineSubtract::EnvelopeOption option, const double * params = 0);
       virtual void process(FilteredAnitaEvent * ev); 
       const FFTtools::SineSubtract* sinsub(AnitaPol::AnitaPol_t pol, int ant) const { return subs[pol][ant] ;} 
     private:
