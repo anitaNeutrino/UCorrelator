@@ -1,6 +1,7 @@
 
 #include "macro/cuts.C"
 #include "sys/wait.h" 
+#include "AnitaTMVA.h" 
 
 
 
@@ -17,6 +18,10 @@ struct rejection_info
 {
   double wais_overlap; 
   double ldb_overlap;  
+  double wais_overlap_filtered; 
+  double ldb_overlap_filtered;  
+  double roc_fisher; 
+  double roc_bdt; 
   int Nwais; 
   int Nldb; 
   int Nbg; 
@@ -177,7 +182,7 @@ void doPulserPlots(const char * pulser, TChain *c, pointing_info * p)
   c->Draw(TString::Format("coherent_filtered[][].peakHilbert / coherent[][].peakHilbert: coherent.peakHilbert"),brightestPeak,"colz"); 
 
   fraction_filtered->cd(4); 
-  c->Draw(TString::Format("coherent_filtered[][].peakHilbert / coherent[][].peakHilbert: coherent.peakHilbert"),brightestPeak,"colz"); 
+  c->Draw(TString::Format("coherent_filtered[][].peakHilbert / coherent[][].peakHilbert: coherent.totalPower"),brightestPeak,"colz"); 
 
   fraction_filtered->SaveAs(TString::Format("filterPlots/%s_fraction_%s.png",pulser,filter)); 
 
@@ -200,11 +205,11 @@ double computeOverlap(TH2 * h, TGraph * g)
   {
     if (g->GetX()[i] < h->GetXaxis()->GetXmin() || g->GetX()[i] > h->GetXaxis()->GetXmax()) continue; 
     if (g->GetY()[i] < h->GetYaxis()->GetXmin() || g->GetY()[i] > h->GetYaxis()->GetXmax()) continue; 
-    overlap += h->Interpolate(g->GetX()[i], g->GetY()[i]); 
+    int xbin = h->GetXaxis()->FindBin(g->GetX()[i]); 
+    int ybin = h->GetYaxis()->FindBin(g->GetY()[i]); 
+
+    overlap += h->GetBinContent(xbin,ybin); 
   }
-  printf("%g\n",overlap); 
-  overlap /= g->GetN(); 
-  overlap /= h->Integral(); 
 
   return overlap; 
 }
@@ -216,30 +221,149 @@ void makeCutPlot(const char * filter, TChain * bg, TChain * wais, TChain * ldb, 
 
   gStyle->SetOptStat(0); 
   TCanvas * c = new TCanvas(TString::Format("ccut_%s",filter), TString::Format("Cutplot %s",filter), 1920,1080); 
+  c->Divide(2,1); 
+  c->cd(1)->SetLogz(); 
+
   TH2I * hbg = new TH2I(TString::Format("hbg_%s", filter),TString::Format("The standard cut plot for %s; Correlation Map Peak; Coherent Peak Hilbert",filter), 100,0,0.5,100,0,300); 
   bg->Draw(TString::Format("coherent[][].peakHilbert:peak[][].value >> hbg_%s",filter),
            brightestPeak && aboveHorizon && blastCut && triggered && notMasked,"colz"); 
 
   p->Nbg = hbg->Integral(); 
   wais->SetMarkerColorAlpha(30,0.5); 
+  wais->SetLineColor(30); 
 
+  gStyle->SetNumberContours(20);
 
-  int N = wais->Draw("coherent[][].peakHilbert:peak[][].value", brightestPeak && "peakPulserCoherentH > 40 && abs(FFTtools::wrap(peak[][].phi-wais.phi,360,0)) < 3 && abs(FFTtools::wrap(peak[][].theta - wais.theta,360,0)) < 3","psame"); 
+  TCut cutwais = brightestPeak && "peakPulserCoherentH > 40 && abs(FFTtools::wrap(peak[][].phi-wais.phi,360,0)) < 3 && abs(FFTtools::wrap(peak[][].theta - wais.theta,360,0)) < 3"; 
+
+  int N = wais->Draw("coherent[][].peakHilbert:peak[][].value",cutwais ,"p same"); 
   TGraph  gwais(N, wais->GetV2(), wais->GetV1()); 
   p->Nwais = N;
 
   ldb->SetMarkerColorAlpha(46,0.5); 
-  N = ldb->Draw("coherent[][].peakHilbert:peak[][].value", brightestPeak && "(peakPulserCoherentH > 40 || peakPulserCoherentV > 40) && abs(FFTtools::wrap(peak[][].phi-ldb.phi,360,0)) < 3 && abs(FFTtools::wrap(peak[][].theta - ldb.theta,360,0)) < 3","psame"); 
+  ldb->SetLineColor(30); 
+  TCut cutldb = brightestPeak && "(peakPulserCoherentH > 40 || peakPulserCoherentV > 40) && abs(FFTtools::wrap(peak[][].phi-ldb.phi,360,0)) < 3 && abs(FFTtools::wrap(peak[][].theta - ldb.theta,360,0)) < 3"; 
+  N = ldb->Draw("coherent[][].peakHilbert:peak[][].value",cutldb ,"p same"); 
   TGraph  gldb(N, ldb->GetV2(), ldb->GetV1()); 
 
-
   p->Nldb = N;
+
   p->ldb_overlap = computeOverlap(hbg,&gldb); 
   p->wais_overlap = computeOverlap(hbg,&gwais); 
 
+  c->cd(2)->SetLogz(); 
+  gStyle->SetNumberContours(255);
+
+  TCut cutbg = brightestPeak && aboveHorizon && blastCut && triggered && notMasked;  
+  TH2I * hbg_filtered = new TH2I(TString::Format("hbg_filtered_%s", filter),TString::Format("The standard cut plot for %s; Correlation Map Peak; Filtered Coherent Peak Hilbert",filter), 100,0,0.5,100,0,300); 
+  bg->Draw(TString::Format("coherent_filtered[][].peakHilbert:peak[][].value >> hbg_filtered_%s",filter), cutbg, "colz"); 
+
+
+  gStyle->SetNumberContours(20); 
+  N = wais->Draw("coherent_filtered[][].peakHilbert:peak[][].value", brightestPeak && "peakPulserCoherentH > 40 && abs(FFTtools::wrap(peak[][].phi-wais.phi,360,0)) < 3 && abs(FFTtools::wrap(peak[][].theta - wais.theta,360,0)) < 3","psame"); 
+  TGraph  gwais_filtered(N, wais->GetV2(), wais->GetV1()); 
+
+  p->wais_overlap_filtered = computeOverlap(hbg_filtered,&gwais_filtered); 
+
+  N = ldb->Draw("coherent_filtered[][].peakHilbert:peak[][].value", brightestPeak && "peakPulserCoherentH > 40 && abs(FFTtools::wrap(peak[][].phi-ldb.phi,360,0)) < 3 && abs(FFTtools::wrap(peak[][].theta - ldb.theta,360,0)) < 3","psame"); 
+  TGraph  gldb_filtered(N, ldb->GetV2(), ldb->GetV1()); 
+  p->ldb_overlap_filtered = computeOverlap(hbg_filtered,&gldb_filtered); 
 
   c->SaveAs(TString::Format("filterPlots/standard_cut_plot_%s.png",filter)); 
+  gStyle->SetNumberContours(255); 
   gStyle->SetOptStat(1); 
+
+
+  TFile * ftree = new TFile(TString::Format("filterPlots/tmva_tree_%s.root",filter),"RECREATE");  
+
+
+
+  AnitaTMVA::MVAVarSet varset; 
+  varset.add(AnitaTMVA::MVAVar("peak.value[][]","mapPeak")); 
+  varset.add(AnitaTMVA::MVAVar("coherent.peakHilbert[][]","peakHilbert")); 
+
+  TTree * waistree = AnitaTMVA::makeTMVATree(wais, ftree, "wais",varset, cutwais); 
+  TTree * ldbtree = AnitaTMVA::makeTMVATree(ldb, ftree, "ldb",varset, cutldb); 
+  TTree * bgtree = AnitaTMVA::makeTMVATree(bg, ftree, "bg",varset, cutbg); 
+  ftree->Write(); 
+  delete ftree; 
+
+  ftree = new TFile(TString::Format("filterPlots/tmva_tree_%s.root",filter));  
+
+  TFile *f = new TFile(TString::Format("filterPlots/tmva_%s.root",filter),"RECREATE");  
+
+  TMVA::Factory factory (filter,f); 
+  TMVA::DataLoader loader; 
+  varset.setUpData(&loader); 
+  loader.AddSignalTree((TTree*) ftree->Get("wais")); 
+  loader.AddSignalTree((TTree*) ftree->Get("ldb")); 
+  loader.AddBackgroundTree((TTree*) ftree->Get("bg")); 
+  f->cd(); 
+
+  factory.BookMethod(&loader, TMVA::Types::kBDT, "BDT"); 
+//  factory.BookMethod(&loader, TMVA::Types::kFisher, "Fisher"); 
+ 
+  factory.BookMethod(&loader, TMVA::Types::kFDA, "Fisher",
+      "Formula=(0)+(1)*x0+(2)*x1:" 
+      "ParRanges=(-10,10);(0,30);(0,0.1):UseImprove:UseMinos:"
+      ); 
+  printf("Training %s\n", filter); 
+  factory.TrainAllMethods(); 
+  printf("Testing %s\n", filter); 
+  factory.TestAllMethods(); 
+  printf("Evaluating %s\n", filter); 
+  factory.EvaluateAllMethods(); 
+
+
+  f->Write(); 
+  delete f; 
+
+  f = new TFile(TString::Format("filterPlots/tmva_%s.root",filter));  
+  c = new TCanvas(TString::Format("cmva_%s",filter), TString::Format("MVA_plot %s",filter), 1920,1080); 
+
+  c->Divide(2,2); 
+
+  c->cd(1)->SetLogy(); 
+
+  TH1 * fisher_roc =  (TH1*) f->Get("default/Method_Fisher/Fisher/MVA_Fisher_rejBvsS"); 
+  p->roc_fisher = fisher_roc->Integral("width"); 
+
+
+  TH1* fisher_s = (TH1*) f->Get("default/Method_Fisher/Fisher/MVA_Fisher_effS"); 
+  printf("fisher_s: %p\n",fisher_s);
+  fisher_s->SetLineColor(3); 
+
+  TH1* fisher_b = (TH1*) f->Get("default/Method_Fisher/Fisher/MVA_Fisher_effB"); 
+  printf("fisher_b: %p\n",fisher_b);
+  fisher_b->SetLineColor(2); 
+  fisher_b->DrawCopy(""); 
+  fisher_s->DrawCopy("same"); 
+
+
+  c->cd(2)->SetLogy(); 
+
+  TH1* bdt_s = (TH1*) f->Get("default/Method_BDT/BDT/MVA_BDT_effS"); 
+  printf("bdt_s: %p\n",bdt_s);
+  bdt_s->SetLineColor(3); 
+
+  TH1* bdt_b = (TH1*) f->Get("default/Method_BDT/BDT/MVA_BDT_effB"); 
+  printf("bdt_b: %p\n",bdt_b);
+  bdt_b->SetLineColor(2); 
+  bdt_b->DrawCopy(""); 
+  bdt_s->DrawCopy("same"); 
+
+  TH1 * bdt_roc =  (TH1*) f->Get("default/Method_BDT/BDT/MVA_BDT_rejBvsS"); 
+  p->roc_bdt = bdt_roc->Integral("width"); 
+
+  TTree * t = (TTree*) f->Get("default/TestTree"); 
+  assert(t); 
+  c->cd(3); 
+
+  t->Draw("peakHilbert:mapPeak:Fisher","","colz"); 
+  c->cd(4); 
+  t->Draw("peakHilbert:mapPeak:BDT","","colz"); 
+
+  c->SaveAs(TString::Format("filterPlots/mva_%s.png",filter)); 
 
 }
 
@@ -262,24 +386,26 @@ void doFilterAlgo(const char * filter, const char * description)
   if (pid == 0)
   {
     TChain cwais(filter); 
-
     cwais.Add("filter/*_wais_*.root"); 
-
-
-    pointing_info ldb_point;
-    pointing_info wais_point;
-    doPulserPlots("wais",&cwais,&wais_point); 
 
     TChain cldb(filter); 
     cldb.Add("filter/*_ldb_*.root"); 
 
+    TChain cbg(filter); 
+    cbg.Add("filter/390_bg*.root"); 
+
+
+    pointing_info ldb_point;
+    pointing_info wais_point;
+    rejection_info reject; 
+
+    makeCutPlot(filter, &cbg,&cwais,&cldb, &reject); 
+
+    doPulserPlots("wais",&cwais,&wais_point); 
+
+
     doPulserPlots("ldb",&cldb,&ldb_point); 
 
-    TChain cbg(filter); 
-    cbg.Add("filter/*_bg*.root"); 
-
-    rejection_info reject; 
-    makeCutPlot(filter, &cbg,&cwais,&cldb, &reject); 
 
     TString str(filter); 
     TString escaped = str.ReplaceAll("_","\\_"); 
@@ -362,10 +488,18 @@ void doFilterAlgo(const char * filter, const char * description)
     ofile.Form("filterPlots/slides/%s_background.row",filter); 
     row = fopen(ofile.Data(),"w"); 
 
-    fprintf(row,"%s&%d&%d&%d&%g&%g",
+    fprintf(row,"%s&%d&%d&%d&%g (%0.2g) &%g (%0.2g) &%g (%0.2g) &%g (%0.2g) & %0.4g & %0.4g ",
                    escaped.Data(),      
                    reject.Nbg, reject.Nwais, reject.Nldb,
-                   reject.wais_overlap, reject.ldb_overlap
+                   reject.wais_overlap, 
+                   reject.wais_overlap / (reject.Nbg * reject.Nwais) , 
+                   reject.ldb_overlap,
+                   reject.ldb_overlap / (reject.Nbg * reject.Nldb),
+                   reject.wais_overlap_filtered,
+                   reject.wais_overlap_filtered / (reject.Nbg * reject.Nwais) ,
+                   reject.ldb_overlap_filtered,
+                   reject.ldb_overlap_filtered / (reject.Nbg * reject.Nldb) ,
+                   reject.roc_fisher, reject.roc_bdt
          );
 
     fclose(row); 
@@ -401,6 +535,11 @@ void doFilterAlgo(const char * filter, const char * description)
     fprintf(slide,"\\begin{frame}\n\\frametitle{%s - Background Separation}\n\n", escaped.Data()); 
     fprintf(slide,"\\includegraphics[width=5in]{../standard_cut_plot_%s}\n",filter); 
     fprintf(slide,"\\end{frame}\n\n"); 
+
+    fprintf(slide,"\\begin{frame}\n\\frametitle{%s - Background Separation MVA}\n\n", escaped.Data()); 
+    fprintf(slide,"\\includegraphics[width=5in]{../mva_%s}\n",filter); 
+    fprintf(slide,"\\end{frame}\n\n"); 
+
 
     fclose(slide); 
 
@@ -445,7 +584,8 @@ void doFilterAlgo(const char * filter, const char * description)
     }
 
     printf("Done with %s\n", filter); 
-    _exit(0); 
+
+    gSystem->Exit(0,false); 
   }
   else
   {
@@ -456,22 +596,8 @@ void doFilterAlgo(const char * filter, const char * description)
 
 }
 
-void filterEvalA3Plots()
+void doLatex() 
 {
-  system("mkdir -p filterPlots"); 
-  
-
-  doFilterAlgo("sinsub_10_0","Sine Subtract filter, 10\\% min reduction, 0 bad iters"); 
-  doFilterAlgo("adsinsub_1_10_0","Adaptive Sine Subtract filter, exp=1, 10\\% min reduction, 0 bad iters"); 
-  doFilterAlgo("adsinsub_2_10_0","Adaptive Sine Subtract filter, exp=2, 10\\% min reduction, 0 bad iters"); 
-  doFilterAlgo("adsinsub_2_10_3","Adaptive Sine Subtract filter, exp=2, 10\\% min reduction, 3 bad iters"); 
-  doFilterAlgo("adsinsub_2_10_3","Adaptive Sine Subtract filter, exp=2, 10\\% min reduction, 3 bad iters"); 
-  doFilterAlgo("adsinsub_3_10_3","Adaptive Sine Subtract filter, exp=3, 10\\% min reduction, 3 bad iters"); 
-  doFilterAlgo("adsinsub_2_20_0","Adaptive Sine Subtract filter, exp=2, 20\\% min reduction, 0 bad iters"); 
-  doFilterAlgo("brickwall_2_0","Brickwall filter with peakiness thresh 2"); 
-  doFilterAlgo("brickwall_2_1","Brickwall filter with peakiness thresh 2, filled notch"); 
-  doFilterAlgo("geom","Geometric Filter (in progress)"); 
-
   FILE * latex = fopen("filterPlots/slides/slides.tex","w"); 
   fprintf(latex, "\\documentclass[hyperref={pdfpagelabels=false},aspectratio=169]{beamer} \\mode<presentation> { \\usetheme{Boadilla} \\usecolortheme{beaver} }\n"); 
   fprintf(latex, "\\setbeamertemplate{navigation symbols}{}\n");
@@ -570,8 +696,8 @@ void filterEvalA3Plots()
 
   //Background Separation Summary Table
   fprintf(latex,"\\begin{frame}\n\\frametitle{Background Separation Summary Table}\n\\tiny\n"); 
-  fprintf(latex,"\\begin{tabular}{l||c|c|c||c|c|}\n"); 
-  fprintf(latex,"Filter & NBg & NWais & NLDB & WAIS Overlap & LDB Overlap \\\\\n\\hline\n"); 
+  fprintf(latex,"\\begin{tabular}{l||c|c|c||c|c||c|c||c|c|}\n"); 
+  fprintf(latex,"Filter & NBg & NWais & NLDB & WAIS Overlap & LDB Overlap & Filtered WAIS Overlap & Filtered LDB Overlap & Fisher ROC Ig & BDT ROC Ig \\\\\n\\hline\n"); 
   for (int i = 0; i < filters.size(); i++) 
   {
     fprintf(latex, "\\input{%s_background.row}\\\\\n\\hline\n", filters[i]); 
@@ -591,6 +717,31 @@ void filterEvalA3Plots()
   
 
 
+  //make latex! 
+
+  chdir("filterPlots/slides"); 
+  system("pdflatex slides.tex"); 
+  system("pdflatex slides.tex"); 
+
+}
+
+
+void filterEvalA3Plots()
+{
+  system("mkdir -p filterPlots"); 
+  
+
+  doFilterAlgo("sinsub_10_0","Sine Subtract filter, 10\\% min reduction, 0 bad iters"); 
+  doFilterAlgo("adsinsub_1_10_0","Adaptive Sine Subtract filter, exp=1, 10\\% min reduction, 0 bad iters"); 
+  doFilterAlgo("adsinsub_2_10_0","Adaptive Sine Subtract filter, exp=2, 10\\% min reduction, 0 bad iters"); 
+  doFilterAlgo("adsinsub_2_10_3","Adaptive Sine Subtract filter, exp=2, 10\\% min reduction, 3 bad iters"); 
+  doFilterAlgo("adsinsub_1_10_3","Adaptive Sine Subtract filter, exp=1, 10\\% min reduction, 3 bad iters"); 
+  doFilterAlgo("adsinsub_3_10_3","Adaptive Sine Subtract filter, exp=3, 10\\% min reduction, 3 bad iters"); 
+  doFilterAlgo("adsinsub_2_20_0","Adaptive Sine Subtract filter, exp=2, 20\\% min reduction, 0 bad iters"); 
+  doFilterAlgo("brickwall_2_0","Brickwall filter with peakiness thresh 2"); 
+  doFilterAlgo("brickwall_2_1","Brickwall filter with peakiness thresh 2, filled notch"); 
+  doFilterAlgo("geom","Geometric Filter (in progress)"); 
+
   //reap
   for (unsigned i = 0; i < waitforme.size(); i++)
   {
@@ -598,12 +749,8 @@ void filterEvalA3Plots()
     waitpid(waitforme[i],&dummy,0); 
   }
 
-  //make latex! 
 
-  chdir("filterPlots/slides"); 
-  system("pdflatex slides.tex"); 
-  system("pdflatex slides.tex"); 
-
+  doLatex(); 
 }
 
 

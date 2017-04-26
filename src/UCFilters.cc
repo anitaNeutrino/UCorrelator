@@ -55,15 +55,110 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
       }
       else
       {
+        SineSubtractFilter * ssf = new SineSubtractFilter(mpr/100.,iter);
+
+        /** now check for additional options */ 
+        if (const char * substr =strstr(tok.Data(),"_ad"))
+        {
+          int exp; 
+          if (sscanf(substr,"_ad_%d", &exp) == 1)
+          {
+            double expf = exp; 
+            while (expf > 10) expf /=10; 
+            ssf->makeAdaptive(avgs[run],expf); 
+          }
+          else
+          {
+            fprintf(stderr, "Problem with _ad option in token: %s\n", tok.Data()); 
+          }
+        }
+
+        if (const char * substr = strstr(tok.Data(),"_env"))
+        {
+          const char * parstr = 0; 
+          FFTtools::SineSubtract::EnvelopeOption env = FFTtools::SineSubtract::ENV_NONE; 
+          double pars[3]; 
+          int nargs =0;
+          if (strstr(substr,"_env_peak")==substr)
+          {
+            parstr = substr + strlen("_env_peak"); 
+            env = FFTtools::SineSubtract::ENV_PEAK;  
+          }
+          else if (strstr(substr,"_env_rms")==substr)
+          {
+            parstr = substr + strlen("_env_rms"); 
+            env = FFTtools::SineSubtract::ENV_RMS;  
+          }
+          else if (strstr(substr,"_env_hilbert")==substr)
+          {
+            parstr = substr + strlen("_env_hilbert"); 
+            env = FFTtools::SineSubtract::ENV_RMS;  
+          }
+
+          /* try to parse arguments */ 
+
+          if (parstr) 
+          {
+            nargs = sscanf(parstr,"_%lg_%lg_%lg",pars,pars+1,pars+2); 
+          }
+          ssf->setEnvelopeOption(env, nargs ? pars : 0);
+        }
+
+        if (const char * substr = strstr(tok.Data(),"_peakfind"))
+        {
+          const char * parstr = 0; 
+          FFTtools::SineSubtract::PeakFindingOption peak = FFTtools::SineSubtract::NEIGHBORFACTOR; 
+          double pars[4]; 
+          int nargs = 0;
+          if (strstr(substr,"_peakfind_global")==substr)
+          {
+            parstr = substr + strlen("_peakfind_global"); 
+            peak = FFTtools::SineSubtract::GLOBALMAX;  
+          }
+          else if (strstr(substr,"_peakfind_neighbor")==substr)
+          {
+            parstr = substr + strlen("_peakfind_neighbor"); 
+            peak = FFTtools::SineSubtract::NEIGHBORFACTOR;  
+          }
+          else if (strstr(substr,"_peakfind_tspectrum")==substr)
+          {
+            parstr = substr + strlen("_peakfind_tspectrum"); 
+            peak = FFTtools::SineSubtract::TSPECTRUM;  
+          }
+          else if (strstr(substr,"_peakfind_savgolsub")==substr)
+          {
+            parstr = substr + strlen("_peakfind_savgolsub"); 
+            peak = FFTtools::SineSubtract::SAVGOLSUB;  
+          }
+
+          /* try to parse arguments */ 
+
+          if (parstr) 
+          {
+            nargs = sscanf(parstr,"_%lg_%lg_%lg_%lg",pars,pars+1,pars+2, pars+3); 
+          }
+          ssf->setPeakFindingOption(peak, nargs ? pars : 0);
+        }
+          
+
+
         if (fillme) 
-          fillme->addOperation(new SineSubtractFilter(mpr/100.,iter)); 
+        {
+          fillme->addOperation(ssf); 
+        }
 
         if (need_description)
         {
-          desc+= TString::Format("(Sine Subtract Filter with min power reduction %d percent, %d bad iters )",mpr,iter);  
+          desc+= ssf->description(); 
+        }
+
+        if (!fillme)
+        {
+          delete ssf; 
         }
       }
     }
+    /** shortcutoption */ 
     else if (strcasestr(tok.Data(),"adsinsub_"))
     {
       int exp; int mpr; int iter; 
@@ -83,16 +178,19 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
         double expf = exp; 
         while (expf > 10) expf /=10; 
 
+        UCorrelator::SineSubtractFilter * ssf = new UCorrelator::SineSubtractFilter(mpr/100.,iter); 
         if (fillme) 
         {
-          UCorrelator::SineSubtractFilter * ssf = new UCorrelator::SineSubtractFilter(mpr/100.,iter); 
           ssf->makeAdaptive(avgs[run],expf); 
           fillme->addOperation(ssf); 
         }
         if (need_description)
         {
-          desc+= TString::Format("(Adaptive Sine Subtract Filter with min power reduction %d percent,  %d bad iters )",mpr,iter);  
+          desc+= ssf->description(); 
         }
+
+        if (!fillme)
+          delete ssf;
       }
     }
 
@@ -647,6 +745,8 @@ void UCorrelator::AdaptiveFilterAbby::process(FilteredAnitaEvent * event)
 //
 
 
+
+
 UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int max_failed_iter,  int nfreq_bands, const double * fmin, const double * fmax, int nstored_freqs)
   : min_power_ratio(min_power_ratio), spec(0), last_t(0), nstored_freqs(nstored_freqs), adaptive_exp(1), max_failed(max_failed_iter) 
 {
@@ -687,6 +787,31 @@ UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int 
    }
  }
 }
+
+
+void UCorrelator::SineSubtractFilter::setPeakFindingOption(FFTtools::SineSubtract::PeakFindingOption option, const double * params)
+{
+ for (int pol = 0; pol < 2; pol++)
+ {
+   for (int i = 0; i < NUM_SEAVEYS; i++) 
+   {
+     subs[pol][i]->setPeakFindingOption(option,params); 
+   }
+ }
+}
+
+void UCorrelator::SineSubtractFilter::setEnvelopeOption(FFTtools::SineSubtract::EnvelopeOption option, const double * params)
+{
+ for (int pol = 0; pol < 2; pol++)
+ {
+   for (int i = 0; i < NUM_SEAVEYS; i++) 
+   {
+     subs[pol][i]->setEnvelopeOption(option,params); 
+   }
+ }
+}
+
+
 
 
 void UCorrelator::SineSubtractFilter::fillOutput(unsigned ui, double * vars) const 
