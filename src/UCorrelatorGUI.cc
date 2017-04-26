@@ -97,8 +97,8 @@ UCorrelator::gui::Map::~Map()
 void UCorrelator::gui::Map::Paint(Option_t * opt) 
 {
   //we ignore most of the options 
-  GetPainter("colz2");
-  fPainter->Paint("colz2"); 
+  GetPainter(opt);
+  fPainter->Paint(opt); 
 
   /* turn off peaks with np*/ 
   if (!strcasestr(opt,"np"))
