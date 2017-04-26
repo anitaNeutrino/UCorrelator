@@ -720,7 +720,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
     pads[ipol]->cd(1)->cd(1); 
     correlation_maps[ipol]->SetTitle(ipol == 0 ? "HPol map" : "VPol map" ); 
     correlation_maps[ipol]->addRough(rough_peaks[ipol]); 
-    correlation_maps[ipol]->Draw(); 
+    correlation_maps[ipol]->Draw("colz"); 
 
     for (int i = 0; i < last.nPeaks[ipol]; i++) 
     {
@@ -745,7 +745,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 
       zoomed_correlation_maps[ipol][i]->SetTitle(TString::Format("Zoomed peak %d", i+1)); 
       zoomed_correlation_maps[ipol][i]->addFine(last.peak[ipol][i]); 
-      zoomed_correlation_maps[ipol][i]->Draw(); 
+      zoomed_correlation_maps[ipol][i]->Draw("colz"); 
 
       pads[ipol]->cd(2)->cd(i+last.nPeaks[ipol]+1); 
 
