@@ -392,7 +392,7 @@ void doFilterAlgo(const char * filter, const char * description)
     cldb.Add("filter/*_ldb_*.root"); 
 
     TChain cbg(filter); 
-    cbg.Add("filter/390_bg*.root"); 
+    cbg.Add("filter/*bg*.root"); 
 
 
     pointing_info ldb_point;
