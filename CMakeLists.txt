@@ -133,8 +133,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.1)
   if(NATIVE_ARCH) #define in anitaBuildTool, default on
     add_definitions( -march=native)
-  else()
-    add_definitions( -mavx)
   endif()
  endif()
 endif() 
