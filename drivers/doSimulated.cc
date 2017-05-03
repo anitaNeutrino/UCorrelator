@@ -2,6 +2,7 @@
 #include "Analyzer.h"
 #include "FilteredAnitaEvent.h"
 #include "BasicFilters.h" 
+#include "SystemResponse.h" 
 #include "FilterStrategy.h"
 #include "UCUtil.h"
 #include "TTree.h"
@@ -12,7 +13,7 @@
 #include "RawAnitaHeader.h"
 
 
-void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
+void doSimulated(int run = 1, int max = 0, int start = 0, const char * filter = "sinsub_10_3_ad_2")
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
@@ -22,14 +23,21 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
   AnitaDataset d(run); 
   UCorrelator::AnalysisConfig cfg; 
   cfg.nmaxima = 2;
-  cfg.enable_group_delay = false;
-  
+  cfg.enable_group_delay = false; 
+  cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
+  cfg.deconvolution_method = new UCorrelator::AllPassDeconvolution(); 
 
   UCorrelator::Analyzer analyzer(&cfg); 
 
   TString outname; 
-  if (max) outname.Form("simulation/simulated_%d_max_%d%s.root",run,max, sine_subtract ? "_sinsub" : "" ); 
-  else outname.Form("simulation/simulated_%d%s.root",run, sine_subtract ? "_sinsub" : "" ); 
+
+  if (max && start) outname.Form("decimated/%d_max_%d_start_%d_%s.root",run,max,start,filter); 
+  else if (max) outname.Form("decimated/%d_max_%d_%s.root",run,max,filter); 
+  else if (start) outname.Form("decimated/%d_start_%d_%s.root",run,start,filter); 
+  else outname.Form("decimated/%d_%s.root",run, filter); 
+
+
+
 
   TFile ofile(outname, "RECREATE"); 
   TTree * tree = new TTree("simulation"," Simulated events"); 
@@ -64,15 +72,7 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
 
   
   FilterStrategy strategy (&ofile); 
-  if (sine_subtract) 
-  {
-    double fmins[1] = {0.2}; 
-    double fmaxs[1] = {1.3}; 
-    strategy.addOperation(new UCorrelator::SineSubtractFilter(0.05, 0, 1,fmins,fmaxs)); 
-    strategy.addOperation(new SimplePassBandFilter(0.2,1.3)); 
-    strategy.addOperation(new ALFAFilter); 
-  }
-
+  UCorrelator::fillStrategyWithKey(&strategy, filter, run); 
   printf("Strategy applied!\n"); 
 
   RawAnitaHeader *hdr = 0 ; 
@@ -89,7 +89,7 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
   int ndone = 0; 
   double tempLon, tempLat, tempAlt;
   
-  for (int i =0 ; i < d.N(); i++) {
+  for (int i =start ; i < d.N(); i++) {
   // for (int i =0 ; i < 1; i++) {
 
     d.getEntry(i); 
@@ -100,7 +100,8 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
     printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone); 
     FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
 
-    analyzer.analyze(&ev, sum); 
+    analyzer.analyze(&ev, sum,d.truth()); 
+
     ofile.cd(); 
     hdr = d.header(); 
     patptr = d.gps(); 
@@ -109,7 +110,7 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
 
     icetree->GetEntry(i);
 
-    if (hdr->eventNumber!=inu){
+    if (hdr->eventNumber!=(unsigned) inu){
       std::cout << " We have a problem with eventNumbers : " << hdr->eventNumber << " " << inu << std::endl;
       break;
     }
@@ -131,7 +132,7 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
     tree->Fill(); 
     ndone++; 
 
-    if (max && ndone > max) break; 
+    if (max && ndone >= max) break; 
 
   }
 
@@ -144,11 +145,16 @@ void doSimulated(int run = 1, int max = 0, bool sine_subtract = false)
 int main (int nargs, char ** args)
 {
    
-  int run = nargs < 2 ? 1 : atoi(args[1]); 
+  int run = nargs < 2 ? 352 : atoi(args[1]); 
   int max = nargs < 3 ? 0 : atoi(args[2]); 
-  int sinsub = nargs < 4 ? 0 : atoi(args[3]); 
+  int start = nargs < 4 ? 0 : atoi(args[3]); 
+  const char * filter = nargs < 5 ? 0 :args[4]; 
 
-  doSimulated(run,max,sinsub); 
+
+  if (filter) 
+    doSimulated(run,max,start,filter); 
+  else
+    doSimulated(run,max,start); 
 
 
 }

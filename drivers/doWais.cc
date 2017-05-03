@@ -14,7 +14,7 @@
 #include "RawAnitaHeader.h"
 
 
-void doWais(int run = 352, int max = 0, bool deconvolve = true)
+void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_10_3_ad_2" )
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
@@ -26,19 +26,17 @@ void doWais(int run = 352, int max = 0, bool deconvolve = true)
   cfg.start_pol = AnitaPol::kHorizontal; 
   cfg.end_pol = AnitaPol::kHorizontal; 
   
-  if (deconvolve)
-  {
-    TF1 *fn = new TF1("foo"," (x < 0.2) * exp((x-0.2)/0.01)  + (x > 0.2 && x < 1.2) * (1-0.05*x) + (x > 1.2) * exp((1.2-x)/0.02)", 0,2); 
-    cfg.response_option = UCorrelator::AnalysisConfig::ResponseSingleBRotter; 
-    cfg.deconvolution_method = new UCorrelator::WienerDeconvolution(fn); 
-  }
+  cfg.response_option = UCorrelator::AnalysisConfig::ResponseSingleBRotter; 
+  cfg.deconvolution_method = new UCorrelator::AllPassDeconvolution(); 
 
 
   UCorrelator::Analyzer analyzer(&cfg); 
 
   TString outname; 
-  if (max) outname.Form("wais/wais_hpol_%d_max_%d%s.root",run,max, deconvolve ? "_deconv" : "" ); 
-  else outname.Form("wais/wais_hpol_%d%s.root",run, deconvolve ? "_deconv" : "" ); 
+  if (max && start) outname.Form("wais/%d_max_%d_start_%d_%s.root",run,max,start,filter); 
+  else if (max) outname.Form("wais/%d_max_%d_%s.root",run,max,filter); 
+  else if (start) outname.Form("wais/%d_start_%d_%s.root",run,start,filter); 
+  else outname.Form("wais/%d_%s.root",run, filter); 
 
   TFile ofile(outname, "RECREATE"); 
   TTree * tree = new TTree("wais","WAIS Hpol"); 
@@ -46,12 +44,8 @@ void doWais(int run = 352, int max = 0, bool deconvolve = true)
 
 
   FilterStrategy strategy (&ofile); 
-  double fmins[1] = {0.2}; 
-  double fmaxs[1] = {1.3}; 
-  strategy.addOperation(new UCorrelator::SineSubtractFilter(0.05, 0, 1,fmins,fmaxs)); 
-  strategy.addOperation(new ALFALanczosFilter); 
+  UCorrelator::fillStrategyWithKey(&strategy, filter, run); 
 
-//  printf("Strategy applied!\n"); 
 
   RawAnitaHeader *hdr = 0 ; 
   UsefulAdu5Pat *patptr = 0; 
@@ -60,7 +54,7 @@ void doWais(int run = 352, int max = 0, bool deconvolve = true)
   tree->Branch("pat",&patptr); 
 
   int ndone = 0; 
-  for (int i =0 ; i < d.N(); i++)
+  for (int i =start ; i < d.N(); i++)
   {
 
     d.getEntry(i); 
@@ -81,7 +75,7 @@ void doWais(int run = 352, int max = 0, bool deconvolve = true)
       ndone++; 
     }
 
-    if (max && ndone > max) break; 
+    if (max && ndone >= max) break; 
 
   }
 
@@ -96,9 +90,13 @@ int main (int nargs, char ** args)
    
   int run = nargs < 2 ? 352 : atoi(args[1]); 
   int max = nargs < 3 ? 0 : atoi(args[2]); 
-  int sinsub = nargs < 4 ? 1 : atoi(args[3]); 
+  int start = nargs < 4 ? 0 : atoi(args[3]); 
+  const char * filter = nargs < 5 ? 0 :args[4]; 
 
-  doWais(run,max,sinsub); 
+  if (filter) 
+    doWais(run,max,start,filter); 
+  else
+    doWais(run,max,start); 
 
 
 }

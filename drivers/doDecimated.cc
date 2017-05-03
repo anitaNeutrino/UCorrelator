@@ -17,7 +17,7 @@
 #include <omp.h>
 #endif 
 
-void doDecimated(int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_10_2_ad_2") 
+void doDecimated(int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_10_3_ad_2") 
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
