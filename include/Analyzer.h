@@ -44,8 +44,8 @@ namespace UCorrelator
 
 
 
-      /** Analyze the event and put the results into the summary. The summary is reinitialized, clobbering everything. */
-      void analyze(const FilteredAnitaEvent * event, AnitaEventSummary *summary); 
+      /** Analyze the event and put the results into the summary. The summary is reinitialized, clobbering everything.  MCTruth may be passed to initalize truth part of summary. */
+      void analyze(const FilteredAnitaEvent * event, AnitaEventSummary *summary, const TruthAnitaEvent * truth = 0); 
 
       /** Retrieve the internal correlator. Note that if multiple polarizations are analyzed, the Correlator's internal state
        *  will be related to the last polarization used. */ 

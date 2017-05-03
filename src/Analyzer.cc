@@ -111,7 +111,7 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mo
 
 
 
-void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEventSummary * summary) 
+void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEventSummary * summary, const TruthAnitaEvent * truth) 
 {
   
   const RawAnitaHeader * hdr = event->getHeader(); 
@@ -120,7 +120,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
   UsefulAdu5Pat * pat =  (UsefulAdu5Pat*) event->getGPS();  //unconstifying it .. hopefully that won't cause problems
  
   /* Initialize the summary */ 
-  summary = new (summary) AnitaEventSummary(hdr, (UsefulAdu5Pat*) event->getGPS()); 
+  summary = new (summary) AnitaEventSummary(hdr, (UsefulAdu5Pat*) event->getGPS(),truth); 
 
   //check for saturation
   uint64_t saturated[2] = {0,0}; 
