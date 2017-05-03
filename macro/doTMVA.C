@@ -1,8 +1,8 @@
 
 
 
-const char * decimated_pattern = "decimated/%d_deconv.root";
-const char * wais_pattern = "wais/wais_hpol_%d_deconv.root"  ; 
+const char * decimated_pattern = "decimated/%d_%s.root";
+const char * wais_pattern = "wais/%d_%s.root"  ; 
 
 int wais_start= 332;
 int wais_stop = 362; 
@@ -12,7 +12,7 @@ int wais_stop = 362;
 #include "AnitaTMVA.h" 
 
 
-void doTMVA(int decimated_start = 130, int decimated_stop=439, int nworkers = 1) 
+void doTMVA(int decimated_start = 130, int decimated_stop=439, const char * filter = "sinsub_5_3_ad_2", int nworkers = 1) 
 {
 
   // Step 1: load data
@@ -23,13 +23,13 @@ void doTMVA(int decimated_start = 130, int decimated_stop=439, int nworkers = 1)
 
   for (int i = wais_start; i<= wais_stop; i++)
   {
-    tmp.Form(wais_pattern,i); 
+    tmp.Form(wais_pattern,i,filter); 
     signal.Add(tmp.Data()); 
   }
 
   for (int i = decimated_start; i<= decimated_stop; i++)
   {
-    tmp.Form(decimated_pattern,i); 
+    tmp.Form(decimated_pattern,i,filter); 
     bg.Add(tmp.Data()); 
   }
 
@@ -78,14 +78,15 @@ void doTMVA(int decimated_start = 130, int decimated_stop=439, int nworkers = 1)
   varset.add(AnitaTMVA::MVAVar("eventNumber","eventNumber",'I',true)); 
 
 
-
+  TString treefilename; 
+  treefilename.Form("thermalCutTrees_%s.root",filter); 
 
   //alright, this is dumb. 
-  FILE * f = fopen("thermalCutTrees.root","r"); 
+  FILE * f = fopen(treefilename.Data(),"r"); 
 
   if (!f) 
   {
-    TFile newOut("thermalCutTrees.root","CREATE"); 
+    TFile newOut(treefilename.Data(),"CREATE"); 
     TTree * sigtree= AnitaTMVA::makeTMVATree(&signal, &newOut,  "signal_in", varset, signal_cut); 
     TTree * bgtree= AnitaTMVA::makeTMVATree(&bg, &newOut,  "bg_in", varset, bg_cut); 
     newOut.Write(); 
@@ -98,12 +99,16 @@ void doTMVA(int decimated_start = 130, int decimated_stop=439, int nworkers = 1)
 
 
   
-  TFile  out("thermalCutTrees.root"); 
+  TFile  out(treefilename.Data()); 
   TTree* sigtree = (TTree*) out.Get("signal_in"); 
   TTree* bgtree = (TTree*) out.Get("bg_in"); 
   
 
-  TFile tmvaOut("thermalCuts.root","RECREATE"); 
+
+  TString tmvaOutName; 
+  tmvaOutName.Form("thermalCuts_%s.root",filter); 
+
+  TFile tmvaOut(tmvaOutName.Data(),"RECREATE"); 
   // Step 3: setup TMVA  
   TMVA::Factory *factory = new TMVA::Factory("thermal_cuts", &tmvaOut,"V"); 
 
