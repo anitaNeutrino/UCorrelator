@@ -12,10 +12,9 @@ source /home/cozzyd/anita/env.sh
 
 RUN=$1
 N=${2-0}
-DECONV=${3-1}
-
+START=${3-2}
+FILTER=${4-sinsub_10_3_ad_2}
 
 export OMP_NUM_THREADS=4 
-
-srun bin/doWais $RUN $N $DECONV
+srun bin/doWais $RUN $N $START $FILTER
 

@@ -34,7 +34,7 @@ cpus = threads_per_task * runs_per_task
 
 for start in range(130,439,runs_per_task): 
 
-    cmd="sbatch -p %s -A %s -p %d slurm/parallelHelper.sh %s %d %d %d" % (partition, account, cpus, binary, threads_per_task, start, start+runs_per_task -1) 
+    cmd="sbatch -p %s -A %s -c %d slurm/parallelHelper.sh %s %d %d %d" % (partition, account, cpus, binary, threads_per_task, start, start+runs_per_task -1) 
 
     print(cmd) 
     os.system(cmd)

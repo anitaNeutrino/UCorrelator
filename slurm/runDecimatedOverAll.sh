@@ -5,10 +5,10 @@
 #SBATCH --output=./log/doAllDecimated_%j.log 
 #SBATCH --nodes=24
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=4
 #SBATCH --exclusive
 #SBATCH --account=pi-avieregg
-#SBATCH --partition=sandyb
+#SBATCH --partition=broadwl
 
 module load parallel 
 
