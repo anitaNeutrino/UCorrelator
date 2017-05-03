@@ -31,10 +31,10 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * filter = 
 
   TString outname; 
 
-  if (max && start) outname.Form("decimated/%d_max_%d_start_%d_%s.root",run,max,start,filter); 
-  else if (max) outname.Form("decimated/%d_max_%d_%s.root",run,max,filter); 
-  else if (start) outname.Form("decimated/%d_start_%d_%s.root",run,start,filter); 
-  else outname.Form("decimated/%d_%s.root",run, filter); 
+  if (max && start) outname.Form("simulated/%d_max_%d_start_%d_%s.root",run,max,start,filter); 
+  else if (max) outname.Form("simulated/%d_max_%d_%s.root",run,max,filter); 
+  else if (start) outname.Form("simulated/%d_start_%d_%s.root",run,start,filter); 
+  else outname.Form("simulated/%d_%s.root",run, filter); 
 
 
 
