@@ -76,6 +76,8 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * filter = 
     patptr = d.gps(); 
     truth = d.truth(); 
 
+    tree->Fill(); 
+
     ndone++; 
 
     if (max && ndone >= max) break; 
