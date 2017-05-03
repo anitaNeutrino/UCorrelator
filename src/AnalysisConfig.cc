@@ -98,11 +98,15 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
 
 const int wais_hpol_time_offset = 93; 
 const int wais_vpol_time_offset = -99757; 
+const int siple_hpol_time_offset = -41;
+const int siple_vpol_time_offset = +328;
 
 UCorrelator::AnalysisConfig::AnalysisConfig(const char * config) 
   : 
     wais_hpol(wais_hpol_time_offset, 800e3, 1e3), 
-    wais_vpol(wais_vpol_time_offset, 800e3, 1e3) 
+    wais_vpol(wais_vpol_time_offset, 800e3, 1e3), 
+    siple_hpol(siple_hpol_time_offset, 800e3, 1e3), 
+    siple_vpol(siple_vpol_time_offset, 800e3, 1e3)
 {
   correlator_nphi = 180; 
   correlator_ntheta = 100; 
