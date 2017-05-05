@@ -19,20 +19,20 @@
 #endif
 
 
-FilterStrategy * UCorrelator::getStrategyWithKey (const char * key, int run) 
+FilterStrategy * UCorrelator::getStrategyWithKey (const char * key) 
 {
   FilterStrategy * s = new FilterStrategy; 
-  fillStrategyWithKey(s,key,run); 
+  fillStrategyWithKey(s,key); 
   return s; 
 }
 
 
 static std::map<const char *, TString> key_descs; 
-static std::map<int, UCorrelator::SpectrumAverage *> avgs; 
+static UCorrelator::SpectrumAverageLoader avgldr; 
 static UCorrelator::ResponseManager * responseManager = 0; 
 static UCorrelator::AllPassDeconvolution allpass; 
 
-const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const char * key, int run) 
+const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const char * key) 
 {
   TString tokens(key); 
   TString tok; 
@@ -65,7 +65,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
           {
             double expf = exp; 
             while (expf > 10) expf /=10; 
-            ssf->makeAdaptive(avgs[run],expf); 
+            ssf->makeAdaptive(&avgldr,expf); 
           }
           else
           {
@@ -169,19 +169,13 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
       else
       {
 
-        if (!avgs.count(run) && fillme)
-        {
-          avgs[run] = new UCorrelator::SpectrumAverage(run,60); 
-          avgs[run]->computePeakiness(); 
-        }
-
         double expf = exp; 
         while (expf > 10) expf /=10; 
 
         UCorrelator::SineSubtractFilter * ssf = new UCorrelator::SineSubtractFilter(mpr/100.,iter); 
         if (fillme) 
         {
-          ssf->makeAdaptive(avgs[run],expf); 
+          ssf->makeAdaptive(&avgldr,expf); 
           fillme->addOperation(ssf); 
         }
         if (need_description)
@@ -203,17 +197,12 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
       }
       else
       {
-        if (!avgs.count(run) && fillme)
-        {
-          avgs[run] = new UCorrelator::SpectrumAverage(run,60); 
-          avgs[run]->computePeakiness(); 
-        }
         double threshf = thresh; 
         while (threshf > 10) threshf/=10; 
 
         if (fillme) 
         {
-          fillme->addOperation(new AdaptiveButterworthFilter(avgs[run],threshf,order)); 
+          fillme->addOperation(new AdaptiveButterworthFilter(&avgldr,threshf,order)); 
         }
         if (need_description) 
         {
@@ -230,16 +219,11 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
       }
       else
       {
-        if (!avgs.count(run) && fillme)
-        {
-          avgs[run] = new UCorrelator::SpectrumAverage(run,60); 
-          avgs[run]->computePeakiness(); 
-        }
         double expf = exp; 
         while (expf > 10 )expf/=10; 
 
         if (fillme) 
-          fillme->addOperation(new AdaptiveMinimumPhaseFilter(avgs[run],-expf)); 
+          fillme->addOperation(new AdaptiveMinimumPhaseFilter(&avgldr,-expf)); 
 
         if (need_description)
         {
@@ -256,16 +240,11 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
       }
       else
       {
-        if (!avgs.count(run) && fillme)
-        {
-          avgs[run] = new UCorrelator::SpectrumAverage(run,60); 
-          avgs[run]->computePeakiness(); 
-        }
         double threshf = thresh; 
         while (threshf > 10 )threshf/=10; 
 
         if (fillme) 
-          fillme->addOperation(new AdaptiveBrickWallFilter(avgs[run],threshf,fill)); 
+          fillme->addOperation(new AdaptiveBrickWallFilter(&avgldr,threshf,fill)); 
 
         if (need_description)
         {
@@ -911,7 +890,7 @@ void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const Raw
     // use peakiness to tune aggressivness
     if (header->triggerTime > last_t)
     {
-      TH2 * peaky = (TH2*) spec->getPeakiness(AnitaPol::AnitaPol_t(pol), i); 
+      TH2 * peaky = (TH2*) spec->avg(header->triggerTime)->getPeakiness(AnitaPol::AnitaPol_t(pol), i); 
 
       if (reduction[pol][i])
         delete reduction[pol][i]; 
@@ -983,7 +962,7 @@ void UCorrelator::SineSubtractFilter::setInteractive(bool set)
 }
 
 
-void UCorrelator::SineSubtractFilter::makeAdaptive(const SpectrumAverage * s, double peak_exp) 
+void UCorrelator::SineSubtractFilter::makeAdaptive(const SpectrumAverageLoader * s, double peak_exp) 
 {
   spec = s; 
   adaptive_exp = peak_exp; 
@@ -1180,10 +1159,10 @@ void UCorrelator::CombinedSineSubtractFilter::setInteractive(bool set)
 
 
 
-UCorrelator::AdaptiveMinimumPhaseFilter::AdaptiveMinimumPhaseFilter(const SpectrumAverage *avg, double exponent,int npad)
+UCorrelator::AdaptiveMinimumPhaseFilter::AdaptiveMinimumPhaseFilter(const SpectrumAverageLoader *avg, double exponent,int npad)
  : avg(avg),npad(npad), exponent(exponent), last_bin(-1) 
 {
-  desc_string.Form("Adaptive Minimum Phase Filter with SpectrumAverage(%d,%d) and exponent %g", avg->getRun(), avg->getNsecs(), exponent); 
+  desc_string.Form("Adaptive Minimum Phase Filter with SpectrumAverageLoader(%d) and exponent %g",  avg->getNsecs(), exponent); 
   memset(filt,0,sizeof(filt)); 
   memset(size,0,sizeof(size)); 
 }
@@ -1204,7 +1183,7 @@ void UCorrelator::AdaptiveMinimumPhaseFilter::process(FilteredAnitaEvent * ev)
 {
 
   double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
-  int bin = avg->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
+  int bin = avg->avg(t)->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
 
 
   for (int ipol = 0; ipol < 2; ipol++) 
@@ -1220,7 +1199,7 @@ void UCorrelator::AdaptiveMinimumPhaseFilter::process(FilteredAnitaEvent * ev)
       {
 
         if (filt[ipol][i]) delete filt[ipol][i]; 
-        double tmid = avg->getPeakiness(pol,i)->GetYaxis()->GetBinCenter(bin); 
+        double tmid = avg->avg(t)->getPeakiness(pol,i)->GetYaxis()->GetBinCenter(bin); 
         size[ipol][i] = wf->Neven(); 
         int fft_size = (size[ipol][i] * (1+npad))/2 +1; 
 
@@ -1229,7 +1208,7 @@ void UCorrelator::AdaptiveMinimumPhaseFilter::process(FilteredAnitaEvent * ev)
         {
           double f = 0.01/(1.+npad) *j; //TODO
 //          printf("%g %g %g\n",f,tmid,t); 
-          double peaky = ((TH2*)avg->getPeakiness(pol,i))->Interpolate(f,tmid);  //why isn't this const? ?!?? 
+          double peaky = ((TH2*)avg->avg(t)->getPeakiness(pol,i))->Interpolate(f,tmid);  //why isn't this const? ?!?? 
           if (peaky < 1 || std::isnan(peaky) || f < 0.16) peaky = 1; 
           G[j] = TMath::Power(peaky, exponent)*( j > 0 && j < fft_size-1 ? sqrt(2) : 1); 
         }
@@ -1295,7 +1274,7 @@ TGraph * UCorrelator::AdaptiveMinimumPhaseFilter::getCurrentFilterPower(AnitaPol
 
 
 static int n_adaptive_brickwall = 0; 
-UCorrelator::AdaptiveBrickWallFilter::AdaptiveBrickWallFilter(const SpectrumAverage * spec, double thresh, bool fillNotch) 
+UCorrelator::AdaptiveBrickWallFilter::AdaptiveBrickWallFilter(const SpectrumAverageLoader * spec, double thresh, bool fillNotch) 
   : avg(spec), threshold(thresh), fill(fillNotch) 
 {
 
@@ -1321,7 +1300,7 @@ void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
 {
 
   double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
-  int bin = avg->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
+  int bin = avg->avg(t)->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
 
 
 
@@ -1337,7 +1316,7 @@ void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
           {
             delete sp[ipol][i]; 
           }
-          sp[ipol][i] = avg->getPeakiness(pol,i)->ProjectionX(TString::Format("sp_%d_%d_%d",ipol,i,instance), bin,bin);  
+          sp[ipol][i] = avg->avg(t)->getPeakiness(pol,i)->ProjectionX(TString::Format("sp_%d_%d_%d",ipol,i,instance), bin,bin);  
           sp[ipol][i]->SetDirectory(0); 
       }
     }
@@ -1387,20 +1366,20 @@ void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
 
 
 
-UCorrelator::AdaptiveButterworthFilter::AdaptiveButterworthFilter(const SpectrumAverage *avg,
+UCorrelator::AdaptiveButterworthFilter::AdaptiveButterworthFilter(const SpectrumAverageLoader *avg,
                                                                   double peakiness_threshold ,
                                                                   int order , double width) 
             : avg(avg), threshold(peakiness_threshold), order(order), width(width)  
 { 
-  desc_string.Form("AdaptiveButterworthFilter with SpectrumAverage(%d,%d), th=%g, order=%d, width=%g)",
-                    avg->getRun(), avg->getNsecs(), threshold, order, width);
+  desc_string.Form("AdaptiveButterworthFilter with SpectrumAverageLoader(%d), th=%g, order=%d, width=%g)",
+                    avg->getNsecs(), threshold, order, width);
 }
 
 void UCorrelator::AdaptiveButterworthFilter::process(FilteredAnitaEvent * ev) 
 {
 
   double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
-  int bin = avg->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
+  int bin = avg->avg(t)->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
 
   for (int ipol = 0; ipol < 2; ipol++) 
   {
@@ -1411,7 +1390,7 @@ void UCorrelator::AdaptiveButterworthFilter::process(FilteredAnitaEvent * ev)
       if (last_bin != bin) 
       {
         filters[ipol][i].clear();
-        TH1 * proj = avg->getPeakiness(pol,i)->ProjectionX("tmp", bin,bin);  
+        TH1 * proj = avg->avg(t)->getPeakiness(pol,i)->ProjectionX("tmp", bin,bin);  
 
         for (int j =1; j <= proj->GetNbinsX(); j++) 
         {

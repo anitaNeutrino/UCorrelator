@@ -51,7 +51,7 @@ void doDecimated(int run = 352, int max = 0, int start = 0, const char * filter 
   FilterStrategy strategy (&ofile); 
 
 
-  UCorrelator::fillStrategyWithKey(&strategy, filter, run); 
+  UCorrelator::fillStrategyWithKey(&strategy, filter); 
 
 //  printf("Strategy applied!\n"); 
 

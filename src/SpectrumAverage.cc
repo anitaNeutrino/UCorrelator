@@ -11,6 +11,7 @@
 #include "AnitaDataset.h" 
 #include "TCut.h" 
 #include "FilteredAnitaEvent.h" 
+#include "TMutex.h" 
 #include "BasicFilters.h"
 #include <math.h>// for isnan
 
@@ -396,4 +397,30 @@ void UCorrelator::SpectrumAverage::computePeakiness(const SpectrumAverage * ther
 
 }
 
+UCorrelator:: SpectrumAverageLoader::SpectrumAverageLoader(const char * the_dir, int secs) 
+  : dir(the_dir), nsecs(secs)
+{
+  spec = 0; 
+}
 
+
+const UCorrelator::SpectrumAverage* UCorrelator::SpectrumAverageLoader::avg(double t) const
+{
+
+  if (spec && t >= spec->getStartTime() && t <= spec->getEndTime() ) return spec; 
+
+  TMutex m; 
+  m.Lock(); 
+
+  //double check 
+  if (spec && t >= spec->getStartTime() && t <= spec->getEndTime() ) return spec; 
+
+  int run = AnitaDataset::getRunAtTime(t); 
+  if (spec) delete spec; 
+  spec = new SpectrumAverage(run,nsecs, dir); 
+  spec->computePeakiness(); 
+  m.UnLock(); 
+  
+  return spec; 
+
+}

@@ -18,13 +18,11 @@ namespace UCorrelator
 
   class ResponseManager; 
   class DeconvolutionMethod; 
-  class SpectrumAverage; 
+  class SpectrumAverageLoader; 
 
 
   /** Convenience function for getting a FilterStrategy with a given string
    * key. 
-   *
-   * Run is needed for all adaptive filters. 
    *
    *
    *  !!! all of these include an ALFA filter at the very end for A3 !!! 
@@ -89,10 +87,10 @@ namespace UCorrelator
    *
    *  Returns a human readable description.  
    */ 
-  const char * fillStrategyWithKey(FilterStrategy * fillme, const char * key , int run); 
+  const char * fillStrategyWithKey(FilterStrategy * fillme, const char * key); 
 
   /* same as above, but returns a newly allocated strategy and no description */ 
-  FilterStrategy * getStrategyWithKey(const char * key, int run) ; 
+  FilterStrategy * getStrategyWithKey(const char * key) ; 
   
 
 
@@ -193,8 +191,8 @@ namespace UCorrelator
     public: 
       SineSubtractFilter(double min_power_ratio = 0.05, int max_failed_iter = 0,  int nfreq_bands = 0, const double *  freq_bands_start = 0, const double * freq_bands_end = 0, int nstored_freqs = 5); 
 
-      /** Make the filter adaptive using a SpectrumAverage. If null passed, adaptiveness turned off.  */ 
-      void makeAdaptive(const SpectrumAverage *avg = 0, double peakiness_exp = 1); 
+      /** Make the filter adaptive using a SpectrumAverageLoader. If null passed, adaptiveness turned off.  */ 
+      void makeAdaptive(const SpectrumAverageLoader *avg = 0, double peakiness_exp = 1); 
 
       virtual ~SineSubtractFilter();  
       void setInteractive(bool set); 
@@ -215,7 +213,7 @@ namespace UCorrelator
       void processOne(AnalysisWaveform* wf,const RawAnitaHeader* h,int i, int pol); 
       FFTtools::SineSubtract * subs[2][NUM_SEAVEYS]; 
       double min_power_ratio; 
-      const SpectrumAverage * spec; 
+      const SpectrumAverageLoader * spec; 
       TGraph * reduction[2][NUM_SEAVEYS]; 
       unsigned last_t; 
       TString desc_string; 
@@ -228,7 +226,7 @@ namespace UCorrelator
   class AdaptiveBrickWallFilter : public FilterOperation
   {
     public: 
-      AdaptiveBrickWallFilter(const UCorrelator::SpectrumAverage * spec, double thresh=2, bool fillNotch = true);  
+      AdaptiveBrickWallFilter(const UCorrelator::SpectrumAverageLoader * spec, double thresh=2, bool fillNotch = true);  
 
       const char * tag() const { return "AdaptiveBrickWallFilter"; } 
       const char * description() const{ return desc_string.Data(); } 
@@ -236,7 +234,7 @@ namespace UCorrelator
       virtual ~AdaptiveBrickWallFilter();
     private:
       TString desc_string; 
-      const SpectrumAverage * avg; 
+      const SpectrumAverageLoader * avg; 
       double threshold; 
       bool fill; 
       int last_bin; 
@@ -250,7 +248,7 @@ namespace UCorrelator
   {
 
     public: 
-      AdaptiveMinimumPhaseFilter(const SpectrumAverage * avg, double exponent = -2, int npad =3); 
+      AdaptiveMinimumPhaseFilter(const SpectrumAverageLoader * avg, double exponent = -2, int npad =3); 
 
       const char * tag() const { return "AdaptiveMinimumPhaseFilter"; } 
       const char * description() const{ return desc_string.Data(); } 
@@ -261,7 +259,7 @@ namespace UCorrelator
 
     private: 
       TString desc_string; 
-      const SpectrumAverage * avg; 
+      const SpectrumAverageLoader * avg; 
       int npad; 
       double exponent; 
       int last_bin; 
@@ -273,7 +271,7 @@ namespace UCorrelator
   class AdaptiveButterworthFilter : public FilterOperation 
   {
     public: 
-      AdaptiveButterworthFilter(const SpectrumAverage *avg, double peakiness_threshold = 2, int order = 2, double width = 0.05) ; 
+      AdaptiveButterworthFilter(const SpectrumAverageLoader *avg, double peakiness_threshold = 2, int order = 2, double width = 0.05) ; 
 
       virtual void process(FilteredAnitaEvent *ev) ; 
       virtual ~AdaptiveButterworthFilter() {; } 
@@ -283,7 +281,7 @@ namespace UCorrelator
 
     private: 
       TString desc_string; 
-      const SpectrumAverage * avg; 
+      const SpectrumAverageLoader * avg; 
       double threshold; 
       int last_bin; 
       int order; 

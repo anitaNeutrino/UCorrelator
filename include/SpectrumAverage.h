@@ -20,6 +20,7 @@ namespace UCorrelator
    * */ 
 
 
+
   class SpectrumAverage
   {
 
@@ -75,6 +76,28 @@ namespace UCorrelator
       int run; 
 
   };
+
+
+  /* This will try to to find an appropriate spectrum average
+   * for a given time. Useful for MC or other cases where we span runs */ 
+
+  class SpectrumAverageLoader
+  {
+
+    public: 
+      SpectrumAverageLoader(const char * dir = 0, int nsecs = 60); 
+
+      /* Tries to find a SpectrumAverage with the right run */ 
+      const SpectrumAverage * avg(double t) const; 
+      
+      int getNsecs() const { return nsecs; } 
+
+    private: 
+      mutable SpectrumAverage * spec; 
+      const char * dir; 
+      int nsecs; 
+  }; 
+
 
 }
 

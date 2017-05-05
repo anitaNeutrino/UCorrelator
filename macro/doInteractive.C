@@ -42,7 +42,7 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
 
 
   UCorrelator::AnalysisConfig cfg; 
-  cfg.nmaxima = 2; 
+  cfg.nmaxima = 1; 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
   cfg.deconvolution_method = new UCorrelator::AllPassDeconvolution; 
 //  cfg.response_option = UCorrelator::AnalysisConfig::ResponseHarmSignalOnly; 
@@ -54,7 +54,8 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
 //  strategy->addOperation(new ALFAFilter); 
 //  strategy->addOperation(ssf); 
 
-  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("adsinsub_3_10_3",run), d.gps(), d.header()); 
+//  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("adsinsub_3_10_3"), d.gps(), d.header()); 
+  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("sinsub_5_3_ad_3"), d.gps(), d.header()); 
 
 //  ev->plotSummary(0,0); 
 
