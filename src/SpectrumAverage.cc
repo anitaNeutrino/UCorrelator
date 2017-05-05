@@ -15,7 +15,6 @@
 #include "BasicFilters.h"
 #include <math.h>// for isnan
 
-
 static ALFAFilter alfa; 
 
 
@@ -404,17 +403,21 @@ UCorrelator:: SpectrumAverageLoader::SpectrumAverageLoader(const char * the_dir,
   spec = 0; 
 }
 
+static TMutex m; 
 
 const UCorrelator::SpectrumAverage* UCorrelator::SpectrumAverageLoader::avg(double t) const
 {
 
   if (spec && t >= spec->getStartTime() && t <= spec->getEndTime() ) return spec; 
 
-  static TMutex m; 
   m.Lock(); 
 
   //double check 
-  if (spec && t >= spec->getStartTime() && t <= spec->getEndTime() ) return spec; 
+  if (spec && t >= spec->getStartTime() && t <= spec->getEndTime() ) 
+  {
+    m.UnLock(); 
+    return spec; 
+  }
 
   int run = AnitaDataset::getRunAtTime(t); 
   if (spec) delete spec; 
