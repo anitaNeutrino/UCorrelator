@@ -297,12 +297,13 @@ TH1 *UCorrelator::SpectrumAverage::getSpectrumPercentile(AnitaPol::AnitaPol_t po
 
 double UCorrelator::SpectrumAverage::getStartTime() const 
 {
-  return avgs[0][0]->GetYaxis()->GetXmin(); 
+
+  return avgs[0][0] ? avgs[0][0]->GetYaxis()->GetXmin() : -1; 
 }
 
 double UCorrelator::SpectrumAverage::getEndTime() const 
 {
-  return avgs[0][0]->GetYaxis()->GetXmax();   
+  return avgs[0][0] ? avgs[0][0]->GetYaxis()->GetXmax() : -1;   
 }
 
 
@@ -409,7 +410,7 @@ const UCorrelator::SpectrumAverage* UCorrelator::SpectrumAverageLoader::avg(doub
 
   if (spec && t >= spec->getStartTime() && t <= spec->getEndTime() ) return spec; 
 
-  TMutex m; 
+  static TMutex m; 
   m.Lock(); 
 
   //double check 
