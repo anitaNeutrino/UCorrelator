@@ -21,6 +21,7 @@ struct rejection_info
   double wais_overlap_filtered; 
   double ldb_overlap_filtered;  
   double roc_fisher; 
+  double roc_fda; 
   double roc_bdt; 
   int Nwais; 
   int Nldb; 
@@ -241,7 +242,7 @@ void makeCutPlot(const char * filter, TChain * bg, TChain * wais, TChain * ldb, 
   p->Nwais = N;
 
   ldb->SetMarkerColorAlpha(46,0.5); 
-  ldb->SetLineColor(30); 
+  ldb->SetLineColor(46); 
   TCut cutldb = brightestPeak && "(peakPulserCoherentH > 40 || peakPulserCoherentV > 40) && abs(FFTtools::wrap(peak[][].phi-ldb.phi,360,0)) < 3 && abs(FFTtools::wrap(peak[][].theta - ldb.theta,360,0)) < 3"; 
   N = ldb->Draw("coherent[][].peakHilbert:peak[][].value",cutldb ,"p same"); 
   TGraph  gldb(N, ldb->GetV2(), ldb->GetV1()); 
@@ -260,12 +261,12 @@ void makeCutPlot(const char * filter, TChain * bg, TChain * wais, TChain * ldb, 
 
 
   gStyle->SetNumberContours(20); 
-  N = wais->Draw("coherent_filtered[][].peakHilbert:peak[][].value", brightestPeak && "peakPulserCoherentH > 40 && abs(FFTtools::wrap(peak[][].phi-wais.phi,360,0)) < 3 && abs(FFTtools::wrap(peak[][].theta - wais.theta,360,0)) < 3","psame"); 
+  N = wais->Draw("coherent_filtered[][].peakHilbert:peak[][].value", brightestPeak && "peakPulserCoherentH > 40 && abs(FFTtools::wrap(peak[][].phi-wais.phi,360,0)) < 3 && abs(FFTtools::wrap(peak[][].theta - wais.theta,360,0)) < 3","p same"); 
   TGraph  gwais_filtered(N, wais->GetV2(), wais->GetV1()); 
 
   p->wais_overlap_filtered = computeOverlap(hbg_filtered,&gwais_filtered); 
 
-  N = ldb->Draw("coherent_filtered[][].peakHilbert:peak[][].value", brightestPeak && "peakPulserCoherentH > 40 && abs(FFTtools::wrap(peak[][].phi-ldb.phi,360,0)) < 3 && abs(FFTtools::wrap(peak[][].theta - ldb.theta,360,0)) < 3","psame"); 
+  N = ldb->Draw("coherent_filtered[][].peakHilbert:peak[][].value", brightestPeak && "peakPulserCoherentH > 40 && abs(FFTtools::wrap(peak[][].phi-ldb.phi,360,0)) < 3 && abs(FFTtools::wrap(peak[][].theta - ldb.theta,360,0)) < 3","p same"); 
   TGraph  gldb_filtered(N, ldb->GetV2(), ldb->GetV1()); 
   p->ldb_overlap_filtered = computeOverlap(hbg_filtered,&gldb_filtered); 
 
@@ -280,7 +281,7 @@ void makeCutPlot(const char * filter, TChain * bg, TChain * wais, TChain * ldb, 
 
   AnitaTMVA::MVAVarSet varset; 
   varset.add(AnitaTMVA::MVAVar("peak.value[][]","mapPeak")); 
-  varset.add(AnitaTMVA::MVAVar("coherent.peakHilbert[][]","peakHilbert")); 
+  varset.add(AnitaTMVA::MVAVar("deconvolved_filtered.peakHilbert[][]","peakHilbert")); 
 
   TTree * waistree = AnitaTMVA::makeTMVATree(wais, ftree, "wais",varset, cutwais); 
   TTree * ldbtree = AnitaTMVA::makeTMVATree(ldb, ftree, "ldb",varset, cutldb); 
@@ -301,11 +302,10 @@ void makeCutPlot(const char * filter, TChain * bg, TChain * wais, TChain * ldb, 
   f->cd(); 
 
   factory.BookMethod(&loader, TMVA::Types::kBDT, "BDT"); 
-//  factory.BookMethod(&loader, TMVA::Types::kFisher, "Fisher"); 
- 
-  factory.BookMethod(&loader, TMVA::Types::kFDA, "Fisher",
+  factory.BookMethod(&loader, TMVA::Types::kFisher, "Fisher"); 
+  factory.BookMethod(&loader, TMVA::Types::kFDA, "FDA",
       "Formula=(0)+(1)*x0+(2)*x1:" 
-      "ParRanges=(-10,10);(0,30);(0,0.1):UseImprove:UseMinos:"
+      "ParRanges=(-20,10);(0,30);(0,0.1):UseImprove:UseMinos:"
       ); 
   printf("Training %s\n", filter); 
   factory.TrainAllMethods(); 
@@ -321,10 +321,12 @@ void makeCutPlot(const char * filter, TChain * bg, TChain * wais, TChain * ldb, 
   f = new TFile(TString::Format("filterPlots/tmva_%s.root",filter));  
   c = new TCanvas(TString::Format("cmva_%s",filter), TString::Format("MVA_plot %s",filter), 1920,1080); 
 
-  c->Divide(2,2); 
+  c->Divide(3,2); 
 
   c->cd(1)->SetLogy(); 
 
+  gPad->SetGridx(); 
+  gPad->SetGridy(); 
   TH1 * fisher_roc =  (TH1*) f->Get("default/Method_Fisher/Fisher/MVA_Fisher_rejBvsS"); 
   p->roc_fisher = fisher_roc->Integral("width"); 
 
@@ -341,6 +343,8 @@ void makeCutPlot(const char * filter, TChain * bg, TChain * wais, TChain * ldb, 
 
 
   c->cd(2)->SetLogy(); 
+  gPad->SetGridx(); 
+  gPad->SetGridy(); 
 
   TH1* bdt_s = (TH1*) f->Get("default/Method_BDT/BDT/MVA_BDT_effS"); 
   printf("bdt_s: %p\n",bdt_s);
@@ -355,13 +359,33 @@ void makeCutPlot(const char * filter, TChain * bg, TChain * wais, TChain * ldb, 
   TH1 * bdt_roc =  (TH1*) f->Get("default/Method_BDT/BDT/MVA_BDT_rejBvsS"); 
   p->roc_bdt = bdt_roc->Integral("width"); 
 
+  c->cd(3)->SetLogy(); 
+
+  gPad->SetGridx(); 
+  gPad->SetGridy(); 
+  TH1* fda_s = (TH1*) f->Get("default/Method_FDA/FDA/MVA_FDA_effS"); 
+  printf("fda_s: %p\n",fda_s);
+  fda_s->SetLineColor(3); 
+
+  TH1* fda_b = (TH1*) f->Get("default/Method_FDA/FDA/MVA_FDA_effB"); 
+  printf("fda_b: %p\n",fda_b);
+  fda_b->SetLineColor(2); 
+  fda_b->DrawCopy(""); 
+  fda_s->DrawCopy("same"); 
+
+  TH1 * fda_roc =  (TH1*) f->Get("default/Method_FDA/FDA/MVA_FDA_rejBvsS"); 
+  p->roc_fda = fda_roc->Integral("width"); 
+
+
   TTree * t = (TTree*) f->Get("default/TestTree"); 
   assert(t); 
-  c->cd(3); 
+  c->cd(4); 
 
   t->Draw("peakHilbert:mapPeak:Fisher","","colz"); 
-  c->cd(4); 
+  c->cd(5); 
   t->Draw("peakHilbert:mapPeak:BDT","","colz"); 
+  c->cd(6); 
+  t->Draw("peakHilbert:mapPeak:FDA","","colz"); 
 
   c->SaveAs(TString::Format("filterPlots/mva_%s.png",filter)); 
 
@@ -392,7 +416,7 @@ void doFilterAlgo(const char * filter, const char * description)
     cldb.Add("filter/*_ldb_*.root"); 
 
     TChain cbg(filter); 
-    cbg.Add("filter/*bg*.root"); 
+    cbg.Add("filter/*_bg_*.root"); 
 
 
     pointing_info ldb_point;
@@ -488,7 +512,7 @@ void doFilterAlgo(const char * filter, const char * description)
     ofile.Form("filterPlots/slides/%s_background.row",filter); 
     row = fopen(ofile.Data(),"w"); 
 
-    fprintf(row,"%s&%d&%d&%d&%g (%0.2g) &%g (%0.2g) &%g (%0.2g) &%g (%0.2g) & %0.4g & %0.4g ",
+    fprintf(row,"%s&%d&%d&%d& %3.0g(%2.0g) &%3.0g(%2.0g) &%3.0g(%2.0g) &%3.0g(%2.0g) &%0.4g& %0.4g & %0.4g ",
                    escaped.Data(),      
                    reject.Nbg, reject.Nwais, reject.Nldb,
                    reject.wais_overlap, 
@@ -499,12 +523,11 @@ void doFilterAlgo(const char * filter, const char * description)
                    reject.wais_overlap_filtered / (reject.Nbg * reject.Nwais) ,
                    reject.ldb_overlap_filtered,
                    reject.ldb_overlap_filtered / (reject.Nbg * reject.Nldb) ,
-                   reject.roc_fisher, reject.roc_bdt
+                   reject.roc_fisher, reject.roc_bdt, reject.roc_fda 
          );
 
     fclose(row); 
  
-
 
     /* output the slides */ 
 
@@ -610,17 +633,19 @@ void doLatex()
   fprintf(latex,"\\author{Cosmin Deaconu}\n\n"); 
   fprintf(latex,"\\begin{document}\n"); 
   fprintf(latex,"\\begin{frame}[plain]\n\\maketitle \n\\end{frame}\n\n"); 
-  fprintf(latex,"\\begin{frame}\n\\frametitle{The contenders}\n\\begin{description}\n"); 
 
-  for (int i = 0; i < filters.size(); i++)
-  {
-    TString str(filters[i]); 
-    TString escaped = str.ReplaceAll("_","\\_"); 
-    fprintf(latex, "\t\\item[%s] %s\n", escaped.Data(), descriptions[i]); 
-  }
-  fprintf(latex,"\\end{description}\n\\end{frame}\n\n"); 
- 
-  fprintf(latex,"\\input{runs.tex}\n\n"); 
+fprintf(latex,  "\\begin{frame}\n\\frametitle{What's new}\n" 
+                  "  \\begin{itemize}\n" 
+                  "    \\item Added background rejection plot with filtered peak\n"
+                  "    \\item Added MVA methods with just map peak and unfiltered coherent peak\n"
+                  "    \\begin{itemize}\n"
+                  "        \\item Fisher discriminant\n"
+                  "        \\item BDT (though with 2 variables it's not boosted per se)\n"
+                  "        \\item FDA (Functional Discriminant Analysis). Now just equivalent Fisher discriminant with forced slope... but don't trust minimization yet). Tried to add cuts on a parameter but never minimized properly.\n"
+                  "    \\end{itemize}\n"
+                  "  \\end{itemize}\n"
+                  "\\end{frame}\n\n"); 
+
 
   fprintf(latex,  "\\begin{frame}\n\\frametitle{Notes}\n" 
                   "  \\begin{itemize}\n" 
@@ -636,6 +661,19 @@ void doLatex()
                   "      \\end{itemize}\n"
                   "  \\end{itemize}\n"
                   "\\end{frame}\n\n"); 
+
+  fprintf(latex,"\\begin{frame}\n\\frametitle{The contenders}\n\\begin{description}\n"); 
+
+  for (int i = 0; i < filters.size(); i++)
+  {
+    TString str(filters[i]); 
+    TString escaped = str.ReplaceAll("_","\\_"); 
+    fprintf(latex, "\t\\item[%s] %s\n", escaped.Data(), descriptions[i]); 
+  }
+  fprintf(latex,"\\end{description}\n\\end{frame}\n\n"); 
+ 
+  fprintf(latex,"\\input{runs.tex}\n\n"); 
+
 
   //WAIS Summary 
   fprintf(latex,"\\begin{frame}\n\\frametitle{WAIS Pulser Summary Table}\n\\tiny\n"); 
@@ -696,14 +734,15 @@ void doLatex()
 
   //Background Separation Summary Table
   fprintf(latex,"\\begin{frame}\n\\frametitle{Background Separation Summary Table}\n\\tiny\n"); 
-  fprintf(latex,"\\begin{tabular}{l||c|c|c||c|c||c|c||c|c|}\n"); 
-  fprintf(latex,"Filter & NBg & NWais & NLDB & WAIS Overlap & LDB Overlap & Filtered WAIS Overlap & Filtered LDB Overlap & Fisher ROC Ig & BDT ROC Ig \\\\\n\\hline\n"); 
+
+  fprintf(latex,"\\scalebox{0.8}{\\begin{tabular}{l||c|c|c||c|c||c|c||c|c|c|}\n"); 
+  fprintf(latex,"Filter & NBg & NWais & NLDB & WAIS Ovrlp & LDB Ovrlp & FiltWAIS Ovrlp & FiltLDB Ovrlp & ROCFsh& ROCBDT&ROCFDA \\\\\n\\hline\n"); 
   for (int i = 0; i < filters.size(); i++) 
   {
     fprintf(latex, "\\input{%s_background.row}\\\\\n\\hline\n", filters[i]); 
   }
 
-  fprintf(latex,"\\end{tabular}\n\\end{frame}\n\n"); 
+  fprintf(latex,"\\end{tabular}}\n\\end{frame}\n\n"); 
 
 
 
