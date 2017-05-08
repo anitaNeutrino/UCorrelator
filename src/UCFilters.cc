@@ -888,9 +888,9 @@ void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const Raw
   if (spec) 
   {
     // use peakiness to tune aggressivness
-    if (header->triggerTime > last_t)
+    if (header->realTime > last_t)
     {
-      TH2 * peaky = (TH2*) spec->avg(header->triggerTime)->getPeakiness(AnitaPol::AnitaPol_t(pol), i); 
+      TH2 * peaky = (TH2*) spec->avg(header->realTime)->getPeakiness(AnitaPol::AnitaPol_t(pol), i); 
 
       if (reduction[pol][i])
         delete reduction[pol][i]; 
@@ -900,7 +900,7 @@ void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const Raw
       for (int j = 0; j < reduction[pol][i]->GetN(); j++) 
       {
         reduction[pol][i]->GetX()[j] = peaky->GetXaxis()->GetBinLowEdge(j+1); 
-        double how_peaky = peaky->Interpolate(peaky->GetXaxis()->GetBinCenter(j+1), header->triggerTime); 
+        double how_peaky = peaky->Interpolate(peaky->GetXaxis()->GetBinCenter(j+1), header->realTime); 
         if (how_peaky < 1) how_peaky = 1; 
         reduction[pol][i]->GetY()[j] = min_power_ratio/TMath::Power(how_peaky,adaptive_exp); 
       }
