@@ -275,22 +275,22 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
     {
       if (fillme) 
       {
-        std::vector<std::vector<TGraphAligned* > > noise(48, std::vector<TGraphAligned*>(2)); 
+        std::vector<std::vector<TGraphAligned* > > noise(2, std::vector<TGraphAligned*>(48)); 
         for (int ant = 0; ant < 48; ant++)
         {
           for (int pol = 0; pol < 2; pol++) 
           {
             TH1 * avg = UCorrelator::SpectrumAverage::defaultThermal()->getSpectrumPercentile(AnitaPol::AnitaPol_t(pol), ant,0.5,true); 
-            noise[ant][pol] = new TGraphAligned(avg->GetNbinsX()); 
+            noise[pol][ant] = new TGraphAligned(avg->GetNbinsX()); 
             for (int i = 0; i < avg->GetNbinsX(); i++) 
             {
-              noise[ant][pol]->GetX()[i] = avg->GetBinLowEdge(i+1); 
-              noise[ant][pol]->GetY()[i] = avg->GetBinContent(i+1); 
+              noise[pol][ant]->GetX()[i] = avg->GetBinLowEdge(i+1); 
+              noise[pol][ant]->GetY()[i] = avg->GetBinContent(i+1); 
             }
             delete avg; 
           }
         }
-          fillme->addOperation(new GeometricFilter(noise)); 
+        fillme->addOperation(new GeometricFilter(noise)); 
       }
       if (need_description)
       {
@@ -879,7 +879,7 @@ void UCorrelator::SineSubtractFilter::process(FilteredAnitaEvent * ev)
       processOne(wf,h,i/2,pol); 
   }
 
-  last_t = ev->getHeader()->triggerTime; 
+  last_t = ev->getHeader()->realTime; //ev->getHeader()->triggerTime; 
 }
 
 void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const RawAnitaHeader * header, int i, int pol)
@@ -1182,7 +1182,8 @@ UCorrelator::AdaptiveMinimumPhaseFilter::~AdaptiveMinimumPhaseFilter()
 void UCorrelator::AdaptiveMinimumPhaseFilter::process(FilteredAnitaEvent * ev) 
 {
 
-  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
+//  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
+  double t = ev->getHeader()->realTime ;//TODO until icemc fixes 
   int bin = avg->avg(t)->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
 
 
@@ -1299,7 +1300,8 @@ UCorrelator::AdaptiveBrickWallFilter::~AdaptiveBrickWallFilter()
 void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
 {
 
-  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
+//  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
+  double t= ev->getHeader()->realTime; //until icemc fixes this
   int bin = avg->avg(t)->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
 
 
@@ -1378,7 +1380,8 @@ UCorrelator::AdaptiveButterworthFilter::AdaptiveButterworthFilter(const Spectrum
 void UCorrelator::AdaptiveButterworthFilter::process(FilteredAnitaEvent * ev) 
 {
 
-  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
+//  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
+  double t = ev->getHeader()->realTime; //until icemc fixes this 
   int bin = avg->avg(t)->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
 
   for (int ipol = 0; ipol < 2; ipol++) 
