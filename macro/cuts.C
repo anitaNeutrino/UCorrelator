@@ -15,5 +15,5 @@ TCut blastCut = "!flags.isPayloadBlast && flags.maxBottomToTopRatio < 2.6 && fla
 TCut brightestPeak = "(Iteration$ == 0 && peak[0][0].value > peak[1][0].value) || Iteration$ == 5 && (peak[1][0].value > peak[0][0].value)";
 TCut notTooFiltered = "flags.meanPowerFiltered[0] / flags.meanPower[0] > 0.2"; 
 TCut not460 = "abs(coherent[][].peakFrequency[0]-0.46) > 0.02"; 
-TCut thermal_sample = isReal && brightestPeak && !isWais && !isSun && !isNorth && aboveHorizon && isntSidelobe && badReconstructionCut && blastCut && triggered; 
+TCut thermal_sample = isReal && brightestPeak && !isWais && aboveHorizon && isntSidelobe && badReconstructionCut && blastCut && triggered && notMasked; 
 
