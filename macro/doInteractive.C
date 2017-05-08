@@ -7,7 +7,7 @@
 #include "FFTtools.h"
 #include "DigitalFilter.h" 
 
-UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool decimated = false )
+UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool decimated = false, bool simulated = false )
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
@@ -35,7 +35,7 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
 //strategy.addOperation(butter); 
 
 
-  AnitaDataset d(run,decimated);
+  AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? 0 : -1);
 
   event > 0 ? d.getEvent(event) : d.getEntry(-event); 
 
@@ -61,7 +61,7 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
 
 
   AnitaEventSummary sum; 
-  analyzer->analyze(ev,&sum); 
+  analyzer->analyze(ev,&sum,d.truth()); 
   analyzer->drawSummary(); 
   /*
   TCanvas * c2 = new TCanvas; 
