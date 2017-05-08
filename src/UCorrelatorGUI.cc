@@ -8,7 +8,7 @@
 #include "FilteredAnitaEvent.h" 
 
 
-UCorrelator::gui::Map::Map(const TH2D & hist, const FilteredAnitaEvent * ev, WaveformCombiner * c, WaveformCombiner *cf, AnitaPol::AnitaPol_t pol) 
+UCorrelator::gui::Map::Map(const TH2D & hist, const FilteredAnitaEvent * ev, WaveformCombiner * c, WaveformCombiner *cf, AnitaPol::AnitaPol_t pol, const AnitaEventSummary* sum) 
   : TH2D(hist), wfpad(0), f(ev), c(c), cf(cf), clicked(0), use_filtered(false),pol(pol)  
 {
   SetStats(0);  
@@ -16,41 +16,39 @@ UCorrelator::gui::Map::Map(const TH2D & hist, const FilteredAnitaEvent * ev, Wav
 
   /** figure out sun position */ 
 
-  UsefulAdu5Pat pat(*ev->getGPS()); 
 
-  double phi_sun,theta_sun; 
-  pat.getSunPosition(phi_sun,theta_sun); 
-  theta_sun*=-1;
+  double phi_sun = sum->sun.phi;
+  double theta_sun = -sum->sun.theta; 
   phi_sun = FFTtools::wrap(phi_sun,360); 
-  TMarker sun0(phi_sun,theta_sun,4); 
-  TMarker sun1(phi_sun,theta_sun,7); 
-  specials.push_back(sun0); 
-  specials.push_back(sun1); 
+  specials.push_back(TMarker(phi_sun,theta_sun,4)); 
+  specials.push_back(TMarker(phi_sun,theta_sun,7)); 
 
-  /** figure out if WAIS is in within ~ 1000 km */ 
 
-  if (pat.getWaisDivideTriggerTimeNs() < 3.3e6)
+  if (sum->mc.phi >-999)
   {
-    double phi_wais, theta_wais; 
-    pat.getThetaAndPhiWaveWaisDivide(theta_wais,phi_wais); 
-    theta_wais*=-180/M_PI; 
-    phi_wais*=180/M_PI; 
-    TMarker wais(phi_wais, theta_wais,29); 
-    wais.SetMarkerColor(2); 
-    specials.push_back(wais); 
+    TMarker mc(sum->mc.phi, -sum->mc.theta,29); 
+    mc.SetMarkerColor(2); 
+    specials.push_back(mc); 
+  }
+  else
+  {
+    /** figure out if WAIS is (roughly) above horizon*/ 
+    if (sum->wais.theta < 8)
+    {
+      TMarker wais(sum->wais.phi, -sum->wais.theta,29); 
+      wais.SetMarkerColor(2); 
+      specials.push_back(wais); 
+    }
+
+    /** figure out if LDB is (roughly) above horizon */
+    if (sum->ldb.theta < 8)
+    {
+      TMarker ldb(sum->ldb.phi, -sum->ldb.theta,29); 
+      ldb.SetMarkerColor(2); 
+      specials.push_back(ldb); 
+    }
   }
 
-  /** figure out if LDB is in within ~ 1000 km */ 
-  if (pat.getLDBTriggerTimeNs() < 3.3e6)
-  {
-    double phi_ldb, theta_ldb; 
-    pat.getThetaAndPhiWaveLDB(theta_ldb,phi_ldb); 
-    theta_ldb*=-180/M_PI;
-    phi_ldb *= 180/M_PI; 
-    TMarker ldb(phi_ldb, theta_ldb,29); 
-    ldb.SetMarkerColor(2); 
-    specials.push_back(ldb); 
-  }
   coherent = 0; 
   deconvolved = 0; 
 }

@@ -14,7 +14,7 @@
 #include "TMarker.h" 
 #include "TEllipse.h" 
 
-class AnitaEventSummary; 
+class AnitaEventSummary ; 
 class FilteredAnitaEvent; 
 class AnalysisWaveform; 
 
@@ -28,7 +28,11 @@ namespace UCorrelator
     class Map : public TH2D 
     {
       public:
-        Map(const TH2D & hist,const FilteredAnitaEvent* f,  WaveformCombiner * comb, WaveformCombiner * comb_filtered, AnitaPol::AnitaPol_t pol); 
+        /* Construct the map.
+         *
+         * The Summary doesn't have to be filled yet except for the pulsers / MC truth */ 
+
+        Map(const TH2D & hist,const FilteredAnitaEvent* f,  WaveformCombiner * comb, WaveformCombiner * comb_filtered, AnitaPol::AnitaPol_t pol, const AnitaEventSummary * sum); 
         virtual ~Map(); 
         virtual void Paint(Option_t * opt = ""); 
         virtual void ExecuteEvent(int event, int x, int y); 

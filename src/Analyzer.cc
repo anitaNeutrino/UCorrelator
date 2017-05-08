@@ -292,7 +292,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       if (interactive) 
       {
         if (zoomed_correlation_maps[pol][i]) delete zoomed_correlation_maps[pol][i]; 
-        zoomed_correlation_maps[pol][i] = new gui::Map(*zoomed, event, &wfcomb, &wfcomb_filtered,AnitaPol::AnitaPol_t(pol)); 
+        zoomed_correlation_maps[pol][i] = new gui::Map(*zoomed, event, &wfcomb, &wfcomb_filtered,AnitaPol::AnitaPol_t(pol), summary); 
         zoomed_correlation_maps[pol][i]->SetName(TString::Format("zoomed_%d_%d", pol,i)); 
       }
 
@@ -449,7 +449,7 @@ SECTION
     if (interactive) 
     {
        if (correlation_maps[pol]) delete correlation_maps[pol];
-       correlation_maps[pol] = new gui::Map(*corr.getHist(), event, &wfcomb, &wfcomb_filtered,AnitaPol::AnitaPol_t(pol) ); 
+       correlation_maps[pol] = new gui::Map(*corr.getHist(), event, &wfcomb, &wfcomb_filtered,AnitaPol::AnitaPol_t(pol), summary ); 
     }
   }
 
