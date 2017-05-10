@@ -221,12 +221,12 @@ UCorrelator::SpectrumAverage::SpectrumAverage(int run, int nsecs, const char * p
   if (!foundit) 
   {
     printf("Didn't find spectrum_averages... creating!\n"); 
-    if (!persistdir) 
+    if (!check_dir) 
     {
       printf("Define UCORRELATOR_SPECAVG_DIR to persist somewhere.\n"); 
     }
     computeAverage( selection, max_bottom_top_ratio); 
-    if (persistdir) saveToDir(persistdir); 
+    if (check_dir) saveToDir(check_dir); 
   }
 
   memset(peakiness,0,sizeof(peakiness)); 
