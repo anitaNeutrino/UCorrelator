@@ -339,6 +339,8 @@ SECTION
       fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol); 
 }
 
+
+
       if (interactive) //copy everything
       {
         coherent[pol][0][i]->~AnalysisWaveform(); 
@@ -454,6 +456,27 @@ SECTION
   }
 
   fillFlags(event, &summary->flags, pat); 
+
+  /*
+  if (truth)
+  { 
+    SECTIONS
+    {
+      SECTION
+      wfcomb.combine(summary->mc.phi, summary->mc.theta, event, AnitaPol::kHorizontal, 0); 
+      SECTION 
+      wfcomb_xpol.combine(summary->mc.phi, summary->mc.theta, event, AnitaPol::kVertical, 0); 
+    }
+
+    SECTIONS
+    {
+      SECTION
+      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), summary->mc.wf[AnitaPol::kHorizontal], AnitaPol::kHorizontal); 
+      SECTION
+      fillWaveformInfo(wfcomb_xpol.getCoherent(), wfcomb.getCoherent(), wfcomb_xpol.getCoherentAvgSpectrum(), summary->mc.wf[AnitaPol::kVertical], AnitaPol::kVertical); 
+    }
+  }
+  */
 
   if (interactive) last = *summary; 
 
