@@ -35,7 +35,7 @@ void doAll(int run = 352, int max = 0, bool deconvolve = true)
   {
     TF1 *fn = new TF1("foo"," (x < 0.2) * exp((x-0.2)/0.01)  + (x > 0.2 && x < 1.2) * (1-0.05*x) + (x > 1.2) * exp((1.2-x)/0.02)", 0,2); 
     cfg.response_option = UCorrelator::AnalysisConfig::ResponseSingleBRotter; 
-    cfg.deconvolution_method = new UCorrelator::WienerDeconvolution(fn); 
+    cfg.deconvolution_method = new AnitaResponse::WienerDeconvolution(fn); 
   }
 
 

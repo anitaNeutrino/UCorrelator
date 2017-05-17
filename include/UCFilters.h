@@ -13,11 +13,14 @@
 #include "SineSubtract.h" 
 #include "AnalysisWaveform.h" 
 
+namespace AnitaResponse{
+  class ResponseManager; 
+  class DeconvolutionMethod; 
+}
+
 namespace UCorrelator 
 {
 
-  class ResponseManager; 
-  class DeconvolutionMethod; 
   class SpectrumAverageLoader; 
 
 
@@ -314,30 +317,6 @@ namespace UCorrelator
       std::vector<TString> output_names;
       int nstored_freqs; 
   };
-
-  class DeconvolveFilter : public FilterOperation
-  {
-    public: 
-
-      DeconvolveFilter(const ResponseManager *rm, const DeconvolutionMethod * dm) 
-          : rm(rm), dm(dm)  
-        {;} 
-      
-  
-
-      virtual const char * tag() const { return "DeconvolveFilter"; } 
-      virtual const char * description() const { return "DeconvolveFilter"; } 
-
-      virtual void process(FilteredAnitaEvent * ev); 
-      
-
-    private: 
-      const ResponseManager *rm; 
-      const DeconvolutionMethod *dm; 
-
-  }; 
-
- 
 }
 
 
