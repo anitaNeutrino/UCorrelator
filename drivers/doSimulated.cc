@@ -21,7 +21,7 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * filter = 
 
 //  /*AnalysisWaveform::InterpolationType*/ AnalysisWaveform::defaultInterpolationType = AnalysisWaveform::REGULARIZED_SPARSE_YEN; 
 
-  AnitaDataset d(run,false,WaveCalType::kDefault,0); // Monte Carlo! 
+  AnitaDataset d(run,false,WaveCalType::kDefault,AnitaDataset::ANITA_MC_DATA); // Monte Carlo! 
   UCorrelator::AnalysisConfig cfg; 
   cfg.nmaxima = 2;
   cfg.enable_group_delay = false; 

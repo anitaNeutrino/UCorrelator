@@ -62,17 +62,9 @@ void setupFilters(TFile* out)
   justAlfa.addOperation(new ALFAFilter); 
 
 
-  addStrategy("sinsub_10_0"); 
-  addStrategy("adsinsub_1_10_0"); 
   addStrategy("adsinsub_2_10_0"); 
-  addStrategy("adsinsub_1_10_3"); 
-  addStrategy("adsinsub_2_10_3"); 
-  addStrategy("adsinsub_3_10_3"); 
-  addStrategy("adsinsub_2_20_0"); 
-  addStrategy("brickwall_2_0"); 
-  addStrategy("brickwall_2_1"); 
+  addStrategy("adsinsub_2_5_3"); 
   addStrategy("geom"); 
-
 }
 
 
@@ -90,7 +82,9 @@ int main(int nargs, char ** args)
   bool isMC = run <0; 
   bool isBG  = !isWAIS && !isLDB && !isMC; 
 
-  AnitaDataset d(abs(run), isBG,WaveCalType::kDefault,isMC ? 0 : -1); //only use decimated if background 
+  run = abs(run); 
+
+  AnitaDataset d(run, isBG,WaveCalType::kDefault,isMC ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA); //only use decimated if background 
 
   int max = nargs > 2 ? atoi(args[2]) : 0; 
 
