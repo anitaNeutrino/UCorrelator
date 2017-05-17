@@ -4,10 +4,15 @@
 #include "AnitaConventions.h" 
 class TH2; 
 
+
+namespace AnitaResponse
+{
+class DeconvolutionMethod; 
+}
+
 namespace UCorrelator
 {
 
-  class DeconvolutionMethod; 
 
   /** This class (really, it should be a struct but for CINT) stores configuration parameters that influence the behavior of th Analyzer. The defaults are defined
    * within AnalysisConfig.cc */ 
@@ -113,7 +118,7 @@ namespace UCorrelator
       int ldb_max_run; 
 
       /** TODO: this has to be loaded from file somehow */ 
-      DeconvolutionMethod * deconvolution_method; 
+    AnitaResponse::DeconvolutionMethod * deconvolution_method; 
     private: 
       mutable TH2 * the_ldb_hist; 
   };

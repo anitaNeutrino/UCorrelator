@@ -12,7 +12,7 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool useUnfiltered, bool deconvolve, const ResponseManager * response, bool alfa_hack)
+UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool useUnfiltered, bool deconvolve, const AnitaResponse::ResponseManager * response, bool alfa_hack)
   : coherent(260), deconvolved(260), alfa_hack(alfa_hack) 
 {
   setNAntennas(nantennas); 

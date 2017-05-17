@@ -102,7 +102,7 @@ int main(int nargs, char ** args)
   }
 
   cfg.response_option=UCorrelator::AnalysisConfig::ResponseIndividualBRotter;
-  cfg.deconvolution_method = new UCorrelator::AllPassDeconvolution; 
+  cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
   analyzer = new UCorrelator::Analyzer(&cfg); 
 
   setupFilters(&ofile); 

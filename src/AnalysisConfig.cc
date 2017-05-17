@@ -154,8 +154,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
 
   if (config) loadFromFile(config);
 
-  deconvolution_method = &kDefaultDeconvolution; 
-
+  deconvolution_method = &AnitaResponse::kDefaultDeconvolution; 
   
   the_ldb_hist = 0; 
 

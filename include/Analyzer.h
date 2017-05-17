@@ -7,7 +7,6 @@
 #include <vector>
 #include "TH2D.h"
 #include "simpleStructs.h"
-
 #include "AnitaEventSummary.h" 
 #include "ResponseManager.h" 
 
@@ -84,7 +83,7 @@ namespace UCorrelator
        /** Return the ith deconvolved averaged power for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
       const TGraphAligned * getDeconvolvedPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_power[pol][i][filtered ? 1: 0]; } 
 
-      ResponseManager * getResponseManager() { return &responses; } 
+      AnitaResponse::ResponseManager * getResponseManager() { return &responses; } 
 
 
 
@@ -121,7 +120,7 @@ namespace UCorrelator
 
       const AnalysisConfig * cfg; 
       Correlator corr; 
-      ResponseManager responses; 
+      AnitaResponse::ResponseManager responses; 
       WaveformCombiner wfcomb; 
       WaveformCombiner wfcomb_xpol; 
       WaveformCombiner wfcomb_filtered; 

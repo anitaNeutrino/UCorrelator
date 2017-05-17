@@ -14,23 +14,28 @@
 
 class FilteredAnitaEvent; 
 
-namespace UCorrelator
+namespace AnitaResponse
 {
   class ResponseManager; 
+
+}
+
+namespace UCorrelator
+{
 
   class WaveformCombiner
   {
 
     public: 
 
-      WaveformCombiner(int nantennas = 10, int npad = 3, bool useUnfiltered = true, bool deconvolve = false, const ResponseManager * response = 0, bool enableALFAHack=true); 
+    WaveformCombiner(int nantennas = 10, int npad = 3, bool useUnfiltered = true, bool deconvolve = false, const AnitaResponse::ResponseManager * response = 0, bool enableALFAHack=true); 
 
       /** Sets the responses used when deconvolving. 
        * If a response is 0, nothing is done. 
        * Responses may be set globally, globally for polarizations or per antenna 
        */ 
 
-      void setResponseManager(const ResponseManager * rm)  { responses = rm;} 
+    void setResponseManager(const AnitaResponse::ResponseManager * rm)  { responses = rm;} 
 
       virtual ~WaveformCombiner(); 
 
@@ -61,7 +66,7 @@ namespace UCorrelator
 
 
       const AnalysisWaveform * wf(const FilteredAnitaEvent*, int ant, AnitaPol::AnitaPol_t pol); 
-      const ResponseManager * responses; 
+    const AnitaResponse::ResponseManager * responses; 
       int npad; 
       int nant; 
       bool use_raw; 

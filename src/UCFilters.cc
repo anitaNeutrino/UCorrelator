@@ -29,8 +29,11 @@ FilterStrategy * UCorrelator::getStrategyWithKey (const char * key)
 
 static std::map<const char *, TString> key_descs; 
 static UCorrelator::SpectrumAverageLoader avgldr; 
-static UCorrelator::ResponseManager * responseManager = 0; 
-static UCorrelator::AllPassDeconvolution allpass; 
+static AnitaResponse::ResponseManager * responseManager = 0; 
+static AnitaResponse::AllPassDeconvolution allpass; 
+// static UCorrelator::SpectrumAverageLoader avgldr; 
+// static UCorrelator::ResponseManager * responseManager = 0; 
+// static UCorrelator::AllPassDeconvolution allpass; 
 
 const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const char * key) 
 {
@@ -259,7 +262,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
       //TODO: A4 support 
       if (!responseManager && fillme ) 
       {
-        responseManager = new ResponseManager("IndividualBRotter",3); 
+        responseManager = new AnitaResponse::ResponseManager("IndividualBRotter",3); 
       }
 
       if (need_description) 
@@ -268,7 +271,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
       }
 
       if (fillme) 
-        fillme->addOperation( new DeconvolveFilter(responseManager, &allpass)); 
+        fillme->addOperation( new AnitaResponse::DeconvolveFilter(responseManager, &allpass)); 
     }
 
     else if (strcasestr(tok.Data(),"geom"))
@@ -1428,22 +1431,6 @@ void UCorrelator::AdaptiveButterworthFilter::process(FilteredAnitaEvent * ev)
 
   last_bin = bin; 
 
-}
-
-
-void UCorrelator::DeconvolveFilter::process(FilteredAnitaEvent * ev) 
-{
-
-#ifdef UCORRELATOR_OPENMP
-#pragma omp parallel for 
-#endif
-  for (int i = 0; i < 2*NUM_SEAVEYS; i++) 
-  {
-    AnitaPol::AnitaPol_t pol = AnitaPol::AnitaPol_t( i %2); 
-    int ant = i /2; 
-    rm->response(pol,ant)->deconvolveInPlace(getWf(ev,ant,pol), dm); 
-
-  }
 }
 
 
