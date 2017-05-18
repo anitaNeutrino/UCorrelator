@@ -127,8 +127,6 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
       PrettyAnitaEvent dumb(d.calibrated());
       theCor = dumb.createCorrelationSummaryAnita3(ant,pol,deltaT);
 
-
-
       for(int corInd=0;corInd<NUM_CORRELATIONS_ANITA3;corInd++) {
 
 	const TGraphAligned *g1 = ev->getFilteredGraph(theCor->firstAnt[corInd],  pol)->even();
@@ -181,8 +179,6 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
 	  }	  
 	}
 	
-	// delete g1;
-	// delete g2;
 	delete grCor;
       }
       
