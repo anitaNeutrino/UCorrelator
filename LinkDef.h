@@ -19,11 +19,6 @@
 #pragma link C++ class UCorrelator::Baseline;
 #pragma link C++ class UCorrelator::SpectrumAverage;
 #pragma link C++ class UCorrelator::Correlator;
-#pragma link C++ class UCorrelator::DeconvolutionMethod;
-#pragma link C++ class UCorrelator::NaiveDeconvolution;
-#pragma link C++ class UCorrelator::BandLimitedDeconvolution;
-#pragma link C++ class UCorrelator::Response;
-#pragma link C++ class UCorrelator::CompositeResponse;
 #pragma link C++ class UCorrelator::ComplicatedNotchFilter;
 #pragma link C++ class UCorrelator::SineSubtractFilter;
 #pragma link C++ class UCorrelator::AdaptiveFilterAbby;
@@ -31,16 +26,11 @@
 #pragma link C++ class UCorrelator::AdaptiveMinimumPhaseFilter;
 #pragma link C++ class UCorrelator::AdaptiveBrickWallFilter; 
 #pragma link C++ class UCorrelator::AdaptiveButterworthFilter;
-#pragma link C++ class UCorrelator::DeconvolveFilter;
 #pragma link C++ class UCorrelator::WaveformCombiner;
 #pragma link C++ class UCorrelator::Analyzer;
 #pragma link C++ class UCorrelator::AnalysisConfig;
-#pragma link C++ class UCorrelator::ResponseManager; 
-#pragma link C++ class UCorrelator::WienerDeconvolution; 
-#pragma link C++ class UCorrelator::AllPassDeconvolution; 
 #pragma link C++ class UCorrelator::PointingResolution;
 #pragma link C++ class UCorrelator::PointingResolutionModel;
-
 
 #pragma link C++ class UCorrelator::gui::Map; 
 
