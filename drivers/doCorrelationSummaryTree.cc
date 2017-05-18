@@ -155,10 +155,10 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
 	theCor->maxCorVals[corInd]=theValues[maxIndex];
 	theCor->maxCorTimes[corInd]=theTimes[maxIndex];
 
-	std::cout << theCor->firstAnt[corInd] << "\t" << theCor->secondAnt[corInd]
-		  << "\t" << theCor->maxCorTimes[corInd] 
-		  << "\t" << theCor->maxCorVals[corInd] << "\t" 
-		  << "\t" << std::endl;
+	// std::cout << theCor->firstAnt[corInd] << "\t" << theCor->secondAnt[corInd]
+	// 	  << "\t" << theCor->maxCorTimes[corInd] 
+	// 	  << "\t" << theCor->maxCorVals[corInd] << "\t" 
+	// 	  << "\t" << std::endl;
 
 	theCor->secondCorVals[corInd][0]=theCor->maxCorVals[corInd];
 	theCor->secondCorTimes[corInd][0]=theCor->maxCorTimes[corInd];
@@ -218,9 +218,10 @@ int main (int nargs, char ** args)
   const char * outDir = nargs < 6 ? 0 :args[5]; 
 
   if (filter) {
-    doCorrelationSummaryTree(run, max, start, filter);
     if (outDir)
       doCorrelationSummaryTree(run, max, start, filter, outDir);
+    else
+      doCorrelationSummaryTree(run, max, start, filter);
   }
   else
     doCorrelationSummaryTree(run, max, start);
