@@ -38,6 +38,8 @@
 #pragma link C++ class UCorrelator::ResponseManager; 
 #pragma link C++ class UCorrelator::WienerDeconvolution; 
 #pragma link C++ class UCorrelator::AllPassDeconvolution; 
+#pragma link C++ class UCorrelator::PointingResolution;
+#pragma link C++ class UCorrelator::PointingResolutionModel;
 
 
 #pragma link C++ class UCorrelator::gui::Map; 
