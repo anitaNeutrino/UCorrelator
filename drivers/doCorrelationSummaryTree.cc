@@ -23,11 +23,9 @@
 #include "RawAnitaHeader.h"
 #include "CorrelationSummaryAnita3.h"
 
-using namespace std;
-
-void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_5_3_ad_2" )
+void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_5_3_ad_2", const char * outputDir = "correlationSummary")
 {
-
+  
   FFTtools::loadWisdom("wisdom.dat"); 
 
   AnitaVersion::set(3);
@@ -70,7 +68,7 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
     isLDB = true;
     delay =  50000000; // V-POL pulse at 50 ms runs 154-171
   } else {
-    cout << "Unknown run" << endl;
+    std::cout << "Unknown run" << std::endl;
     return;
   }
 
@@ -92,7 +90,7 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
 
   
   TString outname; 
-  outname.Form("correlationSummary/%d_%s.root",run, filter); 
+  outname.Form("%s/%d_%s.root", outputDir, run, filter); 
 
   TFile ofile(outname, "RECREATE"); 
 
@@ -133,8 +131,8 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
 
       for(int corInd=0;corInd<NUM_CORRELATIONS_ANITA3;corInd++) {
 
-	const TGraphAligned *g1 = ev->getFilteredGraph(theCor->firstAnt[corInd],pol)->even();
-	const TGraphAligned *g2 = ev->getFilteredGraph(theCor->firstAnt[corInd],pol)->even();
+	const TGraphAligned *g1 = ev->getFilteredGraph(theCor->firstAnt[corInd],  pol)->even();
+	const TGraphAligned *g2 = ev->getFilteredGraph(theCor->secondAnt[corInd], pol)->even();
 
 	TGraph *grCor;
 
@@ -149,6 +147,7 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
 	double *theValues = grCor->GetY();
       
 	int numPoints=grCor->GetN();
+
 	double rmsVal=TMath::RMS(numPoints,theValues);
 	int maxIndex=TMath::LocMax(numPoints,theValues);
 
@@ -156,11 +155,10 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
 	theCor->maxCorVals[corInd]=theValues[maxIndex];
 	theCor->maxCorTimes[corInd]=theTimes[maxIndex];
 
-	//      std::cout << theCor->firstAnt[corInd] << "\t" << theCor->secondAnt[corInd]
-	// 		     << "\t" << theCor->maxCorTimes[corInd] 
-	// 		     << "\t" << theCor->maxCorVals[corInd] << "\t" 
-	// 		     << "\t" << (theCor->maxCorTimes[corInd]-fWaveOffset)/fDeltaT << "\t"
-	// 		     << fWaveOffset << "\t" << fDeltaT << std::endl;
+	std::cout << theCor->firstAnt[corInd] << "\t" << theCor->secondAnt[corInd]
+		  << "\t" << theCor->maxCorTimes[corInd] 
+		  << "\t" << theCor->maxCorVals[corInd] << "\t" 
+		  << "\t" << std::endl;
 
 	theCor->secondCorVals[corInd][0]=theCor->maxCorVals[corInd];
 	theCor->secondCorTimes[corInd][0]=theCor->maxCorTimes[corInd];
@@ -213,15 +211,19 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
 int main (int nargs, char ** args)
 {
    
-  int run = nargs < 2 ? 352 : atoi(args[1]); 
+  int run = nargs < 2 ? 352 : atoi(args[1]);
   int max = nargs < 3 ? 0 : atoi(args[2]); 
   int start = nargs < 4 ? 0 : atoi(args[3]); 
   const char * filter = nargs < 5 ? 0 :args[4]; 
+  const char * outDir = nargs < 6 ? 0 :args[5]; 
 
-  if (filter) 
-    doCorrelationSummaryTree(run,max,start,filter); 
+  if (filter) {
+    doCorrelationSummaryTree(run, max, start, filter);
+    if (outDir)
+      doCorrelationSummaryTree(run, max, start, filter, outDir);
+  }
   else
-    doCorrelationSummaryTree(run,max,start); 
+    doCorrelationSummaryTree(run);
 
 
 }
