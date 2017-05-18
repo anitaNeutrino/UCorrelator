@@ -90,7 +90,7 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
 
   
   TString outname; 
-  outname.Form("%s/%d_%s.root", outputDir, run, filter); 
+  outname.Form("%s/CorrelationSummaryTree_%d_%s.root", outputDir, run, filter); 
 
   TFile ofile(outname, "RECREATE"); 
 
@@ -223,7 +223,7 @@ int main (int nargs, char ** args)
       doCorrelationSummaryTree(run, max, start, filter, outDir);
   }
   else
-    doCorrelationSummaryTree(run);
+    doCorrelationSummaryTree(run, max, start);
 
 
 }
