@@ -51,22 +51,30 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
   Int_t delayGenerator = 199996850; // delay generator was not exactly 200 ms
   Int_t delay=0;
   Int_t constdelay = 500;
+  Double_t triggerTimeNsExpected;
+  Double_t triggerTimeNs;
   Int_t deltaTriggerTimeNs;
 
+  std::string pulser="";
+  
   if (run>300){ // WAIS
     pol = AnitaPol::kHorizontal;
+    pulser+="WAIS";
   } else if (run<150){ // LDB VPOL 
     pol = AnitaPol::kVertical;
     isLDB = true;
     delay =  25000000; // V-POL pulse at 25 ms runs 145-149
+    pulser+="LDB";
   } else if (run<154){ // LDB HPOL
     pol = AnitaPol::kHorizontal;
     isLDB = true;
     delay =  50000000; // H-POL pulse at 50 ms
+    pulser+="LDB";
   } else if (run<172){ // LDB VPOL
     pol = AnitaPol::kVertical;
     isLDB = true;
     delay =  50000000; // V-POL pulse at 50 ms runs 154-171
+    pulser+="LDB";
   } else {
     std::cout << "Unknown run" << std::endl;
     return;
@@ -90,7 +98,7 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
 
   
   TString outname; 
-  outname.Form("%s/CorrelationSummaryTree_%d_%s.root", outputDir, run, filter); 
+  outname.Form("%s/CorrelationSummaryTree_%s_%s_%d_%s.root", outputDir, pulser.c_str(), cpol, run, filter); 
 
   TFile ofile(outname, "RECREATE"); 
 
@@ -106,6 +114,8 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
   Double_t thetaWave, phiWave;
   Int_t ant;
   int ndone=0;
+
+  bool check = false;
   
   for (int i =start ; i < d.N(); i++)
   {
@@ -115,12 +125,26 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
 
     UsefulAdu5Pat pat(d.gps()); 
 
-    if (UCorrelator::isWAISHPol(&pat, d.header()))
+    if (isLDB){
+      
+      triggerTimeNs         = d.header()->triggerTimeNs; 
+      triggerTimeNsExpected = pat.getLDBTriggerTimeNs();
+      deltaTriggerTimeNs    = Int_t(triggerTimeNs) - Int_t(triggerTimeNsExpected);
+      deltaTriggerTimeNs    = deltaTriggerTimeNs%(delayGenerator) - delay - constdelay;
+     
+      check = (TMath::Abs(deltaTriggerTimeNs) < cutTimeNs);
+     
+    }else{
+      check=UCorrelator::isWAISHPol(&pat, d.header());
+    }
+    
+    if (check)
     {
       printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone); 
       ev = new FilteredAnitaEvent(d.useful(), &strategy, d.gps(), d.header());      
 
-      pat.getThetaAndPhiWaveWaisDivide(thetaWave,phiWave);
+      if (isLDB) pat.getThetaAndPhiWaveLDB(thetaWave,phiWave);
+      else pat.getThetaAndPhiWaveWaisDivide(thetaWave,phiWave);
       
       ant=fGeomTool->getTopAntNearestPhiWave(phiWave, pol);
 
