@@ -34,9 +34,30 @@ namespace UCorrelator
 
   class PointingResolutionModel 
   {
-    virtual void computePointingResolution(const AnitaEventSummary * sum, AnitaPol::AnitaPol_t pol, int peak, PointingResolution * p) = 0; 
+    public: 
+      virtual PointingResolution *  computePointingResolution(const AnitaEventSummary * sum, AnitaPol::AnitaPol_t pol, int peak, PointingResolution * p = 0) const = 0; 
+      virtual ~PointingResolutionModel() { ; } 
   }; 
 
+
+
+  class ConstantPointingResolutionModel
+  {
+    public: 
+      ConstantPointingResolutionModel(double dphi, double dtheta, double rho = 0) 
+        : dphi(dphi), dtheta(dtheta), rho(rho) { }
+
+
+      virtual PointingResolution * computePointingResolution(const AnitaEventSummary * sum, AnitaPol::AnitaPol_t pol, int peak, PointingResolution *p) const
+      {
+        new (p) PointingResolution(sum->peak[pol][peak].phi, sum->peak[pol][peak].theta, dphi,dtheta,rho); 
+        return p; 
+      }
+
+      private: 
+        double dphi, dtheta, rho; 
+
+  }; 
 
 }
 
