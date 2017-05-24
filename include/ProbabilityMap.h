@@ -8,7 +8,7 @@
 
 #include "AntarcticaGeometry.h" 
 #include "AnitaEventSummary.h" 
-#include "ResolutionModel.h" 
+#include "PointingResolutionModel.h" 
 
 namespace UCorrelator
 {
@@ -31,7 +31,7 @@ namespace UCorrelator
     private:
       const AntarcticSegmentationScheme * g; 
       std::vector<double> ps; 
-      std::vector< std::vector<double>> NAboveLevel; 
+      std::vector< std::vector<double> > NAboveLevel; 
       std::vector<double> levels; 
   }; 
 }

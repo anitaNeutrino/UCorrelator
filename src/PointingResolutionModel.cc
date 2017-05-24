@@ -1,4 +1,4 @@
-#include "ResolutionModel.h" 
+#include "PointingResolutionModel.h" 
 #include "TMath.h" 
 
 
