@@ -67,12 +67,14 @@ Implemented filters are inside include/UCFilters.h
 A user-friendly way of adding the default strategy is 
 \verbatim
 FilterStrategy strategy; 
-
 UCorrelator::fillStrategyWithKey(&strategy,"sinsub_5_3_ad_2"); 
-
+\endverbatim
 or 
+
+\verbatim
 FilterStrategy * strategy = UCorrelator::getStrategyWithKey("sinsub_5_3_ad_2"); 
 
+\endverbatim
 
 Adaptive filters like the default greatly benefit from having
 UCORRELATOR_SPECAVG_DIR defined to cache the necessary spectrum averages (about
@@ -80,8 +82,8 @@ UCORRELATOR_SPECAVG_DIR defined to cache the necessary spectrum averages (about
 UCORRELATOR_SPECAVG_DIR isn't defined, they won't be persisted. You may also
 download all the averages by doing something like :
 
+\verbatim
 for i in $(seq 130 1 439); do curl http://users.rcc.uchicago.edu/~cozzyd/specavg/${i}_60.root > ${i}_60.root; done
-
 \endverbatim
 
 
