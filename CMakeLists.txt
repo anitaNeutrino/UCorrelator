@@ -194,6 +194,7 @@ endmacro()
 
 
 do_driver(doWais)
+do_driver(doResolutions)
 do_driver(doCorrelationSummaryTree) 
 do_driver(doSimulated) 
 do_driver(doDecimated) 
