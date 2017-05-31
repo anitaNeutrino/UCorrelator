@@ -10,7 +10,7 @@ namespace UCorrelator
   {
     public: 
 
-      PointingResolution(double phi, double theta, double dphi, double dtheta, double rho = 0); 
+      PointingResolution(double phi = 0, double theta = 0, double dphi = 0, double dtheta = 0, double rho = 0); 
 
       double * computeProbability(int N, const double *phi, 
                                          const double *theta,
@@ -41,10 +41,10 @@ namespace UCorrelator
 
 
 
-  class ConstantPointingResolutionModel
+  class ConstantPointingResolutionModel : public PointingResolutionModel
   {
     public: 
-      ConstantPointingResolutionModel(double dphi, double dtheta, double rho = 0) 
+      ConstantPointingResolutionModel(double dphi=0.3, double dtheta=0.2, double rho = 0) 
         : dphi(dphi), dtheta(dtheta), rho(rho) { }
 
 
