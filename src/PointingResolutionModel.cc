@@ -1,4 +1,4 @@
-#include "ResolutionModel.h" 
+#include "PointingResolutionModel.h" 
 #include "TMath.h" 
 
 
@@ -25,6 +25,7 @@ double UCorrelator::PointingResolution::computeProbability(double _phi, double _
 
 
 
+__attribute__((optimize("-ffast-math","-ftree-vectorize"))) 
 double * UCorrelator::PointingResolution::computeProbability(int N, 
                                                              const double * __restrict__ vphi,
                                                              const double * __restrict__ vtheta, 
@@ -32,7 +33,12 @@ double * UCorrelator::PointingResolution::computeProbability(int N,
 {
   if (!p) p = new double[N]; 
 
-  for (int i = 0; i < N; i++) 
+  //TODO vectorize the first part of this loop
+  
+  int start = 0; 
+
+#pragma omp simd 
+  for (int i = start; i < N; i++) 
   {
     double phidiff = vphi[i]-phi; 
     double thetadiff = vtheta[i]-theta; 
