@@ -30,6 +30,7 @@
 #pragma link C++ class UCorrelator::Analyzer;
 #pragma link C++ class UCorrelator::AnalysisConfig;
 #pragma link C++ class UCorrelator::PointingResolution;
+#pragma link C++ class UCorrelator::ProbabilityMap;
 #pragma link C++ class UCorrelator::PointingResolutionModel;
 
 #pragma link C++ class UCorrelator::gui::Map; 
