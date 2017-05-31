@@ -26,6 +26,7 @@ UCorrelator::gui::Map::Map(const TH2D & hist, const FilteredAnitaEvent * ev, Wav
 
   if (sum->mc.phi >-999)
   {
+//    printf("MC position: phi=%g theta=%g\n",sum->mc.phi, sum->mc.theta ); 
     TMarker mc(sum->mc.phi, -sum->mc.theta,29); 
     mc.SetMarkerColor(2); 
     specials.push_back(mc); 
@@ -103,12 +104,23 @@ void UCorrelator::gui::Map::Paint(Option_t * opt)
   {
     for (size_t i = 0; i < rough_m.size(); i++) 
     {
+      if (rough_m[i].GetX() < GetXaxis()->GetXmin()) continue;
+      if (rough_m[i].GetX() > GetXaxis()->GetXmax()) continue;
+      if (rough_m[i].GetY() < GetYaxis()->GetXmin()) continue;
+      if (rough_m[i].GetY() > GetXaxis()->GetXmax()) continue;
+
       rough_m[i].SetMarkerSize(1+rough_m.size()-i); 
       rough_m[i].Draw(); 
     }
 
     for (size_t i = 0; i < fine_m.size(); i++) 
     {
+      if (fine_m[i].GetX() < GetXaxis()->GetXmin()) continue;
+      if (fine_m[i].GetX() > GetXaxis()->GetXmax()) continue;
+      if (fine_m[i].GetY() < GetYaxis()->GetXmin()) continue;
+      if (fine_m[i].GetY() > GetXaxis()->GetXmax()) continue;
+
+ 
       fine_m[i].Draw(); 
     }
   }
@@ -128,6 +140,12 @@ void UCorrelator::gui::Map::Paint(Option_t * opt)
   {
     for (size_t i = 0; i < specials.size(); i++) 
     {
+      if (specials[i].GetX() < GetXaxis()->GetXmin()) continue;
+      if (specials[i].GetX() > GetXaxis()->GetXmax()) continue;
+      if (specials[i].GetY() < GetYaxis()->GetXmin()) continue;
+      if (specials[i].GetY() > GetXaxis()->GetXmax()) continue;
+
+ 
       specials[i].Draw(); 
     }
   }
