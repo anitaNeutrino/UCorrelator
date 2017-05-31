@@ -457,7 +457,6 @@ SECTION
 
   fillFlags(event, &summary->flags, pat); 
 
-  /*
   if (truth)
   { 
     SECTIONS
@@ -471,12 +470,11 @@ SECTION
     SECTIONS
     {
       SECTION
-      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), summary->mc.wf[AnitaPol::kHorizontal], AnitaPol::kHorizontal); 
+      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kHorizontal]), AnitaPol::kHorizontal); 
       SECTION
-      fillWaveformInfo(wfcomb_xpol.getCoherent(), wfcomb.getCoherent(), wfcomb_xpol.getCoherentAvgSpectrum(), summary->mc.wf[AnitaPol::kVertical], AnitaPol::kVertical); 
+      fillWaveformInfo(wfcomb_xpol.getCoherent(), wfcomb.getCoherent(), wfcomb_xpol.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kVertical]), AnitaPol::kVertical); 
     }
   }
-  */
 
   if (interactive) last = *summary; 
 
