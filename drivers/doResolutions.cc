@@ -15,8 +15,11 @@
 #include "RawAnitaHeader.h"
 
 
-void doResolutions( int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_10_3_ad_2",  const char * outputDir = "photogrammetry" )
+void doResolutions( int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_5_3_ad_2",  const char * outputDir = "photogrammetry", const char *phaseCenterFile="photogrammetry" )
 {
+
+  std::ifstream phaseCenterIn(phaseCenterFile);
+
 
   FFTtools::loadWisdom("wisdom.dat"); 
 
@@ -24,12 +27,59 @@ void doResolutions( int run = 352, int max = 0, int start = 0, const char * filt
   
   AnitaGeomTool *fGeomTool = AnitaGeomTool::Instance();
   fGeomTool->usePhotogrammetryNumbers(1);
-  AnitaEventCalibrator* cal = AnitaEventCalibrator::Instance();
-  for(Int_t surf=0; surf<NUM_SURF; surf++){
-    for(Int_t chan=0; chan<NUM_CHAN; chan++){
-      cal->relativePhaseCenterToAmpaDelays[surf][chan] = 0; ///< From phase center to AMPAs (hopefully)
+
+  
+  if(phaseCenterIn.is_open()==0){
+    
+    std::cout << "USING PHOTOGRAMMETRY POSITIONS !!!!!!! " << std::endl;
+    AnitaEventCalibrator* cal = AnitaEventCalibrator::Instance();
+    for(Int_t surf=0; surf<NUM_SURF; surf++){
+      for(Int_t chan=0; chan<NUM_CHAN; chan++){
+	  cal->relativePhaseCenterToAmpaDelays[surf][chan]=0; 
+      }
     }
+    
+  } else {
+  
+    Double_t extraCableDelays[48];
+    Double_t fittedDeltaRs[48];
+    Double_t fittedDeltaPhi[48];
+    Double_t fittedDeltaZ[48];
+  
+    Int_t ant;
+    Double_t dr, dPhiRad, dz, dt;
+
+    std::cout << "Reading phase centers from " << phaseCenterFile << std::endl;
+    while(phaseCenterIn >> ant >> dr >> dz >> dPhiRad >> dt){
+      extraCableDelays[ant]   = dt;
+      fittedDeltaRs[ant]      = dr;
+      fittedDeltaPhi[ant]     = dPhiRad;
+      fittedDeltaZ[ant]       = dz;
+      // std::cout << ant << " " << extraCableDelays[ant] << std::endl;
+    }
+
+  
+    AnitaPol::AnitaPol_t tempPol;
+    AnitaEventCalibrator* cal = AnitaEventCalibrator::Instance();
+    for(Int_t surf=0; surf<NUM_SURF; surf++){
+      for(Int_t chan=0; chan<NUM_CHAN; chan++){
+	fGeomTool->getAntPolFromSurfChan(surf,chan, ant, tempPol);
+	if (ant!=-1)  cal->relativePhaseCenterToAmpaDelays[surf][chan] = extraCableDelays[ant]; 
+
+      }
+    }
+
+    for (Int_t iant=0; iant<48; iant++){
+      fGeomTool->deltaRPhaseCentre[iant][0]   = fGeomTool->deltaRPhaseCentre[iant][1]   = fittedDeltaRs[iant]  ;
+      fGeomTool->deltaPhiPhaseCentre[iant][0] = fGeomTool->deltaPhiPhaseCentre[iant][1] = fittedDeltaPhi[iant] ;
+      fGeomTool->deltaZPhaseCentre[iant][0]   = fGeomTool->deltaZPhaseCentre[iant][1]   = fittedDeltaZ[iant]   ;
+      std::cout << fGeomTool->deltaRPhaseCentre[iant][0] << " " << fGeomTool->deltaPhiPhaseCentre[iant][0] << " " <<  fGeomTool->deltaZPhaseCentre[iant][0] << std::endl;
+    }
+    fGeomTool->addPhaseCenters();
+    fGeomTool->usePhotogrammetryNumbers(0);
+  
   }
+
   
   AnitaPol::AnitaPol_t pol;
 
@@ -165,10 +215,11 @@ int main (int nargs, char ** args)
   int start = nargs < 4 ? 0 : atoi(args[3]); 
   const char * filter = nargs < 5 ? 0 :args[4]; 
   const char * outDir = nargs < 6 ? 0 :args[5];
+  const char * phaseCenterFile = nargs < 7 ? 0 :args[6];
   
   if (filter) {
-    if (outDir)
-      doResolutions(run,max,start,filter, outDir);
+    if (outDir && phaseCenterFile)
+      doResolutions(run,max,start,filter, outDir, phaseCenterFile);
     else
       doResolutions(run,max,start,filter); 
   }
