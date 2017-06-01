@@ -1,8 +1,17 @@
 #include "ProbabilityMap.h" 
-#include "Math/Delaunay2D.h"
 #include "PointingResolutionModel.h"
 #include "Adu5Pat.h" 
+ 
+#define HAVE_DELAUNAY 1
 
+#if ROOT_VERSION_CODE <= ROOT_VERSION(6,0,0)
+ #define HAVE_DELAUNAY 0
+#endif
+
+
+#ifdef HAVE_DELAUNAY
+#include "Math/Delaunay2D.h"
+#endif
 
 #include "TGraph2D.h" 
 #include "TFile.h" 
@@ -231,6 +240,7 @@ void UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummary *
       g2d.Write(TString::Format("g%d",seg)); 
     }
 
+#ifdef HAVE_DELAUNAY
     ROOT::Math::Delaunay2D del (nsamples,&phis[0], &thetas[0], &probs[0]); 
     del.FindAllTriangles(); 
     // the delaunay triangulation stupidly normalizes... have to unnormalize it
@@ -259,6 +269,10 @@ void UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummary *
         sum += area /3. *  probs[tri.idx[j]];
       }
     }
+#else
+    sum =-1; 
+    fprintf(stderr,"ROOT 5 not currently supported in Probability Map due to lack of ROOT/Math/Delaunay2D.h. Will be fixed soon\n"); 
+#endif
 
     double seg_p = sum; 
 //    printf("%d %g\n",seg, seg_p); 
