@@ -2,10 +2,9 @@
 #include "PointingResolutionModel.h"
 #include "Adu5Pat.h" 
  
-#define HAVE_DELAUNAY 1
 
-#if ROOT_VERSION_CODE <= ROOT_VERSION(6,0,0)
- #define HAVE_DELAUNAY 0
+#if ROOT_VERSION_CODE >= ROOT_VERSION(6,0,0)
+ #define HAVE_DELAUNAY 1
 #endif
 
 
