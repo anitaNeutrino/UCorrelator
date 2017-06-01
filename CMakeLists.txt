@@ -122,7 +122,7 @@ mark_as_advanced ( CMAKE_CXX_FLAGS_DEFAULT CMAKE_C_FLAGS_DEFAULT CMAKE_EXE_LINKE
 
 if (NOT CMAKE_BUILD_TYPE) 
   set (CMAKE_BUILD_TYPE Default
-    CACHE STRING "Choose tye type of build: None Debug Release RelWithDebInfo MinSizeRel Default"
+    CACHE STRING "Choose type of build: None Debug Release RelWithDebInfo MinSizeRel Default"
     FORCE ) 
 endif()
 
