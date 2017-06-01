@@ -35,7 +35,7 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
 //strategy.addOperation(butter); 
 
 
-  AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? 0 : -1);
+  AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA );
 
   event > 0 ? d.getEvent(event) : d.getEntry(-event); 
 
@@ -44,7 +44,7 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
   UCorrelator::AnalysisConfig cfg; 
   cfg.nmaxima = 1; 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
-  cfg.deconvolution_method = new UCorrelator::AllPassDeconvolution; 
+  cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
 //  cfg.response_option = UCorrelator::AnalysisConfig::ResponseHarmSignalOnly; 
   //cfg.combine_unfiltered = false; 
 
