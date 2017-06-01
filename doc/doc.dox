@@ -4,44 +4,33 @@
 
 \section intro Introduction 
 
-UCorrelator is the UChicago ANITA analysis software. It is heavily under
-development, but even in its primordial state, may be useful to others. It is
-implemented in terms of the nascent AnitaAnalysis framework
-(anitaGround/AnitaAnalysis). The primary (only?) author is Cosmin, but it is
-heavily based on Abby's MyCorrelator code, with some modifications for ANITA 3
-for Peter. Right now, it supports ANITA-3, although it would be nice if it
-could work on multiple ANITA's. 
+UCorrelator is the UChicago ANITA analysis software. It is implemented in terms
+of the AnitaAnalysisFramework. The primary author is Cosmin, and has heritag
+from Abby's MyCorrelator code, although much has beline implemented
 
 UCorrelator is intended to be both fast and easily adaptable, two features
 often at odds. It is compiled as a shared library which can then be leverated
 by ROOT macros or auxilliary programs. Probably the fastest way to learn how to
-use it is to look at some of the macros. 
+use it is to look at some of the driver programsk 
 
 
 \section install Installation and Configuration 
 
 UCorrelator relies on ROOT, libRootFftwWrapper (the git version),  and
-anitaGround/{eventReaderRoot eventCorrelator AnitaAnalysis}. It will look for
-necessary includes and libraries in ANITA_UTIL_INSTALL_DIR as well as the standard locations. 
+eventReaderRoot, anitaEventCorrelator, and AnitaAnalysisFramework. It will look
+for necessary includes and libraries in ANITA_UTIL_INSTALL_DIR as well as the
+standard locations. It is fully integrated into anitaBuildTool so that is
+usually the easiest way to use it. 
 
-
-Right now, it also depends on Eigen3 for some of the peak finding, although I
-will probably allow it to just use ROOT's TDecompSVD at some point. 
-
-A number of compilation options exist in Makefile.config. Right now, the most
-important to pay attention to is OpenMP support. OpenMP is a pragma-based
-multithreading paradigm, which UCorrelator can use to make things faster in
-situations where enough cores are available. The number of cores used is
-influenced by the environmental variable OMP_NUM_THREADS. 
-
-The adaptive filter uses baselines for a run. These may be calculated on the
-fly, but also persisted in UCORRELATOR_BASELINE_DIR, if that environmental
-variable exists.  The Baselines also need accesss to the ROOT data, which
-expected to live inside ANITA_ROOT_DATA.
+A number of compilation options exist and can be accessed via e.g. ccmake or
+make configure . Right now, the most important to pay attention to is OpenMP
+support. OpenMP is a pragma-based multithreading paradigm, which UCorrelator
+can use to make things faster in situations where enough cores are available.
+The number of cores used is influenced by the environmental variable
+OMP_NUM_THREADS. 
 
 UCorrelator has exclusively been developed on Linux with fairly recent versions
-of gcc. It is intended that it work on other platforms and compilers as well, but that might
-require some work on your part at this point. 
+of gcc. If it does not work on your system, let me know. 
 
 \section highlevel High-Level Description
 
@@ -64,31 +53,40 @@ that processes a FilteredAnitaEvent into an AnitaEventSummary.
 
 \subsection conventions Conventions
 
-Like most scientific software, UCorrelator is very unconventional. Sorry. A attempts at rules: 
-
   - To avoid polluting the global namespace, everything lives inside the
     UCorrelator namespace. 
   - Frequencies are in GHz and times are in nanoseconds. Usually. I think. 
   - The sign convention for elevation angle is ...fluid. Internally, up is
     positive makes more sense, but quantities are saved with inverted sign to
     attempt to conform with the legacy of MyCorrelator
-  - As a probably useless microoptimzation, things are stack-allocated whenever possible. 
 
 \subsection filters Filters
 
-The filters from MyCorrelator have been implemented. The implementation is in
-UCFilters.h / UCFilters.cc. The filter strategy employed by MyCorrelator can be
-created using:
+Implemented filters are inside include/UCFilters.h
 
+A user-friendly way of adding the default strategy is 
 \verbatim
 FilterStrategy strategy; 
-UCorrelator::applyAbbysFilterStrategy(&strategy); 
+UCorrelator::fillStrategyWithKey(&strategy,"sinsub_5_3_ad_2"); 
+\endverbatim
+or 
+
+\verbatim
+FilterStrategy * strategy = UCorrelator::getStrategyWithKey("sinsub_5_3_ad_2"); 
+
+\endverbatim
+
+Adaptive filters like the default greatly benefit from having
+UCORRELATOR_SPECAVG_DIR defined to cache the necessary spectrum averages (about
+11 MB per run). The spectrum averages are created on demand, but if
+UCORRELATOR_SPECAVG_DIR isn't defined, they won't be persisted. You may also
+download all the averages by doing something like :
+
+\verbatim
+for i in $(seq 130 1 439); do curl http://users.rcc.uchicago.edu/~cozzyd/specavg/${i}_60.root > ${i}_60.root; done
 \endverbatim
 
 
-The AdaptiveFilter computes baselines for each run. These can be persisted in
-the UCORRELATOR_BASELINE_DIR directory, if that environmental variable is
-defined. 
 
 \subsection analyzer Analyzer
 
@@ -107,10 +105,7 @@ access internal parameters for diagnostic or exploratory purposes.
 \section todo TODO 
 
 Short-term priorities include: 
- - Make a real TODO list
- - Implement some deconvolution routines
- - Implement additional filters 
- - Make it screaming fast 
- - Some small things not implemented yet, for example hwAngle or what Abby calls Varner events.  
+ - Update the documentation
+ - Implement clustering
 
 */

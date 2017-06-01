@@ -15,6 +15,7 @@
 
 #include "AntarcticaGeometry.h" 
 #include "AnitaEventSummary.h" 
+#include "PointingResolutionModel.h" 
 #include <vector> 
 
 class Adu5Pat; 
@@ -73,7 +74,11 @@ namespace UCorrelator
       const AntarcticSegmentationScheme * g; 
       const PointingResolutionModel * prm; 
       std::vector<double> ps; 
+<<<<<<< HEAD
       std::vector< std::vector<int>> NAboveLevel; 
+=======
+      std::vector< std::vector<double> > NAboveLevel; 
+>>>>>>> 4f40db34a6ad34cbc225640521d2b1dc4e038f86
       std::vector<double> levels; 
       double min_p; 
       int nsamples; 
