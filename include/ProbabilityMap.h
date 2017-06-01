@@ -74,7 +74,7 @@ namespace UCorrelator
       const AntarcticSegmentationScheme * g; 
       const PointingResolutionModel * prm; 
       std::vector<double> ps; 
-      std::vector< std::vector<int>> NAboveLevel; 
+      std::vector< std::vector<int> > NAboveLevel; 
       std::vector<double> levels; 
       double min_p; 
       int nsamples; 
