@@ -44,7 +44,7 @@ namespace UCorrelator
   class ConstantPointingResolutionModel : public PointingResolutionModel
   {
     public: 
-      ConstantPointingResolutionModel(double dphi=0.3, double dtheta=0.2, double rho = 0) 
+      ConstantPointingResolutionModel(double dphi=0.4, double dtheta=0.3, double rho = 0) 
         : dphi(dphi), dtheta(dtheta), rho(rho) { }
 
 

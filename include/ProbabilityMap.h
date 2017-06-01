@@ -18,6 +18,7 @@
 #include <vector> 
 
 class Adu5Pat; 
+class TFile; 
 
 namespace UCorrelator
 {
@@ -37,9 +38,9 @@ namespace UCorrelator
                      const PointingResolutionModel * p = NULL, 
                      int NlevelThresholds = sizeof(defaultLevelThresholds)/sizeof(*defaultLevelThresholds) ,
                      const double * level_thresholds = defaultLevelThresholds ,
-                     double prob_cutoff = 1e-7 , 
+                     double prob_cutoff = 1e-6 , 
                      int num_samples_per_bin = 64
-                     ); 
+                     );
 
       virtual ~ProbabilityMap() { ; } 
 
@@ -47,12 +48,12 @@ namespace UCorrelator
       int combineWith(const ProbabilityMap & other); 
 
       /** Add a point to the clustering. Returns the number of segments that had a non-zero contributions */ 
-      int add(const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, double weight = 1); 
+      int add(const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, double weight = 1, TFile * debugfile = 0); 
 
 
       /** This method actually does most of the hard work
        */
-      void computeContributions(const AnitaEventSummary * sum, const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak,  std::vector<std::pair<int,double> > & contribution) const; 
+      void computeContributions(const AnitaEventSummary * sum, const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak,  std::vector<std::pair<int,double> > & contribution, TFile * debugfile = 0) const; 
       /** Check the overlap of a point with the probability map.
        *  If the point is already in the probability map, remove_self_contribution should be true so that it won't count against itself. If you are checking a point not in the map already with the map, you should set it to false. 
        */ 

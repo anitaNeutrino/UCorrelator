@@ -25,7 +25,6 @@ double UCorrelator::PointingResolution::computeProbability(double _phi, double _
 
 
 
-__attribute__((optimize("-ffast-math","-ftree-vectorize"))) 
 double * UCorrelator::PointingResolution::computeProbability(int N, 
                                                              const double * __restrict__ vphi,
                                                              const double * __restrict__ vtheta, 
@@ -37,7 +36,7 @@ double * UCorrelator::PointingResolution::computeProbability(int N,
   
   int start = 0; 
 
-#pragma omp simd 
+//#pragma omp simd 
   for (int i = start; i < N; i++) 
   {
     double phidiff = vphi[i]-phi; 

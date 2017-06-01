@@ -1,6 +1,12 @@
 #include "ProbabilityMap.h" 
+#include "Math/Delaunay2D.h"
 #include "PointingResolutionModel.h"
 #include "Adu5Pat.h" 
+
+
+#include "TGraph2D.h" 
+#include "TFile.h" 
+
 
 ClassImp(UCorrelator::ProbabilityMap); 
 
@@ -24,11 +30,11 @@ UCorrelator::ProbabilityMap::ProbabilityMap(const AntarcticSegmentationScheme * 
 
 
 
-int UCorrelator::ProbabilityMap::add(const AnitaEventSummary * sum, const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak, double weight) 
+int UCorrelator::ProbabilityMap::add(const AnitaEventSummary * sum, const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak, double weight, TFile * debugfile) 
 {
 
   std::vector<std::pair<int,double> > segments_to_fill; 
-  computeContributions(sum,pat,pol,peak,segments_to_fill); 
+  computeContributions(sum,pat,pol,peak,segments_to_fill, debugfile); 
 
   int NFilled = segments_to_fill.size(); 
   for (int i = 0; i < NFilled; i++)
@@ -130,18 +136,33 @@ int UCorrelator::ProbabilityMap::combineWith(const ProbabilityMap & other)
 }
 
 
-void UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummary * sum, const Adu5Pat * gps, AnitaPol::AnitaPol_t pol, int peak,  std::vector<std::pair<int,double> > & contribution) const 
+void UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummary * sum, const Adu5Pat * gps, AnitaPol::AnitaPol_t pol, int peak,  std::vector<std::pair<int,double> > & contribution, TFile * debugfile) const 
 {
 
   //start with guess
   const AnitaEventSummary::PointingHypothesis *pk = &sum->peak[pol][peak];  
   AntarcticCoord guess(AntarcticCoord::WGS84, pk->latitude, pk->longitude, pk->altitude); 
+
+  PayloadParameters check(gps,guess); 
+//  printf("payload coords: %g %g\n", sum->peak[pol][peak].phi, sum->peak[pol][peak].theta); 
+//  printf("guess coords: %g %g %g %g %g\n", check.source_phi, check.source_theta, check.payload_az, check.payload_el, check.distance); 
+//  printf("guess position: %g %g %g\n", guess.x, guess.y, guess.z); 
  
   /* set up lvector of segments to check */
   size_t nchecked = 0; 
   std::vector<int> segs_to_check; 
+  std::vector<bool> used(g->NSegments()); 
   segs_to_check.reserve(100);  // a plausible number
-  segs_to_check.push_back(g->getSegmentIndex(guess)); 
+  int guess_seg = g->getSegmentIndex(guess); 
+  if (guess_seg < 0) return; 
+  segs_to_check.push_back(guess_seg); 
+  used[guess_seg] = true; 
+
+  AntarcticCoord pos = g->getSegmentCenter(segs_to_check[0]); 
+  pos.to(AntarcticCoord::WGS84); 
+//  printf("center position: %g %g %g\n", pos.x, pos.y, pos.z); 
+   
+
 
   /* compute pointing resolution */ 
   PointingResolution p; 
@@ -149,22 +170,19 @@ void UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummary *
 
   /* set up vectors for sample phis /thetas/ probs */ 
   std::vector<AntarcticCoord> samples(nsamples); 
-  std::vector<double> probs; 
-  std::vector<double> phis; 
-  std::vector<double> thetas; 
-  probs.reserve(nsamples); 
-  phis.reserve(nsamples); 
-  thetas.reserve(nsamples); 
+  std::vector<double> probs(nsamples);; 
+  std::vector<double> phis(nsamples);; 
+  std::vector<double> thetas(nsamples);; 
+  std::vector<bool> occluded(nsamples); 
+
 
   /** Loop over segments we need to check to see if p > cutoff */
   while (nchecked < segs_to_check.size())
   {
     int seg = segs_to_check[nchecked++]; 
 
-    probs.clear(); 
-    phis.clear(); 
-    thetas.clear(); 
 
+//    printf("%g %g %g %g %g\n", check.source_phi, check.source_theta, check.payload_az, check.payload_el, check.distance); 
     // sample our segment into a bunch of positions
     g->sampleSegment(seg, nsamples, &samples[0],false);  // do we want to randomize? i dunno. I'll decide later. 
     
@@ -178,26 +196,88 @@ void UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummary *
       //This computes the payload in source coords and vice versa
       PayloadParameters pp(gps, samples[i]); 
 
+ //     pos = samples[i].as(AntarcticCoord::WGS84); 
+//      printf("sample position: %g %g %g\n", pos.x, pos.y, pos.z); 
+//      printf("%g\n",pp.source_phi - sum->peak[pol][peak].phi); 
+//
       //payload is below horizon. I should actually compare to local gradient, probably, or do some ray tracing here
       if (pp.payload_el < 0)
-         continue; 
+        occluded[i] = true; 
 
 
       /* add to phis and thetas for this segment */
-      phis.push_back(pp.source_phi); 
-      thetas.push_back(pp.source_theta); 
+      phis[i]=pp.source_phi; 
+      thetas[i]=pp.source_theta; 
     }
     
-    /* compute mean of probabilities for this segment. Is this correct? I'm not sure */ 
-    probs.resize(phis.size()); 
-    p.computeProbability(phis.size(), &phis[0], &thetas[0], &probs[0]); 
-    double seg_p = TMath::Mean(probs.size(), &probs[0]); 
+
+    /* compute the probabilities for each set of angles */ 
+    p.computeProbability(nsamples, &phis[0], &thetas[0], &probs[0]); 
+
+    /** Set occluded to 0? */ 
+    for (int i =0; i < nsamples; i++)
+    {
+      if (occluded[i]) probs[i] = 0; 
+    }
+
+    /* Now we want to integral  */
+
+
+    /** write out triangles for debugging if wanted*/ 
+    if (debugfile)
+    {
+      debugfile->cd(); 
+      TGraph2D g2d (nsamples,&phis[0], &thetas[0], &probs[0]); 
+      g2d.Write(TString::Format("g%d",seg)); 
+    }
+
+    ROOT::Math::Delaunay2D del (nsamples,&phis[0], &thetas[0], &probs[0]); 
+    del.FindAllTriangles(); 
+    // the delaunay triangulation stupidly normalizes... have to unnormalize it
+    double max_phi = -360000; 
+    double min_phi = 360000; 
+    double max_theta = -360000; 
+    double min_theta = 360000; 
+    for (int i = 0; i < nsamples; i++) 
+    {
+      if (phis[i] > max_phi) max_phi = phis[i]; 
+      if (thetas[i] > max_theta) max_theta = thetas[i]; 
+      if (phis[i] < min_phi) min_phi = phis[i]; 
+      if (thetas[i] < min_theta) min_theta = thetas[i]; 
+    }
+
+    double scale=  (max_phi-min_phi) * (max_theta-min_theta)  / ((del.XMax()-del.XMin())*(del.YMax()-del.YMin())); 
+
+    double sum = 0; 
+    for (std::vector<ROOT::Math::Delaunay2D::Triangle>::const_iterator it = del.begin(); it!=del.end(); it++)
+    {
+      const ROOT::Math::Delaunay2D::Triangle & tri = *it; 
+
+      double area = 0.5 *scale* fabs(( tri.x[0] - tri.x[2]) * (tri.y[1] - tri.y[0]) - (tri.x[0] - tri.x[1]) * (tri.y[2] - tri.y[0])); 
+      for (int j = 0; j < 3; j++) 
+      {
+        sum += area /3. *  probs[tri.idx[j]];
+      }
+    }
+
+    double seg_p = sum; 
+//    printf("%d %g\n",seg, seg_p); 
 
     /* if p is above cutoff, include this contribution and add the neighbors of this segment */ 
     if (seg_p > min_p) 
     {
       contribution.push_back(std::pair<int,double>(seg,seg_p)); 
-      g->getNeighbors(seg, &segs_to_check); 
+      std::vector<int> new_neighbors;
+      g->getNeighbors(seg, &new_neighbors); 
+      for (size_t j = 0; j < new_neighbors.size(); j++)
+      {
+        int new_seg = new_neighbors[j];
+        if (!used[new_seg])
+        {
+          segs_to_check.push_back(new_seg); 
+          used[new_seg] = true; 
+        }
+      }
     }
   }
 }
