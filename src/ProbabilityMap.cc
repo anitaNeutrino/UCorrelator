@@ -269,7 +269,7 @@ void UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummary *
       }
     }
 #else
-    sum =-1; 
+    double sum =-1; 
     fprintf(stderr,"ROOT 5 not currently supported in Probability Map due to lack of ROOT/Math/Delaunay2D.h. Will be fixed soon\n"); 
 #endif
 
