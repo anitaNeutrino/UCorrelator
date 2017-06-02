@@ -49,7 +49,25 @@ UCorrelator::AntennaPositions::AntennaPositions(int version)
 
 }
 
+UCorrelator::AntennaPositions::AntennaPositions(int version, AnitaGeomTool *geom)
+{
+  
+  v = version; 
+  printf("AntennaPositions(%d)\n",version); 
 
+  for (int pol = AnitaPol::kHorizontal; pol <= AnitaPol::kVertical; pol++)
+  {
+    for (int ant  = 0; ant < NUM_SEAVEYS; ant++) 
+    {
+//      printf("%d %d\n",pol,ant); 
+//
+      phiAnt[pol][ant] = geom->getAntPhiPositionRelToAftFore(ant,(AnitaPol::AnitaPol_t)pol) * RAD2DEG; 
+      rAnt[pol][ant] = geom->getAntR(ant,(AnitaPol::AnitaPol_t) pol); 
+      zAnt[pol][ant] = geom->getAntZ(ant,(AnitaPol::AnitaPol_t) pol); 
+    }
+  }
+
+}
 
 int UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * closest, uint64_t disallowed , AnitaPol::AnitaPol_t pol) const
 {
@@ -133,3 +151,27 @@ const UCorrelator::AntennaPositions * UCorrelator::AntennaPositions::instance(in
 
 }
      
+const UCorrelator::AntennaPositions * UCorrelator::AntennaPositions::instance(int v, AnitaGeomTool *geom)
+{
+  
+  if (!v) v = AnitaVersion::get(); 
+
+  const AntennaPositions * tmp = instances[v]; 
+  __asm__ __volatile__ ("" ::: "memory"); //memory fence! 
+  if (!tmp) 
+  {
+    instance_lock.Lock(); 
+    tmp = instances[v]; 
+    if (!tmp) 
+    {
+      tmp = new AntennaPositions(v, geom); 
+      __asm__ __volatile__ ("" ::: "memory");
+      instances[v] = tmp; 
+    }
+    instance_lock.UnLock(); 
+  }
+
+  return instances[v];
+
+
+}

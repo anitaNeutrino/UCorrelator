@@ -12,6 +12,7 @@
 #include "UCFilters.h"
 #include "AnalysisConfig.h"
 #include "AnitaDataset.h"
+#include "AntennaPositions.h"
 #include "RawAnitaHeader.h"
 
 
@@ -79,7 +80,8 @@ void doResolutions( int run = 352, int max = 0, int start = 0, const char * filt
     fGeomTool->usePhotogrammetryNumbers(0);
   
   }
-
+  
+  const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions::instance(3, fGeomTool);
   
   AnitaPol::AnitaPol_t pol;
 
