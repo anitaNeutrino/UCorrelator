@@ -85,6 +85,8 @@ void doCorrelationSummaryTree( int run = 352, int max = 0, int start = 0, const 
   
   
   AnitaDataset d(run); 
+  d.setStrategy(AnitaDataset::kNoBlinding);
+  
   UCorrelator::AnalysisConfig cfg; 
   cfg.start_pol = AnitaPol::kHorizontal; 
   cfg.end_pol = AnitaPol::kHorizontal; 

@@ -7,7 +7,6 @@
 #include "TFile.h"
 #include "TChain.h"
 #include "RawAnitaHeader.h"
-#include "AnitaDataset.h"
 
 using namespace std;
 

@@ -64,12 +64,12 @@ void doResolutions( int run = 352, int max = 0, int start = 0, const char * filt
     AnitaEventCalibrator* cal = AnitaEventCalibrator::Instance();
     for(Int_t surf=0; surf<NUM_SURF; surf++){
       for(Int_t chan=0; chan<NUM_CHAN; chan++){
-	fGeomTool->getAntPolFromSurfChan(surf,chan, ant, tempPol);
-	if (ant!=-1)  cal->relativePhaseCenterToAmpaDelays[surf][chan] = extraCableDelays[ant]; 
-
+    	fGeomTool->getAntPolFromSurfChan(surf,chan, ant, tempPol);
+    	if (ant!=-1)  cal->relativePhaseCenterToAmpaDelays[surf][chan] = extraCableDelays[ant]; 
+	
       }
     }
-
+    
     for (Int_t iant=0; iant<48; iant++){
       fGeomTool->deltaRPhaseCentre[iant][0]   = fGeomTool->deltaRPhaseCentre[iant][1]   = fittedDeltaRs[iant]  ;
       fGeomTool->deltaPhiPhaseCentre[iant][0] = fGeomTool->deltaPhiPhaseCentre[iant][1] = fittedDeltaPhi[iant] ;
@@ -78,7 +78,7 @@ void doResolutions( int run = 352, int max = 0, int start = 0, const char * filt
     }
     fGeomTool->addPhaseCenters();
     fGeomTool->usePhotogrammetryNumbers(0);
-  
+    
   }
   
   const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions::instance(3, fGeomTool);
@@ -98,6 +98,8 @@ void doResolutions( int run = 352, int max = 0, int start = 0, const char * filt
   Int_t deltaTriggerTimeNs;
 
   AnitaDataset d(run); 
+  d.setStrategy(AnitaDataset::kNoBlinding);
+  
   UCorrelator::AnalysisConfig cfg; 
   
   std::string pulser="";
