@@ -3,9 +3,14 @@
 #include "AnitaEventSummary.h" 
 #include "FFTtools.h" 
 #include "AnalysisWaveform.h" 
+#include "Analyzer.h" 
 #include "WaveformCombiner.h" 
 #include "TVirtualHistPainter.h"
 #include "FilteredAnitaEvent.h" 
+
+
+ClassImp(UCorrelator::gui::Map); 
+ClassImp(UCorrelator::gui::SummaryText); 
 
 
 UCorrelator::gui::Map::Map(const TH2D & hist, const FilteredAnitaEvent * ev, WaveformCombiner * c, WaveformCombiner *cf, AnitaPol::AnitaPol_t pol, const AnitaEventSummary* sum) 
@@ -243,4 +248,24 @@ void UCorrelator::gui::Map::drawWf(double phi, double theta)
 
 
   wfpad->Update(); 
+}
+
+
+UCorrelator::gui::SummaryText::SummaryText(int i,AnitaPol::AnitaPol_t pol, const Analyzer *analyzer)
+  : TPaveText(i/double(analyzer->getSummary()->nPeaks[(int)pol]), 0, (i+1) /double(analyzer->getSummary()->nPeaks[(int) pol]),1)
+
+{
+  int ipol = (int) pol; 
+  const AnitaEventSummary * ev = analyzer->getSummary(); 
+  double rough_theta = analyzer->getRoughTheta(pol,i); 
+  double rough_phi = analyzer->getRoughPhi(pol,i); 
+  AddText(TString::Format("#phi: %0.2f (rough) , %0.3f (fine)", rough_phi, ev->peak[ipol][i].phi)); 
+  AddText(TString::Format("#theta: %0.2f (rough) , %0.3f (fine)", rough_theta, ev->peak[ipol][i].theta)); 
+  AddText(TString::Format("peak val: %f", ev->peak[ipol][i].value)); 
+  AddText(TString::Format("peak_{hilbert}:  %0.3f (coher), %0.3f (deconv)", ev->coherent[ipol][i].peakHilbert, ev->deconvolved[ipol][i].peakHilbert)); 
+  AddText(TString::Format("stokes: (coher): (%0.3g, %0.3g, %0.3g, %0.3g)", ev->coherent[ipol][i].I, ev->coherent[ipol][i].Q, ev->coherent[ipol][i].U, ev->coherent[ipol][i].V));
+  AddText(TString::Format("stokes: (deconv): (%0.3g, %0.3g, %0.3g, %0.3g)", ev->deconvolved[ipol][i].I, ev->deconvolved[ipol][i].Q, ev->deconvolved[ipol][i].U, ev->deconvolved[ipol][i].V));
+  AddText(TString::Format("impulsivity measure: %0.3g (coher), %0.3g (deconv)", ev->coherent[ipol][i].impulsivityMeasure, ev->deconvolved[ipol][i].impulsivityMeasure));
+  AddText(TString::Format("SNR %0.3g (coher), %0.3g (deconv)", ev->coherent[ipol][i].snr, ev->deconvolved[ipol][i].snr));
+  AddText(TString::Format("position: %0.3f N, %0.3f E, %0.3f m", ev->peak[ipol][i].latitude, ev->peak[ipol][i].longitude, ev->peak[ipol][i].altitude)); 
 }

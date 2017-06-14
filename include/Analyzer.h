@@ -85,13 +85,13 @@ namespace UCorrelator
 
       AnitaResponse::ResponseManager * getResponseManager() { return &responses; } 
 
-
+      /* Return the summary. This only works in interactive mode. */ 
+      const AnitaEventSummary* getSummary() const { return &last; }
 
 
       /** Populate the pads with a summary of the pointing. Only makes sense if interactive mode is on. If the analyzer wasn't instructed to do 
        * both polarities, then it won't populate any it wasn't instructed to do. If 0 or NULL is passed, a new canvas is made. */ 
       void drawSummary(TPad *chpol = 0, TPad * cvpol = 0) const; 
-
 
       double getRoughPhi(AnitaPol::AnitaPol_t pol, int i) const { return rough_peaks[pol][i].first; }
       double getRoughTheta(AnitaPol::AnitaPol_t pol, int i) const { return -rough_peaks[pol][i].second; }

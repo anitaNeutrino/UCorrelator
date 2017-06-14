@@ -21,6 +21,7 @@ class AnalysisWaveform;
 namespace UCorrelator
 {
   class WaveformCombiner; 
+  class Analyzer; 
 
   namespace gui
   {
@@ -71,16 +72,16 @@ namespace UCorrelator
 
 
 
-    }; 
+    }; */
 
 
     class SummaryText : public TPaveText
     { 
       public: 
-        SummaryText(int n, const AnitaEventSummary * ev); 
-    }; 
-    */
+        SummaryText(int i, AnitaPol::AnitaPol_t pol, const Analyzer* a); 
 
+        ClassDef(SummaryText,1); 
+    }; 
 
   }
 

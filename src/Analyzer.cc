@@ -4,6 +4,7 @@
 #include "AnalysisWaveform.h"
 #include "AnitaVersion.h" 
 #include "TCanvas.h"
+#include "ImpulsivityMeasure.h" 
 #include "TStyle.h"
 #include "TMarker.h"
 #include "TEllipse.h"
@@ -459,19 +460,19 @@ SECTION
 
   if (truth)
   { 
-    SECTIONS
+//    SECTIONS
     {
-      SECTION
+//      SECTION
       wfcomb.combine(summary->mc.phi, summary->mc.theta, event, AnitaPol::kHorizontal, 0); 
-      SECTION 
+//      SECTION 
       wfcomb_xpol.combine(summary->mc.phi, summary->mc.theta, event, AnitaPol::kVertical, 0); 
     }
 
-    SECTIONS
+//    SECTIONS
     {
-      SECTION
+//      SECTION
       fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kHorizontal]), AnitaPol::kHorizontal); 
-      SECTION
+//      SECTION
       fillWaveformInfo(wfcomb_xpol.getCoherent(), wfcomb.getCoherent(), wfcomb_xpol.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kVertical]), AnitaPol::kVertical); 
     }
   }
@@ -608,7 +609,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, &ifirst, &ilast); 
   info->power_10_10 = even->getSumV2(ifirst, ilast); 
 
-
+  info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf); 
 
 
   if (pol == AnitaPol::kHorizontal)
@@ -746,14 +747,8 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
     for (int i = 0; i < last.nPeaks[ipol]; i++) 
     {
       pads[ipol]->cd(1)->cd(2); 
-      TPaveText * pt  = new TPaveText(i/double(last.nPeaks[ipol]),0,(i+1)/double(last.nPeaks[ipol]),1); 
+      UCorrelator::gui::SummaryText * pt  = new gui::SummaryText(i, AnitaPol::AnitaPol_t(ipol), this); 
       delete_list.push_back(pt); 
-      pt->AddText(TString::Format("#phi: %0.2f (rough) , %0.3f (fine)", rough_peaks[ipol][i].first, last.peak[ipol][i].phi)); 
-      pt->AddText(TString::Format("#theta: %0.2f (rough) , %0.3f (fine)", -rough_peaks[ipol][i].second, last.peak[ipol][i].theta)); 
-      pt->AddText(TString::Format("peak val: %f", last.peak[ipol][i].value)); 
-      pt->AddText(TString::Format("peak_{hilbert} (coherent): %0.3f", last.coherent[ipol][i].peakHilbert)); 
-      pt->AddText(TString::Format("Stokes: (coherent): (%0.3g, %0.3g, %0.3g, %0.3g)", last.coherent[ipol][i].I, last.coherent[ipol][i].Q, last.coherent[ipol][i].U, last.coherent[ipol][i].V));
-      pt->AddText(TString::Format("position: %0.3f N, %0.3f E, %0.3f m", last.peak[ipol][i].latitude, last.peak[ipol][i].longitude, last.peak[ipol][i].altitude)); 
       pt->Draw(); 
     }
 

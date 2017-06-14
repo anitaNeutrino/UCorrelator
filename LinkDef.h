@@ -35,6 +35,7 @@
 #pragma link C++ class UCorrelator::ConstantPointingResolutionModel;
 
 #pragma link C++ class UCorrelator::gui::Map; 
+#pragma link C++ class UCorrelator::gui::SummaryText; 
 
 #endif
 
