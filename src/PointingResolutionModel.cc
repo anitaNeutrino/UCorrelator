@@ -2,6 +2,9 @@
 #include "TMath.h" 
 
 
+ClassImp(UCorrelator::PointingResolution); 
+ClassImp(UCorrelator::PointingResolutionModel); 
+ClassImp(UCorrelator::ConstantPointingResolutionModel); 
 
 UCorrelator::PointingResolution::PointingResolution(double phi, double theta,
                                                     double dphi, double dtheta, double rho) 

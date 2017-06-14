@@ -11,6 +11,7 @@ namespace UCorrelator
     public: 
 
       PointingResolution(double phi = 0, double theta = 0, double dphi = 0, double dtheta = 0, double rho = 0); 
+      virtual ~PointingResolution() {;} 
 
       double * computeProbability(int N, const double *phi, 
                                          const double *theta,
@@ -29,6 +30,7 @@ namespace UCorrelator
       double rho; 
       double expterm; 
       double norm; 
+      ClassDef(PointingResolution,1); 
 
   }; 
 
@@ -37,6 +39,7 @@ namespace UCorrelator
     public: 
       virtual PointingResolution *  computePointingResolution(const AnitaEventSummary * sum, AnitaPol::AnitaPol_t pol, int peak, PointingResolution * p = 0) const = 0; 
       virtual ~PointingResolutionModel() { ; } 
+      ClassDef(PointingResolutionModel,1); 
   }; 
 
 
@@ -56,6 +59,7 @@ namespace UCorrelator
 
       private: 
         double dphi, dtheta, rho; 
+        ClassDef(ConstantPointingResolutionModel,1); 
 
   }; 
 
