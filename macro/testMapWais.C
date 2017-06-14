@@ -8,7 +8,7 @@
 #include "SystemResponse.h" 
 
 
-void testMapWais(int run =342, int max = 0) 
+UCorrelator::ProbabilityMap* testMapWais(int run =342, int max = 1000) 
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
@@ -27,7 +27,7 @@ void testMapWais(int run =342, int max = 0)
 
   StereographicGrid g(1024,1024); 
   UCorrelator::ConstantPointingResolutionModel m(0.2,0.3);
-  UCorrelator::ProbabilityMap map(&g,&m); 
+  UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(&g,&m); 
   int ndone = 0; 
 
   for (int i = 0; i< d.N(); i++)
@@ -41,7 +41,7 @@ void testMapWais(int run =342, int max = 0)
       FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
 
       analyzer.analyze(&ev, &sum); 
-      map.add(&sum,d.gps(), AnitaPol::kHorizontal, 0); 
+      map->add(&sum,d.gps(), AnitaPol::kHorizontal, 0); 
       ndone++;
     }
 
@@ -50,8 +50,9 @@ void testMapWais(int run =342, int max = 0)
 
   }
 
-  map.segmentationScheme()->Draw("colz", map.getProbabilities()); 
 
 
   FFTtools::saveWisdom("wisdom.dat"); 
+  map->segmentationScheme()->Draw("colz", map->getProbabilities()); 
+  return map; 
 }
