@@ -587,50 +587,57 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   const TGraphAligned * xpol_even= xpol_wf->even(); 
   int peakBin;
 
+  int peakHilbertBin; 
   info->peakVal = FFTtools::getPeakVal((TGraph*) even,&peakBin); 
   info->xPolPeakVal = FFTtools::getPeakVal( xpol_even); 
-  info->peakHilbert = FFTtools::getPeakVal((TGraph*) wf->hilbertEnvelope()); 
+  info->peakHilbert = FFTtools::getPeakVal((TGraph*) wf->hilbertEnvelope(),&peakHilbertBin); 
+  double minHilbert = *std::min_element(wf->hilbertEnvelope()->GetY(), wf->hilbertEnvelope()->GetY() + wf->Neven()); 
+
   info->xPolPeakHilbert = FFTtools::getPeakVal((TGraph*) xpol_wf->hilbertEnvelope()); 
   info->numAntennasInCoherent = cfg->combine_nantennas; 
 
   info->totalPower = even->getSumV2(); 
   info->totalPowerXpol = xpol_even->getSumV2(); 
-  info->peakTime = even->GetX()[peakBin]; 
+  info->peakTime = even->GetX()[peakHilbertBin]; 
 
-  info->riseTime_10_90 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.9*info->peakVal); 
-  info->riseTime_10_50 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.5*info->peakVal); 
-  info->fallTime_90_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.9*info->peakVal); 
-  info->fallTime_50_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, 0.5*info->peakVal); 
+  double hilbertRange = info->peakHilbert = minHilbert; 
+
+  info->riseTime_10_90 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.9*hilbertRange,peakHilbertBin); 
+  info->riseTime_10_50 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.5*hilbertRange,peakHilbertBin); 
+  info->fallTime_90_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.9*hilbertRange,peakHilbertBin); 
+  info->fallTime_50_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.5*hilbertRange,peakHilbertBin); 
 
   int ifirst, ilast; 
-  info->width_50_50 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.5*info->peakVal, &ifirst, &ilast); 
+  info->width_50_50 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.5*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
   info->power_50_50 = even->getSumV2(ifirst, ilast); 
   even->getMoments(sizeof(info->peakMoments)/sizeof(double), info->peakTime, info->peakMoments); 
-  info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), 0.1*info->peakVal, &ifirst, &ilast); 
+  info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
   info->power_10_10 = even->getSumV2(ifirst, ilast); 
 
-  info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf); 
-
+  int nstokes = ifirst-ilast+1 ; 
 
   if (pol == AnitaPol::kHorizontal)
   {
-    FFTtools::stokesParameters(even->GetN(), 
-                               even->GetY(), 
-                               wf->hilbertTransform()->even()->GetY(), 
-                               xpol_even->GetY(), 
-                               xpol_wf->hilbertTransform()->even()->GetY(), 
+
+    FFTtools::stokesParameters(nstokes,
+                               even->GetY()+ifirst, 
+                               wf->hilbertTransform()->even()->GetY()+ifirst, 
+                               xpol_even->GetY()+ifirst, 
+                               xpol_wf->hilbertTransform()->even()->GetY()+ifirst, 
                                &(info->I), &(info->Q), &(info->U), &(info->V)); 
   }
   else
   {
-    FFTtools::stokesParameters(even->GetN(), 
-                               xpol_even->GetY(), 
-                               xpol_wf->hilbertTransform()->even()->GetY(), 
-                               even->GetY(), 
-                               wf->hilbertTransform()->even()->GetY(), 
+    FFTtools::stokesParameters(nstokes, 
+                               xpol_even->GetY()+ifirst, 
+                               xpol_wf->hilbertTransform()->even()->GetY()+ifirst, 
+                               even->GetY()+ifirst, 
+                               wf->hilbertTransform()->even()->GetY()+ifirst, 
                                &(info->I), &(info->Q), &(info->U), &(info->V)); 
  
   }
+
+  info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf); 
 
   double dt = wf->deltaT(); 
   double t0 = even->GetX()[0]; 

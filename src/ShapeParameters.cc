@@ -1,24 +1,29 @@
 #include "ShapeParameters.h" 
+#include "FFTtools.h" 
 #include "TGraph.h" 
 
 
-double UCorrelator::shape::getRiseTime(const TGraph * g, double min, double max) 
+double UCorrelator::shape::getRiseTime(const TGraph * g, double min, double max, int peak) 
 {
   int ifirst = -1; 
   int ilast = -1; 
+  if (peak < 0 || peak >= g->GetN()) 
+  {
+    FFTtools::getPeakVal(g,&peak); 
+  }
+  
 
-
-  for (int i = 0; i < g->GetN(); i++) 
+  for (int i = peak; i >=0; i--) 
   {
 
-    if (g->GetY()[i] >= min && ifirst < 0)
+    if (g->GetY()[i] <= min)
     {
       ifirst = i; 
+      break; 
     }
-    if (g->GetY()[i] >= max && ilast < 0)
+    if (g->GetY()[i] <= max && ilast < 0)
     {
       ilast = i; 
-      break; 
     }
   }
 
@@ -27,23 +32,27 @@ double UCorrelator::shape::getRiseTime(const TGraph * g, double min, double max)
   return g->GetX()[ilast] - g->GetX()[ifirst]; 
 }
 
-double UCorrelator::shape::getFallTime(const TGraph * g, double min, double max) 
+double UCorrelator::shape::getFallTime(const TGraph * g, double min, double max, int peak) 
 {
   int ifirst = -1; 
   int ilast = -1; 
+ if (peak < 0 || peak >= g->GetN()) 
+  {
+    FFTtools::getPeakVal(g,&peak); 
+  }
+  
 
-
-  for (int i = g->GetN()-1; i >= 0; i--)
+  for (int i = peak; i < g->GetN(); i++) 
   {
 
-    if (g->GetY()[i] >= min && ilast < 0)
+    if (g->GetY()[i] <= min)
     {
       ilast = i; 
+      break; 
     }
-    if (g->GetY()[i] >= max && ifirst < 0)
+    if (g->GetY()[i] <= max && ifirst < 0)
     {
       ifirst = i; 
-      break; 
     }
   }
 
@@ -53,23 +62,31 @@ double UCorrelator::shape::getFallTime(const TGraph * g, double min, double max)
 }
 
 
-double UCorrelator::shape::getWidth(const TGraph * g, double val, int * start, int * end)
+double UCorrelator::shape::getWidth(const TGraph * g, double val, int * start, int * end, int peak)
 {
 
   int ifirst = -1; 
   int ilast = -1; 
 
-  for (int i = 0; i < g->GetN(); i++) 
+  if (peak < 0 || peak >= g->GetN()) 
   {
-    if (g->GetY()[i] >=val) 
+    FFTtools::getPeakVal(g,&peak); 
+  }
+  
+
+  for (int i = peak; i < g->GetN(); i++) 
+  {
+    if (g->GetY()[i] <=val) 
     {
-      ifirst = i; 
-      break; 
+      ilast = i; 
+      break;
+
     }
   }
-  for (int i = g->GetN()-1; i >= 0; i--)
+
+  for (int i = peak; i >= 0; i--)
   {
-    if (g->GetY()[i] >=val) 
+    if (g->GetY()[i] <=val) 
     {
       ilast = i; 
       break; 
