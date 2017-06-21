@@ -600,7 +600,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   info->totalPowerXpol = xpol_even->getSumV2(); 
   info->peakTime = even->GetX()[peakHilbertBin]; 
 
-  double hilbertRange = info->peakHilbert = minHilbert; 
+  double hilbertRange = info->peakHilbert - minHilbert; 
 
   info->riseTime_10_90 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.9*hilbertRange,peakHilbertBin); 
   info->riseTime_10_50 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.5*hilbertRange,peakHilbertBin); 
@@ -614,7 +614,10 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
   info->power_10_10 = even->getSumV2(ifirst, ilast); 
 
-  int nstokes = ifirst-ilast+1 ; 
+
+  if (ifirst < 0) ifirst = 0; 
+  if (ilast < 0) ilast = wf->Neven()-1; 
+  int nstokes = ilast-ifirst+1 ; 
 
   if (pol == AnitaPol::kHorizontal)
   {

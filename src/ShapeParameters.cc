@@ -88,7 +88,7 @@ double UCorrelator::shape::getWidth(const TGraph * g, double val, int * start, i
   {
     if (g->GetY()[i] <=val) 
     {
-      ilast = i; 
+      ifirst = i; 
       break; 
     }
   }
