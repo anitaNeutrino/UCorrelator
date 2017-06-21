@@ -641,7 +641,7 @@ class NegativeBicubicFunction : public ROOT::Math::IGradientFunctionMultiDim
     virtual double DoDerivative(const double * x, unsigned int coord) const; 
     unsigned NDim() const { return 2; } 
 
-    virtual IBaseFunctionMultiDim * Clone() const { return new NegativeBicubicFunction(*this); }   
+    virtual ROOT::Math::IBaseFunctionMultiDim * Clone() const { return new NegativeBicubicFunction(*this); }
 
   private: 
     double a[4][4]; 
