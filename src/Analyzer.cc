@@ -21,6 +21,7 @@
 #include "TF1.h" 
 #include "TGraphErrors.h"
 #include "simpleStructs.h"
+#include "UCImageTools.h"
 
 #ifdef UCORRELATOR_OPENMP
 #include <omp.h>
@@ -259,7 +260,9 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     corr.compute(event, AnitaPol::AnitaPol_t(pol)); 
 
     //compute RMS of correlation map 
-    maprms = corr.getHist()->GetRMS(3); 
+    //    maprms = corr.getHist()->GetRMS(3); //This doesn't work!  Probably because ROOT is dumb
+    maprms = UCorrelator::getZRMS(corr.getHist());
+
 
     // Find the isolated peaks in the image 
     peakfinder::RoughMaximum maxima[cfg->nmaxima]; 

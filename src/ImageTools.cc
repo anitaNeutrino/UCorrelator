@@ -5,6 +5,24 @@
 #include <set>
 
 
+double UCorrelator::getZRMS(const TH2D* hist) {
+
+  int numBinsX = hist->GetNbinsX();
+  int numBinsY = hist->GetNbinsY();
+
+  double sum2 = 0;
+
+  for (int binX=0; binX<numBinsX; binX++) {
+    for (int binY=0; binY<numBinsY; binY++) {
+      double binValue = hist->GetBinContent(binX,binY);
+      sum2 += pow(binValue,2);
+    }
+  }
+
+  return sqrt(sum2/(numBinsX*numBinsY));
+
+}
+
 
 static TH1* makeTH1(char type, const char * name, const char * title, int nbins, double xmin, double xmax) 
 {
