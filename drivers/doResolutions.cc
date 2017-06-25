@@ -102,6 +102,9 @@ void doResolutions( int run = 352, int max = 0, int start = 0, const char * filt
 
   AnitaDataset d(run); 
   d.setStrategy(AnitaDataset::kNoBlinding);
+
+  d.getEntry(0); 
+  int firstTS = d.header()->realTime+60;
   
   UCorrelator::AnalysisConfig cfg; 
   
@@ -139,7 +142,7 @@ void doResolutions( int run = 352, int max = 0, int start = 0, const char * filt
     pulser+="SUN";
     cfg.start_pol = AnitaPol::kHorizontal; 
     cfg.end_pol = AnitaPol::kVertical; 
-  }{
+  }else{
     std::cout << "Unknown run" << std::endl;
     return;
   }
@@ -185,7 +188,8 @@ void doResolutions( int run = 352, int max = 0, int start = 0, const char * filt
     UsefulAdu5Pat pat(d.gps()); 
 
     if (whichPulser==2){ // For sun pointing use min bias
-      check = (strcmp( d.header()->trigTypeAsString(), "RF") !=0 );
+      if (d.header()->realTime<firstTS) check=false;
+      else check = (strcmp( d.header()->trigTypeAsString(), "RF") !=0 );
 
     } else if (whichPulser==1){  // LDB
       triggerTimeNs         = d.header()->triggerTimeNs; 
