@@ -97,6 +97,8 @@ namespace UCorrelator
       double getRoughTheta(AnitaPol::AnitaPol_t pol, int i) const { return -rough_peaks[pol][i].second; }
 
       void clearInteractiveMemory(double frac = 0.5) const; 
+      
+			void setDisallowedAntennas(uint64_t hpol=0, uint64_t vpol=0) {disallowedAnts[0] = hpol; disallowedAnts[1] = vpol; } 
     private:
 
       void fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph * power, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol); 
@@ -131,6 +133,7 @@ namespace UCorrelator
       bool interactive; 
       bool interactive_deconvolved; 
       bool interactive_xpol_deconvolved; 
+			uint64_t disallowedAnts[2];
 
       mutable std::vector<TObject*> delete_list; 
   };

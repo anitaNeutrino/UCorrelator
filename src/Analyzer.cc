@@ -73,6 +73,9 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mo
   avg_spectra[0] = 0; 
   avg_spectra[1] = 0; 
 
+	disallowedAnts[0] = 0;
+	disallowedAnts[1] = 0;
+
   corr.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_xpol.setGroupDelayFlag(cfg->enable_group_delay); 
@@ -255,8 +258,9 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
     double avgHwAngle = triggerAngle.Phi() * RAD2DEG; 
 
-    // tell the correlator not to use saturated events and make the correlation map
-    corr.setDisallowedAntennas(saturated[pol]); 
+    // tell the correlator not to use saturated events or disallowed antennas and make the correlation map
+		saturated[pol] |= disallowedAnts[pol];
+		corr.setDisallowedAntennas(saturated[pol]); 
     corr.compute(event, AnitaPol::AnitaPol_t(pol)); 
 
     //compute RMS of correlation map 
@@ -899,7 +903,4 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   flags->isGood = !flags->isVarner && !flags->isVarner2 && !flags->strongCWFlag; 
 
 }
-
-
-
 
