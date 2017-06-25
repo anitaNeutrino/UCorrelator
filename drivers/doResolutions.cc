@@ -88,7 +88,10 @@ void doResolutions( int run = 352, int max = 0, int start = 0, const char * filt
   Double_t sourceLat, sourceLon, sourceAlt, timeOffset;
   Int_t cutTimeNs = 1200;
   char cpol[100];
-  bool isLDB = false;
+  int whichPulser = 0;
+  // 0 WAIS
+  // 1 LDB
+  // 2 QUIET TIME FOR SUN POINTING
 
   Int_t delayGenerator = 199996850; // delay generator was not exactly 200 ms
   Int_t delay=0;
@@ -111,26 +114,32 @@ void doResolutions( int run = 352, int max = 0, int start = 0, const char * filt
     cfg.end_pol = AnitaPol::kHorizontal; 
   } else if (run<150){ // LDB VPOL 
     pol = AnitaPol::kVertical;
-    isLDB = true;
+    whichPulser = 1;
     delay =  25000000; // V-POL pulse at 25 ms runs 145-149
     pulser+="LDB";
     cfg.start_pol = AnitaPol::kVertical; 
     cfg.end_pol = AnitaPol::kVertical; 
   } else if (run<154){ // LDB HPOL
     pol = AnitaPol::kHorizontal;
-    isLDB = true;
+    whichPulser = 1;
     delay =  50000000; // H-POL pulse at 50 ms
     pulser+="LDB";    
     cfg.start_pol = AnitaPol::kHorizontal; 
     cfg.end_pol = AnitaPol::kHorizontal; 
   } else if (run<172){ // LDB VPOL
     pol = AnitaPol::kVertical;
-    isLDB = true;
+    whichPulser = 1;
     delay =  50000000; // V-POL pulse at 50 ms runs 154-171
     pulser+="LDB";
     cfg.start_pol = AnitaPol::kVertical; 
     cfg.end_pol = AnitaPol::kVertical; 
-  } else {
+  } else if (run>203 && run<251){ // QUIET TIME TO STUDY THE SUN
+    pol = AnitaPol::kHorizontal;
+    whichPulser = 2;
+    pulser+="SUN";
+    cfg.start_pol = AnitaPol::kHorizontal; 
+    cfg.end_pol = AnitaPol::kVertical; 
+  }{
     std::cout << "Unknown run" << std::endl;
     return;
   }
@@ -174,9 +183,11 @@ void doResolutions( int run = 352, int max = 0, int start = 0, const char * filt
     //    printf("----(%d)-----\n",i); 
 
     UsefulAdu5Pat pat(d.gps()); 
-    
-    if (isLDB){
-      
+
+    if (whichPulser==2){ // For sun pointing use min bias
+      check = (strcmp( d.header()->trigTypeAsString(), "RF") !=0 );
+
+    } else if (whichPulser==1){  // LDB
       triggerTimeNs         = d.header()->triggerTimeNs; 
       triggerTimeNsExpected = pat.getLDBTriggerTimeNs();
       deltaTriggerTimeNs    = Int_t(triggerTimeNs) - Int_t(triggerTimeNsExpected);
@@ -184,7 +195,7 @@ void doResolutions( int run = 352, int max = 0, int start = 0, const char * filt
       
       check = (TMath::Abs(deltaTriggerTimeNs) < cutTimeNs);
       
-    }else{
+    }else{ // WAIS
       check=UCorrelator::isWAISHPol(&pat, d.header());
     }
     
