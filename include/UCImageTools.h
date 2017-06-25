@@ -17,7 +17,7 @@ namespace UCorrelator
   /*=====
     TH1::GetRMS(3) stopped working so here is a function to just calculate it by hand
    */
-  double getZRMS(const TH2D*);
+  double getZRMS(const TH2*);
 
 
 
