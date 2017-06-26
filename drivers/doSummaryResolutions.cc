@@ -135,7 +135,7 @@ void doSummaryResolutions(int firstRun, int lastRun, const char * folder)
 
   }
 
-  TFile *fout = new TFile(Form("%s/SummaryResolutions_%s.root", folder, pulser.c_str()), "recreate");
+  TFile *fout = new TFile(Form("%s/SummaryResolutions_%s%s.root", folder, pulser.c_str(), cpol), "recreate");
   
     
   for (int iangle=0; iangle<2; iangle++){
