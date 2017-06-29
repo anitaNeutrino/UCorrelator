@@ -396,11 +396,11 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   for (int ant_i = 0; ant_i < n2loop; ant_i++)
   {
     int ant1 = nant ? closest[ant_i] : ant_i; 
-    if (!nant && disallowed_antennas & (1 << ant1)) continue; 
+    if (!nant && disallowed_antennas & (1ul << ant1)) continue; 
     for (int ant_j = ant_i +1; ant_j < n2loop; ant_j++)
     {
       int ant2 = nant ? closest[ant_j] : ant_j; 
-      if (!nant && disallowed_antennas & (1 << ant2)) continue; 
+      if (!nant && disallowed_antennas & (1ul << ant2)) continue; 
 
       pairs.push_back(std::pair<int,int>(ant1,ant2));
     }
@@ -666,11 +666,11 @@ void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol
 
   for (int ant1 = 0; ant1 < NANTENNAS; ant1++)
   {
-    if (disallowed_antennas & (1 << ant1)) continue; 
+    if (disallowed_antennas & (1ul << ant1)) continue; 
 
     for (int ant2 = ant1+1; ant2 < NANTENNAS; ant2++)
     {
-      if (disallowed_antennas & (1 << ant2)) continue; 
+      if (disallowed_antennas & (1ul << ant2)) continue; 
 
       pairs.push_back(std::pair<int,int>(ant1,ant2));;
     }
