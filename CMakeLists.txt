@@ -170,7 +170,7 @@ set (BINSRCDIR drivers)
 
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 
-option ( ENABLE_LIBCONFIG "Enable reading from config file (requires libconfig)" ON ) 
+option ( ENABLE_LIBCONFIG "Enable reading from config file (requires libconfig)" OFF ) 
 
 
 if (ENABLE_LIBCONFIG)
