@@ -18,7 +18,7 @@ void doSummaryResolutions(int firstRun, int lastRun, const char * folder)
   AnitaPol::AnitaPol_t pol;
 
   char cpol[100];
-  bool isLDB = false;  
+  int whichPulser = 0;  
   std::string pulser="";
 
   if (firstRun>300){ // WAIS
@@ -26,16 +26,20 @@ void doSummaryResolutions(int firstRun, int lastRun, const char * folder)
     pulser+="WAIS";
   } else if (firstRun<150){ // LDB VPOL 
     pol = AnitaPol::kVertical;
-    isLDB = true;
+    whichPulser = 1;
     pulser+="LDB";
   } else if (firstRun<154){ // LDB HPOL
     pol = AnitaPol::kHorizontal;
-    isLDB = true;
+    whichPulser = 1;
     pulser+="LDB";    
   } else if (firstRun<172){ // LDB VPOL
     pol = AnitaPol::kVertical;
-    isLDB = true;
+    whichPulser = 1;
     pulser+="LDB";
+  } else if (firstRun>203 && firstRun<251){ // QUIET TIME TO STUDY THE SUN
+    pol = AnitaPol::kHorizontal;
+    whichPulser = 2;
+    pulser+="SUN";
   } else {
     std::cout << "Unknown firstRun" << std::endl;
     return;
@@ -102,7 +106,10 @@ void doSummaryResolutions(int firstRun, int lastRun, const char * folder)
     anglesMeas[0] = sum->peak[pol][0].phi;
     anglesMeas[1] = sum->peak[pol][0].theta;
 
-    if (isLDB){
+    if (whichPulser==2){
+      anglesTrue[0] = sum->sun.phi;
+      anglesTrue[1] = sum->sun.theta;
+    } if (whichPulser==1){
       anglesTrue[0] = sum->ldb.phi;
       anglesTrue[1] = sum->ldb.theta;
     }else{
@@ -128,7 +135,7 @@ void doSummaryResolutions(int firstRun, int lastRun, const char * folder)
 
   }
 
-  TFile *fout = new TFile(Form("%s/SummaryResolutions_%s.root", folder, pulser.c_str()), "recreate");
+  TFile *fout = new TFile(Form("%s/SummaryResolutions_%s%s.root", folder, pulser.c_str(), cpol), "recreate");
   
     
   for (int iangle=0; iangle<2; iangle++){
