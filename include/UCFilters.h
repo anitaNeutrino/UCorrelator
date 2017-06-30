@@ -14,6 +14,7 @@
 
 class FilteredAnitaEvent; 
 class RawAnitaHeader; 
+class FilterStrategy; 
 
 
 namespace AnitaResponse{
