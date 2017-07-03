@@ -5,13 +5,17 @@
  * in the new framework. 
  * */ 
 
-#include "FilteredAnitaEvent.h" 
 #include "FilterOperation.h" 
 #include "TString.h" 
 #include "DigitalFilter.h" 
 #include "Baseline.h"
 #include "SineSubtract.h" 
 #include "AnalysisWaveform.h" 
+
+class FilteredAnitaEvent; 
+class RawAnitaHeader; 
+class FilterStrategy; 
+
 
 namespace AnitaResponse{
   class ResponseManager; 

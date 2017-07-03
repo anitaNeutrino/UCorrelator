@@ -35,13 +35,15 @@ static AnitaResponse::AllPassDeconvolution allpass;
 // static UCorrelator::ResponseManager * responseManager = 0; 
 // static UCorrelator::AllPassDeconvolution allpass; 
 
+
+static TString desc; 
 const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const char * key) 
 {
   TString tokens(key); 
   TString tok; 
   Ssiz_t from = 0; 
 
-  TString desc = ""; 
+  desc = ""; 
   bool need_description = key_descs.count(key); 
 
   while (tokens.Tokenize(tok, from,"+"))

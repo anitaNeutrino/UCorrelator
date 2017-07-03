@@ -79,7 +79,7 @@ int UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * c
   for (int i = 0; i < NUM_SEAVEYS; i++) 
   {
 
-    double dphi = disallowed & (1 << i) ? 360 : fabs(FFTtools::wrap(phi-phiAnt[pol_ind][i], 360, 0)); 
+    double dphi = disallowed & (1ul << i) ? 360 : fabs(FFTtools::wrap(phi-phiAnt[pol_ind][i], 360, 0)); 
     dphis.insert(std::pair<double,int>(dphi,i)); 
   }
 
