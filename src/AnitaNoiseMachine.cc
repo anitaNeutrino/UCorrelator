@@ -14,6 +14,10 @@ AnitaNoiseMachine::AnitaNoiseMachine() {
     }
   }
 
+  fillArray = false;
+  fillMap = false;
+  fillAvgMap = false;
+
   zeroInternals();
 }
 
