@@ -17,9 +17,9 @@ class AnitaNoiseMachine
   static const int fifoLength = 60; //one minute of noise averaging
 
   //do you want to save the interferometric maps?  They are very large.  Also multiple ways to save them
-  bool fillMap = false;    //save the min bias maps as TH2D (~18kB per event)
-  bool fillAvgMap = false; //save it as the average of fifoLength min bias maps (Won't work if fillMap==true)
-  bool fillArray = false;  //save it as a double array (25% smaller, ~14kB per event)
+  bool fillMap ;    //save the min bias maps as TH2D (~18kB per event)
+  bool fillAvgMap; //save it as the average of fifoLength min bias maps (Won't work if fillMap==true)
+  bool fillArray ;  //save it as a double array (25% smaller, ~14kB per event)
 
 
   /* Constructor */
@@ -53,12 +53,12 @@ class AnitaNoiseMachine
   //internals for time domain waveform rms fifo
   double rmsFifo[NUM_PHI][NUM_ANTENNA_RINGS][NUM_POLS][fifoLength]; //where the info is saved
   int rmsFifoPos; //where in the fifo the most recent write was
-  bool rmsFifoFillFlag = false; //whether you've completely filled the fifo once
+  bool rmsFifoFillFlag ; //whether you've completely filled the fifo once
 
   //internals for interferometric map fifo (probably enormous in memory so maybe make a flag)
-  TH2D *mapFifo[NUM_POLS][fifoLength] = { { 0 } }; //where the info is saved
+  TH2D *mapFifo[NUM_POLS][fifoLength]; //where the info is saved
   int mapFifoPos;  //where in the fifo the most recent write was
-  bool mapFifoFillFlag = false; //whether you've completely filled the fifo once.
+  bool mapFifoFillFlag ; //whether you've completely filled the fifo once.
 
   //maybe will be more compressed
   static const int nPhi = 180; //default in UCorrelator::AnalysisConfig, this is hard to make dynamic
