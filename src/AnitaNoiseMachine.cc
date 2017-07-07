@@ -8,6 +8,12 @@
  * Default constructor for ROOT
  */
 AnitaNoiseMachine::AnitaNoiseMachine() {
+  for (int poli=0; poli<NUM_POLS; poli++) {
+    for (int fifoPos=0; fifoPos<fifoLength; fifoPos++) {
+      mapFifo[poli][fifoPos] = NULL;
+    }
+  }
+
   zeroInternals();
 }
 
