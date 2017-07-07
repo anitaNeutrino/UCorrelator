@@ -3,6 +3,7 @@
 
 #include "AnitaConventions.h"
 #include "AnitaNoiseSummary.h"
+#include "AnitaEventSummary.h"
 #include "FilteredAnitaEvent.h"
 #include "Analyzer.h"
 #include "UCorrelatorGUI.h"
@@ -44,6 +45,8 @@ class AnitaNoiseMachine
   // basically just moves things into the summary
   void fillNoiseSummary(AnitaNoiseSummary *noiseSummary); //crabcrabcrab
 
+  //also I added something to eventSummary that I do
+  void fillEventSummary(AnitaEventSummary *eventSummary);
   //crab
 
 

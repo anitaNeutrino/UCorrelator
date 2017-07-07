@@ -15,9 +15,12 @@ AnitaNoiseMachine::AnitaNoiseMachine() {
 
 
 void AnitaNoiseMachine::zeroInternals() {
-  memset(rmsFifo,0,NUM_PHI*NUM_ANTENNA_RINGS*NUM_POLS*fifoLength*sizeof(double)); 
+
   rmsFifoPos = 0;
   rmsFifoFillFlag = false;
+  memset(rmsFifo,0,NUM_PHI*NUM_ANTENNA_RINGS*NUM_POLS*fifoLength*sizeof(double)); 
+
+  memset(avgMaps,0,NUM_POLS*nPhi*nTheta*sizeof(double));
 
   for (int poli=0; poli<NUM_POLS; poli++) {
     for (int loc=0; loc<fifoLength; loc++) {
@@ -203,3 +206,27 @@ void AnitaNoiseMachine::fillNoiseSummary(AnitaNoiseSummary *noiseSummary) {
 }
 
 /*-----------------------------*/
+
+
+
+/*=========================
+  Added a thing to AnitaEventSummary that this machine needs to fill */
+
+
+void AnitaNoiseMachine::fillEventSummary(AnitaEventSummary *eventSummary) {
+
+  if (mapFifo[0][0] == NULL) return; //can't do it if you haven't filled anything yet
+
+  for (int poli=0; poli<NUM_POLS; poli++) {
+    for (int dir=0; dir<AnitaEventSummary::maxDirectionsPerPol; dir++) {
+      double peakPhi = eventSummary->peak[poli][dir].phi;
+      double peakTheta = eventSummary->peak[poli][dir].theta;
+      int binx = mapFifo[poli][0]->GetXaxis()->FindBin(peakPhi);
+      int biny = mapFifo[poli][0]->GetYaxis()->FindBin(peakTheta);
+      double avgNoise = avgMaps[poli][binx][biny];
+      eventSummary->peak[poli][dir].peakPastRMS = avgNoise;
+    }
+  }
+
+  return;
+}
