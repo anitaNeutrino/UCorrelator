@@ -550,6 +550,7 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
 
       //snr is ratio of point value to map rms
       point->snr = point->value / maprms; 
+      point->mapRMS = maprms;
       point->dphi_rough = FFTtools::wrap(point->phi - rough_phi, 360,0); 
       point->dtheta_rough = FFTtools::wrap(point->theta - (-rough_theta), 360,0); //sign reversal. doh. 
 
