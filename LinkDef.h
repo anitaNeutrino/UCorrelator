@@ -5,8 +5,8 @@
 #pragma link off all functions;
 #pragma link off all namespaces;
 
-#pragma link C++ namespace UCorrelator;
-#pragma link C++ namespace UCorrelator::gui;
+#pragma link C++ namespace UCorrelator+;
+#pragma link C++ namespace UCorrelator::gui+;
 #pragma link C++ namespace UCorrelator::flags;
 #pragma link C++ namespace UCorrelator::peakfinder;
 #pragma link C++ namespace UCorrelator::shape;
@@ -34,8 +34,12 @@
 #pragma link C++ class UCorrelator::PointingResolutionModel;
 #pragma link C++ class UCorrelator::ConstantPointingResolutionModel;
 
-#pragma link C++ class UCorrelator::gui::Map; 
+#pragma link C++ class UCorrelator::gui::Map+; 
 #pragma link C++ class UCorrelator::gui::SummaryText; 
+
+#pragma link C++ class AnitaNoiseMachine+;
+
+
 
 #endif
 
