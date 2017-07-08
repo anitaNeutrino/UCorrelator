@@ -292,8 +292,10 @@ void AnitaNoiseMachine::fillNoiseSummary(AnitaNoiseSummary *noiseSummary) {
 
 void AnitaNoiseMachine::fillEventSummary(AnitaEventSummary *eventSummary) {
 
+  
 
   for (int poli=0; poli<NUM_POLS; poli++) {
+
     for (int dir=0; dir<AnitaEventSummary::maxDirectionsPerPol; dir++) {
       double peakPhi = eventSummary->peak[poli][dir].phi;
       double peakTheta = eventSummary->peak[poli][dir].theta;
@@ -308,7 +310,24 @@ void AnitaNoiseMachine::fillEventSummary(AnitaEventSummary *eventSummary) {
 	eventSummary->peak[poli][dir].mapHistoryVal = avgNoise;
       }
     }
+
+    //also lets do it for the sun direction (can add wais and ldb later)
+    double sunPhi = eventSummary->sun.phi;
+    double sunTheta = eventSummary->sun.theta;  
+    if (mapFifo[0][0] == NULL) {//can't do it if you haven't filled anything yet
+	eventSummary->sun.mapHistoryVal[poli] = -999;
+      }
+    else {
+      int binPhi = mapFifo[poli][0]->GetXaxis()->FindBin(sunPhi);
+      int binTheta = mapFifo[poli][0]->GetYaxis()->FindBin(-sunTheta);
+      double avgNoise = rollingMapAvg[rollingMapIndex(poli,binPhi,binTheta)];
+      eventSummary->sun.mapHistoryVal[poli] = avgNoise;
+    }
+
   }
+
+
+
 
   return;
 }
