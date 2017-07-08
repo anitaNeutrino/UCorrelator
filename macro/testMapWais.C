@@ -23,7 +23,7 @@ UCorrelator::ProbabilityMap* testMapWais(int run =342, int max = 1000)
   UCorrelator::Analyzer  analyzer (&cfg); 
   AnitaEventSummary sum; 
   FilterStrategy strategy; 
-  UCorrelator::fillStrategyWithKey(&strategy,"sinsub_5_3_ad_2"); 
+  UCorrelator::fillStrategyWithKey(&strategy,"sinsub_10_3_ad_2"); 
 
   StereographicGrid g(1024,1024); 
   UCorrelator::ConstantPointingResolutionModel m(0.2,0.3);
