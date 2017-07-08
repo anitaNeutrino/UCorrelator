@@ -21,7 +21,7 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "s
 
 //  /*AnalysisWaveform::InterpolationType*/ AnalysisWaveform::defaultInterpolationType = AnalysisWaveform::REGULARIZED_SPARSE_YEN; 
 
-  AnitaDataset d(run); 
+  AnitaDataset d(run,false,WaveCalType::kDefault, AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kNoBlinding ); 
   UCorrelator::AnalysisConfig cfg; 
   cfg.start_pol = AnitaPol::kHorizontal; 
   cfg.end_pol = AnitaPol::kHorizontal; 
