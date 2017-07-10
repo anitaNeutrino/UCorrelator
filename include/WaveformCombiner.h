@@ -40,7 +40,7 @@ namespace UCorrelator
       virtual ~WaveformCombiner(); 
 
       /** Combines the waveforms from the given event */ 
-      void combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, uint64_t disallowed = 0); 
+      void combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, ULong64_t disallowed = 0); 
 
       const AnalysisWaveform * getCoherent() const { return &coherent; }
       const AnalysisWaveform * getDeconvolved() const; 

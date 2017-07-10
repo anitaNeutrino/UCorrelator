@@ -5,7 +5,7 @@
 
 
 
-int UCorrelator::flags::checkEmpty(const UsefulAnitaEvent *ev, uint64_t * save_h, uint64_t * save_v)
+int UCorrelator::flags::checkEmpty(const UsefulAnitaEvent *ev, ULong64_t * save_h, ULong64_t * save_v)
 {
   
 
