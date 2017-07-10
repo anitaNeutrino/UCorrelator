@@ -3,7 +3,7 @@
 
 /** \file This file is full of a bunch of methods that check various things about events */ 
 
-#include <stdint.h>
+#include "TObject.h" // for RTypes
 class UsefulAnitaEvent; 
 
 namespace UCorrelator
@@ -11,7 +11,7 @@ namespace UCorrelator
   namespace flags 
   {
     /** Checks for missing antennas and marks the bitmasks */ 
-    int checkEmpty(const UsefulAnitaEvent *ev,  uint64_t *hempty, uint64_t *vempty); 
+    int checkEmpty(const UsefulAnitaEvent *ev,  ULong64_t *hempty, ULong64_t *vempty); 
 
 
   }

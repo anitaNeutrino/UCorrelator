@@ -79,7 +79,7 @@ const AnalysisWaveform * UCorrelator::WaveformCombiner::wf (const FilteredAnitaE
 
 static SimplePassBandFilter alfa_filter(0,0.6);  
 
-void UCorrelator::WaveformCombiner::combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, uint64_t disallowed)
+void UCorrelator::WaveformCombiner::combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, ULong64_t disallowed)
 {
 
   int antennas[nant]; 
