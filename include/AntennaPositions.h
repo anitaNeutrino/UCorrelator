@@ -4,7 +4,6 @@
 #include "AnitaConventions.h" 
 #include "AnitaVersion.h" 
 #include "AnitaGeomTool.h"
-#include "stdint.h"
 
 namespace UCorrelator
 {

@@ -9,7 +9,6 @@
 #include "AnalysisWaveform.h"
 #include "AnitaConventions.h"
 #include <vector> 
-#include <stdint.h>
 
 
 class FilteredAnitaEvent; 
