@@ -37,17 +37,6 @@ AnitaNoiseMachine::AnitaNoiseMachine(const int length)
   zeroInternals();
 }
 
-//so that I always am refering to the same index
-int AnitaNoiseMachine::rmsFifoIndex(int phi, int ringi, int poli, int fifoLength) {
-  return phi*(NUM_ANTENNA_RINGS*NUM_POLS*fifoLength) + ringi*(NUM_POLS*fifoLength) + poli*(fifoLength) + fifoLength;
-}
-
-//so that I always am refering to the same index
-int AnitaNoiseMachine::rollingMapIndex(int poli, int iPhi, int iTheta) {
-  return poli*(nPhi*nTheta) + iPhi*(nTheta) + iTheta;
-}
-
-
 //Resetting to initial state
 void AnitaNoiseMachine::zeroInternals() {
 
@@ -78,6 +67,17 @@ void AnitaNoiseMachine::zeroInternals() {
   mapFifoPos = 0;
   rmsFifoFillFlag = false;
 
+}
+
+
+//so that I always am refering to the same index
+int AnitaNoiseMachine::rmsFifoIndex(int phi, int ringi, int poli, int fifoLength) {
+  return phi*(NUM_ANTENNA_RINGS*NUM_POLS*fifoLength) + ringi*(NUM_POLS*fifoLength) + poli*(fifoLength) + fifoLength;
+}
+
+//so that I always am refering to the same index
+int AnitaNoiseMachine::rollingMapIndex(int poli, int iPhi, int iTheta) {
+  return poli*(nPhi*nTheta) + iPhi*(nTheta) + iTheta;
 }
 
 
@@ -126,14 +126,18 @@ void AnitaNoiseMachine::updateAvgRMSFifo(FilteredAnitaEvent *filtered) {
 }
 
 
-double AnitaNoiseMachine::getAvgRMSNoise(int phi, AnitaRing::AnitaRing_t ring, AnitaPol::AnitaPol_t pol){
+double AnitaNoiseMachine::getAvgRMSNoise(int phi, int ringi, int poli){
 
   double value2 = 0;
 
-  int endPoint = fifoLength;
+  int endPoint;
+  if (rmsFifoFillFlag) {
+    endPoint = fifoLength; }
+  else {
+    endPoint = rmsFifoPos; }
 
   for (int pos=0; pos<endPoint; pos++) {
-    value2 += pow(rmsFifo[rmsFifoIndex(phi,(int)ring,(int)pol,pos)],2)/endPoint;
+    value2 += pow(rmsFifo[rmsFifoIndex(phi,ringi,poli,pos)],2)/endPoint;
   }
   return sqrt(value2);
 
@@ -256,9 +260,7 @@ void AnitaNoiseMachine::fillNoiseSummary(AnitaNoiseSummary *noiseSummary) {
   for (int phi=0; phi<NUM_PHI; phi++) {
     for (int ringi=0; ringi<NUM_ANTENNA_RINGS; ringi++) {
       for (int poli=0; poli<NUM_POLS; poli++) {
-	AnitaRing::AnitaRing_t ring = (AnitaRing::AnitaRing_t)ringi;
-	AnitaPol::AnitaPol_t   pol  = (AnitaPol::AnitaPol_t)poli;
-	noiseSummary->avgRMSNoise[phi][ringi][poli] = getAvgRMSNoise(phi,ring,pol);
+	noiseSummary->avgRMSNoise[phi][ringi][poli] = getAvgRMSNoise(phi,ringi,poli);
       }
     }
   }

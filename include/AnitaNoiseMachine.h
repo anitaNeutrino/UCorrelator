@@ -29,7 +29,7 @@ class AnitaNoiseMachine
   void zeroInternals();
 
   /* get time avg waveform rms noise value for a channel */
-  double getAvgRMSNoise(int phi, AnitaRing::AnitaRing_t ring, AnitaPol::AnitaPol_t pol);
+  double getAvgRMSNoise(int phi, int ringi, int poli);
 
   /* makes an averaged TProfile2D out of the histograms in the mapFifo */
   TProfile2D *getAvgMapNoiseProfile(AnitaPol::AnitaPol_t pol);
