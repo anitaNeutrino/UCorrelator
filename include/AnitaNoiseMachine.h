@@ -61,6 +61,8 @@ class AnitaNoiseMachine
   /* for calculating rms of waveform from a minute average before event capture */
   void updateAvgRMSFifo(FilteredAnitaEvent *filtered);
 
+  /* fills up the history for a single source, called by fillEventSummary */
+  void setSourceMapHistoryVal(AnitaEventSummary::SourceHypothesis& source);
 
   //internals for time domain waveform rms fifo
   double *rmsFifo; //where the info is saved
