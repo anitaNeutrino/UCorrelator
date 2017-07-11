@@ -8,7 +8,7 @@
 #include "SystemResponse.h" 
 
 
-UCorrelator::ProbabilityMap* testMapMC(int run =223, int max = 10) 
+UCorrelator::ProbabilityMap* testMapMC(int run =223, int max = 1000) 
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
@@ -25,15 +25,19 @@ UCorrelator::ProbabilityMap* testMapMC(int run =223, int max = 10)
   FilterStrategy strategy; 
   UCorrelator::fillStrategyWithKey(&strategy,"sinsub_10_3_ad_2"); 
 
-  StereographicGrid g(1024,1024); 
+  StereographicGrid g(4096,4096); 
   UCorrelator::ConstantPointingResolutionModel m(0.2,0.3);
   UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(&g,&m); 
   int ndone = 0; 
 
+  int eventNumber = 0;
   for (int i = 0; i< d.N(); i++)
   {
     d.getEntry(i); 
-    printf("----(%d)-----\n",i); 
+    if (d.header()->eventNumber == eventNumber) continue; 
+    printf("----(%d, %d)-----\n",i, d.header()->eventNumber); 
+    eventNumber = d.header()->eventNumber; 
+
     UsefulAdu5Pat pat(d.gps()); 
     FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
     analyzer.analyze(&ev, &sum,d.truth()); 
@@ -59,9 +63,13 @@ UCorrelator::ProbabilityMap* testMapMC(int run =223, int max = 10)
 
   FFTtools::saveWisdom("wisdom.dat"); 
 
-  AntarcticaBackground * bg = new AntarcticaBackground(); 
-  bg->Draw("colz"); 
   
-  map->segmentationScheme()->Draw("colzsame", map->getProbabilities()); 
+  map->segmentationScheme()->Draw("colz", map->getProbabilities()); 
+
+  TFile f("g.root"); 
+  TGraph * gg = (TGraph*) f.Get("Graph"); 
+  gg->SetLineColor(1); 
+  gg->Draw("lsame"); 
+
   return map; 
 }

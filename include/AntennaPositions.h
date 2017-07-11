@@ -4,7 +4,6 @@
 #include "AnitaConventions.h" 
 #include "AnitaVersion.h" 
 #include "AnitaGeomTool.h"
-#include "stdint.h"
 
 namespace UCorrelator
 {
@@ -24,7 +23,7 @@ namespace UCorrelator
       
       /** Retrieve an instance */ 
      /** Find closest N antennas to phi. Results put into closest, which should have sufficient room. Disallowed is a bitmap of antenna numbers that should be excluded. Returns number found (could be less than number requested if too many disallowed)*/
-      int getClosestAntennas(double phi, int N, int * closest, uint64_t disallowed = 0, AnitaPol::AnitaPol_t pol = AnitaPol::kHorizontal) const; 
+      int getClosestAntennas(double phi, int N, int * closest, ULong64_t disallowed = 0, AnitaPol::AnitaPol_t pol = AnitaPol::kHorizontal) const; 
 
       /** antenna phi positions (degrees)*/
       double phiAnt[2][NUM_SEAVEYS]; 

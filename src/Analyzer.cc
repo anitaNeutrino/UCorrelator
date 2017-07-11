@@ -128,7 +128,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
   summary = new (summary) AnitaEventSummary(hdr, (UsefulAdu5Pat*) event->getGPS(),truth); 
 
   //check for saturation
-  uint64_t saturated[2] = {0,0}; 
+  ULong64_t saturated[2] = {0,0}; 
   event->checkSaturation( &saturated[AnitaPol::kHorizontal], 
                           &saturated[AnitaPol::kVertical], 
                           cfg->saturation_threshold); 

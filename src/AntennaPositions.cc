@@ -69,7 +69,7 @@ UCorrelator::AntennaPositions::AntennaPositions(int version, AnitaGeomTool *geom
 
 }
 
-int UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * closest, uint64_t disallowed , AnitaPol::AnitaPol_t pol) const
+int UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * closest, ULong64_t disallowed , AnitaPol::AnitaPol_t pol) const
 {
 
   assert(N < NUM_SEAVEYS); 

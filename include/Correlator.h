@@ -4,7 +4,6 @@
 
 #include "AnitaConventions.h"
 #include "TH2.h"
-#include <stdint.h>
 
 class FilteredAnitaEvent; 
 class AnalysisWaveform; 
@@ -39,10 +38,10 @@ namespace UCorrelator
       TH2D* computeZoomed(double phi, double theta, int nphi, double dphi,  int ntheta, double dtheta, int nant = 0, TH2D * useme = 0); 
 
       /** Disable the antennas given by the bitmap */ 
-      void setDisallowedAntennas(uint64_t disallowed) { disallowed_antennas = disallowed; } 
+      void setDisallowedAntennas(ULong64_t disallowed) { disallowed_antennas = disallowed; } 
 
       /** Enable only the antennas given by the bitmap */ 
-      void setAllowedAntennas(uint64_t allowed) { disallowed_antennas = ~allowed; } 
+      void setAllowedAntennas(ULong64_t allowed) { disallowed_antennas = ~allowed; } 
 
       /** An antenna only contributes to an angle if it's within max_phi  of it */
       void setMaxAntennaMaxPhiDistance(double max_ant_phi) { max_phi = max_ant_phi;  max_phi2 = max_phi * max_phi; } 
@@ -78,7 +77,7 @@ namespace UCorrelator
       double rms[NANTENNAS]; 
 
       double max_phi, max_phi2;
-      uint64_t disallowed_antennas;
+      ULong64_t disallowed_antennas;
       int pad_factor;
       const FilteredAnitaEvent * ev; 
       AnitaPol::AnitaPol_t pol; 
