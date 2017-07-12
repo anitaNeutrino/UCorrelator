@@ -71,8 +71,8 @@ void AnitaNoiseMachine::zeroInternals() {
 
 
 //so that I always am refering to the same index
-int AnitaNoiseMachine::rmsFifoIndex(int phi, int ringi, int poli, int fifoLength) {
-  return phi*(NUM_ANTENNA_RINGS*NUM_POLS*fifoLength) + ringi*(NUM_POLS*fifoLength) + poli*(fifoLength) + fifoLength;
+int AnitaNoiseMachine::rmsFifoIndex(int phi, int ringi, int poli, int pos) {
+  return phi*(NUM_ANTENNA_RINGS*NUM_POLS*fifoLength) + ringi*(NUM_POLS*fifoLength) + poli*(fifoLength) + pos;
 }
 
 //so that I always am refering to the same index
@@ -111,6 +111,8 @@ void AnitaNoiseMachine::updateAvgRMSFifo(FilteredAnitaEvent *filtered) {
     rmsFifoFillFlag = true;
   }
 
+  if (fJustInitialized) rmsFifoPos = 0;
+
   for (int phi=0; phi<NUM_PHI; phi++) {
     for (int ringi=0; (AnitaRing::AnitaRing_t)ringi != AnitaRing::kNotARing; ringi++) {
       AnitaRing::AnitaRing_t ring = (AnitaRing::AnitaRing_t)ringi;
@@ -130,6 +132,7 @@ double AnitaNoiseMachine::getAvgRMSNoise(int phi, int ringi, int poli){
 
   double value2 = 0;
 
+
   int endPoint;
   if (rmsFifoFillFlag) {
     endPoint = fifoLength; }
@@ -137,7 +140,8 @@ double AnitaNoiseMachine::getAvgRMSNoise(int phi, int ringi, int poli){
     endPoint = rmsFifoPos; }
 
   for (int pos=0; pos<endPoint; pos++) {
-    value2 += pow(rmsFifo[rmsFifoIndex(phi,ringi,poli,pos)],2)/endPoint;
+    int index = rmsFifoIndex(phi,ringi,poli,pos);
+    value2 += pow(rmsFifo[index],2)/endPoint;
   }
   return sqrt(value2);
 
