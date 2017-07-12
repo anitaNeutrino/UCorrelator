@@ -17,8 +17,8 @@ AnitaNoiseMachine::AnitaNoiseMachine(const int length)
   }
 
   rmsFifo = (double*)malloc(NUM_PHI*NUM_ANTENNA_RINGS*NUM_POLS*fifoLength*sizeof(double));
-
   rollingMapAvg = (double*)malloc(NUM_POLS*nPhi*nTheta*sizeof(double));
+
 
   for (int poli=0; poli<NUM_POLS; poli++) {
     mapFifo[poli] = (TH2D**)malloc(fifoLength*sizeof(TH2D*));
@@ -27,13 +27,6 @@ AnitaNoiseMachine::AnitaNoiseMachine(const int length)
     }
   }
   
-  //maps need to be initialized to NULL or the reset wont work
-  for (int poli=0; poli<NUM_POLS; poli++) {
-    for (int fifoPos=0; fifoPos<fifoLength; fifoPos++) {
-      mapFifo[poli][fifoPos] = NULL;
-    }
-  }
-
   zeroInternals();
 }
 
@@ -51,7 +44,7 @@ void AnitaNoiseMachine::zeroInternals() {
   rmsFifoPos = 0;
   rmsFifoFillFlag = false;
   memset(rmsFifo,0,NUM_PHI*NUM_ANTENNA_RINGS*NUM_POLS*fifoLength*sizeof(double)); 
-
+  memset(rmsAvg,0,NUM_PHI*NUM_ANTENNA_RINGS*NUM_POLS*sizeof(double));
   //reset map double array fifo
   memset(rollingMapAvg,0,NUM_POLS*nPhi*nTheta*sizeof(double));
 
@@ -119,33 +112,31 @@ void AnitaNoiseMachine::updateAvgRMSFifo(FilteredAnitaEvent *filtered) {
       for (int poli=0; (AnitaPol::AnitaPol_t)poli != AnitaPol::kNotAPol; poli++) {
 	AnitaPol::AnitaPol_t pol = (AnitaPol::AnitaPol_t)poli;
 
+	//get the rms
 	const TGraphAligned *currWave = filtered->getFilteredGraph(phi,ring,pol)->even();
-	double value = currWave->GetRMS(1);
-	rmsFifo[rmsFifoIndex(phi,ringi,poli,rmsFifoPos)] = currWave->GetRMS(1);
+	double value = pow(currWave->GetRMS(1),2)/fifoLength;
+
+	//add the new fifo position
+	rmsAvg[phi][ringi][poli] += value;
+
+	//save it for the fifo for when you gotta subtract it later
+	rmsFifo[rmsFifoIndex(phi,ringi,poli,rmsFifoPos)] = value;
+	
+	//subtract fifo position that is expiring (if there is one)
+	if (rmsFifoFillFlag) {
+	  int lastPos = rmsFifoPos-1;
+	  if (lastPos < 0) lastPos = fifoLength-1;
+	  double valueSub = rmsFifo[rmsFifoIndex(phi,ringi,poli,lastPos)];
+	  rmsAvg[phi][ringi][poli] -= valueSub;
+	}	
+
       }
     }
   }
+
+  return;
 }
 
-
-double AnitaNoiseMachine::getAvgRMSNoise(int phi, int ringi, int poli){
-
-  double value2 = 0;
-
-
-  int endPoint;
-  if (rmsFifoFillFlag) {
-    endPoint = fifoLength; }
-  else {
-    endPoint = rmsFifoPos; }
-
-  for (int pos=0; pos<endPoint; pos++) {
-    int index = rmsFifoIndex(phi,ringi,poli,pos);
-    value2 += pow(rmsFifo[index],2)/endPoint;
-  }
-  return sqrt(value2);
-
-}
 /*---------------------*/
 	
 
@@ -264,7 +255,7 @@ void AnitaNoiseMachine::fillNoiseSummary(AnitaNoiseSummary *noiseSummary) {
   for (int phi=0; phi<NUM_PHI; phi++) {
     for (int ringi=0; ringi<NUM_ANTENNA_RINGS; ringi++) {
       for (int poli=0; poli<NUM_POLS; poli++) {
-	noiseSummary->avgRMSNoise[phi][ringi][poli] = getAvgRMSNoise(phi,ringi,poli);
+	noiseSummary->avgRMSNoise[phi][ringi][poli] = rmsAvg[phi][ringi][poli];
       }
     }
   }

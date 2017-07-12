@@ -28,9 +28,6 @@ class AnitaNoiseMachine
   /* Reset */
   void zeroInternals();
 
-  /* get time avg waveform rms noise value for a channel */
-  double getAvgRMSNoise(int phi, int ringi, int poli);
-
   /* makes an averaged TProfile2D out of the histograms in the mapFifo */
   TProfile2D *getAvgMapNoiseProfile(AnitaPol::AnitaPol_t pol);
 
@@ -69,6 +66,8 @@ class AnitaNoiseMachine
   int rmsFifoPos; //where in the fifo the most recent write was
   bool rmsFifoFillFlag ; //whether you've completely filled the fifo once
   int rmsFifoIndex(int pol,int ringi,int poli,int pos); //so I know where to write in the 1d array
+  double rmsAvg[NUM_PHI][NUM_ANTENNA_RINGS][NUM_POLS]; //a running count of the average per channel
+
 
   //internals for interferometric map fifo (probably enormous in memory so maybe make a flag)
   TH2D **mapFifo[NUM_POLS]; //where the info is saved
@@ -84,7 +83,7 @@ class AnitaNoiseMachine
   double *rollingMapAvg;
   int rollingMapIndex(int poli,int iPhi,int iTheta); 
 
-  ClassDefNV(AnitaNoiseMachine, 2); 
+  ClassDefNV(AnitaNoiseMachine, 3); 
 
 };
 /*------------------*/
