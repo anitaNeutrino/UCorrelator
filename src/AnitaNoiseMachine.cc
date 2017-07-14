@@ -80,7 +80,7 @@ int AnitaNoiseMachine::rollingMapIndex(int poli, int iPhi, int iTheta) {
 
 void AnitaNoiseMachine::updateMachine(UCorrelator::Analyzer *analyzer,FilteredAnitaEvent *filtered) {
   updateAvgRMSFifo(filtered);
-  updateAvgMapFifo(analyzer);
+  updateAvgMapFifo(analyzer,filtered);
 
   if (fJustInitialized) fJustInitialized = false;
   return;
@@ -142,8 +142,11 @@ void AnitaNoiseMachine::updateAvgRMSFifo(FilteredAnitaEvent *filtered) {
 
 /*======================
   Get the correlation maps from the analyzer and update everything internally */
-void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer) {
+void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer, FilteredAnitaEvent *filtered) {
+
   
+  //I gotta adjust it for heading too, so pull it out of filtered (do it like this for later when it gets integrated)
+  double heading = filtered->getGPS()->heading;
   mapFifoPos++; //move to the next point for writing    
 
   //if you haven't even written once though stay at zero
@@ -166,34 +169,49 @@ void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer) {
     const UCorrelator::gui::Map *currMap = analyzer->getCorrelationMap((AnitaPol::AnitaPol_t)poli);
     TH2D newMap;
     currMap->Copy(newMap);
-    mapFifo[poli][mapFifoPos] = (TH2D*)newMap.Clone();
+    mapFifo[poli][mapFifoPos] = (TH2D*)newMap.Clone();    
   }
-
 
   /* This might be a more efficient way to do it since building a new giant average TProfile every time you want
      to find out what the noise was at a point is pretty lousy */
 
   //stolen from Rene
   for (int poli=0; poli<NUM_POLS; poli++) {
-    for (Int_t iPhi = 0; iPhi < nPhi; iPhi++) {
-      for (Int_t iTheta = 0; iTheta < nTheta; iTheta++) {     
 
+    TH2D *tempHist = (TH2D*)mapFifo[poli][mapFifoPos]->Clone();
+    mapFifo[poli][mapFifoPos]->Reset();
+	
+    for (Int_t iPhi = 0; iPhi < nPhi+1; iPhi++) {
+      double phiRotated = tempHist->GetXaxis()->GetBinCenter(iPhi+1) - heading;
+
+      while (phiRotated < 0) phiRotated += 360.;
+
+      for (Int_t iTheta = 0; iTheta < nTheta+1; iTheta++) {     
+	double thetaDegrees = tempHist->GetYaxis()->GetBinCenter(iTheta+1);
 	//subtract fifo position that is expiring (if there is one)
 	if (mapFifoFillFlag) {
 	  int lastPos = mapFifoPos-1;
 	  if (lastPos < 0) lastPos = fifoLength-1;
-	  double valueSub = mapFifo[poli][lastPos]->GetBinContent(iPhi,iTheta); 
+	  double valueSub = tempHist->GetBinContent(iPhi,iTheta); 
 	  rollingMapAvg[rollingMapIndex(poli,iPhi,iTheta)] -= valueSub;
 	  //	  if (poli==0 && iPhi==1 && iTheta==61 ) std::cout << "subtracting " << valueSub << std::endl;
 	}	
 
 	//and add the new addition to the fifo
-	double valueAdd = mapFifo[poli][mapFifoPos]->GetBinContent(iPhi,iTheta);
+	double valueAdd = tempHist->GetBinContent(iPhi,iTheta);
 	rollingMapAvg[rollingMapIndex(poli,iPhi,iTheta)] += valueAdd;
 	//	if (poli==0 && iPhi==1 && iTheta==61 )  std::cout << "adding " << valueAdd << std::endl;
 
+
+	//fill up the mapFifo with the rotated value
+	//	std::cout << phiRotated << " " << thetaDegrees << " " << valueAdd << " " << std::endl;
+	mapFifo[poli][mapFifoPos]->Fill(phiRotated,thetaDegrees,valueAdd);
+
+
       }
     }
+
+    delete tempHist;
   }
   
   
@@ -241,7 +259,7 @@ TProfile2D* AnitaNoiseMachine::getAvgMapNoiseProfile(AnitaPol::AnitaPol_t pol) {
 /*===========================
   Copy the relevant things into the noise summary */
 void AnitaNoiseMachine::fillNoiseSummary(AnitaNoiseSummary *noiseSummary) {
-  if (!rmsFifoFillFlag) {
+  if (!rmsFifoFillFlag && !quiet) {
     std::cout << "WARNING in AnitaNoiseMachine::fillNoiseSummary(): Fifo hasn't been filled entirely yet, ";
     std::cout << " only gotten " << rmsFifoPos << " out of " << fifoLength << " values" << std::endl;
   }

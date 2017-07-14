@@ -20,6 +20,8 @@ class AnitaNoiseMachine
 
   const int fifoLength; //one minute of noise averaging
 
+  bool quiet = true; //whether to complain about things that I randomly decided upon
+
   //do you want to save the interferometric maps?  They are very large.  Also multiple ways to save them
   bool fillMap ;    //save the min bias maps as TH2D (~18kB per event)
   bool fillAvgMap; //save it as the average of fifoLength min bias maps (Won't work if fillMap==true)
@@ -44,6 +46,9 @@ class AnitaNoiseMachine
   //crab
 
 
+  /* check if it is still all zeros or what */
+  bool isJustInitialized() { return fJustInitialized; };
+
 
  private:
 
@@ -54,7 +59,7 @@ class AnitaNoiseMachine
   //induvidual update functions which need to all be called at once so the fifos incriment properly
   /* for building up an enormous memory block of histograms from a bunch of events, then making an average 
               also does the double array   */
-  void updateAvgMapFifo(UCorrelator::Analyzer *analyzer);
+  void updateAvgMapFifo(UCorrelator::Analyzer *analyzer, FilteredAnitaEvent *filtered);
   /* for calculating rms of waveform from a minute average before event capture */
   void updateAvgRMSFifo(FilteredAnitaEvent *filtered);
 
