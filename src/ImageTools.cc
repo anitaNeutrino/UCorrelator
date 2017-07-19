@@ -17,10 +17,9 @@ TH2* UCorrelator::rotateHistogram(const TH2* inHist, double rotate) {
   double xMax  = inHist->GetXaxis()->GetBinUpEdge(nBinX);
   double yMax  = inHist->GetYaxis()->GetBinUpEdge(nBinY);
 
+  const char* title = inHist->GetTitle();
 
-
-  TH2 *outHist = (TH2*)inHist->Clone(); //copy the input since the shape should be the same
-  outHist->Reset(); //clear out all the values
+  TH2D *outHist = new TH2D("rotateHistogram",title,nBinX,xMin,xMax,nBinY,yMin,yMax);
 
   for (Int_t iX = 0; iX < nBinX; iX++) {
 
