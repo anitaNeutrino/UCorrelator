@@ -150,7 +150,7 @@ AnitaEventSummary * tryEvent(int run = 352, int event = 60832108, bool nofilter 
 
    c2->Divide(3,2); 
 
-   int npeaks = UCorrelator::peakfinder::findIsolatedMaxima((const TH2D*)corr.getHist(), 20., 3, rough,true); 
+   int npeaks = UCorrelator::peakfinder::findIsolatedMaxima((const TH2D*)corr.getHist(), 20., 3, rough); 
 
    TH2D * zoomed = 0; 
    UCorrelator::WaveformCombiner comb(10); 

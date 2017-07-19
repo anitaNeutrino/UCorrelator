@@ -98,7 +98,23 @@ namespace UCorrelator
 
       void clearInteractiveMemory(double frac = 0.5) const; 
       
+			/** Sets disallowed antennas with a bitmask */
 			void setDisallowedAntennas(ULong64_t hpol=0, ULong64_t vpol=0) {disallowedAnts[0] = hpol; disallowedAnts[1] = vpol; } 
+
+			/** Excludes the range for finding peaks in phi (full range is 0 -> 360)*/
+			void setExcludePhiRange(double phiMin, double phiMax) {phiRange[0] = phiMin; phiRange[1] = phiMax; exclude = true; }
+			/** Excludes the range for finding peaks in theta (full range is -60 -> 40)*/
+			void setExcludeThetaRange(double thetaMin, double thetaMax) {thetaRange[0] = thetaMin; thetaRange[1] = thetaMax; exclude = true; }
+			/** Excludes the phi and theta range for finding peaks*/
+			void setExcludePhiThetaRange(double phiMin, double phiMax, double thetaMin, double thetaMax) {phiRange[0] = phiMin; phiRange[1] = phiMax; thetaRange[0] = thetaMin; thetaRange[1] = thetaMax; exclude = true; }
+
+			/** Exclusively includes the range for finding peaks in phi (full range is 0 -> 360)*/
+			void setPhiRange(double phiMin, double phiMax) {phiRange[0] = phiMin; phiRange[1] = phiMax; exclude = false; }
+			/** Exclusively includes the range for finding peaks in theta (full range is -60 -> 40)*/
+			void setThetaRange(double thetaMin, double thetaMax) {thetaRange[0] = thetaMin; thetaRange[1] = thetaMax; exclude = false; }
+			/** Exclusively includes the range in phi and theta for finding peaks*/
+			void setPhiThetaRange(double phiMin, double phiMax, double thetaMin, double thetaMax) {phiRange[0] = phiMin; phiRange[1] = phiMax; thetaRange[0] = thetaMin; thetaRange[1] = thetaMax; exclude = false; }
+
     private:
 
       void fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph * power, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol); 
@@ -134,6 +150,9 @@ namespace UCorrelator
       bool interactive_deconvolved; 
       bool interactive_xpol_deconvolved; 
 			ULong64_t disallowedAnts[2];
+			double phiRange[2];
+			double thetaRange[2];
+			bool exclude;
 
       mutable std::vector<TObject*> delete_list; 
   };
