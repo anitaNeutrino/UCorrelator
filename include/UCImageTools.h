@@ -19,7 +19,11 @@ namespace UCorrelator
    */
   double getZRMS(const TH2*);
 
-
+  /*====
+    Need a way to easily rotate the maps to account for heading.  Makes a new map since the input is probably const
+    Always returns something that goes from 0->360 with 0/360 being north
+  */
+  TH2* rotateHistogram(const TH2* inHist,double rotate);
 
   namespace image
   {
