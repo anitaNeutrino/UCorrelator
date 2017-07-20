@@ -21,7 +21,7 @@ AnitaNoiseMachine::AnitaNoiseMachine(const int length)
 
 
   for (int poli=0; poli<NUM_POLS; poli++) {
-    mapFifo[poli] = (TH2D**)malloc(fifoLength*sizeof(TH2D*));
+    mapFifo[poli] = (TH2**)malloc(fifoLength*sizeof(TH2*));
     for (int fifoPos=0; fifoPos<fifoLength; fifoPos++) {
       mapFifo[poli][fifoPos] = NULL;
     }
@@ -82,7 +82,7 @@ void AnitaNoiseMachine::updateMachine(UCorrelator::Analyzer *analyzer,FilteredAn
   updateAvgRMSFifo(filtered);
   updateAvgMapFifo(analyzer,filtered);
 
-  if (fJustInitialized) fJustInitialized = false;
+  fJustInitialized = false;
   return;
 }
 
@@ -95,16 +95,15 @@ void AnitaNoiseMachine::updateMachine(UCorrelator::Analyzer *analyzer,FilteredAn
 
 
 /*=======================
-  Waveform RMS stuff */
+  Updates Waveform RMS stuff */
 void AnitaNoiseMachine::updateAvgRMSFifo(FilteredAnitaEvent *filtered) {
   
-  rmsFifoPos++;
+  if (!fJustInitialized) rmsFifoPos++;
   if (rmsFifoPos >= fifoLength) {
     rmsFifoPos = 0;
     rmsFifoFillFlag = true;
   }
 
-  if (fJustInitialized) rmsFifoPos = 0;
 
   for (int phi=0; phi<NUM_PHI; phi++) {
     for (int ringi=0; (AnitaRing::AnitaRing_t)ringi != AnitaRing::kNotARing; ringi++) {
@@ -141,78 +140,79 @@ void AnitaNoiseMachine::updateAvgRMSFifo(FilteredAnitaEvent *filtered) {
 	
 
 /*======================
-  Get the correlation maps from the analyzer and update everything internally */
-void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer, FilteredAnitaEvent *filtered) {
+  Get the correlation maps from the analyzer and update everything internally 
+  updates:  mapFifo - the collection of recent map histograms
+            rollingMapAvg - the double array that is in essence a histogram I can also subtract from
 
+*/
+void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer, FilteredAnitaEvent *filtered) {
+  std::stringstream name;
   
   //I gotta adjust it for heading too, so pull it out of filtered (do it like this for later when it gets integrated)
   double heading = filtered->getGPS()->heading;
-  mapFifoPos++; //move to the next point for writing    
 
-  //if you haven't even written once though stay at zero
-  if (fJustInitialized) mapFifoPos = 0;
+  //update position unless you if you haven't even written once though, then stay at zero
+  if (!fJustInitialized) mapFifoPos++;
 
   //wrap if you're at the end of the fifo
   if (mapFifoPos >= fifoLength) {
     mapFifoPos = 0;
     mapFifoFillFlag = true;
   }
-  
+
+  //do this for all polarization maps
   for (int poli=0; poli<NUM_POLS; poli++) {
-    //delete old histogram if it is still there
-    if (mapFifo[poli][mapFifoPos] != NULL) {
-      delete mapFifo[poli][mapFifoPos];
-      mapFifo[poli][mapFifoPos] = NULL;
-    }
+
     
-    //syntactically weirdly copy it out of UCorrelator    
-    const UCorrelator::gui::Map *currMap = analyzer->getCorrelationMap((AnitaPol::AnitaPol_t)poli);
-    TH2D newMap;
-    currMap->Copy(newMap);
-    mapFifo[poli][mapFifoPos] = (TH2D*)newMap.Clone();    
-  }
+    //if you've filled up the whole fifo and are now scanning
+    if (mapFifoFillFlag) {
 
-  /* This might be a more efficient way to do it since building a new giant average TProfile every time you want
-     to find out what the noise was at a point is pretty lousy */
-
-  //stolen from Rene
-  for (int poli=0; poli<NUM_POLS; poli++) {
-
-    TH2D *tempHist = (TH2D*)mapFifo[poli][mapFifoPos]->Clone();
-    mapFifo[poli][mapFifoPos]->Reset();
-	
-    for (Int_t iPhi = 0; iPhi < nPhi+1; iPhi++) {
-      double phiRotated = tempHist->GetXaxis()->GetBinCenter(iPhi+1) - heading;
-
-      while (phiRotated < 0) phiRotated += 360.;
-
-      for (Int_t iTheta = 0; iTheta < nTheta+1; iTheta++) {     
-	double thetaDegrees = tempHist->GetYaxis()->GetBinCenter(iTheta+1);
-	//subtract fifo position that is expiring (if there is one)
-	if (mapFifoFillFlag) {
+    //subtract fifo position that is expiring from the averages(if there is one)
+      for (Int_t iPhi = 0; iPhi < nPhi; iPhi++) {
+	for (Int_t iTheta = 0; iTheta < nTheta; iTheta++) {     
 	  int lastPos = mapFifoPos-1;
 	  if (lastPos < 0) lastPos = fifoLength-1;
-	  double valueSub = tempHist->GetBinContent(iPhi,iTheta); 
+
+	  double valueSub = mapFifo[poli][lastPos]->GetBinContent(iPhi+1,iTheta+1);
 	  rollingMapAvg[rollingMapIndex(poli,iPhi,iTheta)] -= valueSub;
 	  //	  if (poli==0 && iPhi==1 && iTheta==61 ) std::cout << "subtracting " << valueSub << std::endl;
-	}	
-
-	//and add the new addition to the fifo
-	double valueAdd = tempHist->GetBinContent(iPhi,iTheta);
-	rollingMapAvg[rollingMapIndex(poli,iPhi,iTheta)] += valueAdd;
-	//	if (poli==0 && iPhi==1 && iTheta==61 )  std::cout << "adding " << valueAdd << std::endl;
-
-
-	//fill up the mapFifo with the rotated value
-	//	std::cout << phiRotated << " " << thetaDegrees << " " << valueAdd << " " << std::endl;
-	mapFifo[poli][mapFifoPos]->Fill(phiRotated,thetaDegrees,valueAdd);
-
-
+	}
       }
+
+      //and delete the old histogram if it is there
+      if (mapFifo[poli][mapFifoPos] != NULL) {
+	delete mapFifo[poli][mapFifoPos];
+	mapFifo[poli][mapFifoPos] = NULL;
+      }
+    
     }
 
-    delete tempHist;
-  }
+
+    //syntactically weirdly copy the new map out of UCorrelator    
+    const UCorrelator::gui::Map *currMap = analyzer->getCorrelationMap((AnitaPol::AnitaPol_t)poli);
+    
+    //rotate it and put the rotated map into the fifo for later
+    mapFifo[poli][mapFifoPos] = UCorrelator::rotateHistogram(currMap,heading);
+    TH2 *tempHist = mapFifo[poli][mapFifoPos]; //because this is easier to read
+    name.str("");
+    name << "mapFifo[" << poli << "][" << mapFifoPos << "]";
+    tempHist->SetName(name.str().c_str());
+       
+    for (Int_t iPhi = 0; iPhi < nPhi; iPhi++) {
+      double phiDegrees = tempHist->GetYaxis()->GetBinCenter(iPhi+1);
+
+      for (Int_t iTheta = 0; iTheta < nTheta; iTheta++) {     
+	double thetaDegrees = tempHist->GetYaxis()->GetBinCenter(iTheta+1);
+
+	//and add the new addition to the fifo
+	double valueAdd = tempHist->GetBinContent(iPhi+1,iTheta+1);
+	rollingMapAvg[rollingMapIndex(poli,iPhi,iTheta)] += valueAdd;
+  
+
+      }//end theta
+    }//end phi
+
+  }//end of pol
   
   
   return;
@@ -225,10 +225,10 @@ TProfile2D* AnitaNoiseMachine::getAvgMapNoiseProfile(AnitaPol::AnitaPol_t pol) {
 
   int nBinX = mapFifo[(int)pol][0]->GetNbinsX();
   int nBinY = mapFifo[(int)pol][0]->GetNbinsY();
-  int xMin  = mapFifo[(int)pol][0]->GetXaxis()->GetBinLowEdge(1);
-  int yMin  = mapFifo[(int)pol][0]->GetYaxis()->GetBinLowEdge(1);
-  int xMax  = mapFifo[(int)pol][0]->GetXaxis()->GetBinUpEdge(nBinX);
-  int yMax  = mapFifo[(int)pol][0]->GetYaxis()->GetBinUpEdge(nBinY);
+  double xMin  = mapFifo[(int)pol][0]->GetXaxis()->GetBinLowEdge(1);
+  double yMin  = mapFifo[(int)pol][0]->GetYaxis()->GetBinLowEdge(1);
+  double xMax  = mapFifo[(int)pol][0]->GetXaxis()->GetBinUpEdge(nBinX);
+  double yMax  = mapFifo[(int)pol][0]->GetYaxis()->GetBinUpEdge(nBinY);
 
   std::stringstream name;
   name.str("");
@@ -277,7 +277,7 @@ void AnitaNoiseMachine::fillNoiseSummary(AnitaNoiseSummary *noiseSummary) {
       }
     }
   }
-
+  
 
   //fill a map, but only if one of the flags is on, fillMap is used if both are selected
   if (fillAvgMap || fillMap) {
@@ -292,24 +292,25 @@ void AnitaNoiseMachine::fillNoiseSummary(AnitaNoiseSummary *noiseSummary) {
       else noiseSummary->avgMapProf[poli] = getAvgMapNoiseProfile(pol);
     }
   }
- 
+  
   return;
-
+  
 }
-
+ 
 /*-----------------------------*/
 
 
 /*=========================
-  Added a thing to AnitaEventSummary that this machine needs to fill */
-
-
+  Added a thing to AnitaEventSummary that this machine needs to fill 
+*/
+ 
+ 
 void AnitaNoiseMachine::fillEventSummary(AnitaEventSummary *eventSummary) {
-
+   
   
 
   for (int poli=0; poli<NUM_POLS; poli++) {
-
+    
     for (int dir=0; dir<AnitaEventSummary::maxDirectionsPerPol; dir++) {
       double peakPhi = eventSummary->peak[poli][dir].phi;
       double peakTheta = eventSummary->peak[poli][dir].theta;

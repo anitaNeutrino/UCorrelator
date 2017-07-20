@@ -6,8 +6,46 @@
 #include <math.h>
 
 
-double UCorrelator::getZRMS(const TH2* hist)
-{
+
+TH2* UCorrelator::rotateHistogram(const TH2* inHist, double rotate) {
+  
+  //get all the info about the graph
+  int nBinX = inHist->GetNbinsX();
+  int nBinY = inHist->GetNbinsY();
+  double xMin  = inHist->GetXaxis()->GetBinLowEdge(1);
+  double yMin  = inHist->GetYaxis()->GetBinLowEdge(1);
+  double xMax  = inHist->GetXaxis()->GetBinUpEdge(nBinX);
+  double yMax  = inHist->GetYaxis()->GetBinUpEdge(nBinY);
+
+  const char* title = inHist->GetTitle();
+
+  TH2D *outHist = new TH2D("rotateHistogram",title,nBinX,xMin,xMax,nBinY,yMin,yMax);
+
+  for (Int_t iX = 0; iX < nBinX; iX++) {
+
+    double rotX = inHist->GetXaxis()->GetBinCenter(iX+1) - rotate;
+    //get that rotated value into the range
+    while (rotX < 0) rotX += 360.;
+    while (rotX > 360) rotX -= 360.;
+
+    for (Int_t iY = 0; iY < nBinY; iY++) {     
+
+      double Y = inHist->GetYaxis()->GetBinCenter(iY+1);
+
+      double value = inHist->GetBinContent(iX+1,iY+1);
+
+      outHist->Fill(rotX,Y,value);
+    }
+  }
+
+  return outHist;
+}
+
+
+
+
+double UCorrelator::getZRMS(const TH2* hist) {
+
   int numBinsX = hist->GetNbinsX();
   int numBinsY = hist->GetNbinsY();
 

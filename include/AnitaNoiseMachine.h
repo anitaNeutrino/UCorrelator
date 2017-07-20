@@ -7,7 +7,7 @@
 #include "FilteredAnitaEvent.h"
 #include "Analyzer.h"
 #include "UCorrelatorGUI.h"
-
+#include "UCImageTools.h"
 
 /*=====================
   A class to process and save information about the thermal environment*/
@@ -75,7 +75,7 @@ class AnitaNoiseMachine
 
 
   //internals for interferometric map fifo (probably enormous in memory so maybe make a flag)
-  TH2D **mapFifo[NUM_POLS]; //where the info is saved
+  TH2 **mapFifo[NUM_POLS]; //where the info is saved
   int mapFifoPos;  //where in the fifo the most recent write was
   bool mapFifoFillFlag ; //whether you've completely filled the fifo once.
   int mapFifoIndex(); 
@@ -88,7 +88,7 @@ class AnitaNoiseMachine
   double *rollingMapAvg;
   int rollingMapIndex(int poli,int iPhi,int iTheta); 
 
-  ClassDefNV(AnitaNoiseMachine, 3); 
+  ClassDefNV(AnitaNoiseMachine, 4); 
 
 };
 /*------------------*/
