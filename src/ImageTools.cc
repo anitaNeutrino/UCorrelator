@@ -6,8 +6,8 @@
 #include <math.h>
 
 
-double UCorrelator::getZRMS(const TH2* hist) {
-
+double UCorrelator::getZRMS(const TH2* hist)
+{
   int numBinsX = hist->GetNbinsX();
   int numBinsY = hist->GetNbinsY();
 
@@ -21,7 +21,6 @@ double UCorrelator::getZRMS(const TH2* hist) {
   }
 
   return sqrt(sum2/(numBinsX*numBinsY));
-
 }
 
 
@@ -112,4 +111,131 @@ TH1* UCorrelator::image::getPctileProjection(const TH2 * H, int axis, double pct
 
   return h; 
 } 
+
+
+static double bicubicFunction(double x, double * params)
+{
+  double * a = params+1;  //hack to use same notation as in wikipedia :)
+  return 0.5 * (2*a[0] + x*(-a[-1] + a[1]) + x*x*(2*a[-1]-5*a[0]+4*a[1] -a[2]) + x*x*x*(-a[-1] + 3*a[0] - 3*a[1] + a[2])); 
+}
+
+
+double UCorrelator::image::interpolate(const TH2 *h, double x, double y, InterpolationType type, InterpolationEdgeBehavior flags_x, InterpolationEdgeBehavior flags_y, bool centers)
+{
+
+  /*
+  if (type == NEAREST) 
+  {
+    int xbin = h->GetXaxis()->FindFixBin(x); 
+    int ybin = h->GetXaxis()->FindFixBin(x); 
+
+    if (centers)  //this is easy 
+    {
+      return h->GetBinContent(xbin,ybin); 
+    }
+
+    //otherwise, we want to find the closest corner. 
+
+
+
+
+  }
+
+
+  if (type == BILINEAR)  
+  {
+
+    //find the bin
+    
+    int xbin = h->GetXaxis()->FindFixBin(x); 
+    int ybin = h->GetXaxis()->FindFixBin(x); 
+
+    if (centers && x < h->GetXaxis()->GetBinCenter(xbin) )
+      xbin = (xbin == 1 && edge_x == PERIODIC) ? h->GetNbinsX() : xbin-1; 
+
+    if (centers && y < h->GetYaxis()->GetBinCenter(ybin) )
+      ybin = (ybin == 1 && edge_y == PERIODIC) ? h->GetNbinsY() : ybin-1; 
+
+
+
+
+    //bins used to get the value 
+    int xbin2 = xbin1 < h->GetNbinsX() ? xbin1 + 1 : 
+                flags_x == PERIODIC   ? 1        :
+                flags_x == EXTEND     ? xbin1     :
+                xbin+1; //this will be the overflow bin which I suppose will usually be zero 
+
+    int ybin2 = ybin < h->GetNbinsY() ? ybin1 + 1 : 
+                flags_y == PERIODIC   ? 1        :
+                flags_y == EXTEND     ? ybin1     :
+                ybin+1; //this will be the overflow bin which I suppose will usually be zero 
+
+    //get the values 
+    double q11  = h->GetBinContent(xbin,ybin); 
+    double q21  = h->GetBinContent(xbin2,ybin); 
+    double q12  = h->GetBinContent(xbin,ybin2); 
+    double q21  = h->GetBinContent(xbin2,ybin2); 
+
+
+    // TODO: special case the uniform bin size case
+    
+    double xrel = x - h->GetXaxis()->GetBinLowEdge(xbin); 
+    double yrel = y - h->GetYaxis()->GetBinLowEdge(ybin); 
+    double xrel2 = xwidth - xrel; 
+    double yrel2 = ywidth - yrel; 
+
+    return 1./ (xwidth * ywidth)  * ( q11 * xrel2 * yrel2 + q21 *xrel * yrel2 + q12 * xrel2 * yrel  + q22 * xrel * yrel); 
+  }
+
+  if (type  == BICUBIC)
+  {
+
+    if (h->GetXaxis()->GetBins() || h->GetYaxis()->GetBins())
+    {
+      fprintf(stderr,"WARNING, bicubic interpolation does not work for non-uniform binning. Reverting to bilinear.\n"); 
+      return interpolate(h,x,y,BILINEAR,flags_x,flags_y); 
+    }
+
+    
+    double xmin = h->GetXaxis()->GetXmin(); 
+    double xmax = h->GetXaxis()->GetXmax(); 
+    double ymin = h->GetYaxis()->GetXmin(); 
+    double ymax = h->GetYaxis()->GetXmax(); 
+    double xwidth = (xmax-xmin) / (h->GetNbinsX()); 
+    double ywidth = (ymax-ymin) / (h->GetNbinsY()); 
+
+  
+    int binx0 = (int) ((x - xmin) / xwidth + 0.5); 
+    int biny0 = (int) ((y - ymin) / ywidth + 0.5); 
+
+
+    double b[4]; 
+    for (int iy = -1; iy <3; iy++)
+    {
+      double a[4]; 
+      int biny = biny0 + iy; 
+
+      if (biny < 1) 
+      { 
+        biny = flag_y == PERIODIC ? biny 
+
+      }
+
+      for (int ix = -1; ix <3; ix++)
+      {
+        a[ix+1] = in->GetBinContent(binx, biny); 
+      }
+      b[iy+1] = bicubicFunction( (x - in->GetXaxis()->GetBinCenter(binx0)) / xwidth,a); 
+    }
+    
+    return bicubicFunction((y - in->GetYaxis()->GetBinCenter(biny0)) / ywidth,b);  
+
+
+  }
+
+*/
+
+  return 0; 
+
+}
 
