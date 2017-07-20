@@ -113,7 +113,7 @@ void AnitaNoiseMachine::updateAvgRMSFifo(FilteredAnitaEvent *filtered) {
 
 	//get the rms
 	const TGraphAligned *currWave = filtered->getFilteredGraph(phi,ring,pol)->even();
-	double value = pow(currWave->GetRMS(1),2)/fifoLength;
+	double value = pow(currWave->GetRMS(2),2)/fifoLength;
 
 	//add the new fifo position
 	rmsAvg[phi][ringi][poli] += value;
@@ -353,6 +353,8 @@ void AnitaNoiseMachine::setSourceMapHistoryVal(AnitaEventSummary::SourceHypothes
       int binTheta = mapFifo[poli][0]->GetYaxis()->FindBin(-sourceTheta); //needs *-1 for sign reasons
       double avgNoise = rollingMapAvg[rollingMapIndex(poli,binPhi,binTheta)];
       source.mapHistoryVal[poli] = avgNoise;
+      
+      source.mapValue[poli] = mapFifo[poli][mapFifoPos]->GetBinContent(binPhi,binTheta);
     }
 
   }
