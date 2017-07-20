@@ -64,9 +64,9 @@ AnitaEventSummary * testMasking(int run = 125, int entry = 0, bool nofilter = tr
   AnitaEventSummary * sum = new AnitaEventSummary; 
   UCorrelator::AnalysisConfig cfg; 
   UCorrelator::Analyzer * analyzer = new UCorrelator::Analyzer(&cfg, true);
-	//analyzer->setExcludePhiThetaRange(100,200,-60,40);
-	//analyzer->setTrackSun(10,25);
-	analyzer->setTrackWAIS(10,25);
+	//analyzer->setExcludeThetaPhiRange(100,200,-60,40);
+	analyzer->setTrackSun(40,10);
+	//analyzer->setTrackWAIS(10,35);
   analyzer->analyze(fae, sum); 
 
 	analyzer->drawSummary();
