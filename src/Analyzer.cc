@@ -138,6 +138,13 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
   /* Initialize the summary */ 
   summary = new (summary) AnitaEventSummary(hdr, (UsefulAdu5Pat*) event->getGPS(),truth); 
 
+  //just right away store where the payload is
+  summary->anitaLocation.latitude = pat->latitude;
+  summary->anitaLocation.longitude = pat->longitude;
+  summary->anitaLocation.altitude = pat->altitude;
+  summary->anitaLocation.heading = pat->heading;
+
+
 	//check if were blocking out/looking at a source
 	if(trackSource)
 	{
