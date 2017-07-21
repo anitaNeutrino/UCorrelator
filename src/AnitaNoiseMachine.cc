@@ -40,6 +40,9 @@ void AnitaNoiseMachine::zeroInternals() {
   fillMap = false;
   fillAvgMap = false;
 
+  //heading
+  lastHeading = -999;
+
   //reset rms fifo
   rmsFifoPos = 0;
   rmsFifoFillFlag = false;
@@ -150,6 +153,7 @@ void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer, Filter
   
   //I gotta adjust it for heading too, so pull it out of filtered (do it like this for later when it gets integrated)
   double heading = filtered->getGPS()->heading;
+  lastHeading = heading;
 
   //update position unless you if you haven't even written once though, then stay at zero
   if (!fJustInitialized) mapFifoPos++;
@@ -341,9 +345,10 @@ void AnitaNoiseMachine::fillEventSummary(AnitaEventSummary *eventSummary) {
 void AnitaNoiseMachine::setSourceMapHistoryVal(AnitaEventSummary::SourceHypothesis& source) {
 
   for (int poli=0; poli<NUM_POLS; poli++) {
-    double sourcePhi = source.phi;
-    if (sourcePhi < 0) sourcePhi += 360; //because the sun is translated stupidly
-    
+    double sourcePhi = source.phi - lastHeading;
+    while (sourcePhi < 0)   sourcePhi += 360; //because the sun is translated stupidly
+    while (sourcePhi > 360) sourcePhi -= 360;
+
     double sourceTheta = source.theta;  
     if (mapFifo[0][0] == NULL) {//can't do it if you haven't filled anything yet
       source.mapHistoryVal[poli] = -999;
