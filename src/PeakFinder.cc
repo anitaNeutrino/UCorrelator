@@ -109,22 +109,64 @@ static void maskNearbyBins(const TH2D * hist, double distance, int bin, std::vec
 }
 
 
-int UCorrelator::peakfinder::findIsolatedMaxima(const TH2D * hist, double distance, int Nmaxima, RoughMaximum * maxima,  bool use_bin_center)
+int UCorrelator::peakfinder::findIsolatedMaxima(const TH2D * hist, double distance, int Nmaxima, RoughMaximum * maxima, double minPhi, double maxPhi, double minTheta, double maxTheta, bool exclude, bool use_bin_center)
 {
   int width = hist->GetNbinsX()+2; 
   int height = hist->GetNbinsY()+2; 
   std::vector<char> used( width*height, false); 
 
   int nfound = 0; 
+	
+	std::vector<int> row_not_allowed(0);
+	std::vector<int> col_not_allowed(0);
+	double minWrap = 360.;
+	double maxWrap = 0.;
+	if(minPhi < 0) minWrap += minPhi;
+	if(maxPhi > 360) maxWrap -= 360;
 
-  //block out bins closest to top and bottom since we don't want maxima on the top or bottom edge 
+	//if min and maxes are set, blocks out corresponding rows/columns
+	if(minTheta || maxTheta)
+	{
+		for(int ybin = 2; ybin < hist->GetNbinsY(); ybin++)
+		{
+			double yCenter = hist->GetYaxis()->GetBinCenter(ybin);
+			if(yCenter <= minTheta || yCenter >= maxTheta) row_not_allowed.push_back(ybin);
+		}
+	}
+	if(minPhi || maxPhi)
+	{
+		for(int xbin = 1; xbin < hist->GetNbinsX()+1; xbin++)
+		{
+			double xCenter = hist->GetXaxis()->GetBinCenter(xbin);
+			if((xCenter <= minPhi && xCenter >= maxWrap) || (xCenter >= maxPhi && xCenter <= minWrap))
+			{
+				col_not_allowed.push_back(xbin);
+			}
+		}
+	}
 
-  int rows_not_allowed[] = {1,hist->GetNbinsY()}; 
-  for (unsigned i = 0; i < sizeof(rows_not_allowed) / sizeof(*rows_not_allowed); i++)
+  for (unsigned i = 0; i < row_not_allowed.size(); i++)
   {
-    memset(&used[(width)*rows_not_allowed[i]], 1, width); 
+    memset(&used[(width)*row_not_allowed[i]], 1, width); 
+  }
+	for (unsigned i = 0; i < col_not_allowed.size(); i++)
+  {
+		for(unsigned j = 0; j < height; j++) used[col_not_allowed[i] + (j*width)] = 1;
   }
 
+	//if set to exclude, this flips all 1s and 0s (max sure phi and theta are actually set if using this or it will just block out everything)
+	if(exclude)
+	{
+		for(unsigned i = 0; i < width*height; i++) used[i] = used[i] xor 1;
+	}
+  
+	//block out bins closest to top and bottom since we don't want maxima on the top or bottom edge 
+
+  int rows_not_allowed[] = {1,hist->GetNbinsY()}; 
+	for(unsigned i = 0; i < sizeof(rows_not_allowed) / sizeof(*rows_not_allowed); i++)
+	{
+		memset(&used[(width)*rows_not_allowed[i]], 1, width);
+	}
 
   while (nfound < Nmaxima)
   {

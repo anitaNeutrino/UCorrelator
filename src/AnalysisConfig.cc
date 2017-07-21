@@ -2,6 +2,7 @@
 #include "SystemResponse.h" 
 #include "TFile.h" 
 #include "TH2.h" 
+#include "AnitaVersion.h"
 
 static const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25", "Histogram" }; 
 static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","HarmSignalOnly"}; 
@@ -96,8 +97,8 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
 #endif
 
 
-const int wais_hpol_time_offset = 93; 
-const int wais_vpol_time_offset = -99757; 
+const int wais_hpol_time_offset = (AnitaVersion::get() == 4) ? 11000 : 93; 
+const int wais_vpol_time_offset = (AnitaVersion::get() == 4) ? 1000 : -99757; 
 const int siple_hpol_time_offset = -41;
 const int siple_vpol_time_offset = +328;
 

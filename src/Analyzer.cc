@@ -76,6 +76,17 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mo
 	disallowedAnts[0] = 0;
 	disallowedAnts[1] = 0;
 
+	phiRange[0] = 0.;
+	phiRange[1] = 0.;
+	thetaRange[0] = 0.;
+	thetaRange[1] = 0.;
+	exclude = false;	
+	dPhi = 0;
+	dTheta = 0;
+	trackSource = false;
+	trackSun = false;
+	sourceLon = 0; sourceLat = 0; sourceAlt = 0;
+
   corr.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_xpol.setGroupDelayFlag(cfg->enable_group_delay); 
@@ -126,6 +137,26 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
  
   /* Initialize the summary */ 
   summary = new (summary) AnitaEventSummary(hdr, (UsefulAdu5Pat*) event->getGPS(),truth); 
+
+	//check if were blocking out/looking at a source
+	if(trackSource)
+	{
+		pat->getThetaAndPhiWave(sourceLon, sourceLat, sourceAlt, thetaRange[0], phiRange[0]);
+		phiRange[0] *= 180./TMath::Pi();
+		thetaRange[0] *= 180./TMath::Pi();
+		phiRange[1] = phiRange[0] + dPhi;
+		thetaRange[1] = thetaRange[0] + dTheta;
+		phiRange[0] -= dPhi;
+		thetaRange[0] -= dTheta;
+	}
+	//sun is done separately because its easier this way
+	if(trackSun)
+	{
+		phiRange[0] = summary->sun.phi - dPhi;
+		phiRange[1] = summary->sun.phi + dPhi;
+		thetaRange[0] = summary->sun.theta - dTheta;
+		thetaRange[1] = summary->sun.theta + dTheta;
+	}
 
   //check for saturation
   ULong64_t saturated[2] = {0,0}; 
@@ -270,7 +301,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
     // Find the isolated peaks in the image 
     peakfinder::RoughMaximum maxima[cfg->nmaxima]; 
-    int npeaks = UCorrelator::peakfinder::findIsolatedMaxima((const TH2D*) corr.getHist(), cfg->peak_isolation_requirement, cfg->nmaxima, maxima, cfg->use_bin_center); 
+    int npeaks = UCorrelator::peakfinder::findIsolatedMaxima((const TH2D*) corr.getHist(), cfg->peak_isolation_requirement, cfg->nmaxima, maxima, phiRange[0], phiRange[1], thetaRange[0], thetaRange[1], exclude, cfg->use_bin_center); 
 //    printf("npeaks: %d\n", npeaks); 
     summary->nPeaks[pol] = npeaks; 
 

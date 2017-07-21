@@ -45,7 +45,7 @@ namespace UCorrelator
 
     /** Finds largest Nmaxima isolated local maxima in a histogram. A maximum is local if it's bigger than any neighboring bins
      * Returns the number found (which might be less than Nmaxima if there are insufficient isolated local maxima) **/ 
-    int findIsolatedMaxima(const TH2D* hist, double distance, int Nmaxima, RoughMaximum * maxima, bool use_bin_center = true); 
+    int findIsolatedMaxima(const TH2D* hist, double distance, int Nmaxima, RoughMaximum * maxima, double minPhi = 0., double maxPhi = 0., double minTheta = 0., double maxTheta = 0., bool exclude = false, bool use_bin_center = true); 
 
     /** Legacy interpolation peak finding as Abby did it... basically does interpolation independently in row and column */ 
     void doInterpolationPeakFindingAbby(const TH2D* hist, FineMaximum * peak);
