@@ -20,7 +20,7 @@ class AnitaNoiseMachine
 
   const int fifoLength; //one minute of noise averaging
 
-  bool quiet = true; //whether to complain about things that I randomly decided upon
+  bool quiet;// = true; //whether to complain about things that I randomly decided upon
 
   //do you want to save the interferometric maps?  They are very large.  Also multiple ways to save them
   bool fillMap ;    //save the min bias maps as TH2D (~18kB per event)

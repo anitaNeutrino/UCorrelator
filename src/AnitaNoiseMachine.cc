@@ -8,7 +8,7 @@
  * Default constructor for ROOT
  */
 AnitaNoiseMachine::AnitaNoiseMachine(const int length)
-   : fifoLength(length)
+    : fifoLength(length), quiet(true)
 {
   
   if (fifoLength < 2) {
