@@ -48,8 +48,6 @@ void AnitaNoiseMachine::zeroInternals() {
   rmsFifoFillFlag = false;
   memset(rmsFifo,0,NUM_PHI*NUM_ANTENNA_RINGS*NUM_POLS*fifoLength*sizeof(double)); 
   memset(rmsAvg,0,NUM_PHI*NUM_ANTENNA_RINGS*NUM_POLS*sizeof(double));
-  //reset map double array fifo
-  memset(rollingMapAvg,0,NUM_POLS*nPhi*nTheta*sizeof(double));
 
   //reset map histogram fifo
   for (int poli=0; poli<NUM_POLS; poli++) {
@@ -61,7 +59,10 @@ void AnitaNoiseMachine::zeroInternals() {
     }
   }
   mapFifoPos = 0;
-  rmsFifoFillFlag = false;
+  mapFifoFillFlag = false;
+
+  //reset map double array fifo
+  memset(rollingMapAvg,0,NUM_POLS*nPhi*nTheta*sizeof(double));
 
 }
 
@@ -181,6 +182,7 @@ void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer, Filter
   if (mapFifoPos >= fifoLength) {
     mapFifoPos = 0;
     mapFifoFillFlag = true;
+    std::cout << "Buffer has been filled!" << std::endl;
   }
 
   //do this for all polarization maps
@@ -195,7 +197,6 @@ void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer, Filter
 	for (Int_t iTheta = 0; iTheta < nTheta; iTheta++) {     
 	  int lastPos = mapFifoPos-1;
 	  if (lastPos < 0) lastPos = fifoLength-1;
-
 	  double valueSub = mapFifo[poli][lastPos]->GetBinContent(iPhi+1,iTheta+1);
 	  rollingMapAvg[rollingMapIndex(poli,iPhi,iTheta)] -= valueSub;
 	  //	  if (poli==0 && iPhi==1 && iTheta==61 ) std::cout << "subtracting " << valueSub << std::endl;
