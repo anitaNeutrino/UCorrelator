@@ -20,7 +20,7 @@ class AnitaNoiseMachine
 
   const int fifoLength; //one minute of noise averaging
 
-  bool quiet = true; //whether to complain about things that I randomly decided upon
+  bool quiet;// = true; //whether to complain about things that I randomly decided upon
 
   //do you want to save the interferometric maps?  They are very large.  Also multiple ways to save them
   bool fillMap ;    //save the min bias maps as TH2D (~18kB per event)
@@ -55,6 +55,8 @@ class AnitaNoiseMachine
   //Makes sure the fifos start at zero
   bool fJustInitialized;
 
+  /** Saves the last updated heading value */
+  double lastHeading;
   
   //induvidual update functions which need to all be called at once so the fifos incriment properly
   /* for building up an enormous memory block of histograms from a bunch of events, then making an average 
@@ -88,7 +90,7 @@ class AnitaNoiseMachine
   double *rollingMapAvg;
   int rollingMapIndex(int poli,int iPhi,int iTheta); 
 
-  ClassDefNV(AnitaNoiseMachine, 4); 
+  ClassDefNV(AnitaNoiseMachine, 5); 
 
 };
 /*------------------*/

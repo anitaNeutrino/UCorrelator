@@ -4,12 +4,14 @@
 /** Image tools for working with TH2*'s
  *
  * Cosmin Deaconu <cozzyd@kicp.uchicago.edu> 
+ *
+ *  Also other things!  Ben Rotter <BenJRotter@gmail.com>
  **/
 
 
 class TH1; 
 class TH2; 
-
+class TProfile2D;
 
 namespace UCorrelator
 {
@@ -24,6 +26,19 @@ namespace UCorrelator
     Always returns something that goes from 0->360 with 0/360 being north
   */
   TH2* rotateHistogram(const TH2* inHist,double rotate);
+
+  /*===
+    Tools for averaging together interferometric maps, or any histograms really:
+    TH2toTProfile2D - "upgrades" a TH2 to a TProfile2D, which can do more stuff. Doesn't copy any of the data, just the frame.
+   */
+  TProfile2D *TH2toTProfile2D(TH2* inTH2);
+
+  /*===
+    Tools for averaging together interferometric maps, or any histograms really:
+    fillTProfile2DWithTH2 - "overlays" a TH2 onto a TProfile2D, which will average them together
+   */
+  void fillTProfile2DWithTH2(TProfile2D *prof, TH2* hist);
+
 
   namespace image
   {

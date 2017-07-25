@@ -138,12 +138,19 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
   /* Initialize the summary */ 
   summary = new (summary) AnitaEventSummary(hdr, (UsefulAdu5Pat*) event->getGPS(),truth); 
 
+  //just right away store where the payload is
+  summary->anitaLocation.latitude = pat->latitude;
+  summary->anitaLocation.longitude = pat->longitude;
+  summary->anitaLocation.altitude = pat->altitude;
+  summary->anitaLocation.heading = pat->heading;
+
+
 	//check if were blocking out/looking at a source
 	if(trackSource)
 	{
 		pat->getThetaAndPhiWave(sourceLon, sourceLat, sourceAlt, thetaRange[0], phiRange[0]);
 		phiRange[0] *= 180./TMath::Pi();
-		thetaRange[0] *= 180./TMath::Pi();
+		thetaRange[0] *= -180./TMath::Pi();
 		phiRange[1] = phiRange[0] + dPhi;
 		thetaRange[1] = thetaRange[0] + dTheta;
 		phiRange[0] -= dPhi;
@@ -152,10 +159,11 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 	//sun is done separately because its easier this way
 	if(trackSun)
 	{
+		pat->getSunPosition(summary->sun.phi, summary->sun.theta);
 		phiRange[0] = summary->sun.phi - dPhi;
 		phiRange[1] = summary->sun.phi + dPhi;
-		thetaRange[0] = summary->sun.theta - dTheta;
-		thetaRange[1] = summary->sun.theta + dTheta;
+		thetaRange[0] = -summary->sun.theta - dTheta;
+		thetaRange[1] = -summary->sun.theta + dTheta;
 	}
 
   //check for saturation

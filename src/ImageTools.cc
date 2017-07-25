@@ -1,9 +1,42 @@
+#include "TProfile2D.h"
 #include "TH2.h" 
 #include "UCImageTools.h" 
 #include "TString.h" 
 #include <algorithm>
 #include <set>
 #include <math.h>
+
+
+
+TProfile2D *UCorrelator::TH2toTProfile2D(TH2* inTH2) {
+
+  int nBinX = inTH2->GetNbinsX();
+  int nBinY = inTH2->GetNbinsY();
+  int xMin  = inTH2->GetXaxis()->GetBinLowEdge(1);
+  int yMin  = inTH2->GetYaxis()->GetBinLowEdge(1);
+  int xMax  = inTH2->GetXaxis()->GetBinUpEdge(nBinX);
+  int yMax  = inTH2->GetYaxis()->GetBinUpEdge(nBinY);
+  TProfile2D *mapProfile = new TProfile2D("temp","temp",nBinX,xMin,xMax,nBinY,yMin,yMax);
+
+  return mapProfile;
+
+}
+
+void UCorrelator::fillTProfile2DWithTH2(TProfile2D *prof, TH2* hist) {
+
+  int nBinX = hist->GetNbinsX();
+  int nBinY = hist->GetNbinsY();
+
+  for (int binX=0; binX<nBinX+1; binX++) {
+    double x = hist->GetXaxis()->GetBinCenter(binX+1);
+    for (int binY=0; binY<nBinY+1; binY++) {
+      double y = hist->GetYaxis()->GetBinCenter(binY+1);
+          prof->Fill(x,y,hist->GetBinContent(binX,binY));
+    }
+  }
+
+  return;
+}
 
 
 
