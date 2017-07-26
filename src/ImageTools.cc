@@ -226,7 +226,7 @@ double UCorrelator::image::interpolate(const TH2 *h, double x, double y, Interpo
     //find the bin
     
     int xbin = h->GetXaxis()->FindFixBin(x); 
-    int ybin = h->GetXaxis()->FindFixBin(x); 
+    int ybin = h->GetYaxis()->FindFixBin(y); 
 
     if (centers && x < h->GetXaxis()->GetBinCenter(xbin) )
       xbin = (xbin == 1 && flags_x == PERIODIC) ? h->GetNbinsX() : xbin-1; 
@@ -253,13 +253,13 @@ double UCorrelator::image::interpolate(const TH2 *h, double x, double y, Interpo
     double q12  = h->GetBinContent(xbin,ybin2); 
     double q22  = h->GetBinContent(xbin2,ybin2); 
 
-    double xwidth = centers ? h->GetXaxis()->GetBinCenter(xbin2) - h->GetXaxis()->GetBinCenter(xbin) : h->GetXaxis()->GetBinWidth(xbin); 
-    double ywidth = centers ? h->GetYaxis()->GetBinCenter(ybin2) - h->GetYaxis()->GetBinCenter(ybin) : h->GetYaxis()->GetBinWidth(ybin); 
+    double xwidth = centers ? h->GetXaxis()->GetBinCenter(xbin+1) - h->GetXaxis()->GetBinCenter(xbin) : h->GetXaxis()->GetBinWidth(xbin); 
+    double ywidth = centers ? h->GetYaxis()->GetBinCenter(ybin+1) - h->GetYaxis()->GetBinCenter(ybin) : h->GetYaxis()->GetBinWidth(ybin); 
 
     // TODO: special case the uniform bin size case
     
-    double xrel = x - h->GetXaxis()->GetBinLowEdge(xbin); 
-    double yrel = y - h->GetYaxis()->GetBinLowEdge(ybin); 
+    double xrel = x - (centers ? h->GetXaxis()->GetBinCenter(xbin) :  h->GetXaxis()->GetBinLowEdge(xbin)); 
+    double yrel = y - (centers ? h->GetYaxis()->GetBinCenter(ybin) :  h->GetYaxis()->GetBinLowEdge(ybin)); 
     double xrel2 = xwidth - xrel; 
     double yrel2 = ywidth - yrel; 
 
@@ -269,7 +269,7 @@ double UCorrelator::image::interpolate(const TH2 *h, double x, double y, Interpo
   if (type  == BICUBIC)
   {
 
-    if (h->GetXaxis()->GetXbins() || h->GetYaxis()->GetXbins())
+    if (h->GetXaxis()->GetXbins()->fN || h->GetYaxis()->GetXbins()->fN)
     {
       fprintf(stderr,"WARNING, bicubic interpolation does not work for non-uniform binning. Reverting to bilinear.\n"); 
       return interpolate(h,x,y,BILINEAR,flags_x,flags_y); 
