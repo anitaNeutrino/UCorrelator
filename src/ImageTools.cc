@@ -59,7 +59,7 @@ TH2* UCorrelator::rotateHistogram(const TH2* inHist, double rotate) {
     double rotX = inHist->GetXaxis()->GetBinCenter(iX+1) - rotate;
     //get that rotated value into the range
     while (rotX < 0) rotX += 360.;
-    while (rotX > 360) rotX -= 360.;
+    while (rotX >= 360) rotX -= 360.;
 
     for (Int_t iY = 0; iY < nBinY; iY++) {     
 

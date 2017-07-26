@@ -48,8 +48,6 @@ void AnitaNoiseMachine::zeroInternals() {
   rmsFifoFillFlag = false;
   memset(rmsFifo,0,NUM_PHI*NUM_ANTENNA_RINGS*NUM_POLS*fifoLength*sizeof(double)); 
   memset(rmsAvg,0,NUM_PHI*NUM_ANTENNA_RINGS*NUM_POLS*sizeof(double));
-  //reset map double array fifo
-  memset(rollingMapAvg,0,NUM_POLS*nPhi*nTheta*sizeof(double));
 
   //reset map histogram fifo
   for (int poli=0; poli<NUM_POLS; poli++) {
@@ -61,19 +59,41 @@ void AnitaNoiseMachine::zeroInternals() {
     }
   }
   mapFifoPos = 0;
-  rmsFifoFillFlag = false;
+  mapFifoFillFlag = false;
+
+  //reset map double array fifo
+  memset(rollingMapAvg,0,NUM_POLS*nPhi*nTheta*sizeof(double));
 
 }
+
+
 
 
 //so that I always am refering to the same index
 int AnitaNoiseMachine::rmsFifoIndex(int phi, int ringi, int poli, int pos) {
-  return phi*(NUM_ANTENNA_RINGS*NUM_POLS*fifoLength) + ringi*(NUM_POLS*fifoLength) + poli*(fifoLength) + pos;
+  int index = phi*(NUM_ANTENNA_RINGS*NUM_POLS*fifoLength) + ringi*(NUM_POLS*fifoLength) + poli*(fifoLength) + pos;
+  int maximumIndex = NUM_PHI*NUM_ANTENNA_RINGS*NUM_POLS*fifoLength;
+  if (index >= maximumIndex) {
+    std::cout << "rmsFifoIndex: " << index << " > " << maximumIndex << std::endl;
+    return (maximumIndex - 1); }
+  
+  return index;
 }
+
+
+
 
 //so that I always am refering to the same index
 int AnitaNoiseMachine::rollingMapIndex(int poli, int iPhi, int iTheta) {
-  return poli*(nPhi*nTheta) + iPhi*(nTheta) + iTheta;
+  int index = poli*(nPhi*nTheta) + iPhi*(nTheta) + iTheta;
+  int maximumIndex = nPhi*nTheta*NUM_POLS;
+  if (index >= maximumIndex) {
+    std::cout << "rollingMapIndex(): uhh you asked for an index that is bigger than the array ";
+    std::cout << "(" << index << " > " << maximumIndex << ")" << std::endl;
+    std::cout << "poli:" << poli << " iPhi:"  << iPhi << " iTheta:" << iTheta << std::endl;
+    return (maximumIndex - 1);
+  }
+  return index;
 }
 
 
@@ -162,6 +182,7 @@ void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer, Filter
   if (mapFifoPos >= fifoLength) {
     mapFifoPos = 0;
     mapFifoFillFlag = true;
+    std::cout << "Buffer has been filled!" << std::endl;
   }
 
   //do this for all polarization maps
@@ -176,7 +197,6 @@ void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer, Filter
 	for (Int_t iTheta = 0; iTheta < nTheta; iTheta++) {     
 	  int lastPos = mapFifoPos-1;
 	  if (lastPos < 0) lastPos = fifoLength-1;
-
 	  double valueSub = mapFifo[poli][lastPos]->GetBinContent(iPhi+1,iTheta+1);
 	  rollingMapAvg[rollingMapIndex(poli,iPhi,iTheta)] -= valueSub;
 	  //	  if (poli==0 && iPhi==1 && iTheta==61 ) std::cout << "subtracting " << valueSub << std::endl;
@@ -189,7 +209,7 @@ void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer, Filter
 	mapFifo[poli][mapFifoPos] = NULL;
       }
     
-    }
+    } //if (mapFifoFillFlag)
 
 
     //syntactically weirdly copy the new map out of UCorrelator    
@@ -317,15 +337,18 @@ void AnitaNoiseMachine::fillEventSummary(AnitaEventSummary *eventSummary) {
     
     for (int dir=0; dir<AnitaEventSummary::maxDirectionsPerPol; dir++) {
       double peakPhi = eventSummary->peak[poli][dir].phi;
+      while (peakPhi < 0)    peakPhi += 360; //because the sun is translated stupidly
+      while (peakPhi >= 360) peakPhi -= 360;
       double peakTheta = eventSummary->peak[poli][dir].theta;
       
       if (mapFifo[0][0] == NULL) {//can't do it if you haven't filled anything yet
 	eventSummary->peak[poli][dir].mapHistoryVal = -999;
       }
       else {
-	int binPhi = mapFifo[poli][0]->GetXaxis()->FindBin(peakPhi);
-	int binTheta = mapFifo[poli][0]->GetYaxis()->FindBin(-peakTheta);
-	double avgNoise = rollingMapAvg[rollingMapIndex(poli,binPhi,binTheta)];
+	int iPhi = mapFifo[poli][0]->GetXaxis()->FindBin(peakPhi) - 1;
+	int iTheta = mapFifo[poli][0]->GetYaxis()->FindBin(-peakTheta) - 1;
+	if (iTheta >= nTheta) iTheta = nTheta -1; //Hmm why does Theta overflow occasionally?  This will fix it with edge effects
+	double avgNoise = rollingMapAvg[rollingMapIndex(poli,iPhi,iTheta)];
 	eventSummary->peak[poli][dir].mapHistoryVal = avgNoise;
       }
     }
@@ -347,19 +370,19 @@ void AnitaNoiseMachine::setSourceMapHistoryVal(AnitaEventSummary::SourceHypothes
   for (int poli=0; poli<NUM_POLS; poli++) {
     double sourcePhi = source.phi - lastHeading;
     while (sourcePhi < 0)   sourcePhi += 360; //because the sun is translated stupidly
-    while (sourcePhi > 360) sourcePhi -= 360;
+    while (sourcePhi >= 360) sourcePhi -= 360;
 
     double sourceTheta = source.theta;  
     if (mapFifo[0][0] == NULL) {//can't do it if you haven't filled anything yet
       source.mapHistoryVal[poli] = -999;
     }
     else {
-      int binPhi = mapFifo[poli][0]->GetXaxis()->FindBin(sourcePhi);
-      int binTheta = mapFifo[poli][0]->GetYaxis()->FindBin(-sourceTheta); //needs *-1 for sign reasons
-      double avgNoise = rollingMapAvg[rollingMapIndex(poli,binPhi,binTheta)];
+      int iPhi = mapFifo[poli][0]->GetXaxis()->FindBin(sourcePhi) - 1;
+      int iTheta = mapFifo[poli][0]->GetYaxis()->FindBin(-sourceTheta) - 1; //needs *-1 for sign reasons
+      double avgNoise = rollingMapAvg[rollingMapIndex(poli,iPhi,iTheta)];
       source.mapHistoryVal[poli] = avgNoise;
       
-      source.mapValue[poli] = mapFifo[poli][mapFifoPos]->GetBinContent(binPhi,binTheta);
+      source.mapValue[poli] = mapFifo[poli][mapFifoPos]->GetBinContent(iPhi,iTheta);
     }
 
   }
