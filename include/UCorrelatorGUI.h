@@ -9,6 +9,7 @@
 #include "TMultiGraph.h" 
 #include "TPaveText.h" 
 #include "TCanvas.h" 
+#include "TGaxis.h" 
 #include <vector>
 #include "PeakFinder.h" 
 #include "TMarker.h" 
@@ -61,8 +62,9 @@ namespace UCorrelator
         AnalysisWaveform * coherent; 
         AnalysisWaveform * deconvolved; 
         double last_theta, last_phi; 
+        TGaxis  heading_axis; 
 
-        ClassDef(Map,1); 
+        ClassDef(Map,2); 
     }; 
 
 
