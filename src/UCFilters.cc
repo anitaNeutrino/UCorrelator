@@ -884,7 +884,7 @@ void UCorrelator::SineSubtractFilter::process(FilteredAnitaEvent * ev)
       processOne(wf,h,i/2,pol); 
   }
 
-  last_t = ev->getHeader()->realTime; //ev->getHeader()->triggerTime; 
+  last_t = ev->getHeader()->triggerTime; //ev->getHeader()->triggerTime; 
 }
 
 void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const RawAnitaHeader * header, int i, int pol)
@@ -893,9 +893,9 @@ void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const Raw
   if (spec) 
   {
     // use peakiness to tune aggressivness
-    if (header->realTime > last_t)
+    if (header->triggerTime > last_t)
     {
-      TH2 * peaky = (TH2*) spec->avg(header->realTime)->getPeakiness(AnitaPol::AnitaPol_t(pol), i); 
+      TH2 * peaky = (TH2*) spec->avg(header->triggerTime)->getPeakiness(AnitaPol::AnitaPol_t(pol), i); 
 
       if (reduction[pol][i])
         delete reduction[pol][i]; 
@@ -905,7 +905,7 @@ void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const Raw
       for (int j = 0; j < reduction[pol][i]->GetN(); j++) 
       {
         reduction[pol][i]->GetX()[j] = peaky->GetXaxis()->GetBinLowEdge(j+1); 
-        double how_peaky = peaky->Interpolate(peaky->GetXaxis()->GetBinCenter(j+1), header->realTime); 
+        double how_peaky = peaky->Interpolate(peaky->GetXaxis()->GetBinCenter(j+1), header->triggerTime); 
         if (how_peaky < 1) how_peaky = 1; 
         reduction[pol][i]->GetY()[j] = min_power_ratio/TMath::Power(how_peaky,adaptive_exp); 
       }
@@ -1187,8 +1187,7 @@ UCorrelator::AdaptiveMinimumPhaseFilter::~AdaptiveMinimumPhaseFilter()
 void UCorrelator::AdaptiveMinimumPhaseFilter::process(FilteredAnitaEvent * ev) 
 {
 
-//  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
-  double t = ev->getHeader()->realTime ;//TODO until icemc fixes 
+  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
   int bin = avg->avg(t)->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
 
 
@@ -1305,8 +1304,8 @@ UCorrelator::AdaptiveBrickWallFilter::~AdaptiveBrickWallFilter()
 void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
 {
 
-//  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
-  double t= ev->getHeader()->realTime; //until icemc fixes this
+  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
+//  double t= ev->getHeader()->realTime; //until icemc fixes this
   int bin = avg->avg(t)->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
 
 
@@ -1385,8 +1384,8 @@ UCorrelator::AdaptiveButterworthFilter::AdaptiveButterworthFilter(const Spectrum
 void UCorrelator::AdaptiveButterworthFilter::process(FilteredAnitaEvent * ev) 
 {
 
-//  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
-  double t = ev->getHeader()->realTime; //until icemc fixes this 
+  double t = ev->getHeader()->triggerTime + ev->getHeader()->triggerTimeNs*1e-9; 
+//  double t = ev->getHeader()->realTime; //until icemc fixes this 
   int bin = avg->avg(t)->getPeakiness(AnitaPol::kHorizontal,0)->GetYaxis()->FindBin(t); 
 
   for (int ipol = 0; ipol < 2; ipol++) 

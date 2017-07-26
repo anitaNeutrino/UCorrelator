@@ -407,12 +407,12 @@ static TMutex m;
 const UCorrelator::SpectrumAverage* UCorrelator::SpectrumAverageLoader::avg(double t) const
 {
 
-  if (spec && t >= spec->getStartTime() && t <= spec->getEndTime() ) return spec; 
+  if (spec && t >= spec->getStartTime()-5 && t <= spec->getEndTime()+5 ) return spec; 
 
   m.Lock(); 
 
   //double check 
-  if (spec && t >= spec->getStartTime() && t <= spec->getEndTime() ) 
+  if (spec && t >= spec->getStartTime()-5 && t <= spec->getEndTime()+5 ) 
   {
     m.UnLock(); 
     return spec; 
