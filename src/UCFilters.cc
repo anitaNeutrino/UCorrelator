@@ -905,7 +905,22 @@ void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const Raw
       for (int j = 0; j < reduction[pol][i]->GetN(); j++) 
       {
         reduction[pol][i]->GetX()[j] = peaky->GetXaxis()->GetBinLowEdge(j+1); 
-        double how_peaky = peaky->Interpolate(peaky->GetXaxis()->GetBinCenter(j+1), header->triggerTime); 
+        double t = header->triggerTime + header->triggerTimeNs * 1e-9;
+
+        if (header->triggerTime < peaky->GetYaxis()->GetXmin())
+        {
+             fprintf(stderr,"Warning, time %g before first point in histogram: %g\n", t, peaky->GetYaxis()->GetXmin()); 
+             t = peaky->GetYaxis()->GetBinCenter(1); 
+        }
+
+        if (header->triggerTime > peaky->GetYaxis()->GetXmax())
+        {
+             fprintf(stderr,"Warning, time %g after last point in histogram: %g\n", t, peaky->GetYaxis()->GetXmax()); 
+             t = peaky->GetYaxis()->GetBinCenter(peaky->GetNbinsY()); 
+        }
+
+
+        double how_peaky = peaky->Interpolate(peaky->GetXaxis()->GetBinCenter(j+1), t); 
         if (how_peaky < 1) how_peaky = 1; 
         reduction[pol][i]->GetY()[j] = min_power_ratio/TMath::Power(how_peaky,adaptive_exp); 
       }
