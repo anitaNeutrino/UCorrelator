@@ -134,23 +134,22 @@ void AnitaNoiseMachine::updateAvgRMSFifo(FilteredAnitaEvent *filtered) {
       for (int poli=0; (AnitaPol::AnitaPol_t)poli != AnitaPol::kNotAPol; poli++) {
 	AnitaPol::AnitaPol_t pol = (AnitaPol::AnitaPol_t)poli;
 
+
+	//subtract fifo position that is expiring (if there is one)
+	if (rmsFifoFillFlag) {
+	  double valueSub = rmsFifo[rmsFifoIndex(phi,ringi,poli,rmsFifoPos)];
+	  rmsAvg[phi][ringi][poli] -= valueSub;
+	}	
+
 	//get the rms
 	const TGraphAligned *currWave = filtered->getFilteredGraph(phi,ring,pol)->even();
 	double value = pow(currWave->GetRMS(2),2)/fifoLength;
 
-	//add the new fifo position
+	//add the new fifo position to the running average
 	rmsAvg[phi][ringi][poli] += value;
 
 	//save it for the fifo for when you gotta subtract it later
 	rmsFifo[rmsFifoIndex(phi,ringi,poli,rmsFifoPos)] = value;
-	
-	//subtract fifo position that is expiring (if there is one)
-	if (rmsFifoFillFlag) {
-	  int lastPos = rmsFifoPos-1;
-	  if (lastPos < 0) lastPos = fifoLength-1;
-	  double valueSub = rmsFifo[rmsFifoIndex(phi,ringi,poli,lastPos)];
-	  rmsAvg[phi][ringi][poli] -= valueSub;
-	}	
 
       }
     }
@@ -195,11 +194,11 @@ void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer, Filter
     //subtract fifo position that is expiring from the averages(if there is one)
       for (Int_t iPhi = 0; iPhi < nPhi; iPhi++) {
 	for (Int_t iTheta = 0; iTheta < nTheta; iTheta++) {     
-	  int lastPos = mapFifoPos-1;
-	  if (lastPos < 0) lastPos = fifoLength-1;
-	  double valueSub = mapFifo[poli][lastPos]->GetBinContent(iPhi+1,iTheta+1);
+	  double valueSub = mapFifo[poli][mapFifoPos]->GetBinContent(iPhi+1,iTheta+1);
 	  rollingMapAvg[rollingMapIndex(poli,iPhi,iTheta)] -= valueSub;
-	  //	  if (poli==0 && iPhi==1 && iTheta==61 ) std::cout << "subtracting " << valueSub << std::endl;
+	  if (!quiet) {
+	    if (poli==0 && iPhi==1 && iTheta==61 ) {
+	      std::cout << "subtracting " << valueSub << std::endl; } }
 	}
       }
 
@@ -222,15 +221,17 @@ void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer, Filter
     name << "mapFifo[" << poli << "][" << mapFifoPos << "]";
     tempHist->SetName(name.str().c_str());
        
+
+    //and add the new addition to the fifo
     for (Int_t iPhi = 0; iPhi < nPhi; iPhi++) {
-      double phiDegrees = tempHist->GetYaxis()->GetBinCenter(iPhi+1);
-
       for (Int_t iTheta = 0; iTheta < nTheta; iTheta++) {     
-	double thetaDegrees = tempHist->GetYaxis()->GetBinCenter(iTheta+1);
-
-	//and add the new addition to the fifo
 	double valueAdd = tempHist->GetBinContent(iPhi+1,iTheta+1);
 	rollingMapAvg[rollingMapIndex(poli,iPhi,iTheta)] += valueAdd;
+
+	if (!quiet) {
+	  if (poli==0 && iPhi==1 && iTheta==61 ) {
+	    std::cout << "adding " << valueAdd;
+	    std::cout << " => " << rollingMapAvg[rollingMapIndex(poli,iPhi,iTheta)] << std::endl; } }
   
 
       }//end theta
@@ -311,7 +312,7 @@ void AnitaNoiseMachine::fillNoiseSummary(AnitaNoiseSummary *noiseSummary) {
 	delete noiseSummary->avgMapProf[poli];
 	noiseSummary->avgMapProf[poli] = NULL;
       }
-      //      std::cout << "filling map: " << poli << " " << mapFifoPos << " " << mapFifo[poli][mapFifoPos] << std::endl;
+      if (!quiet) std::cout << "filling map: " << poli <<  std::endl;
       if (fillMap) noiseSummary->avgMapProf[poli] = (TH2D*)mapFifo[poli][mapFifoPos]->Clone(); //non-average is default
       else noiseSummary->avgMapProf[poli] = getAvgMapNoiseProfile(pol);
     }
@@ -382,7 +383,7 @@ void AnitaNoiseMachine::setSourceMapHistoryVal(AnitaEventSummary::SourceHypothes
       double avgNoise = rollingMapAvg[rollingMapIndex(poli,iPhi,iTheta)];
       source.mapHistoryVal[poli] = avgNoise;
       
-      source.mapValue[poli] = mapFifo[poli][mapFifoPos]->GetBinContent(iPhi,iTheta);
+      source.mapValue[poli] = mapFifo[poli][mapFifoPos]->GetBinContent(iPhi+1,iTheta+1);
     }
 
   }
