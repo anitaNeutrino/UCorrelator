@@ -382,7 +382,7 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
     nant = ap->getClosestAntennas(phi, nant, closest, disallowed_antennas); 
   }
 
-  UCorrelator::TrigCache cache(nphi, dphi, phi0, ntheta,dtheta,theta0, ap, true,nant, nant ? closest : 0); 
+  const UCorrelator::TrigCache cache(nphi, dphi, phi0, ntheta,dtheta,theta0, ap, true,nant, nant ? closest : 0); 
 
   int n2loop = nant ? nant : NANTENNAS;  
 
@@ -484,7 +484,7 @@ static inline bool between(double phi, double low, double high)
 
 
 inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** these_hists, 
-                                                TH2I ** these_norms, UCorrelator::TrigCache * cache , 
+                                                TH2I ** these_norms, const UCorrelator::TrigCache * cache , 
                                                 const double * center_point )
 {
    int allowedFlag; 

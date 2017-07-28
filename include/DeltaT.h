@@ -58,7 +58,7 @@ namespace UCorrelator
    *  TODO: This has to be vectorized somehow, at least over one dimension, as it's currently one of the bottlenecks. 
    *
    * */ 
-  inline double getDeltaTFast(int ant1, int ant2, int phibin, int thetabin, AnitaPol::AnitaPol_t pol, TrigCache * cache, bool includeGroupDelay = false) 
+  inline double getDeltaTFast(int ant1, int ant2, int phibin, int thetabin, AnitaPol::AnitaPol_t pol, const TrigCache * cache, bool includeGroupDelay = false) 
   {
     const AntennaPositions * ap = cache->ap; 
     const int nphi = cache->nphi; 
