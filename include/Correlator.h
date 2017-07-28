@@ -7,13 +7,14 @@
 
 class FilteredAnitaEvent; 
 class AnalysisWaveform; 
-class TrigCache; 
 
 #define NANTENNAS NUM_SEAVEYS
 
 namespace UCorrelator
 {
-  
+
+  class TrigCache; 
+
   //This is just to hide the OpenMP stuff from cling
   class CorrelatorLocks; 
 
@@ -87,7 +88,7 @@ namespace UCorrelator
       double baselineWeight;
 
       AnalysisWaveform * getCorrelation(int ant1, int ant2); 
-      void doAntennas(int ant1, int ant2, TH2D ** hist, TH2I ** norm, const TrigCache * tc, const double * center_point  = 0); 
+      void doAntennas(int ant1, int ant2, TH2D ** hist, TH2I ** norm, UCorrelator::TrigCache * tc, const double * center_point  = 0); 
       void reset(); 
 
       CorrelatorLocks * locks; 
