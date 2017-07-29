@@ -181,7 +181,7 @@ void AnitaNoiseMachine::updateAvgMapFifo(UCorrelator::Analyzer *analyzer, Filter
   if (mapFifoPos >= fifoLength) {
     mapFifoPos = 0;
     mapFifoFillFlag = true;
-    std::cout << "Buffer has been filled!" << std::endl;
+    //    std::cout << "Buffer has been filled!" << std::endl;
   }
 
   //do this for all polarization maps
