@@ -17,7 +17,7 @@
 static ALFAFilter alfa; 
 
 
-//#define DEBUG_SPEC_AVG 
+#define DEBUG_SPEC_AVG 
 
 
 UCorrelator::SpectrumAverage::~SpectrumAverage()
@@ -144,10 +144,12 @@ int UCorrelator::SpectrumAverage::computeAverage(const char * selection, double 
     }
 
 #ifdef DEBUG_SPEC_AVG
-    if (i % 50 == 0) 
-      printf("\n%d",i); 
-    else
-      printf("."); 
+    if (i % 50 == 0) {
+      printf("\r%d/%d",i,N);}
+    else {
+      printf(".");
+      fflush(stdout); }
+    
 #endif
   }
 
