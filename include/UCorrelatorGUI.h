@@ -35,6 +35,7 @@ namespace UCorrelator
          * The Summary doesn't have to be filled yet except for the pulsers / MC truth */ 
 
         Map(const TH2D & hist,const FilteredAnitaEvent* f,  WaveformCombiner * comb, WaveformCombiner * comb_filtered, AnitaPol::AnitaPol_t pol, const AnitaEventSummary * sum); 
+        Map(const Map & other); 
         virtual ~Map(); 
         virtual void Paint(Option_t * opt = ""); 
         virtual void ExecuteEvent(int event, int x, int y); 

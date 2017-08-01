@@ -13,6 +13,7 @@ ClassImp(UCorrelator::gui::Map);
 ClassImp(UCorrelator::gui::SummaryText); 
 
 
+
 UCorrelator::gui::Map::Map(const TH2D & hist, const FilteredAnitaEvent * ev, WaveformCombiner * c, WaveformCombiner *cf, AnitaPol::AnitaPol_t pol, const AnitaEventSummary* sum ) 
   : TH2D(hist), wfpad(0), f(ev), c(c), cf(cf), clicked(0), use_filtered(false),pol(pol)  , heading_axis(GetXaxis()->GetXmin(), GetYaxis()->GetXmax(), GetXaxis()->GetXmax(), GetYaxis()->GetXmax(), GetXaxis()->GetXmin()-ev->getGPS()->heading, GetXaxis()->GetXmax() - ev->getGPS()->heading,510,"=")
 {
@@ -61,6 +62,19 @@ UCorrelator::gui::Map::Map(const TH2D & hist, const FilteredAnitaEvent * ev, Wav
   deconvolved = 0; 
 }
 
+UCorrelator::gui::Map::Map(const Map & other) 
+  : TH2D(other) , rough_m(other.rough_m), fine_m(other.fine_m), fine_e(other.fine_e), 
+   specials(other.specials),  wfpad(other.wfpad), f(other.f), c(other.c), cf(other.cf),
+   clicked(other.clicked), use_filtered(other.use_filtered),  pol(other.pol), last_theta(other.last_theta),
+   last_phi(other.last_phi), heading_axis(GetXaxis()->GetXmin(), GetYaxis()->GetXmax(), GetXaxis()->GetXmax(), GetYaxis()->GetXmax(), GetXaxis()->GetXmin()-f->getGPS()->heading, GetXaxis()->GetXmax() - f->getGPS()->heading,510,"=")
+{
+  SetStats(0);  
+  SetDirectory(0); 
+  heading_axis.SetTitle("heading"); 
+  coherent = other.coherent ? new AnalysisWaveform(*other.coherent) : 0; 
+  deconvolved = other.deconvolved ? new AnalysisWaveform(*other.deconvolved) : 0; 
+
+}
 
 void UCorrelator::gui::Map::addRough(const std::vector<std::pair<double,double> > & rough)
 {
