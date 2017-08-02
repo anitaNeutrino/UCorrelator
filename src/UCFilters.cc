@@ -10,6 +10,7 @@
 #include "AnalysisWaveform.h" 
 #include "RawAnitaHeader.h"
 #include "TRandom.h"
+#include "TaperFilter.h" 
 #include "Adu5Pat.h"
 #include "DigitalFilter.h"
 #include <math.h>// for isnan
@@ -275,6 +276,32 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
       if (fillme) 
         fillme->addOperation( new AnitaResponse::DeconvolveFilter(responseManager, &allpass)); 
     }
+
+    else if (strcasestr(tok.Data(),"gaustaper_")) 
+    {
+
+      double mean,nsigma; 
+
+
+      if(sscanf(tok.Data(),"gaustaper_%lg_%lg",&mean,&nsigma)!=2) 
+      {
+        fprintf(stderr,"Problem with token: %s\n", tok.Data()); 
+      }
+      else
+      {
+        if (need_description) 
+        {
+          desc += TString::Format("(Gaussian taper, distance=%lg, nsigma=%lg)",mean,nsigma); 
+        }
+
+
+        if (fillme) 
+          fillme->addOperation(new GaussianTaper(mean,nsigma)); 
+
+      }
+ 
+    }
+
 
     else if (strcasestr(tok.Data(),"geom"))
     {
