@@ -137,9 +137,9 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   use_bin_center = false; 
   scale_by_cos_theta = false; 
 
-  bw_ndb = 6; 
+  bw_ndb = -999; //let the bandwidth search stop immediately
   spectral_fit_start = 0.22; 
-  spectral_fit_stop =0.7; 
+  spectral_fit_stop =1.2; 
 
   noise_estimate_t0 = 70; 
   noise_estimate_t1 = 100; 

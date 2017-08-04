@@ -21,8 +21,9 @@ void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sin
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
+  FFTtools::saveWisdom("wisdom.dat"); 
 
-  AnitaVersion::set(3); 
+  // AnitaVersion::set(3); 
 
   AnitaDataset d(run); 
   UCorrelator::AnalysisConfig cfg; 
@@ -85,7 +86,7 @@ void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sin
   ofile.cd(); 
   tree->Write(); 
 
-  FFTtools::saveWisdom("wisdom.dat"); 
+  
 }
 
 int main (int nargs, char ** args)
