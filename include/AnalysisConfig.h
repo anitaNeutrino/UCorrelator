@@ -71,7 +71,12 @@ namespace UCorrelator
         ResponseSingleBRotter, /// Ben's unified respone 
         ResponseIndividualBRotter, ///Ben's individual responses 
         ResponseHarmSignalOnly, ///Harm's signal chain only thing (currently used in icemc) 
+<<<<<<< HEAD
 				ResponseTUFF /// response with TUFFs convolved in
+=======
+				ResponseTUFF,
+				ResponseTest
+>>>>>>> e194ad244f15f8ef6e1dd656e13645aea35cc6bd
       } response_option;  
 
       static const char * getResponseString(ResponseOption_t opt); 

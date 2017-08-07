@@ -5,7 +5,11 @@
 #include "AnitaVersion.h"
 
 static const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25", "Histogram" }; 
+<<<<<<< HEAD
 static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","HarmSignalOnly", "TUFFs"}; 
+=======
+static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","HarmSignalOnly", "TUFFs", "notchAll"}; 
+>>>>>>> e194ad244f15f8ef6e1dd656e13645aea35cc6bd
 
 
 

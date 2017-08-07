@@ -131,8 +131,12 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 {
   
   const RawAnitaHeader * hdr = event->getHeader(); 
+<<<<<<< HEAD
 	//this is for time dependent responses (right now only TUFFs)	
 	responses.checkTime(hdr->payloadTime);
+=======
+	responses.checkTime(hdr->trigTime);
+>>>>>>> e194ad244f15f8ef6e1dd656e13645aea35cc6bd
   //we need a UsefulAdu5Pat for this event
   UsefulAdu5Pat * pat =  (UsefulAdu5Pat*) event->getGPS();  //unconstifying it .. hopefully that won't cause problems
  
