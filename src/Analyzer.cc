@@ -303,13 +303,13 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     {
       for (uint64_t iphi = 0; iphi < 16; iphi++)
       {
-        bool unmasked = !(maskedPhi & (1 << iphi)) ; 
+        bool unmasked = !(maskedPhi & (1ul << iphi)) ; 
         
         for (int neighboring = 0; neighboring < cfg->min_peak_distance_from_unmasked; neighboring++)
         {
           if (unmasked) break; 
-          unmasked = unmasked || !(maskedPhi & (iphi << ( (iphi + neighboring) % NUM_PHI))); 
-          unmasked = unmasked || !(maskedPhi & (iphi << ( (iphi + neighboring + NUM_PHI - 1) % NUM_PHI))); 
+          unmasked = unmasked || !(maskedPhi & (1ul << ( (iphi + neighboring) % NUM_PHI))); 
+          unmasked = unmasked || !(maskedPhi & (1ul << ( (iphi + neighboring + NUM_PHI - 1) % NUM_PHI))); 
         }
 
         if (!unmasked) 
