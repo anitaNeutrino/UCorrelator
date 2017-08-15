@@ -50,6 +50,8 @@ namespace UCorrelator
       AnitaPol::AnitaPol_t end_pol;  /// End polarization for Analyer (kHORIZONTAL if you want just hpo. kVERTICAL if you want just vpol or both.)
 
       double peak_isolation_requirement; /// Minimum distance 
+      double max_peak_trigger_angle; /// Maximum distance from trigger angle to consider a peak (<=0 is any, default 0); 
+      int min_peak_distance_from_unmasked; /// Minimum distance of a phi sector peak lies in from an unmasked sector. If 0, only unmasked sectors will be considered. 1 means immediate neighbors are ok. negative (default) means no check is performed.
 
       /** Choice of interferometer fine peak finding */ 
       enum FinePeakFindingOption_t
