@@ -93,14 +93,11 @@ double UCorrelator::shape::getWidth(const TGraph * g, double val, int * start, i
     }
   }
 
-  if (ifirst < 0 || ilast< 0)
-  {
-    if (start) 
-      *start = ifirst < 0 ? peak : ifirst; 
-    if (end) 
-      *end = ilast < 0 ? peak : ilast ; 
-    return -1; 
-  }
+  if (ifirst < 0) 
+    ifirst = 0; 
+
+  if (ilast < 0)
+    ilast = g->GetN()-1; 
 
   double t0 = g->GetX()[ifirst]; 
   double t1 = g->GetX()[ilast]; 
