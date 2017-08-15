@@ -21,7 +21,6 @@ void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sin
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
-  FFTtools::saveWisdom("wisdom.dat"); 
 
   // AnitaVersion::set(3); 
 
@@ -90,6 +89,7 @@ void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sin
   ofile.cd(); 
   tree->Write(); 
 
+  FFTtools::saveWisdom("wisdom.dat"); 
   
 }
 
