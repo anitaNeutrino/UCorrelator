@@ -32,8 +32,8 @@ void doDecimated(int run = 352, int max = 0, int start = 0, const char * filter 
 #endif
 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
-  cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution(); 
-
+  cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
+  cfg.max_peak_trigger_angle = 60; 
 
   UCorrelator::Analyzer analyzer(&cfg); 
 

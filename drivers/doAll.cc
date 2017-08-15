@@ -24,7 +24,7 @@ void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sin
 
   AnitaVersion::set(3); 
 
-  AnitaDataset d(run); 
+  AnitaDataset d(run, false, WaveCalType::kDefault, AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kRandomizePolarity); 
   UCorrelator::AnalysisConfig cfg; 
   
 #ifdef UCORRELATOR_OPENMP
@@ -33,7 +33,8 @@ void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sin
 
 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
-  cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution(); 
+  cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
+  cfg.max_peak_trigger_angle = 60; 
 
   UCorrelator::Analyzer analyzer(&cfg); 
 
@@ -48,6 +49,9 @@ void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sin
   TTree * tree = new TTree(TString::Format("anita%d",AnitaVersion::get()),TString::Format("anita%d", AnitaVersion::get())); 
   tree->SetAutoFlush(1000); 
   AnitaEventSummary * sum = new AnitaEventSummary; 
+
+  TNamed comment("blinding","Randomize Polarity"); 
+  comment.Write(); 
 
   FilterStrategy strategy (&ofile); 
 
