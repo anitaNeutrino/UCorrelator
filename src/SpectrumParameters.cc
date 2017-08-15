@@ -112,23 +112,23 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, cons
      int index_bounds[2] = {max_j,max_j}; 
      double power = TMath::Power(10,max_val/10); 
 
-     for (int sign = -1; sign <=1; sign+=2)
-     {
-        int how_far = 1; 
-        while(true) 
-        {
-          int jj = max_j + how_far * sign; 
-          double val = 0; 
-//          printf("%f\n",max_val - val); 
-          if (jj <= 0 || jj >=N-1 || max_val - val > config->bw_ndb || used[jj])
-          {
-            index_bounds[(sign+1)/2] = jj;
-            break; 
-          }
-          power += TMath::Power(10,val/10); 
-          how_far++; 
-        }
-     }
+//      for (int sign = -1; sign <=1; sign+=2)
+//      {
+//         int how_far = 1; 
+//         while(true) 
+//         {
+//           int jj = max_j + how_far * sign; 
+//           double val = 0; 
+// //          printf("%f\n",max_val - val); 
+//           if (jj <= 0 || jj >=N-1 || max_val - val > config->bw_ndb || used[jj])
+//           {
+//             index_bounds[(sign+1)/2] = jj;
+//             break; 
+//           }
+//           power += TMath::Power(10,val/10); 
+//           how_far++; 
+//         }
+//      }
      winfo->peakPower[i] = 10 * log10(power); 
 
      int start = index_bounds[0];

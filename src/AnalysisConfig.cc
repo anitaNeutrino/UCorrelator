@@ -5,7 +5,7 @@
 #include "AnitaVersion.h"
 
 static const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25", "Histogram" }; 
-static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","HarmSignalOnly"}; 
+static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","HarmSignalOnly", "TUFFs"}; 
 
 
 
@@ -141,9 +141,9 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   max_peak_trigger_angle = 0; 
   min_peak_distance_from_unmasked = -1; 
 
-  bw_ndb = 6; 
+  bw_ndb = -999; //let the bandwidth search stop immediately
   spectral_fit_start = 0.22; 
-  spectral_fit_stop =0.7; 
+  spectral_fit_stop =1.2; 
 
   noise_estimate_t0 = 70; 
   noise_estimate_t1 = 100; 
