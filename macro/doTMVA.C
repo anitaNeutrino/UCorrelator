@@ -1,30 +1,42 @@
 
 
-
-const char * decimated_pattern = "decimated/%d_%s.root";
+const char * data_pattern = "a3all/%d_%s.root";
+const char * data_tree = "anita3"; 
 const char * wais_pattern = "wais/%d_%s.root"  ; 
-const char * simulated_pattern = "simulated/%d_%s.root"; 
+const char * simulated_pattern = "%s/*%s.root"; 
 
 int wais_start= 332;
 int wais_stop = 362; 
 
 
+#ifndef CUTS_LOADED
 #include "macro/cuts.C"
+#endif
 #include "AnitaTMVA.h" 
 
 
-void makeTrees(int decimated_start = 130, int decimated_stop=439, int mc_run = 223, const char * filter = "sinsub_10_3_ad_2", int nworkers = 1) 
+void makeTrees(int data_start = 160, int data_stop=439, const char * mc_dir = "simulated_kotera_max", const char * filter = "sinsub_10_3_ad_2", int nworkers = 8) 
 {
 
   // Step 1: load data
 
-  TChain signal(mc_run ? "simulation" :"wais"); 
-  TChain bg("decimated"); 
+  TChain signal(mc_dir ? "simulation" :"wais"); 
+  std::vector<TChain*> bg(nworkers); 
+  if (nworkers > 1) 
+    ROOT::EnableThreadSafety(); 
+
+
+  for  (int i = 0; i < nworkers; i++) 
+  {
+    bg[i] = new TChain(data_tree); 
+  }
+
+
   TString tmp; 
 
-  if (mc_run) 
+  if (mc_dir) 
   {
-    tmp.Form(simulated_pattern,mc_run, filter); 
+    tmp.Form(simulated_pattern,mc_dir, filter); 
     signal.Add(tmp.Data()); 
   }
   else
@@ -37,81 +49,51 @@ void makeTrees(int decimated_start = 130, int decimated_stop=439, int mc_run = 2
   }
 
 
-  for (int i = decimated_start; i<= decimated_stop; i++)
+  for (int i = data_start; i<= data_stop; i++)
   {
-    tmp.Form(decimated_pattern,i,filter); 
-    bg.Add(tmp.Data()); 
+    tmp.Form(data_pattern,i,filter); 
+  //  printf("added %d to %d (%p)\n", i, i%nworkers, bg[i % nworkers]); 
+    bg[i % nworkers]->Add(tmp.Data()); 
   }
 
-
-  // step 1.5, enable proof if nworkers > 1
-
-  TProof * proof = 0; 
-
-  if (nworkers > 1) 
-  {
-    proof = TProof::Open("",TString::Format("workers=%d",nworkers)); 
-    proof->Load("macro/proofloader.C",true); 
-    proof->Load("macro/cuts.C",true); 
-    signal.SetProof(); 
-    bg.SetProof(); 
-  }
 
 
   //Step 2: set cuts
 
-  TCut signal_cut= mc_run ?  isMC && brightestPeak : isWais && isReal; //revisit this 
+  TCut signal_cut= mc_dir ?  isMC : isWais && isReal; //revisit this 
   TCut bg_cut = thermal_sample && brightestPeak; 
 
-  AnitaTMVA::MVAVarSet varset; 
-  //setup variables
-  varset.add(AnitaTMVA::MVAVar("peak.value[][]","mapPeak")); 
-  varset.add(AnitaTMVA::MVAVar("peak.sigma_theta[][]","mapSigmaTheta")); 
-  varset.add(AnitaTMVA::MVAVar("peak.sigma_phi[][]","mapSigmaPhi")); 
-  varset.add(AnitaTMVA::MVAVar("peak.rho[][]","mapRho")); 
-  varset.add(AnitaTMVA::MVAVar("coherent.peakHilbert[][]","coherentHilbertPeak")); 
-  varset.add(AnitaTMVA::MVAVar("deconvolved.peakHilbert[][]","deconvHilbertPeak")); 
-  varset.add(AnitaTMVA::MVAVar("deconvolved.peakHilbert[][]/totalPower[][]","deconvHilbertPeakPowerRatio")); 
-  varset.add(AnitaTMVA::MVAVar("coherent_filtered.peakHilbert[][]","coherentFilteredHilbertPeak")); 
-  varset.add(AnitaTMVA::MVAVar("coherent_filtered.peakHilbert[][]/coherent.peakHilbert[][]","coherentFilteredHilbertPeakRatio")); 
-  varset.add(AnitaTMVA::MVAVar("deconvolved_filtered.peakHilbert[][]","deconvFilteredHilbertPeak")); 
-  varset.add(AnitaTMVA::MVAVar("deconvolved.width_50_50[][]","deconvolvedWidth5050")); 
-  varset.add(AnitaTMVA::MVAVar("deconvolved.width_10_10[][]","deconvolvedWidth1010")); 
-  varset.add(AnitaTMVA::MVAVar("deconvolved.peakTime[][]","deconvolvedPeakTime")); 
-  varset.add(AnitaTMVA::MVAVar("deconvolved.impulsivityMeasure[][]","deconvImpulsivity")); 
-  varset.add(AnitaTMVA::MVAVar("sqrt(TMath::Power(deconvolved[][].Q,2) + TMath::Power(deconvolved[][].U,2))/deconvolved[][].I","deconvLinearPolFraction")); 
-  varset.add(AnitaTMVA::MVAVar("TMath::ATan2(deconvolved[][].U,deconvolved[][].Q)/90/TMath::Pi()","deconvLinearPolAngle")); 
-  varset.add(AnitaTMVA::MVAVar("abs(FFTtools::wrap(peak.phi-sun.phi,360,0))","dPhiSun")); 
-  varset.add(AnitaTMVA::MVAVar("abs(FFTtools::wrap(peak.phi-heading,360,0))","dPhiNorth")); 
-  varset.add(AnitaTMVA::MVAVar("flags.meanPowerFiltered[0] / flags.meanPower[0]","filteredFraction")); 
+  AnitaTMVA::MVAVarSet varset("tree_vars.tmva"); 
 
-  //add spectactors . Actually here it doesn't matter if they're spectators or not I don't think 
-  varset.add(AnitaTMVA::MVAVar("run","run",'I',true)); 
-  varset.add(AnitaTMVA::MVAVar("eventNumber","eventNumber",'I',true)); 
 
   TString treefilename; 
-  treefilename.Form("thermalCutTrees_%s_mc%d.root",filter,mc_run); 
-
+  treefilename.Form("thermalCutTrees_%s_%s.root",filter,mc_dir ? mc_dir: "wais"); 
 
   TFile newOut(treefilename.Data(),"RECREATE"); 
+
   TTree * sigtree= AnitaTMVA::makeTMVATree(&signal, &newOut,  "sig_in", varset, signal_cut); 
-  TTree * bgtree=  AnitaTMVA::makeTMVATree(&bg, &newOut,  "bg_in", varset, bg_cut); 
+
+  sigtree->Write(); 
+  
+  TTree * bgtree= AnitaTMVA::makeTMVATree(nworkers, (TTree**) &bg[0], &newOut, "bg_in", varset, bg_cut); 
+
+  bgtree->Write(); 
+
   newOut.Write(); 
 }
 
-void doTMVA(int decimated_start = 390, int decimated_stop=420, int mc_run = 19,  const char * filter = "sinsub_10_3_ad_2", int nworkers = 1) 
+void doTMVA(int data_start = 160, int data_stop=439, const char * mc_dir = "simulated_kotera_max",  const char * filter = "sinsub_10_3_ad_2", int nworkers = 8) 
 {
 
-
   TString treefilename; 
-  treefilename.Form("thermalCutTrees_%s_mc%d.root",filter,mc_run); 
+  treefilename.Form("thermalCutTrees_%s_%s.root",filter,mc_dir ? mc_dir : "wais"); 
 
   //alright, this is dumb. 
   FILE * f = fopen(treefilename.Data(),"r"); 
 
   if (!f) 
   {
-    makeTrees(decimated_start, decimated_stop, mc_run,filter, nworkers); 
+    makeTrees(data_start, data_stop, mc_dir,filter, nworkers); 
   }
   else
   {
@@ -125,25 +107,36 @@ void doTMVA(int decimated_start = 390, int decimated_stop=420, int mc_run = 19, 
   TTree* bgtree = (TTree*) out.Get("bg_in"); 
 
   TString tmvaOutName; 
-  tmvaOutName.Form("thermalCuts_%s_mc%d.root",filter,mc_run); 
+  tmvaOutName.Form("thermalCuts_%s_%s.root",filter,mc_dir ? mc_dir : "wais"); 
 
   TFile tmvaOut(tmvaOutName.Data(),"RECREATE"); 
 
   TMVA::Factory *factory = new TMVA::Factory("thermal_cuts", &tmvaOut,"V"); 
 
   TMVA::DataLoader *dl = new TMVA::DataLoader("thermal"); 
-  
+
+  if (mc_dir) 
+  {
+    dl->SetSignalWeightExpression("weight"); 
+  }
+
+ 
 
   /* These are the variables to be used. They must have been generated already */ 
   dl->AddVariable("mapPeak"); 
+  dl->AddVariable("coherentFilteredHilbertPeakRatio"); 
+  dl->AddVariable("filteredFraction"); 
   dl->AddVariable("coherentHilbertPeak"); 
   dl->AddVariable("deconvHilbertPeak"); 
   dl->AddVariable("dPhiSun"); 
+  dl->AddVariable("dPhiNorth"); 
   dl->AddVariable("deconvImpulsivity"); 
   dl->AddVariable("deconvLinearPolFraction"); 
   dl->AddVariable("deconvLinearPolAngle"); 
   dl->AddVariable("deconvolvedWidth1010"); 
+  dl->AddVariable("deconvolvedWidth5050"); 
   dl->AddSpectator("run"); 
+  dl->AddSpectator("weight"); 
   dl->AddSpectator("eventNumber"); 
   dl->AddSignalTree(sigtree); 
   dl->AddBackgroundTree(bgtree); 

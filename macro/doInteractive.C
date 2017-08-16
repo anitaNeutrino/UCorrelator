@@ -35,16 +35,20 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
 //strategy.addOperation(butter); 
 
 
-  AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA );
+  AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kNoBlinding );
 
   event > 0 ? d.getEvent(event) : d.getEntry(-event); 
 
 
 
   UCorrelator::AnalysisConfig cfg; 
-  cfg.nmaxima = 3; 
+  cfg.nmaxima = 1; 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
-  cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
+  cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
+  cfg.enable_group_delay= !simulated; 
+  cfg.max_peak_trigger_angle =45; 
+//  cfg.correlator_theta_lowest=90; 
+//  cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
 //  cfg.response_option = UCorrelator::AnalysisConfig::ResponseHarmSignalOnly; 
   //cfg.combine_unfiltered = false; 
 
@@ -55,7 +59,7 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
 //  strategy->addOperation(ssf); 
 
 //  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("adsinsub_3_10_3"), d.gps(), d.header()); 
-  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("sinsub_5_3_ad_3"), d.gps(), d.header()); 
+  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("sinsub_10_3_ad_3 + tapergaus_10_3"), d.gps(), d.header()); 
   printf("auto fae = (FilteredAnitaEvent *) %p;\n",ev); 
 
 //  ev->plotSummary(0,0); 
