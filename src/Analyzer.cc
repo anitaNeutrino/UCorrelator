@@ -22,6 +22,7 @@
 #include "TGraphErrors.h"
 #include "simpleStructs.h"
 #include "UCImageTools.h"
+#include <stdint.h>
 
 #ifdef UCORRELATOR_OPENMP
 #include <omp.h>
