@@ -14,7 +14,8 @@
 #include "RawAnitaHeader.h"
 
 
-void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_10_3_ad_2" )
+// void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_10_3_ad_2" )
+void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "" )
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 

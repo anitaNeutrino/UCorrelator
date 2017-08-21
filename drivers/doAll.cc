@@ -16,12 +16,10 @@
 #ifdef UCORRELATOR_OPENMP
 #include <omp.h>
 #endif 
-
 void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_10_3_ad_2")
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
-  FFTtools::saveWisdom("wisdom.dat"); 
 
   // AnitaVersion::set(3); 
 
@@ -68,8 +66,10 @@ void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sin
 
     d.getEntry(i); 
     printf("----(%d)-----\n",i); 
-
-
+ UsefulAdu5Pat pat(d.gps()); 
+// if (UCorrelator::isWAISHPol(&pat, d.header()))
+//     {
+      printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone); 
     FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
 
     analyzer.analyze(&ev, sum); 
@@ -80,11 +80,14 @@ void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sin
     ndone++; 
 
     if (max && ndone > max) break; 
+  // }
 
   }
 
   ofile.cd(); 
   tree->Write(); 
+  FFTtools::saveWisdom("wisdom.dat"); 
+
 
   
 }

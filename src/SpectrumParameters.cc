@@ -112,31 +112,39 @@ void UCorrelator::spectrum::fillSpectrumParameters(const TGraph * spectrum, cons
      int index_bounds[2] = {max_j,max_j}; 
      double power = TMath::Power(10,max_val/10); 
 
-//      for (int sign = -1; sign <=1; sign+=2)
-//      {
-//         int how_far = 1; 
-//         while(true) 
-//         {
-//           int jj = max_j + how_far * sign; 
-//           double val = 0; 
-// //          printf("%f\n",max_val - val); 
-//           if (jj <= 0 || jj >=N-1 || max_val - val > config->bw_ndb || used[jj])
-//           {
-//             index_bounds[(sign+1)/2] = jj;
-//             break; 
-//           }
-//           power += TMath::Power(10,val/10); 
-//           how_far++; 
-//         }
-//      }
-     winfo->peakPower[i] = 10 * log10(power); 
+     for (int sign = -1; sign <=1; sign+=2)
+     {
+        int how_far = 1; 
+        while(true) 
+        {
+          int jj = max_j + how_far * sign; 
+          double val =  y[jj]; 
+//          printf("%f\n",max_val - val); 
+          if (jj <= 0 || jj >=N-1 || max_val - val > config->bw_ndb || used[jj])
+          {
+            index_bounds[(sign+1)/2] = jj;
+            break; 
+          }
+          power += TMath::Power(10,val/10); 
+          how_far++; 
+        }
+     }
+      
 
      int start = index_bounds[0];
      int end = index_bounds[1]; 
      if (start < 0) start = 0; 
      if (end >= (int) x.size()) end = x.size()-1; 
+     int difference = end - start - 1;
+     if (difference < 1){
+      difference = 1;
+     }
+     winfo->peakPower[i] = 10 * log10(power/difference);
 
-     winfo->bandwidth[i] = x[end] - x[start]; 
+     winfo->bandwidth[i] = x[end] - x[start] - 0.01; 
+     if (winfo->bandwidth[i]< 0.01){
+         winfo->bandwidth[i] = 0.01;
+     } 
      winfo->peakFrequency[i] = (x[start] + x[end])/2;
 
 

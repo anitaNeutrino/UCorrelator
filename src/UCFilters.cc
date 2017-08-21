@@ -150,7 +150,8 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
 
         if (fillme) 
         {
-          fillme->addOperation(ssf); 
+          // fillme->addOperation(ssf); 
+          fillme->addOperation(ssf,true);//peng, true for having output. 
         }
 
         if (need_description)
