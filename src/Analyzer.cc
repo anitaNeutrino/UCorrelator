@@ -22,6 +22,7 @@
 #include "TGraphErrors.h"
 #include "simpleStructs.h"
 #include "UCImageTools.h"
+#include <stdint.h>
 
 #ifdef UCORRELATOR_OPENMP
 #include <omp.h>
@@ -296,7 +297,32 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
     // tell the correlator not to use saturated events or disallowed antennas and make the correlation map
 		saturated[pol] |= disallowedAnts[pol];
-		corr.setDisallowedAntennas(saturated[pol]); 
+
+    //if we are only considering antennas that are unmasked, figure out which ones are 
+    uint64_t maskedAnts= 0; 
+    if (cfg->min_peak_distance_from_unmasked >=0) 
+    {
+      for (uint64_t iphi = 0; iphi < 16; iphi++)
+      {
+        bool unmasked = !(maskedPhi & (1ul << iphi)) ; 
+        
+        for (int neighboring = 0; neighboring < cfg->min_peak_distance_from_unmasked; neighboring++)
+        {
+          if (unmasked) break; 
+          unmasked = unmasked || !(maskedPhi & (1ul << ( (iphi + neighboring) % NUM_PHI))); 
+          unmasked = unmasked || !(maskedPhi & (1ul << ( (iphi + neighboring + NUM_PHI - 1) % NUM_PHI))); 
+        }
+
+        if (!unmasked) 
+        {
+          maskedAnts |= 1ul << iphi; 
+          maskedAnts |= 1ul << (iphi+NUM_PHI); 
+          maskedAnts |= 1ul << (iphi+2*NUM_PHI); 
+        }
+      }
+    }
+
+		corr.setDisallowedAntennas(saturated[pol] | disallowedAnts[pol] | maskedAnts); 
     corr.compute(event, AnitaPol::AnitaPol_t(pol)); 
 
     //compute RMS of correlation map 
@@ -304,9 +330,18 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     maprms = UCorrelator::getZRMS(corr.getHist());
 
 
+    if (cfg->max_peak_trigger_angle)
+    {
+      phiRange[0] = avgHwAngle - cfg->max_peak_trigger_angle; 
+      phiRange[1] = avgHwAngle + cfg->max_peak_trigger_angle; 
+    }
+
     // Find the isolated peaks in the image 
     peakfinder::RoughMaximum maxima[cfg->nmaxima]; 
-    int npeaks = UCorrelator::peakfinder::findIsolatedMaxima((const TH2D*) corr.getHist(), cfg->peak_isolation_requirement, cfg->nmaxima, maxima, phiRange[0], phiRange[1], thetaRange[0], thetaRange[1], exclude, cfg->use_bin_center); 
+    int npeaks = UCorrelator::peakfinder::findIsolatedMaxima((const TH2D*) corr.getHist(),
+                                                              cfg->peak_isolation_requirement,
+                                                              cfg->nmaxima, maxima, phiRange[0], phiRange[1], 
+                                                              thetaRange[0], thetaRange[1], exclude, cfg->use_bin_center); 
 //    printf("npeaks: %d\n", npeaks); 
     summary->nPeaks[pol] = npeaks; 
 

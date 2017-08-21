@@ -78,6 +78,8 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(max_median_power_filtered); 
   LOOKUP(max_bottom_to_top_ratio); 
   LOOKUP(baseline_weight); 
+  LOOKUP(max_peak_trigger_angle); 
+  LOOKUP(min_peak_distance_from_unmasked); 
 
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", (int*) &start_pol, 2,pols); 
@@ -136,6 +138,8 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   nmaxima = 2; 
   use_bin_center = false; 
   scale_by_cos_theta = false; 
+  max_peak_trigger_angle = 0; 
+  min_peak_distance_from_unmasked = -1; 
 
   bw_ndb = 6; //let the bandwidth search stop immediately
   spectral_fit_start = 0.22; 
