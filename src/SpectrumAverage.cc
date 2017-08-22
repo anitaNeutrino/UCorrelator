@@ -37,7 +37,6 @@ UCorrelator::SpectrumAverage::~SpectrumAverage()
 
 int UCorrelator::SpectrumAverage::computeAverage(const char * selection, double max_r) 
 {
-
   AnitaDataset d(run); 
 #ifdef MULTIVERSION_ANITA_ENABLED
   if (selection) d.setCut(selection); 
@@ -104,7 +103,8 @@ int UCorrelator::SpectrumAverage::computeAverage(const char * selection, double 
 #endif
 
 #ifdef DEBUG_SPEC_AVG
-  N = d.N()/100; 
+  N = d.N()/100;  //Only do 1% data. To speed up the spectrum average calculation.
+  // N = d.N(); //For all the events.
 #endif
   for (int i = 0; i < N; i++)
   {
