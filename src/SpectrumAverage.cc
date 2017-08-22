@@ -409,11 +409,8 @@ static TMutex m;
 const UCorrelator::SpectrumAverage* UCorrelator::SpectrumAverageLoader::avg(double t) const
 {
 
-  if (spec && t >= spec->getStartTime()-5 && t <= spec->getEndTime()+5 ) return spec; 
-
   m.Lock(); 
 
-  //double check 
   if (spec && t >= spec->getStartTime()-5 && t <= spec->getEndTime()+5 ) 
   {
     m.UnLock(); 
@@ -421,6 +418,7 @@ const UCorrelator::SpectrumAverage* UCorrelator::SpectrumAverageLoader::avg(doub
   }
 
   int run = AnitaDataset::getRunAtTime(t); 
+  
   if (spec) delete spec; 
   spec = new SpectrumAverage(run,nsecs, dir); 
   spec->computePeakiness(); 
