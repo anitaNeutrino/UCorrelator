@@ -410,6 +410,7 @@ const UCorrelator::SpectrumAverage* UCorrelator::SpectrumAverageLoader::avg(doub
 {
 
   m.Lock(); 
+//  printf("%g\n",t); 
 
   if (spec && t >= spec->getStartTime()-5 && t <= spec->getEndTime()+5 ) 
   {
@@ -418,6 +419,7 @@ const UCorrelator::SpectrumAverage* UCorrelator::SpectrumAverageLoader::avg(doub
   }
 
   int run = AnitaDataset::getRunAtTime(t); 
+  printf("loading average from run %d\n",run); 
   
   if (spec) delete spec; 
   spec = new SpectrumAverage(run,nsecs, dir); 
