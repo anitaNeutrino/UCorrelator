@@ -921,7 +921,7 @@ void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const Raw
   if (spec) 
   {
     // use peakiness to tune aggressivness
-    if (header->triggerTime > last_t)
+    if (header->triggerTime != last_t)
     {
       TH2 * peaky = (TH2*) spec->avg(header->triggerTime)->getPeakiness(AnitaPol::AnitaPol_t(pol), i); 
 
