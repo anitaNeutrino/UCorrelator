@@ -696,6 +696,10 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 
   if (ifirst < 0) ifirst = 0; 
   if (ilast < 0) ilast = wf->Neven()-1; 
+  if (!cfg->windowStokes) {
+    ifirst = 0;
+    ilast = wf->Neven()-1;
+  }
   int nstokes = ilast-ifirst+1 ; 
 
   if (pol == AnitaPol::kHorizontal)

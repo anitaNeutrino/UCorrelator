@@ -164,6 +164,9 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   the_ldb_hist = 0; 
 
   ldb_max_run = 160; 
+
+  windowStokes = true;
+
 }
 
 static int nag = 0; 
