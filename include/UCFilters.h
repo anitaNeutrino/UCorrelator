@@ -96,7 +96,7 @@ namespace UCorrelator
    */ 
   const char * fillStrategyWithKey(FilterStrategy * fillme, const char * key); 
 
-  /* same as above, but returns a newly allocated strategy and no description */ 
+  /** same as above, but returns a newly allocated strategy and no description */ 
   FilterStrategy * getStrategyWithKey(const char * key) ; 
   
 
