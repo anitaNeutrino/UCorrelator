@@ -132,7 +132,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   start_pol = AnitaPol::kHorizontal; 
   end_pol = AnitaPol::kVertical; 
 
-  peak_isolation_requirement = 20; 
+  peak_isolation_requirement = 10; 
 
   fine_peak_finding_option = FinePeakFindingQuadraticFit25; 
   nmaxima = 2; 
