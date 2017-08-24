@@ -332,8 +332,8 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
     if (cfg->max_peak_trigger_angle)
     {
-      phiRange[0] = avgHwAngle - cfg->max_peak_trigger_angle; 
-      phiRange[1] = avgHwAngle + cfg->max_peak_trigger_angle; 
+      phiRange[0] = FFTtools::wrap(avgHwAngle - cfg->max_peak_trigger_angle,360); 
+      phiRange[1] = FFTtools::wrap(avgHwAngle + cfg->max_peak_trigger_angle,360); 
     }
 
     // Find the isolated peaks in the image 
@@ -695,7 +695,8 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 
 
   if (ifirst < 0) ifirst = 0; 
-  if (ilast < 0) ilast = wf->Neven()-1; 
+  if (ilast < 0 || ilast >= wf->Neven()) ilast = wf->Neven()-1; 
+
   int nstokes = ilast-ifirst+1 ; 
 
   if (pol == AnitaPol::kHorizontal)
