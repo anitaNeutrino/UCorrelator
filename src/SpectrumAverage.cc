@@ -35,7 +35,7 @@ UCorrelator::SpectrumAverage::~SpectrumAverage()
 
 }
 
-int UCorrelator::SpectrumAverage::computeAverage(const char * selection, double max_r) 
+int UCorrelator::SpectrumAverage::computeAverage(const char * selection, double max_r, int min_norm) 
 {
   AnitaDataset d(run); 
 #ifdef MULTIVERSION_ANITA_ENABLED
@@ -127,9 +127,9 @@ int UCorrelator::SpectrumAverage::computeAverage(const char * selection, double 
     norm.Fill(t); 
     int ybin = norm.FindFixBin(t); 
 
-//#ifdef UCORRELATOR_OPENMP
-//#pragma omp parallel for 
-//#endif
+#ifdef UCORRELATOR_OPENMP
+#pragma omp parallel for 
+#endif
     for (int j = 0; j < NUM_SEAVEYS * 2; j++) 
     {
       int ant = j /2; 
@@ -159,12 +159,58 @@ int UCorrelator::SpectrumAverage::computeAverage(const char * selection, double 
     int pol = j %2; 
     for (int ybin = 1; ybin <= avgs[ant][pol]->GetNbinsY(); ybin++)
     {
+      if (norm.GetBinContent(ybin) < min_norm) 
+      {
+        continue; 
+      }
       for (int k = 0; k<avgs[ant][pol]->GetNbinsX() ; k++)
       {
-        if (norm.GetBinContent(ybin))
           avgs[ant][pol]->SetBinContent(k,ybin, avgs[ant][pol]->GetBinContent(k,ybin) / norm.GetBinContent(ybin)); 
       }
     }
+
+    //now go through and fill in the rows with no content with an average of ones that do 
+    for (int ybin = 1; ybin <= avgs[ant][pol]->GetNbinsY(); ybin++)
+    {
+
+      if (norm.GetBinContent(ybin) < min_norm)
+      {
+        int last_bin = ybin-1; 
+        while(norm.GetBinContent(last_bin) < min_norm && last_bin > 0) last_bin--; 
+
+        int next_bin = ybin+1; 
+        while (norm.GetBinContent(next_bin) < min_norm  && next_bin <= avgs[ant][pol]->GetNbinsY()) next_bin++; 
+
+        //lost cause, no good bins
+        if (last_bin == 0 && next_bin > avgs[ant][pol]->GetNbinsY()) break; 
+
+        if (last_bin == 0) 
+        {
+          for (int k = 0; k<avgs[ant][pol]->GetNbinsX() ; k++)
+          {
+              avgs[ant][pol]->SetBinContent(k,ybin, avgs[ant][pol]->GetBinContent(k,next_bin)); 
+          }
+        }
+        else if (next_bin > avgs[ant][pol]->GetNbinsY()) 
+        {
+          for (int k = 0; k<avgs[ant][pol]->GetNbinsX() ; k++)
+          {
+              avgs[ant][pol]->SetBinContent(k,ybin, avgs[ant][pol]->GetBinContent(k,last_bin)); 
+          }
+        }
+        else
+        {
+          double last_frac = double(ybin - last_bin) / (next_bin-last_bin); 
+          
+          for (int k = 0; k<avgs[ant][pol]->GetNbinsX() ; k++)
+          {
+              avgs[ant][pol]->SetBinContent(k,ybin, last_frac * avgs[ant][pol]->GetBinContent(k,last_bin)  + (1-last_frac) * avgs[ant][pol]->GetBinContent(k,next_bin)); 
+          }
+        }
+      }
+
+    }
+
   }
 
   return 0; 
@@ -190,7 +236,7 @@ void UCorrelator::SpectrumAverage::saveToDir(const char * dir)
 }
 
 UCorrelator::SpectrumAverage::SpectrumAverage(int run, int nsecs, const char * persistdir,
-     const char * selection, double max_bottom_top_ratio) 
+     const char * selection, double max_bottom_top_ratio, int min_norm) 
   : nsecs(nsecs) , run(run)
 {
   bool foundit = false;
@@ -226,7 +272,7 @@ UCorrelator::SpectrumAverage::SpectrumAverage(int run, int nsecs, const char * p
     {
       printf("Define UCORRELATOR_SPECAVG_DIR to persist somewhere.\n"); 
     }
-    computeAverage( selection, max_bottom_top_ratio); 
+    computeAverage( selection, max_bottom_top_ratio, min_norm); 
     if (check_dir) saveToDir(check_dir); 
   }
 

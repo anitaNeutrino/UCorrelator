@@ -39,7 +39,7 @@ namespace UCorrelator
 
       SpectrumAverage(int run, int nsecs = 60, 
                       const char * persistdir = 0,const char * selection=0,
-                      double max_bottom_top_ratio =1.5); 
+                      double max_bottom_top_ratio =1.5, int min_norm = 5); 
 
 
       static const SpectrumAverage * defaultThermal(); 
@@ -71,7 +71,7 @@ namespace UCorrelator
     private: 
       TH2D * avgs[NUM_SEAVEYS][2]; 
       TH2D * peakiness[NUM_SEAVEYS][2]; 
-      int computeAverage(const char * selection, double max_r); 
+      int computeAverage(const char * selection, double max_r, int min_norm); 
       int nsecs; 
       int run; 
 
