@@ -1,7 +1,7 @@
 #include "FFTtools.h" 
 #include "FilterStrategy.h"
 #include "UCFilters.h" 
-#include "SpectrumAverage.h" 
+#include "TimeDependentAverage.h" 
 #include "GeomFilter.h" 
 #include "BasicFilters.h" 
 #include "ResponseManager.h" 
@@ -29,10 +29,10 @@ FilterStrategy * UCorrelator::getStrategyWithKey (const char * key)
 
 
 static std::map<const char *, TString> key_descs; 
-static UCorrelator::SpectrumAverageLoader avgldr; 
+static UCorrelator::TimeDependentAverageLoader avgldr; 
 static AnitaResponse::ResponseManager * responseManager = 0; 
 static AnitaResponse::AllPassDeconvolution allpass; 
-// static UCorrelator::SpectrumAverageLoader avgldr; 
+// static UCorrelator::TimeDependentAverageLoader avgldr; 
 // static UCorrelator::ResponseManager * responseManager = 0; 
 // static UCorrelator::AllPassDeconvolution allpass; 
 
@@ -313,7 +313,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
         {
           for (int pol = 0; pol < 2; pol++) 
           {
-            TH1 * avg = UCorrelator::SpectrumAverage::defaultThermal()->getSpectrumPercentile(AnitaPol::AnitaPol_t(pol), ant,0.5,true); 
+            TH1 * avg = UCorrelator::TimeDependentAverage::defaultThermal()->getSpectrumPercentile(AnitaPol::AnitaPol_t(pol), ant,0.5,true); 
             noise[pol][ant] = new TGraphAligned(avg->GetNbinsX()); 
             for (int i = 0; i < avg->GetNbinsX(); i++) 
             {
@@ -1010,7 +1010,7 @@ void UCorrelator::SineSubtractFilter::setInteractive(bool set)
 }
 
 
-void UCorrelator::SineSubtractFilter::makeAdaptive(const SpectrumAverageLoader * s, double peak_exp) 
+void UCorrelator::SineSubtractFilter::makeAdaptive(const TimeDependentAverageLoader * s, double peak_exp) 
 {
   spec = s; 
   adaptive_exp = peak_exp; 
@@ -1207,10 +1207,10 @@ void UCorrelator::CombinedSineSubtractFilter::setInteractive(bool set)
 
 
 
-UCorrelator::AdaptiveMinimumPhaseFilter::AdaptiveMinimumPhaseFilter(const SpectrumAverageLoader *avg, double exponent,int npad)
+UCorrelator::AdaptiveMinimumPhaseFilter::AdaptiveMinimumPhaseFilter(const TimeDependentAverageLoader *avg, double exponent,int npad)
  : avg(avg),npad(npad), exponent(exponent), last_bin(-1) 
 {
-  desc_string.Form("Adaptive Minimum Phase Filter with SpectrumAverageLoader(%d) and exponent %g",  avg->getNsecs(), exponent); 
+  desc_string.Form("Adaptive Minimum Phase Filter with TimeDependentAverageLoader(%d) and exponent %g",  avg->getNsecs(), exponent); 
   memset(filt,0,sizeof(filt)); 
   memset(size,0,sizeof(size)); 
 }
@@ -1322,7 +1322,7 @@ TGraph * UCorrelator::AdaptiveMinimumPhaseFilter::getCurrentFilterPower(AnitaPol
 
 
 static int n_adaptive_brickwall = 0; 
-UCorrelator::AdaptiveBrickWallFilter::AdaptiveBrickWallFilter(const SpectrumAverageLoader * spec, double thresh, bool fillNotch) 
+UCorrelator::AdaptiveBrickWallFilter::AdaptiveBrickWallFilter(const TimeDependentAverageLoader * spec, double thresh, bool fillNotch) 
   : avg(spec), threshold(thresh), fill(fillNotch) 
 {
 
@@ -1415,12 +1415,12 @@ void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
 
 
 
-UCorrelator::AdaptiveButterworthFilter::AdaptiveButterworthFilter(const SpectrumAverageLoader *avg,
+UCorrelator::AdaptiveButterworthFilter::AdaptiveButterworthFilter(const TimeDependentAverageLoader *avg,
                                                                   double peakiness_threshold ,
                                                                   int order , double width) 
             : avg(avg), threshold(peakiness_threshold), order(order), width(width)  
 { 
-  desc_string.Form("AdaptiveButterworthFilter with SpectrumAverageLoader(%d), th=%g, order=%d, width=%g)",
+  desc_string.Form("AdaptiveButterworthFilter with TimeDependentAverageLoader(%d), th=%g, order=%d, width=%g)",
                     avg->getNsecs(), threshold, order, width);
 }
 
