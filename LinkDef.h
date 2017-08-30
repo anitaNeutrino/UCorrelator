@@ -18,6 +18,7 @@
 #pragma link C++ class UCorrelator::AntennaPositions;
 #pragma link C++ class UCorrelator::Baseline;
 #pragma link C++ class UCorrelator::TimeDependentAverage;
+#pragma link C++ class UCorrelator::TimeDependentAverageLoader;
 #pragma link C++ class UCorrelator::Correlator;
 #pragma link C++ class UCorrelator::ComplicatedNotchFilter;
 #pragma link C++ class UCorrelator::SineSubtractFilter;
