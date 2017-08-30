@@ -302,8 +302,13 @@ void UCorrelator::TimeDependentAverage::saveToDir(const char * dir)
   TFile f(fstr.Data(),"RECREATE"); 
   f.cd(); 
 
+  //make sure averages and RMS are loaded
+  getSpectrogram(AnitaPol::kHorizontal,0); 
+  getRMS(AnitaPol::kHorizontal,0); 
+  
   f.mkdir("specavg"); 
   f.cd("specavg"); 
+
   for (int ant = 0; ant < NUM_SEAVEYS; ant++) 
   {
      avgs[ant][0]->Write(TString::Format("h%d",ant)); 
@@ -337,37 +342,15 @@ void UCorrelator::TimeDependentAverage::saveToDir(const char * dir)
 
 }
 
-UCorrelator::TimeDependentAverage::TimeDependentAverage(int run, int nsecs, const char * persistdir,
-      double max_bottom_top_ratio, int min_norm, double max_power) 
-  : nsecs(nsecs) , run(run)
+const TH2F * UCorrelator::TimeDependentAverage::getSpectrogram(AnitaPol::AnitaPol_t pol, int ant, bool minbias) const
 {
-  bool foundit = false;
 
-  const char * check_dir = persistdir ? persistdir 
-                                      :  getenv("UCORRELATOR_TIMEAVG_DIR") ? : 0; 
-
-
-  if (check_dir)
+  if (!avgs_loaded)
   {
-
-    TFile f(TString::Format("%s/%d_%d.root", check_dir, run,nsecs)); 
-    if (f.IsOpen())
+    m.Lock(); 
+    if (!avgs_loaded) 
     {
-      f.cd(); 
-
-
-      TH1I * found= (TH1I*) gDirectory->Get("norms"); 
-      norms = new TH1I(*found); 
-      norms->SetDirectory(0); 
-
-      found= (TH1I*) gDirectory->Get("norms_minbias"); 
-      norms_minbias = new TH1I(*found); 
-      norms_minbias->SetDirectory(0); 
-
-      found= (TH1I*) gDirectory->Get("nblasts"); 
-      nblasts = new TH1I(*found); 
-      nblasts->SetDirectory(0); 
-
+      TFile f(fname); 
       f.cd("specavg"); 
       for (int ant = 0; ant < NUM_SEAVEYS; ant++) 
       {
@@ -393,7 +376,25 @@ UCorrelator::TimeDependentAverage::TimeDependentAverage(int run, int nsecs, cons
         avgs_minbias[ant][1] = new TH2F(*found_vpol);  
         avgs_minbias[ant][1]->SetDirectory(0); 
       }
+      avgs_loaded = true; 
+    }
+    m.UnLock(); 
+  }
 
+
+  return minbias ? avgs_minbias[ant][pol] : avgs[ant][pol]; 
+}
+
+
+const TH1D * UCorrelator::TimeDependentAverage::getRMS(AnitaPol::AnitaPol_t pol, int ant) const
+{
+  if (!rms_loaded)
+  {
+    m.Lock(); 
+
+    if (!rms_loaded)
+    {
+      TFile f(fname); 
       f.cd("rms"); 
 
       for (int ant = 0; ant < NUM_SEAVEYS; ant++) 
@@ -407,9 +408,55 @@ UCorrelator::TimeDependentAverage::TimeDependentAverage(int run, int nsecs, cons
         rms[ant][1] = new TH1D(*found_vpol);  
         rms[ant][1]->SetDirectory(0); 
       }
+      rms_loaded = true; 
+    }
+    m.UnLock(); 
+  }
+
+  return rms[ant][pol]; 
+
+}
+
+UCorrelator::TimeDependentAverage::TimeDependentAverage(int run, int nsecs, const char * persistdir,
+      double max_bottom_top_ratio, int min_norm, double max_power) 
+  :  nsecs(nsecs) , run(run)
+{
+  bool foundit = false;
+  rms_loaded = false;
+  peakiness_loaded = false;
+  avgs_loaded = false; 
+
+  const char * check_dir = persistdir ? persistdir 
+                                      :  getenv("UCORRELATOR_TIMEAVG_DIR") ? : 0; 
+
+
+  if (check_dir)
+  {
+    fname.Form("%s/%d_%d.root", check_dir, run,nsecs); 
+    TFile f(fname); 
+    if (f.IsOpen())
+    {
+      f.cd(); 
+
+
+      TH1I * found= (TH1I*) gDirectory->Get("norms"); 
+      norms = new TH1I(*found); 
+      norms->SetDirectory(0); 
+
+      found= (TH1I*) gDirectory->Get("norms_minbias"); 
+      norms_minbias = new TH1I(*found); 
+      norms_minbias->SetDirectory(0); 
+
+      found= (TH1I*) gDirectory->Get("nblasts"); 
+      nblasts = new TH1I(*found); 
+      nblasts->SetDirectory(0); 
 
       foundit = true;
     }
+    memset(rms,0,sizeof(rms)); 
+
+    memset(avgs,0,sizeof(avgs)); 
+    memset(avgs_minbias,0,sizeof(avgs_minbias)); 
   }
 
   if (!foundit) 
@@ -432,7 +479,7 @@ UCorrelator::TimeDependentAverage::TimeDependentAverage(int run, int nsecs, cons
 TH1* UCorrelator::TimeDependentAverage::getSpectrumAverage(AnitaPol::AnitaPol_t pol, int ant, double t, bool db, bool minbias)  const
 {
 
-  const TH2 * h = minbias ? avgs_minbias[ant][pol] : avgs[ant][pol];
+  const TH2 * h =getSpectrogram(pol,ant,minbias); 
   //figure out which bin we are in 
    int bin =  h->GetYaxis()->FindFixBin(t); 
 
@@ -470,7 +517,7 @@ TH1* UCorrelator::TimeDependentAverage::getSpectrumAverage(AnitaPol::AnitaPol_t 
 TH1 *UCorrelator::TimeDependentAverage::getSpectrumPercentile(AnitaPol::AnitaPol_t pol, int ant, double pct , bool db, bool minbias ) const
 {
 
-  TH1 * answer = UCorrelator::image::getPctileProjection( minbias ? avgs_minbias[ant][pol] : avgs[ant][pol], 1, pct, true, minbias ? norms_minbias : norms); 
+  TH1 * answer = UCorrelator::image::getPctileProjection( getSpectrogram(pol,ant,minbias), 1, pct, true, getNorms(minbias)); 
 
   answer->GetXaxis()->SetTitle("Frequency"); 
   answer->GetYaxis()->SetTitle(db ? "Pctile Power (dBish)" :"Pctile Power (linear)"); 
@@ -494,12 +541,12 @@ TH1 *UCorrelator::TimeDependentAverage::getSpectrumPercentile(AnitaPol::AnitaPol
 double UCorrelator::TimeDependentAverage::getStartTime() const 
 {
 
-  return avgs[0][0] ? avgs[0][0]->GetYaxis()->GetXmin() : -1; 
+  return norms ? norms->GetXaxis()->GetXmin() : -1; 
 }
 
 double UCorrelator::TimeDependentAverage::getEndTime() const 
 {
-  return avgs[0][0] ? avgs[0][0]->GetYaxis()->GetXmax() : -1;   
+  return norms ? norms->GetXaxis()->GetXmax() : -1;   
 }
 
 
@@ -575,7 +622,7 @@ void UCorrelator::TimeDependentAverage::computePeakiness(const TimeDependentAver
         TString title; 
         title.Form("%s peakiness ant=%d pol=%d\n", minbias ? "minbias" : "RF" , ant,ipol); 
 
-        TH2 * avg = minbias ? avgs_minbias[ant][ipol] : avgs[ant][ipol]; 
+        const TH2 * avg = getSpectrogram(AnitaPol::AnitaPol_t(ipol),ant,minbias); 
         TH2D * peaky = new TH2D(name,title,
                                          avg->GetNbinsX(), avg->GetXaxis()->GetXmin(), avg->GetXaxis()->GetXmax(), 
                                          avg->GetNbinsY(), avg->GetYaxis()->GetXmin(), avg->GetYaxis()->GetXmax());  
@@ -608,17 +655,17 @@ UCorrelator:: TimeDependentAverageLoader::TimeDependentAverageLoader(const char 
   tavg = 0; 
 }
 
-static TMutex m; 
+static TMutex mut; 
 
 const UCorrelator::TimeDependentAverage* UCorrelator::TimeDependentAverageLoader::avg(double t) const
 {
+  mut.Lock(); 
 
-  m.Lock(); 
 //  printf("%g\n",t); 
 
   if (tavg && t >= tavg->getStartTime()-5 && t <= tavg->getEndTime()+5 ) 
   {
-    m.UnLock(); 
+    mut.UnLock(); 
     return tavg; 
   }
 
@@ -627,8 +674,7 @@ const UCorrelator::TimeDependentAverage* UCorrelator::TimeDependentAverageLoader
   
   if (tavg) delete tavg; 
   tavg = new TimeDependentAverage(run,nsecs, dir); 
-  tavg->computePeakiness(); 
-  m.UnLock(); 
+  mut.UnLock(); 
   
   return tavg; 
 
@@ -692,12 +738,19 @@ double UCorrelator::TimeDependentAverageLoader::getPayloadBlastFraction(double t
 const TH2D * UCorrelator::TimeDependentAverage::getPeakiness(AnitaPol::AnitaPol_t pol, int ant, bool minbias) const
 {
 
-  m.Lock();
-  if (!peakiness[0][0])
+  //make sure we have averages loaded 
+  getSpectrogram(AnitaPol::kHorizontal,0); 
+
+  if (!peakiness_loaded)
   {
-    computePeakiness(); 
+    m.Lock();
+    if (!peakiness_loaded)
+    {
+      computePeakiness(); 
+      peakiness_loaded = true; 
+    }
+    m.UnLock(); 
   }
-  m.UnLock(); 
 
   return minbias ? peakiness_minbias[ant][pol] : peakiness[ant][pol]; 
 }

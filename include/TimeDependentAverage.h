@@ -10,6 +10,7 @@ class TH1;
 class TH2D; 
 #include "AnitaConventions.h" 
 #include "AnitaGeomTool.h"
+#include "TString.h" 
 #include "TMutex.h" 
   
 namespace UCorrelator
@@ -70,8 +71,8 @@ namespace UCorrelator
       double getStartTime() const; 
       double getEndTime() const; 
 
-      const TH2F * getSpectrogram(AnitaPol::AnitaPol_t pol, int ant, bool minbias = false) const { return minbias ? avgs_minbias[ant][pol] : avgs[ant][pol] ; }
-      const TH1D * getRMS(AnitaPol::AnitaPol_t pol, int ant) const { return rms[ant][pol] ; } 
+      const TH2F * getSpectrogram(AnitaPol::AnitaPol_t pol, int ant, bool minbias = false) const; 
+      const TH1D * getRMS(AnitaPol::AnitaPol_t pol, int ant) const;
       double getRMS(AnitaPol::AnitaPol_t pol, int ant, double t) const; 
       const TH1I * getNBlasts() const { return nblasts; } 
       double getBlastFraction(double t) const; 
@@ -81,9 +82,13 @@ namespace UCorrelator
       int getNsecs() const { return nsecs; } 
 
     private: 
-      TH2F * avgs[NUM_SEAVEYS][2]; 
-      TH2F * avgs_minbias[NUM_SEAVEYS][2]; 
-      TH1D * rms[NUM_SEAVEYS][2]; 
+      //these are read on demand since they're biggish 
+      mutable TH2F * avgs[NUM_SEAVEYS][2]; 
+      mutable TH2F * avgs_minbias[NUM_SEAVEYS][2]; 
+      mutable TH1D * rms[NUM_SEAVEYS][2]; 
+      mutable bool avgs_loaded; 
+      mutable bool rms_loaded; 
+      mutable bool peakiness_loaded; ; 
       TH1I * nblasts; 
       TH1I * norms; 
       TH1I * norms_minbias; 
@@ -91,6 +96,7 @@ namespace UCorrelator
       mutable TMutex m; 
       mutable TH2D * peakiness[NUM_SEAVEYS][2]; 
       mutable TH2D * peakiness_minbias[NUM_SEAVEYS][2]; 
+      TString fname; 
       int computeAverage(double max_r, int min_norm, double max_power); 
       int nsecs; 
       int run; 
@@ -112,7 +118,9 @@ namespace UCorrelator
       const TimeDependentAverage * avg(double t) const; 
 
 
-      /** Static member functions, use a time dependent average loader with the environmental variable  in the background if NULL passed
+      /** Static member functions, use a time dependent average loader with the environmental variable  in the background. 
+       *
+       * Note that using this for lots of different times will quickly use up a ton of memory. 
        *
        * These are thread safe, but if you change nsecs in between cals, it will be very inefficient. 
        * */ 
