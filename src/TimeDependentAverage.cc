@@ -470,7 +470,7 @@ TH1* UCorrelator::TimeDependentAverage::getSpectrumAverage(AnitaPol::AnitaPol_t 
 TH1 *UCorrelator::TimeDependentAverage::getSpectrumPercentile(AnitaPol::AnitaPol_t pol, int ant, double pct , bool db, bool minbias ) const
 {
 
-  TH1 * answer = UCorrelator::image::getPctileProjection( minbias ? avgs_minbias[ant][pol] : avgs[ant][pol], 1, pct); 
+  TH1 * answer = UCorrelator::image::getPctileProjection( minbias ? avgs_minbias[ant][pol] : avgs[ant][pol], 1, pct, true, minbias ? norms_minbias : norms); 
 
   answer->GetXaxis()->SetTitle("Frequency"); 
   answer->GetYaxis()->SetTitle(db ? "Pctile Power (dBish)" :"Pctile Power (linear)"); 
@@ -517,17 +517,21 @@ const UCorrelator::TimeDependentAverage* UCorrelator::TimeDependentAverage::defa
    TString dir; 
    dir.Form("%s/share/UCorrelator/terminated_noise/", getenv("ANITA_UTIL_INSTALL_DIR")); 
 
-   defaultThermalAvg = new TimeDependentAverage(11382,10, dir.Data()); 
+   defaultThermalAvg = new TimeDependentAverage(11382,60, dir.Data()); 
    return defaultThermalAvg; 
 }
 
 
 
-void UCorrelator::TimeDependentAverage::computePeakiness(const TimeDependentAverage * thermalSpec, double fractionForNormalization) 
+void UCorrelator::TimeDependentAverage::computePeakiness(const TimeDependentAverage * thermalSpec, double fractionForNormalization) const
 {
 
   if (!thermalSpec) thermalSpec = defaultThermal(); 
 
+
+//#ifdef UCORRELATOR_OPENMP
+//#pragma omp parallel for
+//#endif 
   for (int ant  = 0; ant < NUM_SEAVEYS; ant++)
   {
 //    printf("%d\n",ant);
@@ -571,9 +575,8 @@ void UCorrelator::TimeDependentAverage::computePeakiness(const TimeDependentAver
         TString title; 
         title.Form("%s peakiness ant=%d pol=%d\n", minbias ? "minbias" : "RF" , ant,ipol); 
 
-        TH2 * peaky = minbias ? peakiness_minbias[ant][ipol] : peakiness_minbias[ant][ipol]; 
         TH2 * avg = minbias ? avgs_minbias[ant][ipol] : avgs[ant][ipol]; 
-        peaky = new TH2D(name,title,
+        TH2D * peaky = new TH2D(name,title,
                                          avg->GetNbinsX(), avg->GetXaxis()->GetXmin(), avg->GetXaxis()->GetXmax(), 
                                          avg->GetNbinsY(), avg->GetYaxis()->GetXmin(), avg->GetYaxis()->GetXmax());  
 
@@ -589,7 +592,7 @@ void UCorrelator::TimeDependentAverage::computePeakiness(const TimeDependentAver
                 peaky->SetBinContent(ii,jj,0); 
           }
         }
-
+         (minbias ? peakiness_minbias[ant][ipol] : peakiness[ant][ipol]) = peaky; 
         delete median; 
         delete thermal; 
       }
@@ -685,3 +688,16 @@ double UCorrelator::TimeDependentAverageLoader::getPayloadBlastFraction(double t
   return getLoader(nsecs)->avg(t)->getBlastFraction(t); 
 }
 
+
+const TH2D * UCorrelator::TimeDependentAverage::getPeakiness(AnitaPol::AnitaPol_t pol, int ant, bool minbias) const
+{
+
+  m.Lock();
+  if (!peakiness[0][0])
+  {
+    computePeakiness(); 
+  }
+  m.UnLock(); 
+
+  return minbias ? peakiness_minbias[ant][pol] : peakiness[ant][pol]; 
+}

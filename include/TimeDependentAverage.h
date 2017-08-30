@@ -10,6 +10,7 @@ class TH1;
 class TH2D; 
 #include "AnitaConventions.h" 
 #include "AnitaGeomTool.h"
+#include "TMutex.h" 
   
 namespace UCorrelator
 {
@@ -51,7 +52,7 @@ namespace UCorrelator
       /** compute the peakiness with the given thermal spectrum average and fraction of spectrum used for normalization
        * If 0 is passed for thermal, a default thermal spectrum  is used from calibration terminated amp data. 
        * */ 
-      void computePeakiness(const TimeDependentAverage * thermal = 0 , double fractionForNormalization = 0.5);  
+      void computePeakiness(const TimeDependentAverage * thermal = 0 , double fractionForNormalization = 0.5) const;  
 
       /** Save average to directory. If persistdir is given in the constructor,
        * the baseline will already have been saved there so you probably 
@@ -69,14 +70,13 @@ namespace UCorrelator
       double getStartTime() const; 
       double getEndTime() const; 
 
-      const TH2F * getSpectrogram(AnitaPol::AnitaPol_t pol, int ant, bool minbias) { return minbias ? avgs_minbias[ant][pol] : avgs[ant][pol] ; }
+      const TH2F * getSpectrogram(AnitaPol::AnitaPol_t pol, int ant, bool minbias = false) const { return minbias ? avgs_minbias[ant][pol] : avgs[ant][pol] ; }
       const TH1D * getRMS(AnitaPol::AnitaPol_t pol, int ant) const { return rms[ant][pol] ; } 
       double getRMS(AnitaPol::AnitaPol_t pol, int ant, double t) const; 
       const TH1I * getNBlasts() const { return nblasts; } 
       double getBlastFraction(double t) const; 
-      const TH1I * getNorms(bool minbias) const { return minbias ? norms_minbias : norms; }
-      const TH2D * getPeakiness(AnitaPol::AnitaPol_t pol, int ant) const { return peakiness[ant][pol]; } 
-      const TH2D * getPeakinessMinBias(AnitaPol::AnitaPol_t pol, int ant) const { return peakiness_minbias[ant][pol]; } 
+      const TH1I * getNorms(bool minbias = false) const { return minbias ? norms_minbias : norms; }
+      const TH2D * getPeakiness(AnitaPol::AnitaPol_t pol, int ant, bool minbias = false) const; 
       int getRun() const { return run; } 
       int getNsecs() const { return nsecs; } 
 
@@ -88,9 +88,9 @@ namespace UCorrelator
       TH1I * norms; 
       TH1I * norms_minbias; 
 
-
-      TH2D * peakiness[NUM_SEAVEYS][2]; 
-      TH2D * peakiness_minbias[NUM_SEAVEYS][2]; 
+      mutable TMutex m; 
+      mutable TH2D * peakiness[NUM_SEAVEYS][2]; 
+      mutable TH2D * peakiness_minbias[NUM_SEAVEYS][2]; 
       int computeAverage(double max_r, int min_norm, double max_power); 
       int nsecs; 
       int run; 
