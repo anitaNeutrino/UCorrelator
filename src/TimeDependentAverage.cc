@@ -345,6 +345,8 @@ void UCorrelator::TimeDependentAverage::saveToDir(const char * dir)
 const TH2F * UCorrelator::TimeDependentAverage::getSpectrogram(AnitaPol::AnitaPol_t pol, int ant, bool minbias) const
 {
 
+  
+  __sync_synchronize(); //memory barrier
   if (!avgs_loaded)
   {
     m.Lock(); 
@@ -376,6 +378,7 @@ const TH2F * UCorrelator::TimeDependentAverage::getSpectrogram(AnitaPol::AnitaPo
         avgs_minbias[ant][1] = new TH2F(*found_vpol);  
         avgs_minbias[ant][1]->SetDirectory(0); 
       }
+      __sync_synchronize(); //memory barrier
       avgs_loaded = true; 
     }
     m.UnLock(); 
@@ -388,6 +391,7 @@ const TH2F * UCorrelator::TimeDependentAverage::getSpectrogram(AnitaPol::AnitaPo
 
 const TH1D * UCorrelator::TimeDependentAverage::getRMS(AnitaPol::AnitaPol_t pol, int ant) const
 {
+  __sync_synchronize(); //memory barrier
   if (!rms_loaded)
   {
     m.Lock(); 
@@ -408,6 +412,7 @@ const TH1D * UCorrelator::TimeDependentAverage::getRMS(AnitaPol::AnitaPol_t pol,
         rms[ant][1] = new TH1D(*found_vpol);  
         rms[ant][1]->SetDirectory(0); 
       }
+      __sync_synchronize(); //memory barrier
       rms_loaded = true; 
     }
     m.UnLock(); 
@@ -741,12 +746,14 @@ const TH2D * UCorrelator::TimeDependentAverage::getPeakiness(AnitaPol::AnitaPol_
   //make sure we have averages loaded 
   getSpectrogram(AnitaPol::kHorizontal,0); 
 
+  __sync_synchronize(); //memory barrier
   if (!peakiness_loaded)
   {
     m.Lock();
     if (!peakiness_loaded)
     {
       computePeakiness(); 
+     __sync_synchronize(); //memory barrier
       peakiness_loaded = true; 
     }
     m.UnLock(); 
