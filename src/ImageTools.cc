@@ -79,19 +79,20 @@ TH2* UCorrelator::rotateHistogram(const TH2* inHist, double rotate) {
 
 double UCorrelator::getZRMS(const TH2* hist) {
 
-  int numBinsX = hist->GetNbinsX();
-  int numBinsY = hist->GetNbinsY();
+  int numBinsX = hist -> GetNbinsX();
+  int numBinsY = hist -> GetNbinsY();
 
-  double sum2 = 0;
+  double sum = 0, sum2 = 0;
 
-  for (int binX=0; binX<numBinsX; binX++) {
-    for (int binY=0; binY<numBinsY; binY++) {
-      double binValue = double(hist->GetBinContent(binX,binY));
-      sum2 += pow(binValue,2);
+  for (int binX = 0; binX < numBinsX; ++binX) {
+    for (int binY = 0; binY < numBinsY; ++binY) {
+      double binValue = double(hist -> GetBinContent(binX, binY));
+      sum += binValue;
+      sum2 += pow(binValue, 2);
     }
   }
 
-  return sqrt(sum2/(numBinsX*numBinsY));
+  return sqrt(sum2 / (numBinsX * numBinsY) - pow(sum / (numBinsX * numBinsY), 2));
 }
 
 
