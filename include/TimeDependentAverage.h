@@ -124,7 +124,7 @@ namespace UCorrelator
        *
        * These are thread safe, but if you change nsecs in between cals, it will be very inefficient. 
        * */ 
-      static double getRMS(double t, AnitaPol::AnitaPol_t pol, int ant, int nsecs = 10);  
+      static double getRMS(double t, int ipol, int ant, int nsecs = 10);  
       static double getPayloadBlastFraction(double t,  int nsecs =10);  
       
       int getNsecs() const { return nsecs; } 
