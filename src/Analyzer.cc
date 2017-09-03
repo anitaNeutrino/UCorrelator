@@ -23,6 +23,7 @@
 #include "simpleStructs.h"
 #include "UCImageTools.h"
 #include <stdint.h>
+#include "TimeDependentAverage.h" 
 
 #ifdef UCORRELATOR_OPENMP
 #include <omp.h>
@@ -930,8 +931,10 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary::EventFlags * flags, UsefulAdu5Pat * pat) 
 {
 
-  flags->nadirFlag = true; // we should get rid of htis I guess? 
+  flags->nadirFlag = true; // we should get rid of this I guess? 
 
+  if (cfg->fill_blast_fraction) 
+    flags->blastFraction = TimeDependentAverageLoader::getPayloadBlastFraction(fae->getHeader()->triggerTime); 
   
   flags->meanPower[0] = fae->getAveragePower(); 
   flags->medianPower[0] = fae->getMedianPower(); 
