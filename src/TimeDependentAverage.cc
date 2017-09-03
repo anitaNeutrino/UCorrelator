@@ -729,9 +729,9 @@ double UCorrelator::TimeDependentAverage::getRMS(AnitaPol::AnitaPol_t pol, int a
 
 
 
-double UCorrelator::TimeDependentAverageLoader::getRMS(double t, AnitaPol::AnitaPol_t pol, int ant, int nsecs) 
+double UCorrelator::TimeDependentAverageLoader::getRMS(double t, int ipol, int ant, int nsecs) 
 {
-  return getLoader(nsecs)->avg(t)->getRMS(pol,ant,t); 
+  return getLoader(nsecs)->avg(t)->getRMS(AnitaPol::AnitaPol_t(ipol),ant,t); 
 }
 
 double UCorrelator::TimeDependentAverageLoader::getPayloadBlastFraction(double t,  int nsecs) 
