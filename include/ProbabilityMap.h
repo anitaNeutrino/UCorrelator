@@ -24,7 +24,7 @@ class TFile;
 namespace UCorrelator
 {
   class PointingResolutionModel; 
-  const double defaultLevelThresholds[] = {0.05, 0.01, 0.001, 0.00001, 0 }; 
+  const double defaultLevelThresholds[] = {0.05, 0.01, 0.001, 0.00001, 0 }; //these are CDF thresholds 
 
 
   class ProbabilityMap 
@@ -39,9 +39,17 @@ namespace UCorrelator
                      const PointingResolutionModel * p = NULL, 
                      int NlevelThresholds = sizeof(defaultLevelThresholds)/sizeof(*defaultLevelThresholds) ,
                      const double * level_thresholds = defaultLevelThresholds ,
-                     double prob_cutoff = 1e-6 , 
+                     double cutoff= 1e-6 , 
                      int num_samples_per_bin = 64
                      );
+
+
+
+      /** Convert between pdf p-value and cdf p value */ 
+      static double cdf2density(double p); 
+      static double density2cdf(double density); 
+
+
 
       virtual ~ProbabilityMap() { ; } 
 
@@ -54,13 +62,20 @@ namespace UCorrelator
 
       /** This method actually does most of the hard work
        */
-      void computeContributions(const AnitaEventSummary * sum, const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak,  std::vector<std::pair<int,double> > & contribution, TFile * debugfile = 0) const; 
+      void computeContributions(const AnitaEventSummary * sum, const Adu5Pat * pat, 
+                                AnitaPol::AnitaPol_t pol, int peak, 
+                                std::vector<std::pair<int,double> > & contribution, 
+                                std::vector<std::pair<int,double> > * base_contributions = 0,
+                                TFile * debugfile = 0) const; 
+
       /** Check the overlap of a point with the probability map.
        *  If the point is already in the probability map, remove_self_contribution should be true so that it won't count against itself. If you are checking a point not in the map already with the map, you should set it to false. 
        */ 
-      double overlap(const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, bool remove_self_contribution =true) const ; 
+      double overlap(const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, 
+                     std::vector<std::pair<int,double> >  * overlapped_bases = 0, bool remove_self_contribution =true) const ; 
 
-      const double* getProbabilities() const { return &ps[0]; } 
+      /* These are probability densities */ 
+      const double* getDensitySums() const { return &ps[0]; } 
 
       const int* getNAboveLevel(int level) const { return & NAboveLevel[level][0]; } 
 
@@ -68,18 +83,45 @@ namespace UCorrelator
       double getLevel(int level) const { return levels[level]; } 
 
       const AntarcticSegmentationScheme * segmentationScheme() const { return g; } 
-      double probabilityCutoff() const { return min_p; } 
+      double minDensity() const { return min_p; } 
+      double getCutoff() const { return cutoff; } 
 
+      /* Return the number of bases considered ...  this should match BaseList::getBases() + BaseList::getPaths() for the right ANITA version
+       *
+       * The bases are indexed with stationary bases first followed by paths. 
+       **/ 
+      size_t getNBases() const { return base_ps.size(); } 
+
+      const double  * getBaseDensitySums()  const { return &base_ps[0]; } 
+      const int* getBaseNAboveLevel(int level) const { return & baseNAboveLevel[level][0]; } 
+
+      
     private:
       const AntarcticSegmentationScheme * g; 
       const PointingResolutionModel * prm; 
+
+      //indexed by segment
       std::vector<double> ps; 
       std::vector< std::vector<int> > NAboveLevel; 
       std::vector<double> levels; 
+      std::vector<double> levels_p; 
+
+      //min density
       double min_p; 
+      //minimum cdf p to consider
+      double cutoff; 
+
+      //mapping of segment to base in segment  (stationary bases only) 
+      std::vector<std::vector<int> > basesInSegment; 
+
+      //indexed by base
+      std::vector< std::vector<int> > baseNAboveLevel; 
+      std::vector<double> base_ps; 
+
+      //number of samples used to estimate integral 
       int nsamples; 
 
-      ClassDefNV(ProbabilityMap, 1); 
+      ClassDefNV(ProbabilityMap, 2); 
   }; 
 }
 
