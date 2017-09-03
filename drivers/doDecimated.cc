@@ -35,6 +35,7 @@ void doDecimated(int run = 352, int max = 0, int start = 0, const char * filter 
   cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
   cfg.max_peak_trigger_angle = 90; 
   cfg.nmaxima = 3; 
+  cfg.fill_blast_fraction = true; 
 
   UCorrelator::Analyzer analyzer(&cfg); 
 

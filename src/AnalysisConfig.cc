@@ -80,6 +80,7 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(baseline_weight); 
   LOOKUP(max_peak_trigger_angle); 
   LOOKUP(min_peak_distance_from_unmasked); 
+  LOOKUP(fill_blast_Fraction); 
 
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", (int*) &start_pol, 2,pols); 
@@ -117,8 +118,8 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   correlator_theta_highest = 40; 
   enable_group_delay = true; 
   use_offline_mask = true; 
-  zoomed_nphi = 60; 
-  zoomed_ntheta = 60; 
+  zoomed_nphi = 40; 
+  zoomed_ntheta = 40; 
   zoomed_dphi = 0.5; 
   zoomed_dtheta = 0.5; 
   zoomed_nant = 12; 
@@ -127,7 +128,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   combine_nantennas = 12; 
   combine_npad = 3; 
 
-  saturation_threshold = 2500; 
+  saturation_threshold = 1500; 
 
   start_pol = AnitaPol::kHorizontal; 
   end_pol = AnitaPol::kVertical; 
@@ -166,6 +167,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   ldb_max_run = 160; 
 
   windowStokes = true;
+  fill_blast_fraction = false; 
 
 }
 

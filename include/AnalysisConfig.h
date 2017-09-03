@@ -124,6 +124,9 @@ namespace UCorrelator
        * */
       bool windowStokes;
 
+      /** Fill the payload blast fraction in the flags. Requires having the time dependent averages right now , so default is false*/ 
+      bool fill_blast_fraction; 
+
 
 
       /** TODO: this has to be loaded from file somehow */ 
