@@ -84,9 +84,9 @@ double UCorrelator::getZRMS(const TH2* hist) {
 
   double mean = 0, sqMean = 0;
 
-  for (int binX = 0; binX < numBinsX; ++binX) {
-    for (int binY = 0; binY < numBinsY; ++binY) {
-      double binValue = double(hist -> GetBinContent(binX, binY));
+  for (int binX = 1; binX <= numBinsX; ++binX) {  //  For histograms, index 0 and length + 1 represent underflow and overflow bins, respectively.
+    for (int binY = 1; binY <= numBinsY; ++binY) {
+      double binValue = hist -> GetBinContent(binX, binY);
       mean += binValue;
       sqMean += binValue * binValue;
     }
