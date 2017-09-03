@@ -13,11 +13,11 @@ namespace UCorrelator
       PointingResolution(double phi = 0, double theta = 0, double dphi = 0, double dtheta = 0, double rho = 0); 
       virtual ~PointingResolution() {;} 
 
-      double * computeProbability(int N, const double *phi, 
+      double * computeProbabilityDensity(int N, const double *phi, 
                                          const double *theta,
                                          double * p = 0); 
 
-      double computeProbability(double phi, double theta); 
+      double computeProbabilityDensity(double phi, double theta); 
 
     private:
       double phi; 

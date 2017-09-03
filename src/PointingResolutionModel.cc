@@ -19,16 +19,16 @@ UCorrelator::PointingResolution::PointingResolution(double phi, double theta,
 }
 
 
-double UCorrelator::PointingResolution::computeProbability(double _phi, double _theta)
+double UCorrelator::PointingResolution::computeProbabilityDensity(double _phi, double _theta)
 {
   double ans; 
-  computeProbability(1,&_phi,&_theta,&ans) ; 
+  computeProbabilityDensity(1,&_phi,&_theta,&ans) ; 
   return ans; 
 }
 
 
 
-double * UCorrelator::PointingResolution::computeProbability(int N, 
+double * UCorrelator::PointingResolution::computeProbabilityDensity(int N, 
                                                              const double * __restrict__ vphi,
                                                              const double * __restrict__ vtheta, 
                                                              double * __restrict__ p)
@@ -39,7 +39,7 @@ double * UCorrelator::PointingResolution::computeProbability(int N,
   
   int start = 0; 
 
-//#pragma omp simd 
+#pragma omp simd 
   for (int i = start; i < N; i++) 
   {
     double phidiff = vphi[i]-phi; 
