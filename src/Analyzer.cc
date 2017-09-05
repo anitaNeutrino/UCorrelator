@@ -978,5 +978,8 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
 
   flags->isGood = !flags->isVarner && !flags->isVarner2 && !flags->strongCWFlag; 
 
+	//added for a class of anita 4 events that only happens on one lab and channel
+	if(AnitaVersion::get() == 4) flags->isStepFunction = fae->checkStepFunction(1, AnitaRing::kMiddleRing, 8, AnitaPol::kVertical);
+	else flags->isStepFunction = 0;
 }
 
