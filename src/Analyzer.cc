@@ -637,7 +637,7 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
       point->triggered_xpol = triggered_sectors_xpol & ( 1 << sector); 
 
       //Compute intersection with continent, or set values to -9999 if no intersection
-      if (!pat->traceBackToContinent(point->phi * DEG2RAD, point->theta * DEG2RAD, &point->longitude, &point->latitude, &point->altitude, &point->theta_adjustment_needed)) 
+      if (!pat->traceBackToContinent(point->phi * DEG2RAD, point->theta * DEG2RAD, &point->longitude, &point->latitude, &point->altitude, &point->theta_adjustment_needed, cfg->max_theta_adjustment * DEG2RAD)) 
       {
         point->latitude = -9999; 
         point->longitude = -9999;  

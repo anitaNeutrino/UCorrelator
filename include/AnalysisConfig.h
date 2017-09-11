@@ -100,6 +100,8 @@ namespace UCorrelator
       double max_median_power_filtered; 
       double max_bottom_to_top_ratio; 
 
+      //maximum amount theta can be adjusted downward (default, 3 degrees) 
+      double max_theta_adjustment; 
 
       /** Used to define when a waveform is likely from a cal pulser
        * This is only used for WAIS and Siple right now since hte LDB pulsing was so variable. 

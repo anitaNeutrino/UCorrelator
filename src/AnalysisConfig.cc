@@ -81,6 +81,7 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(max_peak_trigger_angle); 
   LOOKUP(min_peak_distance_from_unmasked); 
   LOOKUP(fill_blast_Fraction); 
+  LOOKUP(max_theta_adjustment); 
 
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", (int*) &start_pol, 2,pols); 
@@ -155,6 +156,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   max_mean_power_filtered = 1e6; 
   max_median_power_filtered = 1e6; 
   max_bottom_to_top_ratio = 5; 
+  max_theta_adjustment = 3; 
 
   baseline_weight = 0; 
 
