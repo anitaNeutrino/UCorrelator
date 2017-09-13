@@ -694,13 +694,15 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
   info->power_10_10 = even->getSumV2(ifirst, ilast); 
 
+  int nmax = TMath::Min(wf->Neven(), xpol_wf->Neven()); 
 
   if (ifirst < 0) ifirst = 0; 
-  if (ilast < 0 || ilast >= wf->Neven()) ilast = wf->Neven()-1; 
+  if (ifirst >= nmax) ifirst = nmax-1; 
+  if (ilast < 0 || ilast >= nmax) ilast = nmax-1; 
 
   if (!cfg->windowStokes) {
     ifirst = 0;
-    ilast = wf->Neven()-1;
+    ilast = nmax-1;
   }
 
   int nstokes = ilast-ifirst+1 ; 
