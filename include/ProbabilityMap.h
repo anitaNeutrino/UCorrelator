@@ -23,26 +23,85 @@ class TFile;
 
 namespace UCorrelator
 {
-  class PointingResolutionModel; 
-  const double defaultLevelThresholds[] = {0.05, 0.01, 0.001, 0.00001, 0 }; //these are CDF thresholds 
-
+  
+  const double defaultLevelThresholds[] = {0,1e-10,1e-7,1e-5,1e-3,1e-2,0.05}; //these are CDF thresholds 
+  static StereographicGrid defaultSegmentationScheme; 
+  static UCorrelator::ConstantPointingResolutionModel defaultPointingResolutionModel; 
 
   class ProbabilityMap 
   {
     public: 
-      /** Initialize a probability map
-       * @param seg The segmentation scheme or NULL to use the default (stereographic with defaults) 
-       * @param p   The pointing resolution model or NULL to use the default (default constant pointing model) 
-       *
-       */
-      ProbabilityMap(const AntarcticSegmentationScheme * seg= NULL, 
-                     const PointingResolutionModel * p = NULL, 
-                     int NlevelThresholds = sizeof(defaultLevelThresholds)/sizeof(*defaultLevelThresholds) ,
-                     const double * level_thresholds = defaultLevelThresholds ,
-                     double cutoff= 1e-6 , 
-                     int num_samples_per_bin = 64
-                     );
 
+      /** this encodes configuration for the ProbabilityMap */ 
+      struct Params
+      {
+
+        Params() 
+        {
+          seg = &defaultSegmentationScheme; //default
+          point = &defaultPointingResolutionModel; 
+          n_level_thresholds = sizeof(defaultLevelThresholds) / sizeof(*defaultLevelThresholds); 
+          level_cdf_thresholds = defaultLevelThresholds; 
+          density_cutoff = 1e-10; 
+          projection = BACKWARD; 
+          collision_detection = true; 
+          dataset = RampdemReader::rampdem; 
+        }
+
+        const AntarcticSegmentationScheme * seg; 
+        const PointingResolutionModel * point;  
+        int n_level_thresholds;
+        const double * level_cdf_thresholds; 
+        double density_cutoff; 
+        RampdemReader::dataSet dataset; 
+
+        enum ProjectionMode
+        {
+          MC, 
+          BACKWARD
+        } projection; 
+
+        bool collision_detection; 
+
+        struct CollisionDetectionParams
+        {
+          CollisionDetectionParams() 
+          {
+            dx = 1000; 
+            grace = 0;
+          } 
+          double dx; 
+          double grace; 
+        } collision_params;
+       
+        struct MCParams
+        {
+          MCParams() 
+          {
+            n = 100e6; 
+          }
+         long long n;
+
+        } mc_params; 
+
+        struct BackwardParams
+        {
+          BackwardParams() 
+          {
+            num_samples_per_bin = 64; 
+            el_cutoff = 0; 
+            random_samples = false; 
+          }
+
+          int num_samples_per_bin; 
+          double el_cutoff; 
+          bool random_samples;
+        } backwards_params; 
+      }; 
+
+      /** Initialize a probability map. If you pass 0 for params, the defaults are used; 
+       */
+      ProbabilityMap( const Params  * p  = 0 );
 
 
       /** Convert between pdf p-value and cdf p value */ 
@@ -60,12 +119,19 @@ namespace UCorrelator
       int add(const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, double weight = 1, TFile * debugfile = 0); 
 
 
-      /** This method actually does most of the hard work
+      /** This method actually does most of the hard work. 
+       *  
+       *
+       * Some day I'll document it. 
+       *
+       *  
+       *
        */
       void computeContributions(const AnitaEventSummary * sum, const Adu5Pat * pat, 
                                 AnitaPol::AnitaPol_t pol, int peak, 
                                 std::vector<std::pair<int,double> > & contribution, 
                                 std::vector<std::pair<int,double> > * base_contributions = 0,
+                                std::vector<std::pair<int,double> > * occlusion = 0, 
                                 TFile * debugfile = 0) const; 
 
       /** Check the overlap of a point with the probability map.
@@ -76,17 +142,18 @@ namespace UCorrelator
 
       /* These are probability densities */ 
       const double* getDensitySums() const { return &ps[0]; } 
+      const double* getOccludedFractionSum() const { return &fraction_occluded[0]; } 
 
       const int* getNAboveLevel(int level) const { return & NAboveLevel[level][0]; } 
 
-      size_t NLevels() const { return levels.size(); } 
-      double getLevel(int level) const { return levels[level]; } 
+      size_t NLevels() const { return p.n_level_thresholds; } 
+      double getLevel(int level) const { return p.level_cdf_thresholds[level]; } 
 
-      const AntarcticSegmentationScheme * segmentationScheme() const { return g; } 
-      double minDensity() const { return min_p; } 
-      double getCutoff() const { return cutoff; } 
+      const AntarcticSegmentationScheme * segmentationScheme() const { return p.seg; } 
+      double minDensity() const { return p.density_cutoff; } 
 
-      /* Return the number of bases considered ...  this should match BaseList::getBases() + BaseList::getPaths() for the right ANITA version
+      /* Return the number of bases considered ...  this should match BaseList::getBases() + BaseList::getPaths(
+       *  for the right ANITA version
        *
        * The bases are indexed with stationary bases first followed by paths. 
        **/ 
@@ -97,19 +164,14 @@ namespace UCorrelator
 
       
     private:
-      const AntarcticSegmentationScheme * g; 
-      const PointingResolutionModel * prm; 
+      Params p; 
 
       //indexed by segment
       std::vector<double> ps; 
+      std::vector<double> fraction_occluded; 
+      //indexed by level then segment 
       std::vector< std::vector<int> > NAboveLevel; 
-      std::vector<double> levels; 
       std::vector<double> levels_p; 
-
-      //min density
-      double min_p; 
-      //minimum cdf p to consider
-      double cutoff; 
 
       //mapping of segment to base in segment  (stationary bases only) 
       std::vector<std::vector<int> > basesInSegment; 
@@ -118,10 +180,7 @@ namespace UCorrelator
       std::vector< std::vector<int> > baseNAboveLevel; 
       std::vector<double> base_ps; 
 
-      //number of samples used to estimate integral 
-      int nsamples; 
-
-      ClassDefNV(ProbabilityMap, 2); 
+      ClassDefNV(ProbabilityMap, 3); 
   }; 
 }
 

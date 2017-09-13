@@ -1,5 +1,6 @@
 #include "PointingResolutionModel.h" 
 #include "TMath.h" 
+#include "TRandom.h" 
 
 
 ClassImp(UCorrelator::PointingResolution); 
@@ -26,6 +27,18 @@ double UCorrelator::PointingResolution::computeProbabilityDensity(double _phi, d
   return ans; 
 }
 
+
+
+void UCorrelator::PointingResolution::random(double * p_phi, double * p_theta, TRandom * rng) 
+{
+
+  if (!rng) rng = gRandom; 
+
+  double X = rng->Gaus(); 
+  double Y = rng->Gaus(); 
+  if (p_phi) *p_phi = phi + dphi * X; 
+  if (p_theta) *p_theta = theta+dtheta * (rho * X + (1-rho) * Y); 
+}
 
 
 double * UCorrelator::PointingResolution::computeProbabilityDensity(int N, 

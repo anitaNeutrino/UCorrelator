@@ -2,6 +2,7 @@
 #define UCORRELATOR_RESOLUTION_MODEL_H
 
 #include "AnitaEventSummary.h"
+class TRandom; 
 
 namespace UCorrelator
 {
@@ -16,6 +17,7 @@ namespace UCorrelator
       double * computeProbabilityDensity(int N, const double *phi, 
                                          const double *theta,
                                          double * p = 0); 
+      void random(double *phi, double * theta, TRandom * rng= 0);  
 
       double computeProbabilityDensity(double phi, double theta); 
 
