@@ -555,22 +555,34 @@ double UCorrelator::TimeDependentAverage::getEndTime() const
 }
 
 
-static const UCorrelator::TimeDependentAverage* defaultThermalAvg = 0; 
+// to take advantage of magic statics
+struct ThermalAverageWrapper
+{
+  UCorrelator::TimeDependentAverage * avg; 
+  ThermalAverageWrapper()
+  {
+     if (AnitaVersion::get() == 4) 
+     {
+       fprintf(stderr,"warning: using default terminated thermal spectrum for A3 for peakiness\n"); 
+     }
+
+     TString dir; 
+     dir.Form("%s/share/UCorrelator/terminated_noise/", getenv("ANITA_UTIL_INSTALL_DIR")); 
+
+     avg = new UCorrelator::TimeDependentAverage(11382,60, dir.Data()); 
+  }
+
+  static ThermalAverageWrapper & get() 
+  {
+    static ThermalAverageWrapper t;
+    return t; 
+  }
+
+};
+
 const UCorrelator::TimeDependentAverage* UCorrelator::TimeDependentAverage::defaultThermal() 
 {
-  if (defaultThermalAvg) return defaultThermalAvg; 
-
-  //TODO make this a4 compatible as well 
-   if (AnitaVersion::get() == 4) 
-   {
-     fprintf(stderr,"warning: using default terminated thermal spectrum for A3 for peakiness\n"); 
-   }
-
-   TString dir; 
-   dir.Form("%s/share/UCorrelator/terminated_noise/", getenv("ANITA_UTIL_INSTALL_DIR")); 
-
-   defaultThermalAvg = new TimeDependentAverage(11382,60, dir.Data()); 
-   return defaultThermalAvg; 
+  return ThermalAverageWrapper::get().avg;
 }
 
 
@@ -602,8 +614,8 @@ void UCorrelator::TimeDependentAverage::computePeakiness(const TimeDependentAver
         int index_spec[median->GetNbinsX()]; 
         int index_therm[thermal->GetNbinsX()]; 
 
-        TMath::Sort(thermal->GetNbinsX(),((TH1D*) thermal)->GetArray()+1, index_therm); 
-        TMath::Sort(median->GetNbinsX(), ((TH1D*)median)->GetArray()+1, index_spec); 
+        TMath::Sort(thermal->GetNbinsX(),((TH1F*) thermal)->GetArray()+1, index_therm); 
+        TMath::Sort(median->GetNbinsX(), ((TH1F*)median)->GetArray()+1, index_spec); 
 
         double sum_spec = 0; 
         double sum_therm =0;  
