@@ -15,9 +15,13 @@
 #include "DigitalFilter.h"
 #include <math.h>// for isnan
 #include "AntennaPositions.h"
+#include "SineSubtractCache.h"
+
 #ifdef UCORRELATOR_OPENMP
 #include "omp.h"
 #endif
+
+
 
 
 FilterStrategy * UCorrelator::getStrategyWithKey (const char * key) 
@@ -758,9 +762,15 @@ void UCorrelator::AdaptiveFilterAbby::process(FilteredAnitaEvent * event)
 
 
 
+static bool use_sine_sub_cache = false;
+void UCorrelator::SineSubtractFilter::setUseCache(bool uc){
+  use_sine_sub_cache = uc;
+}
+
+
 
 UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int max_failed_iter,  int nfreq_bands, const double * fmin, const double * fmax, int nstored_freqs)
-  : min_power_ratio(min_power_ratio), spec(0), last_t(0), nstored_freqs(nstored_freqs), adaptive_exp(1), max_failed(max_failed_iter) 
+    : min_power_ratio(min_power_ratio), spec(0), last_t(0), nstored_freqs(nstored_freqs), adaptive_exp(1), max_failed(max_failed_iter), sine_sub_cache(NULL) 
 {
 
  memset(reduction,0,sizeof(reduction)); 
@@ -798,6 +808,13 @@ UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int 
        output_names.push_back(TString::Format("phase%d_%s",j,polstr[pol])); 
    }
  }
+
+   for(int polInd=0; polInd < AnitaPol::kNotAPol; polInd++){
+     AnitaPol::AnitaPol_t pol = (AnitaPol::AnitaPol_t) polInd;
+     for(int ant=0; ant < NUM_SEAVEYS; ant++){
+       cached_ssr[pol][ant] = NULL;
+     }
+   }
 }
 
 
@@ -898,9 +915,30 @@ void UCorrelator::SineSubtractFilter::fillOutput(unsigned ui, double * vars) con
 
 }
 
+
+void UCorrelator::SineSubtractFilter::refresh_cache(UInt_t eventNumber){
+  if(use_sine_sub_cache){
+    if(!sine_sub_cache){
+      sine_sub_cache = new SineSubtractCache(this->description());
+    }
+  }
+  for(int polInd=0; polInd < AnitaPol::kNotAPol; polInd++){
+    AnitaPol::AnitaPol_t pol = (AnitaPol::AnitaPol_t) polInd;
+    for(int ant=0; ant < NUM_SEAVEYS; ant++){
+      if(use_sine_sub_cache){
+        cached_ssr[pol][ant] = sine_sub_cache->getResult(eventNumber, pol, ant);
+      }
+      else{
+        cached_ssr[pol][ant] = NULL;
+      }
+    }
+  }
+}
+
 void UCorrelator::SineSubtractFilter::process(FilteredAnitaEvent * ev) 
 {
  const RawAnitaHeader * h = ev->getHeader(); 
+ refresh_cache(h->eventNumber);
 
 #ifdef UCORRELATOR_OPENMP
 #pragma omp parallel for
@@ -909,7 +947,7 @@ void UCorrelator::SineSubtractFilter::process(FilteredAnitaEvent * ev)
   {
       int pol = i % 2; 
       AnalysisWaveform * wf = getWf(ev, i/2, AnitaPol::AnitaPol_t(pol)); 
-      processOne(wf,h,i/2,pol); 
+      processOne(wf,h,i/2,pol);
   }
 
   last_t = ev->getHeader()->triggerTime; //ev->getHeader()->triggerTime; 
@@ -962,9 +1000,23 @@ void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const Raw
   }
 
 
-  TGraph * g = wf->updateUneven(); 
-  if (g->GetRMS(2) > 0) 
-    subs[pol][i]->subtractCW(1,&g, 1/2.6); 
+  TGraph * g = wf->updateUneven();
+  if (g->GetRMS(2) > 0){
+    // subs[pol][i]->subtractCW(1,&g, 1/2.6, NULL, cached_ssr[pol][i]);
+
+    // if(cached_ssr[pol][i]){
+    //   TGraph g2 = *g;
+    //   TGraph* gr2p = &g2;
+    //   std::cout << pol << "\t" << i << "\t" << cached_ssr[pol][i]->powers.at(0) << "\t";
+    //   subs[pol][i]->subtractCW(1, &gr2p, 1/2.6, NULL, cached_ssr[pol][i]);
+    //   subs[pol][i]->subtractCW(1, &g, 1/2.6, NULL);
+    //   auto r = subs[pol][i]->getResult();
+    //   std::cerr << r->powers.at(0) << std::endl;
+    // }
+    // else{
+    subs[pol][i]->subtractCW(1,&g, 1/2.6, NULL, cached_ssr[pol][i]);
+    // }
+  }
 }
 
 UCorrelator::SineSubtractFilter::~SineSubtractFilter()
@@ -1172,7 +1224,7 @@ void UCorrelator::CombinedSineSubtractFilter::process(FilteredAnitaEvent * ev)
           if (g->GetRMS(2) > 0) 
             gs[ng++] = g; 
         }
-        subs[i][pol]->subtractCW(ng,gs, 1/2.6); 
+        subs[i][pol]->subtractCW(ng,gs, 1/2.6); //NULL, cached_ssr[pol][i]); 
       }
    }
 }

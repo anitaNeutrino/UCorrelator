@@ -9,6 +9,7 @@
 #include "RawAnitaHeader.h"
 #include "TDirectory.h"
 
+
 const TString ssrTreeName = "sineSubResultTree";
 
 TString UCorrelator::SineSubtractCache::branchName(AnitaPol::AnitaPol_t pol, Int_t ant){
@@ -23,6 +24,7 @@ TString UCorrelator::SineSubtractCache::fileName(const char* specDir, UInt_t has
 
 void UCorrelator::SineSubtractCache::makeCache(int run, SineSubtractFilter* ssf){
 
+  UCorrelator::SineSubtractFilter::setUseCache(false);
   FFTtools::SineSubtractResult* results[AnitaPol::kNotAPol][NUM_SEAVEYS] = {{NULL}};
   
   const char* ssDesc = ssf->description();
@@ -37,7 +39,8 @@ void UCorrelator::SineSubtractCache::makeCache(int run, SineSubtractFilter* ssf)
       std::cerr << "Error in " << __PRETTY_FUNCTION__ << ", can't cache or use cached results without UCORRELATOR_SPECAVG_DIR environment variable!" << std::endl;
     }
     else{
-      
+
+      std::cout << "Info in " << __PRETTY_FUNCTION__ << ", will generate cached sine subtraction results!" << std::endl;
       AnitaDataset d(run);
 
       FilterStrategy fs;
@@ -53,7 +56,11 @@ void UCorrelator::SineSubtractCache::makeCache(int run, SineSubtractFilter* ssf)
           tOut->Branch(branchName(pol, ant), &results[pol][ant]);
         }
       }
-      
+
+
+      const int n = d.N();
+      const double deltaPrint = double(n)/1000;
+      double nextPrint = 0;
       for(int entry=0; entry < d.N(); entry++){
         d.getEntry(entry);
 
@@ -70,9 +77,17 @@ void UCorrelator::SineSubtractCache::makeCache(int run, SineSubtractFilter* ssf)
 
         eventNumber = d.header()->eventNumber;
         tOut->Fill();
-        std::cerr << eventNumber << std::endl;
-        if(entry > 100) break;
-        
+        if(entry >= nextPrint){
+          const int nm = 50;
+          int m = nm*nextPrint/n;
+          fprintf(stderr, "\r%4.2f %% complete", 100*nextPrint/n);
+          std::cerr << "[";
+          for(int i=0; i < m; i++) std::cerr << "=";
+          for(int i=m; i < nm; i++) std::cerr << " ";
+          std::cerr << "]";
+          nextPrint += deltaPrint;
+        }
+        // if(entry > 100) break;
       }
       tOut->BuildIndex("eventNumber"); // does this get saved?
       fOut->Write();
@@ -143,7 +158,20 @@ const FFTtools::SineSubtractResult* UCorrelator::SineSubtractCache::getResult(UI
       loadRun(run);
     }
     if(fTree){
-      fTree->GetEntryWithIndex(eventNumber);
+      Int_t entry = fTree->GetEntryNumberWithIndex(eventNumber);
+      std::cerr << entry << std::endl;
+      if(entry >= 0){
+        fTree->GetEntry(entry);
+
+        std::cerr << fCurrentRun << "\t" << fLastEventNumber << std::endl;
+        
+      }
+      else{
+        std::cerr << "Error in " << __PRETTY_FUNCTION__ << ", can't find entry "
+                  << entry << " in " << fTree->GetName() << " in file " << fFile->GetName()
+                  << " for eventNumber " << eventNumber << std::endl;
+        return NULL;
+      }
     }
   }
   
@@ -162,8 +190,8 @@ void UCorrelator::SineSubtractCache::loadRun(Int_t run){
     }
 
     const TString theRootPwd = gDirectory->GetPath();
-    
-    fFile = TFile::Open(fileName(fSpecDir, fDescHash, run));
+    TString fName = fileName(fSpecDir, fDescHash, run);
+    fFile = TFile::Open(fName, "read");
     if(fFile){
       fTree = (TTree*) fFile->Get(ssrTreeName);
 
@@ -175,9 +203,16 @@ void UCorrelator::SineSubtractCache::loadRun(Int_t run){
         }
       }
       fTree->BuildIndex("eventNumber");
+      fTree->GetEntry(0);
       fCurrentRun = run;
+      
+      std::cerr << fCurrentRun << "\t" << fLastEventNumber << std::endl;
+      
 
       gDirectory->cd(theRootPwd); 
+    }
+    else{
+      std::cerr << "Error in " << __PRETTY_FUNCTION__ << ", couldn't open file " << fName << std::endl;
     }
   }
 }
