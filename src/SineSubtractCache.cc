@@ -86,6 +86,7 @@ void UCorrelator::SineSubtractCache::makeCache(int run, SineSubtractFilter* ssf)
           for(int i=m; i < nm; i++) std::cerr << " ";
           std::cerr << "]";
           nextPrint += deltaPrint;
+          if(nextPrint >= n){std::cerr << std::endl;}
         }
         // if(entry > 100) break;
       }
@@ -152,6 +153,8 @@ const FFTtools::SineSubtractResult* UCorrelator::SineSubtractCache::getResult(UI
   // hard to check whether anita version is correct...
   // this should happen
 
+  // std::cerr << eventNumber << "\t" << pol << "\t" << ant << std::endl;
+
   if(eventNumber != fLastEventNumber){
     int run = AnitaDataset::getRunContainingEventNumber(eventNumber);
     if(run!=fCurrentRun){
@@ -159,12 +162,13 @@ const FFTtools::SineSubtractResult* UCorrelator::SineSubtractCache::getResult(UI
     }
     if(fTree){
       Int_t entry = fTree->GetEntryNumberWithIndex(eventNumber);
-      std::cerr << entry << std::endl;
       if(entry >= 0){
         fTree->GetEntry(entry);
 
-        std::cerr << fCurrentRun << "\t" << fLastEventNumber << std::endl;
-        
+        if(eventNumber != fLastEventNumber){
+          std::cerr << "Warning in " << __PRETTY_FUNCTION__ << ", loaded sine subtract cache: run = " << fCurrentRun << ", eventNumber requested = "
+                    << eventNumber << ", but eventNumber read = " << fLastEventNumber << std::endl;
+        }
       }
       else{
         std::cerr << "Error in " << __PRETTY_FUNCTION__ << ", can't find entry "
@@ -206,7 +210,7 @@ void UCorrelator::SineSubtractCache::loadRun(Int_t run){
       fTree->GetEntry(0);
       fCurrentRun = run;
       
-      std::cerr << fCurrentRun << "\t" << fLastEventNumber << std::endl;
+      std::cerr << "Loaded first entry in run " << fCurrentRun << ", which has eventNumber " << fLastEventNumber << std::endl;
       
 
       gDirectory->cd(theRootPwd); 
