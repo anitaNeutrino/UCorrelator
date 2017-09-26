@@ -728,7 +728,14 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
  
   }
 
-  info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf); 
+  TGraph distance_cdf; 
+  info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf, &distance_cdf); 
+
+  //fill in narrowest widths
+  for (int iw = 0; iw < 5; iw++)
+  {
+    info->narrowestWidths[iw] = distance_cdf.GetX()[TMath::BinarySearch(distance_cdf.GetN(), distance_cdf.GetY(), 0.1 * (iw+1))]; 
+  }
 
   double dt = wf->deltaT(); 
   double t0 = even->GetX()[0]; 
@@ -952,9 +959,12 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   }
 
 
+  flags->nSectorsWhereBottomExceedsTop = 0;
   for (int pol = AnitaPol::kHorizontal; pol <= AnitaPol::kVertical; pol++)
   {
-     fae->getMinMaxRatio(AnitaPol::AnitaPol_t(pol), &flags->maxBottomToTopRatio[pol], &flags->minBottomToTopRatio[pol], &flags->maxBottomToTopRatioSector[pol], &flags->minBottomToTopRatioSector[pol], AnitaRing::kBottomRing, AnitaRing::kTopRing,1, &flags->nSectorsWhereBottomExceedsTop); 
+     int n_above_this_pol; 
+     fae->getMinMaxRatio(AnitaPol::AnitaPol_t(pol), &flags->maxBottomToTopRatio[pol], &flags->minBottomToTopRatio[pol], &flags->maxBottomToTopRatioSector[pol], &flags->minBottomToTopRatioSector[pol], AnitaRing::kBottomRing, AnitaRing::kTopRing,1, &n_above_this_pol); 
+     flags->nSectorsWhereBottomExceedsTop += n_above_this_pol; 
   }
 
 

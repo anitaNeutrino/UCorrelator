@@ -33,7 +33,7 @@ void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sin
 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
   cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
-  cfg.max_peak_trigger_angle = 90; 
+//  cfg.max_peak_trigger_angle = 90; 
   cfg.nmaxima = 3; 
   cfg.fill_blast_fraction = true; 
 
@@ -54,7 +54,7 @@ void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sin
   TNamed comment("blinding","Randomize Polarity"); 
   comment.Write(); 
 
-  FilterStrategy strategy (&ofile); 
+  FilterStrategy strategy; 
 
   UCorrelator::fillStrategyWithKey(&strategy, filter); 
 
