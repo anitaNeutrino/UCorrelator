@@ -191,7 +191,7 @@ namespace UCorrelator
 
 
 
-
+  class SineSubtractCache;
   class SineSubtractFilter
     : public FilterOperation
   {
@@ -202,7 +202,9 @@ namespace UCorrelator
       void makeAdaptive(const TimeDependentAverageLoader *avg = 0, double peakiness_exp = 1); 
 
       virtual ~SineSubtractFilter();  
-      void setInteractive(bool set); 
+      void setInteractive(bool set);
+
+      static void setUseCache(bool uc);
 
       const char * tag() const { return "SineSubtractFilter"; }
       const char * description() const { return desc_string.Data(); } 
@@ -227,7 +229,12 @@ namespace UCorrelator
       std::vector<TString> output_names;
       int nstored_freqs; 
       double adaptive_exp; 
-      int max_failed; 
+      int max_failed;
+
+   protected:
+      SineSubtractCache* sine_sub_cache;
+      void refresh_cache(UInt_t eventNumber);
+      const FFTtools::SineSubtractResult* cached_ssr[2][NUM_SEAVEYS];
   };
 
   class AdaptiveBrickWallFilter : public FilterOperation
