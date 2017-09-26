@@ -955,9 +955,12 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   {
     flags->pulser = AnitaEventSummary::EventFlags::LDB; 
   }
-  else if ( isWAISHPol(pat, fae->getHeader(), cfg) || isWAISVPol (pat, fae->getHeader(), cfg))
+  else if ( isWAISHPol(pat, fae->getHeader(), cfg) )
   {
     flags->pulser = AnitaEventSummary::EventFlags::WAIS; 
+  }
+  else if( isWAISVPol (pat, fae->getHeader(), cfg)){
+    flags->pulser = AnitaEventSummary::EventFlags::WAIS_V;
   }
   else
   {
