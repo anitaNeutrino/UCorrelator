@@ -660,7 +660,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
       fprintf(stderr,"wf passed to fillWaveformInfo has no points\n");  
 
     memset(info, 0, sizeof(AnitaEventSummary::WaveformInfo)); 
-    return; 
+    return;
   }
   const TGraphAligned * even = wf->even(); 
   const TGraphAligned * xpol_even= xpol_wf->even(); 
@@ -694,14 +694,14 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   info->power_10_10 = even->getSumV2(ifirst, ilast); 
 
 
+  int shortestRecoLen = TMath::Min(even->GetN(),xpol_even->GetN());
   if (ifirst < 0) ifirst = 0; 
-  if (ilast < 0) ilast = wf->Neven()-1; 
+  if (ilast < 0) ilast = shortestRecoLen-1; 
   if (!cfg->windowStokes) {
     ifirst = 0;
-    ilast = wf->Neven()-1;
+    ilast = shortestRecoLen-1;
   }
   int nstokes = ilast-ifirst+1 ; 
-
   if (pol == AnitaPol::kHorizontal)
   {
 
@@ -722,6 +722,17 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
                                &(info->I), &(info->Q), &(info->U), &(info->V)); 
  
   }
+  
+  /* //pol and xpol aren't required to be the same length(uncomment to see).
+  // So, you'll get invalid accesses and garbage results sometimes.
+  if (info->I > 1e4) {
+    std::cout << "Warning in Analyzer(): Weird stokes value? ";
+    std::cout << info->power_10_10 <<" stokesI=" << info->I << " nstokes=" << nstokes << " ";
+    std::cout << xpol_even->GetN() << " " << xpol_wf->hilbertTransform()->even()->GetN() << " ";
+    std::cout << even->GetN() << " " << wf->hilbertTransform()->even()->GetN();
+    std::cout << " shortest->" << shortestRecoLen << std::endl;
+  }               
+  */
 
   info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf); 
 
