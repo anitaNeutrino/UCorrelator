@@ -732,9 +732,11 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf, &distance_cdf); 
 
   //fill in narrowest widths
-  for (int iw = 0; iw < 5; iw++)
+  for (int iw = 0; iw < AnitaEventSummary::numFracPowerWindows; iw++)
   {
-    info->narrowestWidths[iw] = distance_cdf.GetX()[TMath::BinarySearch(distance_cdf.GetN(), distance_cdf.GetY(), 0.1 * (iw+1))]; 
+    int half_width =  TMath::BinarySearch(distance_cdf.GetN(), distance_cdf.GetY(), 0.1 * (iw+1)); 
+    info->fracPowerWindowBegins[iw] = peakHilbertBin < half_width ? distance_cdf.GetX()[0] : distance_cdf.GetX()[peakHilbertBin - half_width]; 
+    info->fracPowerWindowEnds[iw] = peakHilbertBin + half_width >= distance_cdf.GetN() ?  distance_cdf.GetX()[distance_cdf.GetN()-1] : distance_cdf.GetX()[half_width + peakHilbertBin];
   }
 
   double dt = wf->deltaT(); 
