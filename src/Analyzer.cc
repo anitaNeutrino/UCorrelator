@@ -695,11 +695,16 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 
 
   int shortestRecoLen = TMath::Min(even->GetN(),xpol_even->GetN());
-  if (ifirst < 0) ifirst = 0; 
-  if (ilast < 0) ilast = shortestRecoLen-1; 
   if (!cfg->windowStokes) {
     ifirst = 0;
     ilast = shortestRecoLen-1;
+  }
+  else {
+    if (cfg->stokesWindowLength > 0) {
+      ilast = ifirst + cfg->stokesWindowLength;
+    }
+    if (ifirst < 0) ifirst = 0; 
+    if (ilast < 0 || ilast > shortestRecoLen) ilast = shortestRecoLen-1; 
   }
   int nstokes = ilast-ifirst+1 ; 
   if (pol == AnitaPol::kHorizontal)

@@ -121,8 +121,13 @@ namespace UCorrelator
       int ldb_max_run; 
 
       /** When calculating stokes parameters, do you want to window the waveform around the hilbert envelope?
+	  windowStokes == false: no windowing at all
+	  if true:
+	             stokesWindowLength =< 0: dynamic window length (default)
+		     stokesWindowLength > 0: set window length
        * */
       bool windowStokes;
+      int stokesWindowLength;
 
 
 

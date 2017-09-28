@@ -166,6 +166,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   ldb_max_run = 160; 
 
   windowStokes = true;
+  stokesWindowLength = -1;
 
 }
 
