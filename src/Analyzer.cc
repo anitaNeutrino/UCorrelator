@@ -93,6 +93,12 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mo
   wfcomb_xpol.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_filtered.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_xpol_filtered.setGroupDelayFlag(cfg->enable_group_delay); 
+  wfcomb.setBottomFirst(cfg->set_bottom_first);
+  wfcomb_xpol.setBottomFirst(cfg->set_bottom_first);
+  wfcomb_filtered.setBottomFirst(cfg->set_bottom_first);
+  wfcomb_xpol_filtered.setBottomFirst(cfg->set_bottom_first);
+
+
   instance_counter++; 
   power_filter = new FFTtools::GaussianFilter(2,3) ; //TODO make this configurable
 
@@ -322,7 +328,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       }
     }
 
-		corr.setDisallowedAntennas(saturated[pol] | disallowedAnts[pol] | maskedAnts); 
+    corr.setDisallowedAntennas(saturated[pol] | disallowedAnts[pol] | maskedAnts); 
     corr.compute(event, AnitaPol::AnitaPol_t(pol)); 
 
     //compute RMS of correlation map 
@@ -396,13 +402,13 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       
 SECTIONS
 {
-SECTION
+  SECTION
       wfcomb.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
 SECTION
       wfcomb_xpol.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
-SECTION
-      wfcomb_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
-SECTION
+ SECTION
+   wfcomb_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
+ SECTION
       wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
 }
 

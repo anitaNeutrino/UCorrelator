@@ -129,8 +129,11 @@ namespace UCorrelator
       bool windowStokes;
       int stokesWindowLength;
 
-
-
+      /** set_bottom_first:  Re-arrange the coherently summed waveforms so that the bottom-most ring is always the
+	  first antenna to be summed.
+	  * */
+      bool set_bottom_first;
+      
       /** TODO: this has to be loaded from file somehow */ 
     AnitaResponse::DeconvolutionMethod * deconvolution_method; 
     private: 
