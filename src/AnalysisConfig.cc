@@ -83,7 +83,8 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(windowStokes);
   LOOKUP(stokesWindowLength);
   LOOKUP(set_bottom_first);
-  
+  LOOKUP(delay_to_center);
+
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", (int*) &start_pol, 2,pols); 
   lookupEnum(&cfg, "end_pol", (int*) &end_pol, 2,pols); 
@@ -172,6 +173,8 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   stokesWindowLength = -1;
   
   set_bottom_first = false;
+
+  delay_to_center = false;
 
 }
 

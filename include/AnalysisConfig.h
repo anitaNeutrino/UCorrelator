@@ -134,6 +134,10 @@ namespace UCorrelator
 	  * */
       bool set_bottom_first;
       
+      /** delay_to_center:
+	  Makes it so the delays in the coherent sum are referenced to the center point */
+      bool delay_to_center;
+
       /** TODO: this has to be loaded from file somehow */ 
     AnitaResponse::DeconvolutionMethod * deconvolution_method; 
     private: 

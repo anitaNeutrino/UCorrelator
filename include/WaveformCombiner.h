@@ -59,6 +59,11 @@ namespace UCorrelator
       */
 	void setBottomFirst(bool opt) { bottom_first = opt; }
 
+	/* setDelayToCenter();
+	   changes the delays in combining from being to the first antenna in the array, to being towards the centerpoint
+	   of the instrument (0,0,0) */
+	void setDelayToCenter(bool opt) {delay_to_center = opt; }
+
       /** Static helper used to combine arbitrary waveforms */
       static AnalysisWaveform *  combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0); 
 
@@ -80,6 +85,7 @@ namespace UCorrelator
       bool enable_group_delay; 
       bool alfa_hack; 
       bool bottom_first;
+      bool delay_to_center;
   };
 
 }
