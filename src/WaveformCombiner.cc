@@ -13,7 +13,7 @@
 #include <stdio.h>
 
 UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool useUnfiltered, bool deconvolve, const AnitaResponse::ResponseManager * response, bool alfa_hack)
-  : coherent(260), deconvolved(260), alfa_hack(alfa_hack) 
+  : coherent(260), deconvolved(260), alfa_hack(alfa_hack)
 {
   setNAntennas(nantennas); 
   setNPad(npad); 
@@ -22,7 +22,8 @@ UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool us
   setGroupDelayFlag(true); 
   use_raw= useUnfiltered; 
   setResponseManager(response); 
-  
+  setBottomFirst(false);
+ 
 }
 
 
@@ -91,6 +92,17 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
   nant = antpos->getClosestAntennas(phi, nant, antennas, disallowed); 
   double delays[nant]; 
 
+  if (bottom_first) {
+    if (antennas[0] < 32) {
+      int toMove = antennas[0];
+      if (antennas[1] > 32) {
+	antennas[0] = antennas[1];
+	antennas[1] = toMove; }
+      else {
+	antennas[0] = antennas[2];
+	antennas[2] = toMove; }
+    }
+  }
 
   for (int i = 0; i < nant; i++) 
   {

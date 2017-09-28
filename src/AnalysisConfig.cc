@@ -80,9 +80,16 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(baseline_weight); 
   LOOKUP(max_peak_trigger_angle); 
   LOOKUP(min_peak_distance_from_unmasked); 
+<<<<<<< HEAD
   LOOKUP(fill_blast_Fraction); 
   LOOKUP(max_theta_adjustment); 
 
+=======
+  LOOKUP(windowStokes);
+  LOOKUP(stokesWindowLength);
+  LOOKUP(set_bottom_first);
+  
+>>>>>>> origin/master
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", (int*) &start_pol, 2,pols); 
   lookupEnum(&cfg, "end_pol", (int*) &end_pol, 2,pols); 
@@ -170,6 +177,8 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
 
   windowStokes = true;
   fill_blast_fraction = false; 
+  stokesWindowLength = -1;
+  set_bottom_first = true;
 
 }
 
