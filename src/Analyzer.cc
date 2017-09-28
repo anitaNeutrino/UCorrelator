@@ -711,7 +711,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
       ilast = ifirst + cfg->stokesWindowLength;
     }
     if (ifirst < 0) ifirst = 0; 
-    if (ilast < 0 || ilast > nmax) ilast = shortestRecoLen-1; 
+    if (ilast < 0 || ilast > nmax) ilast = nmax-1; 
   }
 
   int nstokes = ilast-ifirst+1 ; 
