@@ -94,10 +94,17 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mo
   wfcomb_xpol.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_filtered.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_xpol_filtered.setGroupDelayFlag(cfg->enable_group_delay); 
+
   wfcomb.setBottomFirst(cfg->set_bottom_first);
   wfcomb_xpol.setBottomFirst(cfg->set_bottom_first);
   wfcomb_filtered.setBottomFirst(cfg->set_bottom_first);
   wfcomb_xpol_filtered.setBottomFirst(cfg->set_bottom_first);
+
+
+  wfcomb.setDelayToCenter(cfg->delay_to_center);
+  wfcomb_xpol.setDelayToCenter(cfg->delay_to_center);
+  wfcomb_filtered.setDelayToCenter(cfg->delay_to_center);
+  wfcomb_xpol_filtered.setDelayToCenter(cfg->delay_to_center);
 
 
   instance_counter++; 

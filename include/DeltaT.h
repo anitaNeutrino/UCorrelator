@@ -29,6 +29,27 @@ namespace UCorrelator
   }
 
 
+  /**Geometric delay between the phase center of an antenna and a center point  */
+  inline double getDeltaTtoCenter(int ant1, double phi, double theta, AnitaPol::AnitaPol_t pol, bool includeGroupDelay = false) 
+  {
+    double th = theta * DEG2RAD; 
+    const AntennaPositions * ap = AntennaPositions::instance(); 
+    double ph1_deg = (phi- ap->phiAnt[pol][ant1]) ; 
+    double ph1  = ph1_deg * DEG2RAD; 
+
+    double part1=ap->zAnt[pol][ant1]*tan(th) - ap->rAnt[pol][ant1] * cos(ph1);
+    
+    double geomDelay=1e9*((cos(th) * part1)/C_LIGHT);    //returns time in ns
+    
+
+    if (includeGroupDelay)
+    {
+      geomDelay +=  getAntennaGroupDelay(FFTtools::wrap(ph1_deg,360,0), theta);
+    }
+
+    return geomDelay;
+  }
+
   /**Geometric delay between antennas  */
   inline double getDeltaT(int ant1, int ant2, double phi, double theta, AnitaPol::AnitaPol_t pol, bool includeGroupDelay = false) 
   {
