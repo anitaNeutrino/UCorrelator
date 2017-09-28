@@ -131,19 +131,15 @@ namespace UCorrelator
       bool windowStokes;
       int stokesWindowLength;
 
-<<<<<<< HEAD
       /** Fill the payload blast fraction in the flags. Requires having the time dependent averages right now , so default is false*/ 
       bool fill_blast_fraction; 
 
 
-
-=======
       /** set_bottom_first:  Re-arrange the coherently summed waveforms so that the bottom-most ring is always the
 	  first antenna to be summed.
 	  * */
       bool set_bottom_first;
       
->>>>>>> origin/master
       /** TODO: this has to be loaded from file somehow */ 
     AnitaResponse::DeconvolutionMethod * deconvolution_method; 
     private: 
