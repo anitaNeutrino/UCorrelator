@@ -52,6 +52,18 @@ namespace UCorrelator
       void setGroupDelayFlag(bool opt) { enable_group_delay = opt; } 
       bool wasAlfaFiltered() { return alfa_hack; } 
 
+      /* setBottomFirst():
+	 getClosestAntennas() returns the closest antenna in phi, which could be on any ring.
+	 this will force the bottom antenna (largest ant#) to be the seed waveform so things don't jump as much
+	 default is false (like it was before)
+      */
+	void setBottomFirst(bool opt) { bottom_first = opt; }
+
+	/* setDelayToCenter();
+	   changes the delays in combining from being to the first antenna in the array, to being towards the centerpoint
+	   of the instrument (0,0,0) */
+	void setDelayToCenter(bool opt) {delay_to_center = opt; }
+
       /** Static helper used to combine arbitrary waveforms */
       static AnalysisWaveform *  combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0); 
 
@@ -72,6 +84,8 @@ namespace UCorrelator
       bool do_deconvolution; 
       bool enable_group_delay; 
       bool alfa_hack; 
+      bool bottom_first;
+      bool delay_to_center;
   };
 
 }

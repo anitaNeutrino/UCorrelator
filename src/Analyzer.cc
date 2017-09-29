@@ -93,6 +93,19 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mo
   wfcomb_xpol.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_filtered.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_xpol_filtered.setGroupDelayFlag(cfg->enable_group_delay); 
+
+  wfcomb.setBottomFirst(cfg->set_bottom_first);
+  wfcomb_xpol.setBottomFirst(cfg->set_bottom_first);
+  wfcomb_filtered.setBottomFirst(cfg->set_bottom_first);
+  wfcomb_xpol_filtered.setBottomFirst(cfg->set_bottom_first);
+
+
+  wfcomb.setDelayToCenter(cfg->delay_to_center);
+  wfcomb_xpol.setDelayToCenter(cfg->delay_to_center);
+  wfcomb_filtered.setDelayToCenter(cfg->delay_to_center);
+  wfcomb_xpol_filtered.setDelayToCenter(cfg->delay_to_center);
+
+
   instance_counter++; 
   power_filter = new FFTtools::GaussianFilter(2,3) ; //TODO make this configurable
 
@@ -322,7 +335,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       }
     }
 
-		corr.setDisallowedAntennas(saturated[pol] | disallowedAnts[pol] | maskedAnts); 
+    corr.setDisallowedAntennas(saturated[pol] | disallowedAnts[pol] | maskedAnts); 
     corr.compute(event, AnitaPol::AnitaPol_t(pol)); 
 
     //compute RMS of correlation map 
@@ -396,13 +409,13 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       
 SECTIONS
 {
-SECTION
+  SECTION
       wfcomb.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
 SECTION
       wfcomb_xpol.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
-SECTION
-      wfcomb_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
-SECTION
+ SECTION
+   wfcomb_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
+ SECTION
       wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
 }
 
@@ -660,7 +673,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
       fprintf(stderr,"wf passed to fillWaveformInfo has no points\n");  
 
     memset(info, 0, sizeof(AnitaEventSummary::WaveformInfo)); 
-    return; 
+    return;
   }
   const TGraphAligned * even = wf->even(); 
   const TGraphAligned * xpol_even= xpol_wf->even(); 
@@ -694,14 +707,19 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   info->power_10_10 = even->getSumV2(ifirst, ilast); 
 
 
-  if (ifirst < 0) ifirst = 0; 
-  if (ilast < 0) ilast = wf->Neven()-1; 
+  int shortestRecoLen = TMath::Min(even->GetN(),xpol_even->GetN());
   if (!cfg->windowStokes) {
     ifirst = 0;
-    ilast = wf->Neven()-1;
+    ilast = shortestRecoLen-1;
+  }
+  else {
+    if (cfg->stokesWindowLength > 0) {
+      ilast = ifirst + cfg->stokesWindowLength;
+    }
+    if (ifirst < 0) ifirst = 0; 
+    if (ilast < 0 || ilast > shortestRecoLen) ilast = shortestRecoLen-1; 
   }
   int nstokes = ilast-ifirst+1 ; 
-
   if (pol == AnitaPol::kHorizontal)
   {
 
@@ -722,6 +740,17 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
                                &(info->I), &(info->Q), &(info->U), &(info->V)); 
  
   }
+  
+  /* //pol and xpol aren't required to be the same length(uncomment to see).
+  // So, you'll get invalid accesses and garbage results sometimes.
+  if (info->I > 1e4) {
+    std::cout << "Warning in Analyzer(): Weird stokes value? ";
+    std::cout << info->power_10_10 <<" stokesI=" << info->I << " nstokes=" << nstokes << " ";
+    std::cout << xpol_even->GetN() << " " << xpol_wf->hilbertTransform()->even()->GetN() << " ";
+    std::cout << even->GetN() << " " << wf->hilbertTransform()->even()->GetN();
+    std::cout << " shortest->" << shortestRecoLen << std::endl;
+  }               
+  */
 
   info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf); 
 
@@ -955,9 +984,12 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   {
     flags->pulser = AnitaEventSummary::EventFlags::LDB; 
   }
-  else if ( isWAISHPol(pat, fae->getHeader(), cfg) || isWAISVPol (pat, fae->getHeader(), cfg))
+  else if ( isWAISHPol(pat, fae->getHeader(), cfg) )
   {
     flags->pulser = AnitaEventSummary::EventFlags::WAIS; 
+  }
+  else if( isWAISVPol (pat, fae->getHeader(), cfg)){
+    flags->pulser = AnitaEventSummary::EventFlags::WAIS_V;
   }
   else
   {

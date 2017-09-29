@@ -80,6 +80,10 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(baseline_weight); 
   LOOKUP(max_peak_trigger_angle); 
   LOOKUP(min_peak_distance_from_unmasked); 
+  LOOKUP(windowStokes);
+  LOOKUP(stokesWindowLength);
+  LOOKUP(set_bottom_first);
+  LOOKUP(delay_to_center);
 
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", (int*) &start_pol, 2,pols); 
@@ -166,6 +170,11 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   ldb_max_run = 160; 
 
   windowStokes = true;
+  stokesWindowLength = -1;
+  
+  set_bottom_first = false;
+
+  delay_to_center = false;
 
 }
 

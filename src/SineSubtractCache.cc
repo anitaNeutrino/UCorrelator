@@ -86,6 +86,7 @@ void UCorrelator::SineSubtractCache::makeCache(int run, SineSubtractFilter* ssf)
           for(int i=m; i < nm; i++) std::cerr << " ";
           std::cerr << "]";
           nextPrint += deltaPrint;
+          if(nextPrint >= n){std::cerr << std::endl;}
         }
         // if(entry > 100) break;
       }
@@ -111,7 +112,7 @@ void UCorrelator::SineSubtractCache::makeCache(int run, SineSubtractFilter* ssf)
  * @param ssDesc description string, used for identifying file of cached results
  */
 UCorrelator::SineSubtractCache::SineSubtractCache(const char* ssDesc)
-    : fFile(NULL), fTree(NULL), fDescHash(0), fSpecDir(), fCurrentRun(-1), fLastEventNumber(0){
+    : fDebug(false), fFile(NULL), fTree(NULL), fDescHash(0), fSpecDir(), fCurrentRun(-1), fLastEventNumber(0){
 
 
   for(int pol=0; pol < AnitaPol::kNotAPol; pol++){
@@ -152,6 +153,8 @@ const FFTtools::SineSubtractResult* UCorrelator::SineSubtractCache::getResult(UI
   // hard to check whether anita version is correct...
   // this should happen
 
+  // std::cerr << eventNumber << "\t" << pol << "\t" << ant << std::endl;
+
   if(eventNumber != fLastEventNumber){
     int run = AnitaDataset::getRunContainingEventNumber(eventNumber);
     if(run!=fCurrentRun){
@@ -159,17 +162,18 @@ const FFTtools::SineSubtractResult* UCorrelator::SineSubtractCache::getResult(UI
     }
     if(fTree){
       Int_t entry = fTree->GetEntryNumberWithIndex(eventNumber);
-      // std::cerr << entry << std::endl;
       if(entry >= 0){
         fTree->GetEntry(entry);
 
-        // std::cerr << fCurrentRun << "\t" << fLastEventNumber << std::endl;
-        
+        if(eventNumber != fLastEventNumber){
+          std::cerr << "Warning in " << __PRETTY_FUNCTION__ << ", loaded sine subtract cache: run = " << fCurrentRun << ", eventNumber requested = "
+                    << eventNumber << ", but eventNumber read = " << fLastEventNumber << std::endl;
+        }
       }
       else{
         static int numWarnings = 0;
         const  int maxWarnings = 100;
-        if(numWarnings < maxWarnings){
+        if(numWarnings < maxWarnings || fDebug){
           std::cerr << "Warning  " << (numWarnings+1) << " of " << maxWarnings << " in " << __PRETTY_FUNCTION__ << ", can't find entry "
                     << entry << " in " << fTree->GetName() << " in file " << fFile->GetName()
                     << " for eventNumber " << eventNumber << std::endl;
@@ -210,10 +214,10 @@ void UCorrelator::SineSubtractCache::loadRun(Int_t run){
       fTree->BuildIndex("eventNumber");
       fTree->GetEntry(0);
       fCurrentRun = run;
-      
-      // std::cerr << fCurrentRun << "\t" << fLastEventNumber << std::endl;
-      
 
+      if(fDebug){
+        std::cerr << "Loaded first entry in run " << fCurrentRun << ", which has eventNumber " << fLastEventNumber << std::endl;
+      }
       gDirectory->cd(theRootPwd); 
     }
     else{

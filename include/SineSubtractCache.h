@@ -27,6 +27,8 @@ class SineSubtractCache {
   virtual ~SineSubtractCache();
   const FFTtools::SineSubtractResult* getResult(UInt_t eventNumber, AnitaPol::AnitaPol_t pol, Int_t antenna);
 
+
+  Bool_t fDebug;
  private:
 
   static TString branchName(AnitaPol::AnitaPol_t pol, Int_t ant);
