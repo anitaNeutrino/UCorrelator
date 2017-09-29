@@ -159,17 +159,22 @@ const FFTtools::SineSubtractResult* UCorrelator::SineSubtractCache::getResult(UI
     }
     if(fTree){
       Int_t entry = fTree->GetEntryNumberWithIndex(eventNumber);
-      std::cerr << entry << std::endl;
+      // std::cerr << entry << std::endl;
       if(entry >= 0){
         fTree->GetEntry(entry);
 
-        std::cerr << fCurrentRun << "\t" << fLastEventNumber << std::endl;
+        // std::cerr << fCurrentRun << "\t" << fLastEventNumber << std::endl;
         
       }
       else{
-        std::cerr << "Error in " << __PRETTY_FUNCTION__ << ", can't find entry "
-                  << entry << " in " << fTree->GetName() << " in file " << fFile->GetName()
-                  << " for eventNumber " << eventNumber << std::endl;
+        static int numWarnings = 0;
+        const  int maxWarnings = 100;
+        if(numWarnings < maxWarnings){
+          std::cerr << "Warning  " << (numWarnings+1) << " of " << maxWarnings << " in " << __PRETTY_FUNCTION__ << ", can't find entry "
+                    << entry << " in " << fTree->GetName() << " in file " << fFile->GetName()
+                    << " for eventNumber " << eventNumber << std::endl;
+          numWarnings++;
+        }
         return NULL;
       }
     }
@@ -206,7 +211,7 @@ void UCorrelator::SineSubtractCache::loadRun(Int_t run){
       fTree->GetEntry(0);
       fCurrentRun = run;
       
-      std::cerr << fCurrentRun << "\t" << fLastEventNumber << std::endl;
+      // std::cerr << fCurrentRun << "\t" << fLastEventNumber << std::endl;
       
 
       gDirectory->cd(theRootPwd); 
