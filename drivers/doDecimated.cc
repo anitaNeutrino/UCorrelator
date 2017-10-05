@@ -33,7 +33,6 @@ void doDecimated(int run = 352, int max = 0, int start = 0, const char * filter 
 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
   cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
-  cfg.max_peak_trigger_angle = 90; 
   cfg.nmaxima = 3; 
   cfg.fill_blast_fraction = true; 
 
@@ -68,7 +67,7 @@ void doDecimated(int run = 352, int max = 0, int start = 0, const char * filter 
   {
 
     d.getEntry(i); 
-    printf("----(%d)-----\n",i); 
+    printf("----(%d::%d)-----\n",i,d.header()->eventNumber);
 
 
     FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
