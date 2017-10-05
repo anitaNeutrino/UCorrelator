@@ -112,7 +112,7 @@ void UCorrelator::SineSubtractCache::makeCache(int run, SineSubtractFilter* ssf)
  * @param ssDesc description string, used for identifying file of cached results
  */
 UCorrelator::SineSubtractCache::SineSubtractCache(const char* ssDesc)
-    : fFile(NULL), fTree(NULL), fDescHash(0), fSpecDir(), fCurrentRun(-1), fLastEventNumber(0){
+    : fDebug(false), fFile(NULL), fTree(NULL), fDescHash(0), fSpecDir(), fCurrentRun(-1), fLastEventNumber(0){
 
 
   for(int pol=0; pol < AnitaPol::kNotAPol; pol++){
@@ -171,9 +171,14 @@ const FFTtools::SineSubtractResult* UCorrelator::SineSubtractCache::getResult(UI
         }
       }
       else{
-        std::cerr << "Error in " << __PRETTY_FUNCTION__ << ", can't find entry "
-                  << entry << " in " << fTree->GetName() << " in file " << fFile->GetName()
-                  << " for eventNumber " << eventNumber << std::endl;
+        static int numWarnings = 0;
+        const  int maxWarnings = 100;
+        if(numWarnings < maxWarnings || fDebug){
+          std::cerr << "Warning  " << (numWarnings+1) << " of " << maxWarnings << " in " << __PRETTY_FUNCTION__ << ", can't find entry "
+                    << entry << " in " << fTree->GetName() << " in file " << fFile->GetName()
+                    << " for eventNumber " << eventNumber << std::endl;
+          numWarnings++;
+        }
         return NULL;
       }
     }
@@ -209,10 +214,10 @@ void UCorrelator::SineSubtractCache::loadRun(Int_t run){
       fTree->BuildIndex("eventNumber");
       fTree->GetEntry(0);
       fCurrentRun = run;
-      
-      std::cerr << "Loaded first entry in run " << fCurrentRun << ", which has eventNumber " << fLastEventNumber << std::endl;
-      
 
+      if(fDebug){
+        std::cerr << "Loaded first entry in run " << fCurrentRun << ", which has eventNumber " << fLastEventNumber << std::endl;
+      }
       gDirectory->cd(theRootPwd); 
     }
     else{
