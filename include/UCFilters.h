@@ -206,6 +206,8 @@ namespace UCorrelator
 
       static void setUseCache(bool uc);
 
+      void setUseEven(bool use_even_wf) { use_even = use_even_wf ; }
+
       const char * tag() const { return "SineSubtractFilter"; }
       const char * description() const { return desc_string.Data(); } 
       unsigned nOutputs() const { return 1+2*(2+3*nstored_freqs); }
@@ -230,6 +232,7 @@ namespace UCorrelator
       int nstored_freqs; 
       double adaptive_exp; 
       int max_failed;
+      bool use_even; 
 
    protected:
       SineSubtractCache* sine_sub_cache;

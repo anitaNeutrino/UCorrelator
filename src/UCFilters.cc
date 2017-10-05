@@ -770,7 +770,7 @@ void UCorrelator::SineSubtractFilter::setUseCache(bool uc){
 
 
 UCorrelator::SineSubtractFilter::SineSubtractFilter(double min_power_ratio, int max_failed_iter,  int nfreq_bands, const double * fmin, const double * fmax, int nstored_freqs)
-    : min_power_ratio(min_power_ratio), spec(0), last_t(0), nstored_freqs(nstored_freqs), adaptive_exp(1), max_failed(max_failed_iter), sine_sub_cache(NULL) 
+    : min_power_ratio(min_power_ratio), spec(0), last_t(0), nstored_freqs(nstored_freqs), adaptive_exp(1), max_failed(max_failed_iter), use_even(false), sine_sub_cache(NULL)
 {
 
  memset(reduction,0,sizeof(reduction)); 
@@ -1000,7 +1000,7 @@ void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const Raw
   }
 
 
-  TGraph * g = wf->updateUneven();
+  TGraph * g = use_even ? wf->updateEven() : wf->updateUneven();
   if (g->GetRMS(2) > 0){
     // subs[pol][i]->subtractCW(1,&g, 1/2.6, NULL, cached_ssr[pol][i]);
 
@@ -1014,7 +1014,7 @@ void UCorrelator::SineSubtractFilter::processOne(AnalysisWaveform *wf, const Raw
     //   std::cerr << r->powers.at(0) << std::endl;
     // }
     // else{
-    subs[pol][i]->subtractCW(1,&g, 1/2.6, NULL, cached_ssr[pol][i]);
+    subs[pol][i]->subtractCW(1,&g, use_even ? 0 : 1/2.6, NULL, cached_ssr[pol][i]);
     // }
   }
 }
