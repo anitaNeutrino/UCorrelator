@@ -129,6 +129,7 @@ namespace UCorrelator
       void fillPointingInfo(double rough_phi, double rough_theta, AnitaEventSummary::PointingHypothesis * point,
                             UsefulAdu5Pat * pat, double hwAngle, UShort_t triggered_sectors, UShort_t masked_sectors, UShort_t triggered_sectors_xpol, UShort_t masked_sectors_xpol); 
       void fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary::EventFlags * flags, UsefulAdu5Pat * pat); 
+      void fillChannelInfo(const FilteredAnitaEvent* event, AnitaEventSummary* summary);
 
       gui::Map* correlation_maps[2]; 
       std::vector<gui::Map*>  zoomed_correlation_maps[2]; 

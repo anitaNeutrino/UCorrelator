@@ -23,6 +23,7 @@
 #include "simpleStructs.h"
 #include "UCImageTools.h"
 #include <stdint.h>
+#include "RootTools.h"
 
 #ifdef UCORRELATOR_OPENMP
 #include <omp.h>
@@ -430,6 +431,8 @@ SECTIONS
     fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol); 
  }
 
+  fillChannelInfo(event, summary);
+
 
 
       if (interactive) //copy everything
@@ -774,6 +777,30 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   }
 
   spectrum::fillSpectrumParameters(&power, avg_spectra[pol], info, cfg); 
+}
+
+/** 
+ * Fill Peng's ChannelInfo object, it might come in handy...
+ * 
+ * @param fEv is the filtered event
+ * @param sum is the event summary to fill
+ */
+void UCorrelator::Analyzer::fillChannelInfo(const FilteredAnitaEvent* event, AnitaEventSummary* summary){
+  for(int polInd=0; polInd < AnitaPol::kNotAPol; polInd++){
+    AnitaPol::AnitaPol_t pol = (AnitaPol::AnitaPol_t) polInd;
+    for(int ant=0; ant<NUM_SEAVEYS; ant++){
+      const AnalysisWaveform* wf = event->getFilteredGraph(ant, pol);
+      const TGraphAligned* gr = wf->even();
+      const TGraphAligned* he = wf->hilbertEnvelope();
+
+      summary->channels[polInd][ant].rms = gr->GetRMS();
+      summary->channels[polInd][ant].avgPower = RootTools::getTimeIntegratedPower(gr);
+      Double_t maxY, maxX, minY, minX;
+      RootTools::getLocalMaxToMin(gr, maxY, maxX, minY, minX);
+      summary->channels[polInd][ant].snr = (maxY - minY)/summary->channels[polInd][ant].rms;
+      summary->channels[polInd][ant].peakHilbert = TMath::MaxElement(he->GetN(), he->GetY());
+    }
+  }
 }
 
 
