@@ -781,24 +781,21 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 
 /** 
  * Fill Peng's ChannelInfo object, it might come in handy...
- * 
- * @param fEv is the filtered event
- * @param sum is the event summary to fill
  */
 void UCorrelator::Analyzer::fillChannelInfo(const FilteredAnitaEvent* event, AnitaEventSummary* summary){
   for(int polInd=0; polInd < AnitaPol::kNotAPol; polInd++){
     AnitaPol::AnitaPol_t pol = (AnitaPol::AnitaPol_t) polInd;
     for(int ant=0; ant<NUM_SEAVEYS; ant++){
       const AnalysisWaveform* wf = event->getFilteredGraph(ant, pol);
+      const TGraphAligned* hilbertEnvelope= wf->hilbertEnvelope();
+      const TGraphAligned* power= wf->power();
       const TGraphAligned* gr = wf->even();
-      const TGraphAligned* he = wf->hilbertEnvelope();
+      double rmsPower, meanPower;
+      power->getMeanAndRMS(&meanPower,&rmsPower);
 
       summary->channels[polInd][ant].rms = gr->GetRMS();
-      summary->channels[polInd][ant].avgPower = RootTools::getTimeIntegratedPower(gr);
-      Double_t maxY, maxX, minY, minX;
-      RootTools::getLocalMaxToMin(gr, maxY, maxX, minY, minX);
-      summary->channels[polInd][ant].snr = (maxY - minY)/summary->channels[polInd][ant].rms;
-      summary->channels[polInd][ant].peakHilbert = TMath::MaxElement(he->GetN(), he->GetY());
+      summary->channels[polInd][ant].avgPower = meanPower;
+      summary->channels[polInd][ant].peakHilbert = hilbertEnvelope->peakVal();
     }
   }
 }
