@@ -430,7 +430,7 @@ SECTIONS
   SECTION
     fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol); 
  }
-
+  // comment this line out if you don't want channel information in summary file.
   fillChannelInfo(event, summary);
 
 
@@ -796,6 +796,7 @@ void UCorrelator::Analyzer::fillChannelInfo(const FilteredAnitaEvent* event, Ani
       summary->channels[polInd][ant].rms = gr->GetRMS();
       summary->channels[polInd][ant].avgPower = meanPower;
       summary->channels[polInd][ant].peakHilbert = hilbertEnvelope->peakVal();
+      //TODO: snr.
     }
   }
 }
