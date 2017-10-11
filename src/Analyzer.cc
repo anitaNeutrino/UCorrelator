@@ -790,10 +790,11 @@ void UCorrelator::Analyzer::fillChannelInfo(const FilteredAnitaEvent* event, Ani
       const TGraphAligned* hilbertEnvelope= wf->hilbertEnvelope();
       const TGraphAligned* power= wf->power();
       const TGraphAligned* gr = wf->even();
-      double rmsPower, meanPower;
+      double mean,rms, rmsPower, meanPower;
+      gr->getMeanAndRMS(&mean,&rms);
       power->getMeanAndRMS(&meanPower,&rmsPower);
 
-      summary->channels[polInd][ant].rms = gr->GetRMS();
+      summary->channels[polInd][ant].rms = rms;
       summary->channels[polInd][ant].avgPower = meanPower;
       summary->channels[polInd][ant].peakHilbert = hilbertEnvelope->peakVal();
       //TODO: snr.
