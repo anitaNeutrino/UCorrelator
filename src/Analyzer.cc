@@ -289,7 +289,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     TVector2 triggerAngle(0,0); 
 
     int ntriggered = __builtin_popcount(triggeredPhi); 
-    int ntriggered_xpol = __builtin_popcount(triggeredPhi); 
+    int ntriggered_xpol = __builtin_popcount(triggeredPhiXpol); 
 
     UShort_t which_trigger = ntriggered ? triggeredPhi : triggeredPhiXpol; 
     int which_ntriggered = ntriggered ?: ntriggered_xpol; 
