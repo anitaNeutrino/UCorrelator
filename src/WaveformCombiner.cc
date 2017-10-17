@@ -24,6 +24,8 @@ UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool us
   setResponseManager(response); 
   setBottomFirst(false);
   setDelayToCenter(false);
+	extra_filters = 0;
+	extra_filters_deconvolved = 0;
 }
 
 
@@ -32,6 +34,8 @@ UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool us
 
 UCorrelator::WaveformCombiner::~WaveformCombiner()
 {
+	if(extra_filters) delete extra_filters;
+	if(extra_filters_deconvolved) delete extra_filters_deconvolved;
 }
 
 const AnalysisWaveform * UCorrelator::WaveformCombiner::getDeconvolved() const 
@@ -108,9 +112,19 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
   {
     //ensure transform already calculated so we don't have to repeat when deconvolving
     (void) wf(event,antennas[i],pol)->freq(); 
+		int ipol = (pol == AnitaPol::kVertical) ? 1 : 0;
 
     padded[i].~AnalysisWaveform(); 
     new (&padded[i]) AnalysisWaveform(*wf(event,antennas[i],pol));
+		if(extra_filters)
+		{
+			for(int j = 0; j < extra_filters->nOperations(); j++)
+			{
+				FilterOperation * filterOp = (FilterOperation*) extra_filters->getOperation(j);
+				filterOp->processOne(&padded[i], event->getHeader(), antennas[i], ipol);
+				//delete filterOp;
+			}
+		}
 
     if (i == 0)
     {
@@ -132,8 +146,17 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
 
     if (do_deconvolution)
     {
-     deconv[i].~AnalysisWaveform(); 
+			deconv[i].~AnalysisWaveform(); 
       new (&deconv[i]) AnalysisWaveform(*wf(event,antennas[i],pol));
+			if(extra_filters_deconvolved)
+			{
+				for(int j = 0; j < extra_filters_deconvolved->nOperations(); j++)
+				{
+					FilterOperation * filterOp = (FilterOperation*) extra_filters_deconvolved->getOperation(j);
+					filterOp->processOne(&deconv[i], event->getHeader(), antennas[i], ipol);
+					//delete filterOp;
+				}
+			}
       responses->response(pol,antennas[i])->deconvolveInPlace(&deconv[i], responses->getDeconvolutionMethod(), theta ); //TODO add angle  
       if (i == 0)
       {
@@ -200,5 +223,17 @@ AnalysisWaveform * UCorrelator::WaveformCombiner::combineWaveforms(int nwf, cons
   }
 
   return out; 
+}
+
+void UCorrelator::WaveformCombiner::setExtraFilters(FilterStrategy* extra)
+{
+	if(extra_filters) delete extra_filters;
+	extra_filters = extra;
+}
+
+void UCorrelator::WaveformCombiner::setExtraFiltersDeconvolved(FilterStrategy* extra)
+{
+	if(extra_filters_deconvolved) delete extra_filters_deconvolved;
+	extra_filters_deconvolved = extra;
 }
 

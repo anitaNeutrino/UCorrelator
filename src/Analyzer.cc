@@ -1041,3 +1041,14 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
 	else flags->isStepFunction = 0;
 }
 
+void UCorrelator::Analyzer::setExtraFilters(FilterStrategy* extra)
+{
+	wfcomb_filtered.setExtraFilters(extra);
+	wfcomb_xpol_filtered.setExtraFilters(extra);
+}
+
+void UCorrelator::Analyzer::setExtraFiltersDeconvolved(FilterStrategy* extra)
+{
+	wfcomb_filtered.setExtraFiltersDeconvolved(extra);
+	wfcomb_xpol_filtered.setExtraFiltersDeconvolved(extra);
+}
