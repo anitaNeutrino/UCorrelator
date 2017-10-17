@@ -122,6 +122,11 @@ namespace UCorrelator
       void setTrackWAIS(double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {sourceLon = AnitaLocations::getWaisLongitude(); sourceLat = AnitaLocations::getWaisLatitude(); sourceAlt = AnitaLocations::getWaisAltitude(); dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSource = true; }
       /** Tracks LDB for peak finding  */
       void setTrackLDB(double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {sourceLon = AnitaLocations::LONGITUDE_LDB; sourceLat = AnitaLocations::LATITUDE_LDB; sourceAlt = AnitaLocations::ALTITUDE_LDB; dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSource = true; }
+			
+			/** Allows you to set extra filters used only for combining waveforms */
+			void setExtraFilters(FilterStrategy* extra);
+			/** Allows you to set extra filters used only for combining deconvolved waveforms */
+			void setExtraFiltersDeconvolved(FilterStrategy* extra);
       
   private:
 

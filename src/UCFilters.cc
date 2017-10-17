@@ -387,7 +387,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
 
 
 
-void UCorrelator::ComplicatedNotchFilter::processOne(AnalysisWaveform* g) 
+void UCorrelator::ComplicatedNotchFilter::processOne(AnalysisWaveform* g, const RawAnitaHeader * header, int ant, int pol) 
 {
 //  printf("ComplicatedNotchFilter::processOne!\n"); 
   int nfreq = g->Nfreq(); 
@@ -753,6 +753,12 @@ void UCorrelator::AdaptiveFilterAbby::process(FilteredAnitaEvent * event)
   
   
 }
+
+void UCorrelator::AdaptiveFilterAbby::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol) 
+{
+	printf("processOne not implemented yet, sorry!\n");
+}
+
 
 
 
@@ -1229,6 +1235,11 @@ void UCorrelator::CombinedSineSubtractFilter::process(FilteredAnitaEvent * ev)
    }
 }
 
+void UCorrelator::CombinedSineSubtractFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol) 
+{
+	printf("processOne not implemented yet, sorry!\n");
+}
+
 UCorrelator::CombinedSineSubtractFilter::~CombinedSineSubtractFilter()
 {
    for (int i = 0; i < NUM_PHI; i++) 
@@ -1332,6 +1343,11 @@ void UCorrelator::AdaptiveMinimumPhaseFilter::process(FilteredAnitaEvent * ev)
 
   last_bin = bin; 
 
+}
+
+void UCorrelator::AdaptiveMinimumPhaseFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol) 
+{
+	printf("processOne not implemented yet, sorry!\n");
 }
 
 TGraph * UCorrelator::AdaptiveMinimumPhaseFilter::getCurrentFilterTimeDomain(AnitaPol::AnitaPol_t pol, int i) const 
@@ -1465,6 +1481,11 @@ void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
 
 }
 
+void UCorrelator::AdaptiveBrickWallFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol) 
+{
+	printf("processOne not implemented yet, sorry!\n");
+}
+
 
 
 UCorrelator::AdaptiveButterworthFilter::AdaptiveButterworthFilter(const TimeDependentAverageLoader *avg,
@@ -1527,6 +1548,11 @@ void UCorrelator::AdaptiveButterworthFilter::process(FilteredAnitaEvent * ev)
 
   last_bin = bin; 
 
+}
+
+void UCorrelator::AdaptiveButterworthFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol) 
+{
+	printf("processOne not implemented yet, sorry!\n");
 }
 
 

@@ -8,6 +8,7 @@
 
 #include "AnalysisWaveform.h"
 #include "AnitaConventions.h"
+#include "FilterStrategy.h"
 #include <vector> 
 
 
@@ -67,6 +68,11 @@ namespace UCorrelator
       /** Static helper used to combine arbitrary waveforms */
       static AnalysisWaveform *  combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0); 
 
+	/** function allowing extra filters to be applied to just the coherently summed waveforms */
+	void setExtraFilters(FilterStrategy* extra);
+	/** function allowing extra filters to be applied to just the coherently summed deconvolved waveforms. these functions are useful for applying different filters to waveform combining and map making. mostly I think it should be used to add BH13filter in map making and not in deconvolved wf combining */
+	void setExtraFiltersDeconvolved(FilterStrategy* extra);
+
     private: 
 
       
@@ -86,6 +92,8 @@ namespace UCorrelator
       bool alfa_hack; 
       bool bottom_first;
       bool delay_to_center;
+			FilterStrategy* extra_filters;
+			FilterStrategy* extra_filters_deconvolved;
   };
 
 }

@@ -303,8 +303,8 @@ void UCorrelator::TimeDependentAverage::saveToDir(const char * dir)
   f.cd(); 
 
   //make sure averages and RMS are loaded
-  getSpectrogram(AnitaPol::kHorizontal,0); 
-  getRMS(AnitaPol::kHorizontal,0); 
+  //getSpectrogram(AnitaPol::kHorizontal,0); 
+  //getRMS(AnitaPol::kHorizontal,0); 
   
   f.mkdir("specavg"); 
   f.cd("specavg"); 
