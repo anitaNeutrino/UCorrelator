@@ -23,7 +23,7 @@ void UCorrelator::BH13Filter::process(FilteredAnitaEvent * ev)
 	int old_size = awf->Neven();
 	int nf = awf->Nfreq();
 	double df = awf->deltaF();
-	TFile f(Form("%s/share/UCorrelator/responses/BH13TransferFn.root", getenv("ANITA_UTIL_INSTALL_DIR")));
+	TFile f(Form("%s/share/AnitaAnalysisFramework/responses/BH13TransferFn.root", getenv("ANITA_UTIL_INSTALL_DIR")));
 	TGraph* gPhase = (TGraph*) f.Get("fixPhase");
 	TGraph* gMag = (TGraph*) f.Get("fixAmp");;
 	for( int i =0; i < nf; i++)
