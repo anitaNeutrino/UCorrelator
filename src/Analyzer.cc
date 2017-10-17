@@ -761,8 +761,8 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   for (int iw = 0; iw < AnitaEventSummary::numFracPowerWindows; iw++)
   {
     int half_width =  TMath::BinarySearch(distance_cdf.GetN(), distance_cdf.GetY(), 0.1 * (iw+1)); 
-    info->fracPowerWindowBegins[iw] = peakHilbertBin < half_width ? distance_cdf.GetX()[0] : distance_cdf.GetX()[peakHilbertBin - half_width]; 
-    info->fracPowerWindowEnds[iw] = peakHilbertBin + half_width >= distance_cdf.GetN() ?  distance_cdf.GetX()[distance_cdf.GetN()-1] : distance_cdf.GetX()[half_width + peakHilbertBin];
+    info->fracPowerWindowBegins[iw] = peakHilbertBin < half_width ? wf->even()->GetX()[0] : wf->even()->GetX()[peakHilbertBin - half_width]; 
+    info->fracPowerWindowEnds[iw] = peakHilbertBin + half_width >= distance_cdf.GetN() ?  wf->even()->GetX()[distance_cdf.GetN()-1] : wf->even()->GetX()[half_width + peakHilbertBin];
   }
 
   double dt = wf->deltaT(); 
