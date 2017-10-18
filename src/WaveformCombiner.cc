@@ -34,8 +34,6 @@ UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool us
 
 UCorrelator::WaveformCombiner::~WaveformCombiner()
 {
-	if(extra_filters) delete extra_filters;
-	if(extra_filters_deconvolved) delete extra_filters_deconvolved;
 }
 
 const AnalysisWaveform * UCorrelator::WaveformCombiner::getDeconvolved() const 
