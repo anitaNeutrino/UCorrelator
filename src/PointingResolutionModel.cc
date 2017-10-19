@@ -1,11 +1,13 @@
 #include "PointingResolutionModel.h" 
 #include "TMath.h" 
 #include "TRandom.h" 
+#include "TF1.h" 
 
 
 ClassImp(UCorrelator::PointingResolution); 
 ClassImp(UCorrelator::PointingResolutionModel); 
 ClassImp(UCorrelator::ConstantPointingResolutionModel); 
+ClassImp(UCorrelator::PointingResolutionParSNRModel); 
 
 UCorrelator::PointingResolution::PointingResolution(double phi, double theta,
                                                     double dphi, double dtheta, double rho) 
@@ -65,4 +67,22 @@ double * UCorrelator::PointingResolution::computeProbabilityDensity(int N,
   }
 
   return p; 
+}
+
+
+UCorrelator::PointingResolution * UCorrelator::PointingResolutionParSNRModel::computePointingResolution(const AnitaEventSummary * sum, AnitaPol::AnitaPol_t pol, int peak, PointingResolution *p) const 
+{
+  const AnitaEventSummary::WaveformInfo * info = deconv ? &sum->deconvolved[pol][peak] : &sum->coherent[pol][peak]; 
+  double snr = info->snr; 
+  double snr_min, snr_max; 
+  f_ph->GetRange(snr_min, snr_max); 
+  if (snr < snr_min) snr = snr_min; 
+  if (snr < snr_max) snr = snr_max; 
+  f_th->GetRange(snr_min, snr_max); 
+  if (snr < snr_min) snr = snr_min; 
+  if (snr < snr_max) snr = snr_max; 
+
+  new (p) PointingResolution(sum->peak[pol][peak].phi, sum->peak[pol][peak].theta, f_ph->Eval(snr), f_th->Eval(snr), 0); 
+  return p; 
+
 }

@@ -3,6 +3,7 @@
 
 #include "AnitaEventSummary.h"
 class TRandom; 
+class TF1; 
 
 namespace UCorrelator
 {
@@ -46,11 +47,30 @@ namespace UCorrelator
 
 
 
+  
+  class PointingResolutionParSNRModel : public PointingResolutionModel
+  {
+    public: 
+     PointingResolutionParSNRModel(TF1 * f_dtheta, TF1 * f_dphi, bool use_deconvolved = false)
+     : f_th(f_dtheta), f_ph(f_dphi), deconv(use_deconvolved)  {; } 
+       ; 
+
+     virtual PointingResolution * computePointingResolution(const AnitaEventSummary * sum, AnitaPol::AnitaPol_t pol, int peak, PointingResolution *p) const; 
+
+    private: 
+     TF1 * f_th; 
+     TF1 * f_ph; 
+     bool deconv; 
+      ClassDef(PointingResolutionParSNRModel,1); 
+
+  }; 
+
+
   class ConstantPointingResolutionModel : public PointingResolutionModel
   {
     public: 
-      ConstantPointingResolutionModel(double dphi=0.4, double dtheta=0.3, double rho = 0) 
-        : dphi(dphi), dtheta(dtheta), rho(rho) { }
+      ConstantPointingResolutionModel(double dphi=0.4, double dtheta=0.3) 
+        : dphi(dphi), dtheta(dtheta) { rho = 0; }
 
 
       virtual PointingResolution * computePointingResolution(const AnitaEventSummary * sum, AnitaPol::AnitaPol_t pol, int peak, PointingResolution *p) const
