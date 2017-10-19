@@ -83,24 +83,23 @@ static SimplePassBandFilter alfa_filter(0,0.6);
 void UCorrelator::WaveformCombiner::combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, ULong64_t disallowed)
 {
 
-  int antennas[nant]; 
   std::vector<AnalysisWaveform> padded(nant);
   const int numDeconv = do_deconvolution ? nant : 0;
   std::vector<AnalysisWaveform> deconv(numDeconv);
 
   const UCorrelator::AntennaPositions * antpos = UCorrelator::AntennaPositions::instance(); 
-  nant = antpos->getClosestAntennas(phi, nant, antennas, disallowed); 
+  nant = antpos->getClosestAntennas(phi, nant, &antennas[0], disallowed); 
   double delays[nant]; 
 
   if (bottom_first) {
     if (antennas[0] < 32) {
       int toMove = antennas[0];
       if (antennas[1] > 32) {
-	antennas[0] = antennas[1];
-	antennas[1] = toMove; }
+       antennas[0] = antennas[1];
+       antennas[1] = toMove; }
       else {
-	antennas[0] = antennas[2];
-	antennas[2] = toMove; }
+       antennas[0] = antennas[2];
+       antennas[2] = toMove; }
     }
   }
 

@@ -139,6 +139,21 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mo
 
 
 
+static double computeCombinedRMS(double t, AnitaPol::AnitaPol_t pol, const UCorrelator::WaveformCombiner * wfcomb) 
+{
+  double rms = 0 ;
+
+  for (int ant =0; ant < wfcomb->getNAntennas(); ant++) 
+  {
+     double ant_rms = UCorrelator::TimeDependentAverageLoader::getRMS(t, pol, wfcomb->getUsedAntennas()[ant]); 
+     rms += ant_rms * ant_rms; 
+     rms = sqrt(rms); 
+  }
+
+
+  return rms; 
+}
+
 
 
 void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEventSummary * summary, const TruthAnitaEvent * truth) 
@@ -410,25 +425,27 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 SECTIONS
 {
   SECTION
-    wfcomb.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
+      wfcomb.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
   SECTION
-    wfcomb_xpol.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
+      wfcomb_xpol.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
   SECTION
-    wfcomb_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
+      wfcomb_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
   SECTION
-    wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
+      wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
  }
+
+     double rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, (AnitaPol::AnitaPol_t) pol, &wfcomb) : 0 ; 
 
 SECTIONS 
 {
   SECTION
-    fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol); 
+      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol, rms); 
   SECTION
-    fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol); 
+      fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol, rms); 
   SECTION
-    fillWaveformInfo(wfcomb_filtered.getCoherent(), wfcomb_xpol_filtered.getCoherent(), wfcomb_filtered.getCoherentAvgSpectrum(), &summary->coherent_filtered[pol][i], (AnitaPol::AnitaPol_t) pol); 
+      fillWaveformInfo(wfcomb_filtered.getCoherent(), wfcomb_xpol_filtered.getCoherent(), wfcomb_filtered.getCoherentAvgSpectrum(), &summary->coherent_filtered[pol][i], (AnitaPol::AnitaPol_t) pol, rms); 
   SECTION
-    fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol); 
+      fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol, rms); 
  }
 
 
@@ -559,12 +576,15 @@ SECTIONS
       wfcomb_xpol.combine(summary->mc.phi, summary->mc.theta, event, AnitaPol::kVertical, 0); 
     }
 
+     double hpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kHorizontal, &wfcomb) : 0 ; 
+     double vpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kVertical, &wfcomb_xpol) : 0 ; 
+
 //    SECTIONS
     {
 //      SECTION
-      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kHorizontal]), AnitaPol::kHorizontal); 
+      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kHorizontal]), AnitaPol::kHorizontal, hpol_rms); 
 //      SECTION
-      fillWaveformInfo(wfcomb_xpol.getCoherent(), wfcomb.getCoherent(), wfcomb_xpol.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kVertical]), AnitaPol::kVertical); 
+      fillWaveformInfo(wfcomb_xpol.getCoherent(), wfcomb.getCoherent(), wfcomb_xpol.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kVertical]), AnitaPol::kVertical, vpol_rms); 
     }
   }
 
@@ -665,7 +685,7 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
 }
 
 
-void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph* pwr, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol)
+void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph* pwr, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol, double rms)
 {
   if (!wf || wf->Neven() == 0)
   {
@@ -765,16 +785,18 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
     info->fracPowerWindowEnds[iw] = peakHilbertBin + half_width >= distance_cdf.GetN() ?  wf->even()->GetX()[distance_cdf.GetN()-1] : wf->even()->GetX()[half_width + peakHilbertBin];
   }
 
-  double dt = wf->deltaT(); 
-  double t0 = even->GetX()[0]; 
+  if (!rms) 
+  {
+    double dt = wf->deltaT(); 
+    double t0 = even->GetX()[0]; 
 
-  int i0 = TMath::Max(0.,floor((cfg->noise_estimate_t0 - t0)/dt)); 
-  int i1 = TMath::Min(even->GetN()-1.,ceil((cfg->noise_estimate_t1 - t0)/dt)); 
-  int n = i1 - i0 + 1; 
-  //  printf("%d-%d -> %d \n", i0, i1, n); 
-  if (n < 0 || n > even->GetN()) n = even->GetN();
-
-  double rms = TMath::RMS(n, even->GetY() + i0); 
+    int i0 = TMath::Max(0.,floor((cfg->noise_estimate_t0 - t0)/dt)); 
+    int i1 = TMath::Min(even->GetN()-1.,ceil((cfg->noise_estimate_t1 - t0)/dt)); 
+    int n = i1 - i0 + 1; 
+    //  printf("%d-%d -> %d \n", i0, i1, n); 
+    if (n < 0 || n > even->GetN()) n = even->GetN();
+    rms = TMath::RMS(n, even->GetY() + i0); 
+  }
   
   info->snr = info->peakVal / rms;
   TGraphAligned power(pwr->GetN(),pwr->GetX(),pwr->GetY()); 

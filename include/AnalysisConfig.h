@@ -145,7 +145,12 @@ namespace UCorrelator
       bool delay_to_center;
 
       /** TODO: this has to be loaded from file somehow */ 
-    AnitaResponse::DeconvolutionMethod * deconvolution_method; 
+      AnitaResponse::DeconvolutionMethod * deconvolution_method; 
+      
+
+      /** Use the nearby forced trigger rms instead of estimating it from the waveform */ 
+      bool use_forced_trigger_rms; 
+
     private: 
       mutable TH2 * the_ldb_hist; 
   };

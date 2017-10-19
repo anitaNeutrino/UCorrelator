@@ -46,23 +46,26 @@ namespace UCorrelator
       const TGraph * getCoherentAvgSpectrum() const { return &coherent_avg_spectrum; } 
       const TGraph * getDeconvolvedAvgSpectrum() const { return &deconvolved_avg_spectrum; } 
       void setNPad(int new_npad) { npad = new_npad; }
-      void setNAntennas(int n) { nant = n; }
+      void setNAntennas(int n) { nant = n; antennas.resize(n);  }
       void setDeconvolve(bool deconvolve) {do_deconvolution = deconvolve ;}
       void setUseUnfiltered(bool raw_opt) {use_raw = raw_opt;}
       void setGroupDelayFlag(bool opt) { enable_group_delay = opt; } 
       bool wasAlfaFiltered() { return alfa_hack; } 
 
-      /* setBottomFirst():
-	 getClosestAntennas() returns the closest antenna in phi, which could be on any ring.
-	 this will force the bottom antenna (largest ant#) to be the seed waveform so things don't jump as much
-	 default is false (like it was before)
-      */
-	void setBottomFirst(bool opt) { bottom_first = opt; }
+      int getNAntennas() const { return nant; }  
+      const int * getUsedAntennas() const { return &antennas[0]; } 
 
-	/* setDelayToCenter();
-	   changes the delays in combining from being to the first antenna in the array, to being towards the centerpoint
-	   of the instrument (0,0,0) */
-	void setDelayToCenter(bool opt) {delay_to_center = opt; }
+      /* setBottomFirst():
+       getClosestAntennas() returns the closest antenna in phi, which could be on any ring.
+    	 this will force the bottom antenna (largest ant#) to be the seed waveform so things don't jump as much
+   	   default is false (like it was before)
+      */
+      void setBottomFirst(bool opt) { bottom_first = opt; }
+
+      /* setDelayToCenter();
+	    changes the delays in combining from being to the first antenna in the array, to being towards the centerpoint
+	    of the instrument (0,0,0) */
+    	void setDelayToCenter(bool opt) {delay_to_center = opt; }
 
       /** Static helper used to combine arbitrary waveforms */
       static AnalysisWaveform *  combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0); 
@@ -77,7 +80,7 @@ namespace UCorrelator
 
 
       const AnalysisWaveform * wf(const FilteredAnitaEvent*, int ant, AnitaPol::AnitaPol_t pol); 
-    const AnitaResponse::ResponseManager * responses; 
+      const AnitaResponse::ResponseManager * responses; 
       int npad; 
       int nant; 
       bool use_raw; 
@@ -86,6 +89,7 @@ namespace UCorrelator
       bool alfa_hack; 
       bool bottom_first;
       bool delay_to_center;
+      std::vector<int> antennas; 
   };
 
 }
