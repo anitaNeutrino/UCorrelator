@@ -73,7 +73,7 @@ namespace UCorrelator
         ResponseSingleBRotter, /// Ben's unified respone 
         ResponseIndividualBRotter, ///Ben's individual responses 
         ResponseHarmSignalOnly, ///Harm's signal chain only thing (currently used in icemc) 
-				ResponseTUFF /// response with TUFFs convolved in
+                            ResponseTUFF /// response with TUFFs convolved in
       } response_option;  
 
       static const char * getResponseString(ResponseOption_t opt); 
@@ -122,11 +122,11 @@ namespace UCorrelator
       TH2* ldb_hist() const; 
       int ldb_max_run; 
 
-      /** When calculating stokes parameters, do you want to window the waveform around the hilbert envelope?
-	  windowStokes == false: no windowing at all
-	  if true:
-	             stokesWindowLength =< 0: dynamic window length (default)
-		     stokesWindowLength > 0: set window length
+      /** When calculating average stokes parameters, do you want to window the waveform around the hilbert envelope?
+         windowStokes == false: no windowing at all
+         if true:
+                    stokesWindowLength =< 0: dynamic window length (default)
+                   stokesWindowLength > 0: set window length
        * */
       bool windowStokes;
       int stokesWindowLength;
@@ -136,12 +136,12 @@ namespace UCorrelator
 
 
       /** set_bottom_first:  Re-arrange the coherently summed waveforms so that the bottom-most ring is always the
-	  first antenna to be summed.
-	  * */
+         first antenna to be summed.
+         * */
       bool set_bottom_first;
       
       /** delay_to_center:
-	  Makes it so the delays in the coherent sum are referenced to the center point */
+         Makes it so the delays in the coherent sum are referenced to the center point */
       bool delay_to_center;
 
       /** TODO: this has to be loaded from file somehow */ 
