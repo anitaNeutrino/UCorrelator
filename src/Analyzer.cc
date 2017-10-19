@@ -750,7 +750,9 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
                                wf->hilbertTransform()->even()->GetY()+ifirst, 
                                xpol_even->GetY()+ifirst, 
                                xpol_wf->hilbertTransform()->even()->GetY()+ifirst, 
-                               &(info->I), &(info->Q), &(info->U), &(info->V)); 
+                               &(info->I), &(info->Q), &(info->U), &(info->V),
+                               &(info->max_dI),&(info->max_dQ),&(info->max_dU), &(info->max_dV)
+                               ); 
   }
   else
   {
@@ -759,10 +761,16 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
                                xpol_wf->hilbertTransform()->even()->GetY()+ifirst, 
                                even->GetY()+ifirst, 
                                wf->hilbertTransform()->even()->GetY()+ifirst, 
-                               &(info->I), &(info->Q), &(info->U), &(info->V)); 
+                               &(info->I), &(info->Q), &(info->U), &(info->V), 
+                               &(info->max_dI),&(info->max_dQ),&(info->max_dU), &(info->max_dV)
+                               ); 
  
   }
+
+
+  //now fill in the maximum "insaneous" stokes parametres
   
+
   /* //pol and xpol aren't required to be the same length(uncomment to see).
   // So, you'll get invalid accesses and garbage results sometimes.
   if (info->I > 1e4) {
