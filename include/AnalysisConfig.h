@@ -150,6 +150,9 @@ namespace UCorrelator
 
       /** Use the nearby forced trigger rms instead of estimating it from the waveform */ 
       bool use_forced_trigger_rms; 
+      
+      /** Whether or not to use the average of the spectra or the spectra of the coherent/deconvolved */ 
+      bool use_coherent_spectra = true; 
 
     private: 
       mutable TH2 * the_ldb_hist; 
