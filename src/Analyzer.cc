@@ -807,8 +807,11 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   }
   
   info->snr = info->peakVal / rms;
+  if(cfg->use_coherent_spectra) pwr = wf->powerdB(); 
+  
   TGraphAligned power(pwr->GetN(),pwr->GetX(),pwr->GetY()); 
-  power.dBize(); 
+
+  if (cfg->use_coherent_spectra) power.dBize(); 
 
   if (power_filter)
   {
@@ -939,8 +942,18 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       pads[ipol]->cd(2)->cd(i+2*last.nPeaks[ipol]+1); 
 
 
-      (((TGraph*)coherent_power[ipol][0][i]))->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
-      ((TGraph*)coherent_power[ipol][0][i])->Draw("al"); 
+      if (cfg->use_coherent_spectra) 
+      {
+        ((TGraph*) coherent[ipol][0][i]->powerdB())->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
+        coherent[ipol][0][i]->drawPowerdB("al"); 
+        coherent_xpol[ipol][0][i]->drawPowerdB("lsame"); 
+      }
+      else
+      {
+        (((TGraph*)coherent_power[ipol][0][i]))->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
+        ((TGraph*)coherent_power[ipol][0][i])->Draw("al"); 
+        coherent_power_xpol[ipol][0][i]->Draw("lsame"); 
+      }
 
 
       ((TGraph*)avg_spectra[ipol])->SetLineColor(2); 
@@ -982,11 +995,25 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 
         pads[ipol]->cd(2)->cd(i+4*last.nPeaks[ipol]+1); 
 
-        (((TGraph*)deconvolved_power[ipol][0][i]))->SetTitle(TString::Format ( "Power Deconvolved (+ xpol) %d", i+1)); 
-        ((TGraph*)deconvolved_power[ipol][0][i])->Draw();; 
-        if (interactive_xpol_deconvolved)
+        if (cfg->use_coherent_spectra) 
         {
-          ((TGraph*)deconvolved_power_xpol[ipol][0][i])->Draw("lsame"); 
+
+          ((TGraph*) deconvolved[ipol][0][i]->powerdB())->SetTitle(TString::Format ( "Power Deconvolved (+ xpol) %d", i+1)); 
+          (deconvolved[ipol][0][i])->drawPowerdB();; 
+          if (interactive_xpol_deconvolved)
+          {
+            (deconvolved_xpol[ipol][0][i])->drawPowerdB("lsame"); 
+          }
+        
+        }
+        else
+        {
+          (((TGraph*)deconvolved_power[ipol][0][i]))->SetTitle(TString::Format ( "Power Deconvolved (+ xpol) %d", i+1)); 
+          ((TGraph*)deconvolved_power[ipol][0][i])->Draw();; 
+          if (interactive_xpol_deconvolved)
+          {
+            ((TGraph*)deconvolved_power_xpol[ipol][0][i])->Draw("lsame"); 
+          }
         }
 
 
