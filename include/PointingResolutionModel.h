@@ -21,6 +21,10 @@ namespace UCorrelator
       void random(double *phi, double * theta, TRandom * rng= 0);  
 
       double computeProbabilityDensity(double phi, double theta); 
+      double getdPhi() const { return dphi ; }
+      double getdTheta() const { return dtheta ; }
+      double getCorr() const { return rho; } 
+
 
     private:
       double phi; 
