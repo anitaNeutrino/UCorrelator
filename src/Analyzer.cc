@@ -68,7 +68,6 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mo
 #ifdef UCORRELATOR_OPENMP
   TThread::Initialize(); 
 #endif
-
   zoomed = new TH2D(TString::Format("zoomed_%d", instance_counter), "Zoomed!", cfg->zoomed_nphi, 0 ,1, cfg->zoomed_ntheta, 0, 1);
   zoomed->SetDirectory(0); 
 
@@ -1089,3 +1088,14 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
 	else flags->isStepFunction = 0;
 }
 
+void UCorrelator::Analyzer::setExtraFilters(FilterStrategy* extra)
+{
+	wfcomb_filtered.setExtraFilters(extra);
+	wfcomb_xpol_filtered.setExtraFilters(extra);
+}
+
+void UCorrelator::Analyzer::setExtraFiltersDeconvolved(FilterStrategy* extra)
+{
+	wfcomb_filtered.setExtraFiltersDeconvolved(extra);
+	wfcomb_xpol_filtered.setExtraFiltersDeconvolved(extra);
+}
