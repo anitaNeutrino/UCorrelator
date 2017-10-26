@@ -4,6 +4,8 @@
 
 #include "AnitaConventions.h"
 #include "TH2.h"
+#include "DeltaT.h"
+
 
 class FilteredAnitaEvent; 
 class AnalysisWaveform; 
@@ -59,6 +61,7 @@ namespace UCorrelator
 
       /** Debugging method to dump out some info to a file */ 
       void dumpDeltaTs(const char * file) const; 
+
       virtual ~Correlator(); 
 
     private: 
@@ -75,6 +78,7 @@ namespace UCorrelator
 #define NUM_ANITAS 4
 #endif
       TrigCache * trigcache[NUM_ANITAS+1]; 
+      TMVA::Reader* reader;
       double rms[NANTENNAS]; 
 
       double max_phi, max_phi2;

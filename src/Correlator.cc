@@ -1,7 +1,6 @@
 #include "FilteredAnitaEvent.h" 
 #include "TString.h"
 #include "AntennaPositions.h"
-#include "DeltaT.h"
 #include "TTree.h"
 #include "TFile.h"
 #include "TrigCache.h"
@@ -131,6 +130,23 @@ static void combineHists(int N, T ** hists )
 UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, int ntheta, double theta_min, double theta_max, bool use_center, bool scale_by_cos_theta, double baseline_weight)
   : scale_cos_theta(scale_by_cos_theta) , baselineWeight(baseline_weight)
 {
+  // load the weight file of neural network. Each pair ants is an indepent neural network.
+  reader = new TMVA::Reader("V");
+  char weightFileName[100];
+  char methodName[100];
+  for(int pol = 0; pol < 2; pol++){
+    for(int ant1 = 0; ant1 < 47; ant1++){
+      for(int ant2 = ant1+1; ant2 < 48; ant2++){
+        if((ant2-ant1+16+2)%16 <= 4){
+          sprintf (weightFileName, "TMVAweights/weights/trainTiming_MLPBFGS.WeightFile_%d_%d_%d.root", ant1, ant2, pol);
+          sprintf (methodName, "antPair_%d_%d_%d", ant1, ant2, pol);
+          reader->BookMVA(methodName,weightFileName);
+        }
+      }
+    }
+  }
+
+
   TString histname = TString::Format("ucorr_corr_%d",count_the_correlators);
   TString normname = TString::Format("ucorr_norm_%d",count_the_correlators++);
 
@@ -586,7 +602,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        
        int phibin = phibins[i];; 
        int thetabin = thetabins[i]; 
-       times_to_fill[i] = getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag); 
+       // times_to_fill[i] = getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag); 
+       times_to_fill[i] = getDeltaTFromANN(ant1, ant2, phibin-1, thetabin-1,pol,cache, reader); 
    }
 
    correlation->evalEven(nbins_used, times_to_fill, vals_to_fill); 

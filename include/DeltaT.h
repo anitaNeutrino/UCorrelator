@@ -5,6 +5,7 @@
 #include "AnitaGeomTool.h"
 #include "FFTtools.h"
 #include "TrigCache.h" 
+#include <TMVA/Reader.h>
 
 
 #ifndef DEG2RAD
@@ -13,6 +14,7 @@
 
 namespace UCorrelator
 {
+
   /** Placeholder for now ...  this should be updated for A3*/ 
   inline double getAntennaGroupDelay(double phidiff, double theta) 
   {
@@ -99,6 +101,33 @@ namespace UCorrelator
 
     return geomDelay;
   }
+
+
+    //get the deltaT given (ant1, ant2, pol, theta ,phi) from Artificial Neurual Network(ANN).
+  inline double getDeltaTFromANN(int ant1, int ant2, int phibin, int thetabin, AnitaPol::AnitaPol_t pol,const UCorrelator::TrigCache * cache , TMVA::Reader* reader){
+    
+    if(ant1 > ant2){
+      int tmp = ant1;
+      ant1 = ant2;
+      ant2 = tmp;
+    }
+    char antPair[100];
+    sprintf (antPair, "antPair_%d_%d_%d", ant1, ant2, pol);
+    float phi_rad, theta_rad;
+
+    // two input variable theta and phi to the ANN.
+    reader->AddVariable("phi",&phi_rad);
+    reader->AddVariable("theta",&theta_rad);
+
+    phi_rad = cache->phi[phibin]*DEG2RAD;
+    theta_rad = cache->theta[thetabin]*DEG2RAD;
+
+    //get the results from ANN and return
+    return reader->EvaluateRegression(antPair)[0];
+  }
+
+
+
 
   
 }
