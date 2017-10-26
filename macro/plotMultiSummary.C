@@ -7,11 +7,11 @@ void plotMultiSummary()
 {
 	TString PlotPrefix = "Plot_";
 	TString pointDir = "../drivers/wais/";
-	// TString fEnd = "_max_30002_sinsub_10_3_ad_2.root";	
-	TString fEnd = "_max_30002_.root";	
+	TString fEnd = "_max_30005_sinsub_10_3_ad_2.root";	
+	// TString fEnd = "_max_30002_.root";	
 	TString outf = pointDir + PlotPrefix + fEnd;
 	
-	TChain* chain = new TChain("anita4");
+	TChain* chain = new TChain("wais");
 	for(int i = 123; i < 153; i++)
 	// for(int i = 139; i < 141; i++)
 	{
@@ -21,6 +21,10 @@ void plotMultiSummary()
 		chain->Add(inf);
 	}
 
+	TFile *file = TFile::Open("../drivers/wais/allWais.root","RECREATE");
+	  chain->CloneTree(-1,"fast");
+	  file->Write();
+	 return;
 	AnitaEventSummary* sum = new AnitaEventSummary;
 	AnitaEventSummary::PointingHypothesis point;
 	AnitaEventSummary::SourceHypothesis w;
@@ -53,29 +57,33 @@ void plotMultiSummary()
 		w = sum->wais;
 		double waistheta = w.theta;
 		double waisphi = w.phi;
-		double theta1 = point.theta;
-		double phi1 = point.phi;
+		// double theta1 = sum->mostImpulsivePeak().theta;
+		// double phi1 = sum->mostImpulsivePeak().phi;
 		double dist = w.distance/1e3;
-		double dtheta = theta1 - waistheta;
-		double dphi = FFTtools::wrap(phi1 - waisphi, 360, 180);
-		if(fabs(dtheta) > 2 ){
-			continue;
-		}
+		// double dtheta = theta1 - waistheta;
+		// double dphi = FFTtools::wrap(phi1 - waisphi, 360, 180);
+		
 		if(pulser == 1){
-			dThetavPhiH->Fill(waisphi, dtheta);
+			// if(fabs(dtheta) > 3 or fabs(dphi)>5 ){
+			// 	continue;
+			// }
+			// dThetavPhiH->Fill(waisphi, dtheta);
+			dThetavPhiH->Fill(sum->wais.phi, sum->peak[0][0].theta - sum->wais.theta);
+			dThetavPhiAll->Fill(sum->wais.phi, sum->peak[0][0].theta - sum->wais.theta);
 			for(int ant=0; ant < 48 ; ant++){
 				dTheta_dPhi_Power_H->Fill(FFTtools::wrap(sum->wais.phi - (sum->channels[0][ant].getPhi() - 2)*22.5,360,0), 10 - sum->wais.theta , sum->channels[0][ant].avgPower);
 				// dTheta_dPhi_RMS_H->Fill(FFTtools::wrap(sum->wais.phi - (sum->channels[0][ant].getPhi() - 2)*22.5,360,0), 10 - sum->wais.theta , sum->channels[0][ant].rms);
 			}
 		}
 		if(pulser == 5){
-			dThetavPhiV->Fill(waisphi, dtheta);
+			dThetavPhiV->Fill(sum->wais.phi, sum->peak[1][0].theta - sum->wais.theta);
+			dThetavPhiAll->Fill(sum->wais.phi, sum->peak[1][0].theta - sum->wais.theta);
+			// dThetavPhiV->Fill(waisphi, dtheta);
 			for(int ant=0; ant < 48 ; ant++){
 				dTheta_dPhi_Power_V->Fill(FFTtools::wrap(sum->wais.phi - (sum->channels[1][ant].getPhi() - 2)*22.5,360,0), 10 - sum->wais.theta , sum->channels[1][ant].avgPower);
 				// dTheta_dPhi_RMS_V->Fill(FFTtools::wrap(sum->wais.phi - (sum->channels[1][ant].getPhi() - 2)*22.5,360,0), 10 - sum->wais.theta , sum->channels[1][ant].rms);
 			}
 		}
-		dThetavPhiAll->Fill(waisphi, dtheta);
 		dThetavPhiAll->GetXaxis()->SetTitle("wais.phi/[degree]");
 		dThetavPhiAll->GetYaxis()->SetTitle("deltaTheta/[degree]");
 
