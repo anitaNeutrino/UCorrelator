@@ -112,7 +112,8 @@ void UCorrelator::SineSubtractCache::makeCache(int run, SineSubtractFilter* ssf)
  * @param ssDesc description string, used for identifying file of cached results
  */
 UCorrelator::SineSubtractCache::SineSubtractCache(const char* ssDesc)
-    : fDebug(false), fFile(NULL), fTree(NULL), fDescHash(0), fSpecDir(), fCurrentRun(-1), fLastEventNumber(0){
+  : fDebug(false), fFile(NULL), fTree(NULL), fDescHash(0), fSpecDir(), fCurrentRun(-1), fLastAttemptedRun(-1), fLastEventNumber(0)
+{
 
 
   for(int pol=0; pol < AnitaPol::kNotAPol; pol++){
@@ -157,7 +158,7 @@ const FFTtools::SineSubtractResult* UCorrelator::SineSubtractCache::getResult(UI
 
   if(eventNumber != fLastEventNumber){
     int run = AnitaDataset::getRunContainingEventNumber(eventNumber);
-    if(run!=fCurrentRun){
+    if(run!=fLastAttemptedRun){//fCurrentRun){
       loadRun(run);
     }
     if(fTree){
@@ -171,15 +172,24 @@ const FFTtools::SineSubtractResult* UCorrelator::SineSubtractCache::getResult(UI
         }
       }
       else{
-        static int numWarnings = 0;
-        const  int maxWarnings = 100;
-        if(numWarnings < maxWarnings || fDebug){
-          std::cerr << "Warning  " << (numWarnings+1) << " of " << maxWarnings << " in " << __PRETTY_FUNCTION__ << ", can't find entry "
+        static int numEntryWarnings = 0;
+        const  int maxEntryWarnings = 20;
+        if(numEntryWarnings < maxEntryWarnings || fDebug){
+          std::cerr << "Warning  " << (numEntryWarnings+1) << " of " << maxEntryWarnings << " in " << __PRETTY_FUNCTION__ << ", can't find entry "
                     << entry << " in " << fTree->GetName() << " in file " << fFile->GetName()
                     << " for eventNumber " << eventNumber << std::endl;
-          numWarnings++;
+          numEntryWarnings++;
         }
         return NULL;
+      }
+    }
+    else{
+      static int numTreeWarnings = 0;
+      const  int maxTreeWarnings = 20;
+      if(numTreeWarnings < maxTreeWarnings || fDebug){
+	std::cerr << "Warning  " << (numTreeWarnings+1) << " of " << maxTreeWarnings << " in " << __PRETTY_FUNCTION__ << ", can't find  "
+		  << ssrTreeName << " in file " << fFile->GetName() << std::endl;
+	numTreeWarnings++;
       }
     }
   }
@@ -223,5 +233,6 @@ void UCorrelator::SineSubtractCache::loadRun(Int_t run){
     else{
       std::cerr << "Error in " << __PRETTY_FUNCTION__ << ", couldn't open file " << fName << std::endl;
     }
+    fLastAttemptedRun = run;
   }
 }
