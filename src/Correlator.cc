@@ -138,7 +138,7 @@ UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, in
     for(int ant1 = 0; ant1 < 47; ant1++){
       for(int ant2 = ant1+1; ant2 < 48; ant2++){
         if((ant2-ant1+16+2)%16 <= 4){
-          sprintf (weightFileName, "TMVAweights/weights/trainTiming_MLPBFGS.WeightFile_%d_%d_%d.root", ant1, ant2, pol);
+          sprintf (weightFileName, "TMVAweights/weights/trainTiming_MLPBFGS.WeightFile_%d_%d_%d.xml", ant1, ant2, pol);
           sprintf (methodName, "antPair_%d_%d_%d", ant1, ant2, pol);
           reader->BookMVA(methodName,weightFileName);
         }
