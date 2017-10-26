@@ -167,17 +167,24 @@ factory->BookMethod( TMVA::Types::kMLP, "MLPBFGS","H:!V:NeuronType=tanh:VarTrans
 
 }
 
-void doMLP(int data_start = 135, int data_stop=152){
-  doMLP_pair(data_start,data_stop,0,34,0);
-  return;
+// divdeOf20 by default will run all 20 jobs. But you can just run one job by define it.
+void doMLP(int data_start = 123, int data_stop=152, int divideOf20 = 20){
+  // doMLP_pair(data_start,data_stop,0,34,0);
+  // return;
+  int index = 0;
   for(int pol = 0; pol < 2; pol++){
-    int index = 0;
     for(int ant1 = 0; ant1 < 47; ant1++){
       for(int ant2 = ant1+1; ant2 < 48; ant2++){
         if((ant2-ant1+16+2)%16 <= 4){
-           std::cout<<pol << " " <<ant1<< " "<< ant2<< " "<< index<<std::endl;
-           index++;
+          //there are 770 pairs for h and v. So divide the work into 20 parts, which can be run paralle.
+          if(divideOf20!=20 && index%20 != divideOf20){
+            index++;
+            continue;
+          }
+
+          std::cout<<pol << " " <<ant1<< " "<< ant2<< " \n"<< index<<std::endl;
           doMLP_pair(data_start,data_stop,ant1,ant2,pol);
+          index++;
         }
       }
     }
