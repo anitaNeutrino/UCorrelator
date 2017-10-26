@@ -1,6 +1,7 @@
 #include "FilteredAnitaEvent.h" 
 #include "TString.h"
 #include "AntennaPositions.h"
+#include "DeltaT.h"
 #include "TTree.h"
 #include "TFile.h"
 #include "TrigCache.h"
@@ -132,6 +133,16 @@ UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, in
 {
   // load the weight file of neural network. Each pair ants is an indepent neural network.
   reader = new TMVA::Reader("V");
+// two input variable theta and phi to the ANN.
+  reader->AddVariable("thetaWave",&thetaWaveANN);
+  reader->AddVariable("phiWave",&phiWaveANN);
+  reader->AddSpectator("ant1", &ant1ANN);
+  reader->AddSpectator("ant2", &ant2ANN);
+  reader->AddSpectator("isValid",&isValidANN);
+  reader->AddSpectator("pol",&polANN);
+  reader->AddSpectator( "maxCorVals", &maxCorValsANN );
+  reader->AddSpectator( "expectedDeltaT", &expectedDeltaTANN );
+
   char weightFileName[100];
   char methodName[100];
   for(int pol = 0; pol < 2; pol++){
@@ -602,8 +613,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        
        int phibin = phibins[i];; 
        int thetabin = thetabins[i]; 
-       // times_to_fill[i] = getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag); 
-       times_to_fill[i] = getDeltaTFromANN(ant1, ant2, phibin-1, thetabin-1,pol,cache, reader); 
+       times_to_fill[i] = getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag); 
+       // times_to_fill[i] = getDeltaTFromANN(ant1, ant2, phibin-1, thetabin-1,pol,cache); 
    }
 
    correlation->evalEven(nbins_used, times_to_fill, vals_to_fill); 
@@ -839,5 +850,23 @@ void UCorrelator::Correlator::dumpDeltaTs(const char * fname) const
 
 
 }
+
+
+   //get the deltaT given (ant1, ant2, pol, theta ,phi) from Artificial Neurual Network(ANN).
+double UCorrelator::Correlator::getDeltaTFromANN(int ant1, int ant2, int phibin, int thetabin, AnitaPol::AnitaPol_t pol,const UCorrelator::TrigCache * cache){
+  if(ant1 > ant2){
+    int tmp = ant1;
+    ant1 = ant2;
+    ant2 = tmp;
+  }
+  char antPair[100];
+  sprintf (antPair, "antPair_%d_%d_%d", ant1, ant2, pol);
+  phiWaveANN = cache->phi[phibin]*DEG2RAD;
+  thetaWaveANN = cache->theta[thetabin]*DEG2RAD;
+
+  //get the results from ANN and return
+  return reader->EvaluateRegression(antPair)[0];
+}
+
 
 

@@ -4,7 +4,8 @@
 
 #include "AnitaConventions.h"
 #include "TH2.h"
-#include "DeltaT.h"
+#include <TMVA/Reader.h>
+
 
 
 class FilteredAnitaEvent; 
@@ -60,7 +61,10 @@ namespace UCorrelator
       void setPadFactor(int pad) { pad_factor = pad; } 
 
       /** Debugging method to dump out some info to a file */ 
-      void dumpDeltaTs(const char * file) const; 
+      void dumpDeltaTs(const char * file) const;
+      //get the deltaT given (ant1, ant2, pol, theta ,phi) from Artificial Neurual Network(ANN).
+      double getDeltaTFromANN(int ant1, int ant2, int phibin, int thetabin, AnitaPol::AnitaPol_t fpol,const UCorrelator::TrigCache * cache);
+  
 
       virtual ~Correlator(); 
 
@@ -90,6 +94,11 @@ namespace UCorrelator
       bool use_bin_center; 
       bool scale_cos_theta; 
       double baselineWeight;
+
+      //variable and spectator for ANN
+      float thetaWaveANN, phiWaveANN, expectedDeltaTANN, maxCorValsANN ;
+      int ant1ANN,ant2ANN,polANN, isValidANN;
+
 
       AnalysisWaveform * getCorrelation(int ant1, int ant2); 
       void doAntennas(int ant1, int ant2, TH2D ** hist, TH2I ** norm, const UCorrelator::TrigCache * tc, const double * center_point  = 0); 
