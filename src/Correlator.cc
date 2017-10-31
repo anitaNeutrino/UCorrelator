@@ -131,8 +131,24 @@ static void combineHists(int N, T ** hists )
 UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, int ntheta, double theta_min, double theta_max, bool use_center, bool scale_by_cos_theta, double baseline_weight)
   : scale_cos_theta(scale_by_cos_theta) , baselineWeight(baseline_weight)
 {
+
+  TFile f("TMVAweights/testAllPair.root","recreate");
+  TTree pairCorTree("testAllPair","a Tree with data from");
+
+
+   int ant1_t,ant2_t, pol_t;
+   double expectedDeltaT_t,MLP_t,phiWave_t,thetaWave_t;
+   pairCorTree.Branch("ant1",&ant1_t);
+   pairCorTree.Branch("ant2",&ant2_t);
+   pairCorTree.Branch("pol",&pol_t);
+   pairCorTree.Branch("expectedDeltaT",&expectedDeltaT_t);
+   pairCorTree.Branch("MLP",&MLP_t);
+   pairCorTree.Branch("phiWave",&phiWave_t);
+   pairCorTree.Branch("thetaWave",&thetaWave_t);
+
   // load the weight file of neural network. Each pair ants is an indepent neural network.
   reader = new TMVA::Reader("V");
+  deltaTCacheANN = new float[672*720*360];
 // two input variable theta and phi to the ANN.
   reader->AddVariable("thetaWave",&thetaWaveANN);
   reader->AddVariable("phiWave",&phiWaveANN);
@@ -145,19 +161,39 @@ UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, in
 
   char weightFileName[100];
   char methodName[100];
+  int count_pair = 0;
   for(int pol = 0; pol < 2; pol++){
     for(int ant1 = 0; ant1 < 47; ant1++){
       for(int ant2 = ant1+1; ant2 < 48; ant2++){
         if((ant2-ant1+16+2)%16 <= 4){
           sprintf (weightFileName, "TMVAweights/weights/trainTiming_MLPBFGS.WeightFile_%d_%d_%d.xml", ant1, ant2, pol);
           sprintf (methodName, "antPair_%d_%d_%d", ant1, ant2, pol);
+          ant1ant2ToPairCount[ant1][ant2][pol] = count_pair;
+          std::cout<<"ant1 "<< ant1<< " ant2 "<< ant2<<" pol "<<pol<<std::endl;
           reader->BookMVA(methodName,weightFileName);
+          pol_t = pol;
+          ant1_t = ant1;
+          ant2_t = ant2;
+          for(int phiBin_all=0; phiBin_all<720; phiBin_all++){
+            for(int thetaBin_all=0; thetaBin_all<360; thetaBin_all++){
+              phiWaveANN = M_PI*phiBin_all/360.0;
+              thetaWaveANN = M_PI*(90 - 0.5*thetaBin_all)/180.0;
+              deltaTCacheANN[count_pair*720*360 + phiBin_all*360 +thetaBin_all] = reader->EvaluateRegression(methodName)[0];
+              // deltaTCacheANN[count_pair*720*360 + phiBin_all*360 +thetaBin_all] = getDeltaT(ant1,ant2,phiWaveANN*180/M_PI,thetaWaveANN*180/M_PI,(AnitaPol::AnitaPol_t)pol, 1);
+            thetaWave_t = thetaWaveANN;
+            phiWave_t = phiWaveANN;
+            MLP_t = deltaTCacheANN[count_pair*720*360 + phiBin_all*360 +thetaBin_all];
+            expectedDeltaT_t = getDeltaT(ant1,ant2,phiWaveANN*180/M_PI,thetaWaveANN*180/M_PI,(AnitaPol::AnitaPol_t)pol, 1);
+            pairCorTree.Fill();
+            }
+          }
+          count_pair++;
         }
       }
     }
   }
-
-
+  pairCorTree.Write();
+  
   TString histname = TString::Format("ucorr_corr_%d",count_the_correlators);
   TString normname = TString::Format("ucorr_norm_%d",count_the_correlators++);
 
@@ -367,6 +403,8 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2)
 
 TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi, double dphi, int ntheta, double dtheta, int nant, TH2D * answer) 
 {
+    std::cout<< "computeZoomed "<<std::endl;
+
 
   if (!ev) 
   {
@@ -409,7 +447,9 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
     nant = ap->getClosestAntennas(phi, nant, closest, disallowed_antennas); 
   }
 
-  TrigCache cache(nphi, dphi, phi0, ntheta,dtheta,theta0, ap, true,nant, nant ? closest : 0); 
+  // TrigCache cache(nphi, dphi, phi0, ntheta,dtheta,theta0, ap, true,nant, nant ? closest : 0);
+  //peng 
+  TrigCache cache(nphi, dphi, phi0, ntheta,dtheta,theta0, ap, false,nant, nant ? closest : 0); 
 
   int n2loop = nant ? nant : NANTENNAS;  
 
@@ -615,6 +655,12 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        int thetabin = thetabins[i]; 
        times_to_fill[i] = getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag); 
        // times_to_fill[i] = getDeltaTFromANN(ant1, ant2, phibin-1, thetabin-1,pol,cache); 
+       float annT = getDeltaTFromANN(ant1, ant2, phibin-1, thetabin-1,pol,cache); 
+       if(i == 0){
+        std::cout<<times_to_fill[i]<< " " << annT << " ---- " << annT -times_to_fill[i] <<" --- "<< " "<< ant1<< " "<< ant2<< " "<<pol<<std::endl;
+      }
+       times_to_fill[i] = annT;
+
    }
 
    correlation->evalEven(nbins_used, times_to_fill, vals_to_fill); 
@@ -658,6 +704,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
 void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t whichpol) 
 {
+  std::cout<< "compute "<<std::endl;
 
 //  TStopwatch sw; 
 
@@ -767,6 +814,9 @@ UCorrelator::Correlator::~Correlator()
   delete hist; 
   delete norm; 
 
+  delete reader;
+  delete deltaTCacheANN;
+
 #ifdef UCORRELATOR_OPENMP
   delete locks; 
   for (int i = 1; i < nthreads(); i++)
@@ -854,18 +904,36 @@ void UCorrelator::Correlator::dumpDeltaTs(const char * fname) const
 
    //get the deltaT given (ant1, ant2, pol, theta ,phi) from Artificial Neurual Network(ANN).
 double UCorrelator::Correlator::getDeltaTFromANN(int ant1, int ant2, int phibin, int thetabin, AnitaPol::AnitaPol_t pol,const UCorrelator::TrigCache * cache){
+  int swapped = 1;
   if(ant1 > ant2){
     int tmp = ant1;
     ant1 = ant2;
     ant2 = tmp;
+    swapped = -1;
   }
-  char antPair[100];
-  sprintf (antPair, "antPair_%d_%d_%d", ant1, ant2, pol);
-  phiWaveANN = cache->phi[phibin]*DEG2RAD;
-  thetaWaveANN = cache->theta[thetabin]*DEG2RAD;
 
+  int count_pair = ant1ant2ToPairCount[ant1][ant2][pol];
+  if(count_pair>=732 || count_pair< 0 ){
+    std::cout<<" count_pair "<< count_pair<<std::endl;
+    exit(EXIT_FAILURE);
+  }
+  int phiBin_all = cache->phiBin_all[phibin];
+  int thetaBin_all = cache->thetaBin_all[thetabin];
+
+  phiBin_all = (phiBin_all+720)%720;
+  thetaBin_all = (thetaBin_all+360)%360;
+
+  if(phiBin_all>=720 || phiBin_all< 0){
+    std::cout<<" phiBin_all "<< phiBin_all<<std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  if(thetaBin_all>=360 || thetaBin_all < 0){
+    std::cout<<" thetaBin_all "<< thetaBin_all<<std::endl;
+    exit(EXIT_FAILURE);
+  }
   //get the results from ANN and return
-  return reader->EvaluateRegression(antPair)[0];
+  return swapped*deltaTCacheANN[count_pair*720*360 + phiBin_all*360 +thetaBin_all];
 }
 
 

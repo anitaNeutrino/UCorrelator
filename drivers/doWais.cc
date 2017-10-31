@@ -57,27 +57,29 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = ""
   int ndone = 0; 
   for (int i =start ; i < d.N(); i++)
   {
+    try{
+      d.getEntry(i); 
+      printf("----(%d)-----\n",i); 
 
-    d.getEntry(i); 
-    printf("----(%d)-----\n",i); 
+      UsefulAdu5Pat pat(d.gps()); 
 
-    UsefulAdu5Pat pat(d.gps()); 
+      if (UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
+      {
+        printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone); 
+        FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
 
-    if (UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
-    {
-      printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone); 
-      FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
+        analyzer.analyze(&ev, sum); 
+        ofile.cd(); 
+        hdr = d.header(); 
+        patptr = &pat; 
+        tree->Fill(); 
+        ndone++; 
+      }
 
-      analyzer.analyze(&ev, sum); 
-      ofile.cd(); 
-      hdr = d.header(); 
-      patptr = &pat; 
-      tree->Fill(); 
-      ndone++; 
+      if (max && ndone >= max) break; 
+    }catch(const char* msg){
+      std::cout<<"an error catched for this event!!!!"<< msg <<std::endl;
     }
-
-    if (max && ndone >= max) break; 
-
   }
 
   ofile.cd(); 

@@ -67,12 +67,10 @@ namespace UCorrelator
     double part2=ap->zAnt[pol][ant2]*tan(th) - ap->rAnt[pol][ant2] * cos(ph2); 
     
     double geomDelay=1e9*((cos(th) * (part1 - part2))/C_LIGHT);    //returns time in ns
-    
-
-    if (includeGroupDelay)
-    {
-      geomDelay +=  getAntennaGroupDelay(FFTtools::wrap(ph1_deg,360,0), theta) - getAntennaGroupDelay(FFTtools::wrap(ph2_deg,360,0), theta); 
-    }
+    // if (includeGroupDelay)
+    // {
+    //   geomDelay +=  getAntennaGroupDelay(FFTtools::wrap(ph1_deg,360,0), theta) - getAntennaGroupDelay(FFTtools::wrap(ph2_deg,360,0), theta); 
+    // }
 
     return geomDelay;
   }
@@ -90,15 +88,13 @@ namespace UCorrelator
     double part2=ap->zAnt[pol][ant2]*cache->tan_theta[thetabin] - ap->rAnt[pol][ant2] * cache->cos_phi[2*(phibin + nphi * ant2) + pol];
     
     double geomDelay=(1.e9/C_LIGHT)*(cache->cos_theta[thetabin] * (part1 - part2));    //returns time in ns
-
-
-    if (includeGroupDelay)
-    {
-      double ph1_deg = FFTtools::wrap((cache->phi[phibin]- ap->phiAnt[pol][ant1]),360,0) ; 
-      double ph2_deg = FFTtools::wrap((cache->phi[phibin]- ap->phiAnt[pol][ant2]),360,0) ; 
-      double theta_deg = cache->theta[thetabin];
-      geomDelay +=  getAntennaGroupDelay(ph1_deg, theta_deg) - getAntennaGroupDelay(ph2_deg, theta_deg); 
-    }
+    // if (includeGroupDelay)
+    // {
+    //   double ph1_deg = FFTtools::wrap((cache->phi[phibin]- ap->phiAnt[pol][ant1]),360,0) ; 
+    //   double ph2_deg = FFTtools::wrap((cache->phi[phibin]- ap->phiAnt[pol][ant2]),360,0) ; 
+    //   double theta_deg = cache->theta[thetabin];
+    //   geomDelay +=  getAntennaGroupDelay(ph1_deg, theta_deg) - getAntennaGroupDelay(ph2_deg, theta_deg); 
+    // }
 
     return geomDelay;
   }

@@ -28,12 +28,16 @@ namespace UCorrelator
       tan_theta = new double[ntheta]; 
       cos_theta = new double[ntheta]; 
 
+      phiBin_all = new int[nphi]; 
+      thetaBin_all = new int[ntheta]; 
+
       for (int i = 0; i < nphi; i++) 
       {
         double current_phi = phi_start + dphi * i; 
         if (use_bin_center) current_phi += 0.5 * dphi; 
 
         phi[i] = current_phi; 
+        phiBin_all[i] = int(current_phi*2);
         for (int j = 0; j < num_ants; j++)
         {
           int ant =  nant2use ?  ants[j] : j; 
@@ -44,9 +48,10 @@ namespace UCorrelator
 
       for (int i = 0; i < ntheta; i++) 
       {
-        double current_theta = theta_start + dtheta * i; 
+        double current_theta = theta_start + dtheta * i;
         if (use_bin_center) current_theta += 0.5 * dphi; 
         theta[i] = -current_theta; //lol
+        thetaBin_all[i] = int((current_theta+90)*2);
         cos_theta[i] = cos(theta[i] * DEG2RAD);  //naturally, we reverse the sign... 
         tan_theta[i] = tan(theta[i] * DEG2RAD);  //naturally, we reverse the sign... 
       }
@@ -63,6 +68,8 @@ namespace UCorrelator
       delete [] theta; 
       delete [] cos_theta; 
       delete [] tan_theta; 
+      delete [] thetaBin_all; 
+      delete [] phiBin_all; 
 
     }
 
@@ -77,6 +84,10 @@ namespace UCorrelator
     double * theta; //degrees! 
     double * cos_theta; 
     double * tan_theta;
+
+    //the thetabin number in the all interfero map.
+    int* thetaBin_all;
+    int* phiBin_all;
 
     const AntennaPositions * ap; 
 

@@ -83,8 +83,9 @@ namespace UCorrelator
 #endif
       TrigCache * trigcache[NUM_ANITAS+1]; 
       TMVA::Reader* reader;
+      float* deltaTCacheANN; // 720 =  360/0.5 pixels in phi, 200 = 100/0.5  pixels in theta, 672 is all ant pairs for H and V.
+      int ant1ant2ToPairCount[48][48][2];
       double rms[NANTENNAS]; 
-
       double max_phi, max_phi2;
       ULong64_t disallowed_antennas;
       int pad_factor;
