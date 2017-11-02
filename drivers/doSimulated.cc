@@ -26,7 +26,7 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * filter = 
   cfg.nmaxima = 3;
   cfg.enable_group_delay = false; 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
-  cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
+  cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
 //  cfg.max_peak_trigger_angle = 90; 
   cfg.fill_blast_fraction = true; 
 
