@@ -154,6 +154,8 @@ namespace UCorrelator
       /** Whether or not to use the average of the spectra or the spectra of the coherent/deconvolved */ 
       bool use_coherent_spectra = true; 
 
+      double combine_t0;
+      double combine_t1;
     private: 
       mutable TH2 * the_ldb_hist; 
   };

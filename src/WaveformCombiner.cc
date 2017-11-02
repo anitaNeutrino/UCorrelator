@@ -82,7 +82,7 @@ const AnalysisWaveform * UCorrelator::WaveformCombiner::wf (const FilteredAnitaE
 
 static SimplePassBandFilter alfa_filter(0,0.6);  
 
-void UCorrelator::WaveformCombiner::combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, ULong64_t disallowed)
+void UCorrelator::WaveformCombiner::combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, ULong64_t disallowed, double t0, double t1)
 {
 
   std::vector<AnalysisWaveform> padded(nant);
@@ -115,7 +115,7 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
     new (&padded[i]) AnalysisWaveform(*wf(event,antennas[i],pol));
 		if(extra_filters)
 		{
-			for(int j = 0; j < extra_filters->nOperations(); j++)
+			for(int j = 0; j < (int) extra_filters->nOperations(); j++)
 			{
 				FilterOperation * filterOp = (FilterOperation*) extra_filters->getOperation(j);
 				filterOp->processOne(&padded[i], event->getHeader(), antennas[i], ipol);
@@ -147,7 +147,7 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
       new (&deconv[i]) AnalysisWaveform(*wf(event,antennas[i],pol));
 			if(extra_filters_deconvolved)
 			{
-				for(int j = 0; j < extra_filters_deconvolved->nOperations(); j++)
+				for(int j = 0; j < (int) extra_filters_deconvolved->nOperations(); j++)
 				{
 					FilterOperation * filterOp = (FilterOperation*) extra_filters_deconvolved->getOperation(j);
 					filterOp->processOne(&deconv[i], event->getHeader(), antennas[i], ipol);
@@ -172,31 +172,21 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
 
   }
 
-  combineWaveforms(nant, &padded[0], delays,0, &coherent); 
+  combineWaveforms(nant, &padded[0], delays,0, &coherent, t0, t1); 
   scaleGraph(&coherent_avg_spectrum, 1./nant); 
   if (do_deconvolution)
   {
-    combineWaveforms(nant, &deconv[0], delays,0, &deconvolved); 
+    combineWaveforms(nant, &deconv[0], delays,0, &deconvolved, t0, t1); 
     scaleGraph(&deconvolved_avg_spectrum, 1./nant); 
   }
 }
 
 
-AnalysisWaveform * UCorrelator::WaveformCombiner::combineWaveforms(int nwf, const AnalysisWaveform * wf, const double * delays, const double * scales, AnalysisWaveform * out)
+AnalysisWaveform * UCorrelator::WaveformCombiner::combineWaveforms(int nwf, const AnalysisWaveform * wf, const double * delays, const double * scales, AnalysisWaveform * out, double min, double max)
 {
   // we want to make the waveform as big as the entire span of all the waveforms to combine 
 
   double dt = wf[0].deltaT(); 
-
-
-  double min = wf[0].even()->GetX()[0] + delays[0]; 
-  double max = wf[0].even()->GetX()[wf[0].Neven()-1] + delays[0]; 
-
-  for (int i = 1; i < nwf; i++) 
-  {
-    min = TMath::Min(min, wf[i].even()->GetX()[0] + delays[i]); 
-    max = TMath::Max(max, wf[i].even()->GetX()[wf[i].Neven()-1] + delays[i]); 
-  }
 
   int N = ceil((max-min)/dt); 
 
