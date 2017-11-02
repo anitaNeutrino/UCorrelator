@@ -98,37 +98,43 @@ namespace UCorrelator
 
       void clearInteractiveMemory(double frac = 0.5) const; 
       
-			/** Sets disallowed antennas with a bitmask */
-			void setDisallowedAntennas(ULong64_t hpol=0, ULong64_t vpol=0) {disallowedAnts[0] = hpol; disallowedAnts[1] = vpol; } 
+      /** Sets disallowed antennas with a bitmask */
+      void setDisallowedAntennas(ULong64_t hpol=0, ULong64_t vpol=0) {disallowedAnts[0] = hpol; disallowedAnts[1] = vpol; } 
+      
+      /** Excludes the range for finding peaks in phi (full range is 0 -> 360)*/
+      void setExcludePhiRange(double phiMin, double phiMax) {phiRange[0] = phiMin; phiRange[1] = phiMax; exclude = true; }
+      /** Excludes the range for finding peaks in theta (full range is -60 -> 40)*/
+      void setExcludeThetaRange(double thetaMin, double thetaMax) {thetaRange[0] = thetaMin; thetaRange[1] = thetaMax; exclude = true; }
+      /** Excludes the phi and theta range for finding peaks*/
+      void setExcludeThetaPhiRange(double thetaMin, double thetaMax, double phiMin, double phiMax) {thetaRange[0] = thetaMin; thetaRange[1] = thetaMax; phiRange[0] = phiMin; phiRange[1] = phiMax; exclude = true; }
+      
+      /** Looks only at the specified phi range for finding peaks (full phi range is 0 -> 360)*/
+      void setPhiRange(double phiMin, double phiMax) {phiRange[0] = phiMin; phiRange[1] = phiMax; exclude = false; }
+      /** Looks only at the specified theta range for finding peaks (full theta range is -60 -> 40)*/
+      void setThetaRange(double thetaMin, double thetaMax) {thetaRange[0] = thetaMin; thetaRange[1] = thetaMax; exclude = false; }
+      /** Looks only at the specified range in phi and theta for finding peaks*/
+      void setThetaPhiRange(double thetaMin, double thetaMax, double phiMin, double phiMax) {thetaRange[0] = thetaMin; thetaRange[1] = thetaMax; phiRange[0] = phiMin; phiRange[1] = phiMax; exclude = false; }
+      /** Set to look exclusively around a source for peaks or to exclude the angular area around a source from peak finding */
+      void setTrackSource(double setLon, double setLat, double setAlt, double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {sourceLon = setLon; sourceLat = setLat; sourceAlt = setAlt; dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSource = true; }
+      /** Tracks the sun for peak finding, can be set to exclude or include the sun */
+      void setTrackSun(double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSun = true; }
+      /** Tracks WAIS for peak finding, include or exclude  */
+      void setTrackWAIS(double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {sourceLon = AnitaLocations::getWaisLongitude(); sourceLat = AnitaLocations::getWaisLatitude(); sourceAlt = AnitaLocations::getWaisAltitude(); dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSource = true; }
+      /** Tracks LDB for peak finding  */
+      void setTrackLDB(double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {sourceLon = AnitaLocations::LONGITUDE_LDB; sourceLat = AnitaLocations::LATITUDE_LDB; sourceAlt = AnitaLocations::ALTITUDE_LDB; dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSource = true; }
 
-			/** Excludes the range for finding peaks in phi (full range is 0 -> 360)*/
-			void setExcludePhiRange(double phiMin, double phiMax) {phiRange[0] = phiMin; phiRange[1] = phiMax; exclude = true; }
-			/** Excludes the range for finding peaks in theta (full range is -60 -> 40)*/
-			void setExcludeThetaRange(double thetaMin, double thetaMax) {thetaRange[0] = thetaMin; thetaRange[1] = thetaMax; exclude = true; }
-			/** Excludes the phi and theta range for finding peaks*/
-			void setExcludeThetaPhiRange(double thetaMin, double thetaMax, double phiMin, double phiMax) {thetaRange[0] = thetaMin; thetaRange[1] = thetaMax; phiRange[0] = phiMin; phiRange[1] = phiMax; exclude = true; }
-
-			/** Looks only at the specified phi range for finding peaks (full phi range is 0 -> 360)*/
-			void setPhiRange(double phiMin, double phiMax) {phiRange[0] = phiMin; phiRange[1] = phiMax; exclude = false; }
-			/** Looks only at the specified theta range for finding peaks (full theta range is -60 -> 40)*/
-			void setThetaRange(double thetaMin, double thetaMax) {thetaRange[0] = thetaMin; thetaRange[1] = thetaMax; exclude = false; }
-			/** Looks only at the specified range in phi and theta for finding peaks*/
-			void setThetaPhiRange(double thetaMin, double thetaMax, double phiMin, double phiMax) {thetaRange[0] = thetaMin; thetaRange[1] = thetaMax; phiRange[0] = phiMin; phiRange[1] = phiMax; exclude = false; }
-			/** Set to look exclusively around a source for peaks or to exclude the angular area around a source from peak finding */
-			void setTrackSource(double setLon, double setLat, double setAlt, double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {sourceLon = setLon; sourceLat = setLat; sourceAlt = setAlt; dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSource = true; }
-			/** Tracks the sun for peak finding, can be set to exclude or include the sun */
-			void setTrackSun(double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSun = true; }
-			/** Tracks WAIS for peak finding, include or exclude  */
-			void setTrackWAIS(double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {sourceLon = AnitaLocations::getWaisLongitude(); sourceLat = AnitaLocations::getWaisLatitude(); sourceAlt = AnitaLocations::getWaisAltitude(); dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSource = true; }
-			/** Tracks LDB for peak finding  */
-			void setTrackLDB(double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {sourceLon = AnitaLocations::LONGITUDE_LDB; sourceLat = AnitaLocations::LATITUDE_LDB; sourceAlt = AnitaLocations::ALTITUDE_LDB; dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSource = true; }
-
-    private:
+			/** Allows you to set extra filters used only for combining waveforms */
+			void setExtraFilters(FilterStrategy* extra);
+			/** Allows you to set extra filters used only for combining deconvolved waveforms */
+			void setExtraFiltersDeconvolved(FilterStrategy* extra);
+      
+  private:
 
       void fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph * power, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol); 
       void fillPointingInfo(double rough_phi, double rough_theta, AnitaEventSummary::PointingHypothesis * point,
                             UsefulAdu5Pat * pat, double hwAngle, UShort_t triggered_sectors, UShort_t masked_sectors, UShort_t triggered_sectors_xpol, UShort_t masked_sectors_xpol); 
       void fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary::EventFlags * flags, UsefulAdu5Pat * pat); 
+      void fillChannelInfo(const FilteredAnitaEvent* event, AnitaEventSummary* summary);
 
       gui::Map* correlation_maps[2]; 
       std::vector<gui::Map*>  zoomed_correlation_maps[2]; 
@@ -157,17 +163,17 @@ namespace UCorrelator
       bool interactive; 
       bool interactive_deconvolved; 
       bool interactive_xpol_deconvolved; 
-			ULong64_t disallowedAnts[2];
-			double phiRange[2];
-			double thetaRange[2];
-			bool exclude;
-			bool trackSource;
-			double sourceLon;
-			double sourceLat;
-			double sourceAlt;
-			bool trackSun;
-			double dPhi;
-			double dTheta;
+      ULong64_t disallowedAnts[2];
+      double phiRange[2];
+      double thetaRange[2];
+      bool exclude;
+      bool trackSource;
+      double sourceLon;
+      double sourceLat;
+      double sourceAlt;
+      bool trackSun;
+      double dPhi;
+      double dTheta;
 
       mutable std::vector<TObject*> delete_list; 
   };

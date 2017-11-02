@@ -1,4 +1,3 @@
-#include "FFTtools.h"
 #include "Analyzer.h"
 #include "FilteredAnitaEvent.h"
 #include "BasicFilters.h" 
@@ -64,7 +63,7 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = ""
 
     UsefulAdu5Pat pat(d.gps()); 
 
-    if (UCorrelator::isWAISHPol(&pat, d.header()))
+    if (UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
     {
       printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone); 
       FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 

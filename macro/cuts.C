@@ -1,6 +1,5 @@
 #include "FFTtools.h" 
 #define CUTS_LOADED 
-
 TCut isReal ( "peak[][].value > 0 && flags.isRF==1 && peak[][].theta < 60 && peak[][].theta > -50"); 
 TCut isWais( "flags.pulser == 1 && flags.isRF == 1 && abs(FFTtools::wrap(peak[][].phi - wais.phi,360,0)) < 5 && abs(FFTtools::wrap(peak[][].theta - wais.theta,360,0)) < 5"); 
 TCut isSun("flags.pulser == 0 && flags.isRF == 1 && abs(FFTtools::wrap(peak[][].phi - sun.phi,360,0)) < 20"); 

@@ -121,10 +121,22 @@ namespace UCorrelator
       int ldb_max_run; 
 
       /** When calculating stokes parameters, do you want to window the waveform around the hilbert envelope?
+	  windowStokes == false: no windowing at all
+	  if true:
+	             stokesWindowLength =< 0: dynamic window length (default)
+		     stokesWindowLength > 0: set window length
        * */
       bool windowStokes;
+      int stokesWindowLength;
 
-
+      /** set_bottom_first:  Re-arrange the coherently summed waveforms so that the bottom-most ring is always the
+	  first antenna to be summed.
+	  * */
+      bool set_bottom_first;
+      
+      /** delay_to_center:
+	  Makes it so the delays in the coherent sum are referenced to the center point */
+      bool delay_to_center;
 
       /** TODO: this has to be loaded from file somehow */ 
     AnitaResponse::DeconvolutionMethod * deconvolution_method; 

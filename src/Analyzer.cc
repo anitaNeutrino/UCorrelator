@@ -23,6 +23,7 @@
 #include "simpleStructs.h"
 #include "UCImageTools.h"
 #include <stdint.h>
+#include "RootTools.h"
 
 #ifdef UCORRELATOR_OPENMP
 #include <omp.h>
@@ -93,6 +94,18 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mo
   wfcomb_xpol.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_filtered.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_xpol_filtered.setGroupDelayFlag(cfg->enable_group_delay); 
+
+  wfcomb.setBottomFirst(cfg->set_bottom_first);
+  wfcomb_xpol.setBottomFirst(cfg->set_bottom_first);
+  wfcomb_filtered.setBottomFirst(cfg->set_bottom_first);
+  wfcomb_xpol_filtered.setBottomFirst(cfg->set_bottom_first);
+
+  wfcomb.setDelayToCenter(cfg->delay_to_center);
+  wfcomb_xpol.setDelayToCenter(cfg->delay_to_center);
+  wfcomb_filtered.setDelayToCenter(cfg->delay_to_center);
+  wfcomb_xpol_filtered.setDelayToCenter(cfg->delay_to_center);
+
+
   instance_counter++; 
   power_filter = new FFTtools::GaussianFilter(2,3) ; //TODO make this configurable
 
@@ -322,7 +335,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       }
     }
 
-		corr.setDisallowedAntennas(saturated[pol] | disallowedAnts[pol] | maskedAnts); 
+    corr.setDisallowedAntennas(saturated[pol] | disallowedAnts[pol] | maskedAnts); 
     corr.compute(event, AnitaPol::AnitaPol_t(pol)); 
 
     //compute RMS of correlation map 
@@ -396,27 +409,29 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       
 SECTIONS
 {
-SECTION
-      wfcomb.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
-SECTION
-      wfcomb_xpol.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
-SECTION
-      wfcomb_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
-SECTION
-      wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
-}
+  SECTION
+    wfcomb.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
+  SECTION
+    wfcomb_xpol.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
+  SECTION
+    wfcomb_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol]); 
+  SECTION
+    wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol]); 
+ }
 
 SECTIONS 
 {
-SECTION
-      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol); 
-SECTION
-      fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol); 
-SECTION
-      fillWaveformInfo(wfcomb_filtered.getCoherent(), wfcomb_xpol_filtered.getCoherent(), wfcomb_filtered.getCoherentAvgSpectrum(), &summary->coherent_filtered[pol][i], (AnitaPol::AnitaPol_t) pol); 
-SECTION
-      fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol); 
-}
+  SECTION
+    fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol); 
+  SECTION
+    fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol); 
+  SECTION
+    fillWaveformInfo(wfcomb_filtered.getCoherent(), wfcomb_xpol_filtered.getCoherent(), wfcomb_filtered.getCoherentAvgSpectrum(), &summary->coherent_filtered[pol][i], (AnitaPol::AnitaPol_t) pol); 
+  SECTION
+    fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol); 
+ }
+  // comment this line out if you don't want channel information in summary file.
+  fillChannelInfo(event, summary);
 
 
 
@@ -660,7 +675,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
       fprintf(stderr,"wf passed to fillWaveformInfo has no points\n");  
 
     memset(info, 0, sizeof(AnitaEventSummary::WaveformInfo)); 
-    return; 
+    return;
   }
   const TGraphAligned * even = wf->even(); 
   const TGraphAligned * xpol_even= xpol_wf->even(); 
@@ -697,13 +712,21 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   if (ifirst < 0) ifirst = 0; 
   if (ilast < 0 || ilast >= wf->Neven()) ilast = wf->Neven()-1; 
 
+  int shortestRecoLen = TMath::Min(even->GetN(),xpol_even->GetN());
+
   if (!cfg->windowStokes) {
     ifirst = 0;
-    ilast = wf->Neven()-1;
+    ilast = shortestRecoLen-1;
+  }
+  else {
+    if (cfg->stokesWindowLength > 0) {
+      ilast = ifirst + cfg->stokesWindowLength;
+    }
+    if (ifirst < 0) ifirst = 0; 
+    if (ilast < 0 || ilast > shortestRecoLen) ilast = shortestRecoLen-1; 
   }
 
   int nstokes = ilast-ifirst+1 ; 
-
   if (pol == AnitaPol::kHorizontal)
   {
 
@@ -724,6 +747,17 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
                                &(info->I), &(info->Q), &(info->U), &(info->V)); 
  
   }
+  
+  /* //pol and xpol aren't required to be the same length(uncomment to see).
+  // So, you'll get invalid accesses and garbage results sometimes.
+  if (info->I > 1e4) {
+    std::cout << "Warning in Analyzer(): Weird stokes value? ";
+    std::cout << info->power_10_10 <<" stokesI=" << info->I << " nstokes=" << nstokes << " ";
+    std::cout << xpol_even->GetN() << " " << xpol_wf->hilbertTransform()->even()->GetN() << " ";
+    std::cout << even->GetN() << " " << wf->hilbertTransform()->even()->GetN();
+    std::cout << " shortest->" << shortestRecoLen << std::endl;
+  }               
+  */
 
   info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf); 
 
@@ -733,7 +767,8 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   int i0 = TMath::Max(0.,floor((cfg->noise_estimate_t0 - t0)/dt)); 
   int i1 = TMath::Min(even->GetN()-1.,ceil((cfg->noise_estimate_t1 - t0)/dt)); 
   int n = i1 - i0 + 1; 
-//  printf("%d-%d -> %d \n", i0, i1, n); 
+  //  printf("%d-%d -> %d \n", i0, i1, n); 
+  if (n < 0 || n > even->GetN()) n = even->GetN();
 
   double rms = TMath::RMS(n, even->GetY() + i0); 
   
@@ -747,6 +782,29 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   }
 
   spectrum::fillSpectrumParameters(&power, avg_spectra[pol], info, cfg); 
+}
+
+/** 
+ * Fill Peng's ChannelInfo object, it might come in handy...
+ */
+void UCorrelator::Analyzer::fillChannelInfo(const FilteredAnitaEvent* event, AnitaEventSummary* summary){
+  for(int polInd=0; polInd < AnitaPol::kNotAPol; polInd++){
+    AnitaPol::AnitaPol_t pol = (AnitaPol::AnitaPol_t) polInd;
+    for(int ant=0; ant<NUM_SEAVEYS; ant++){
+      const AnalysisWaveform* wf = event->getFilteredGraph(ant, pol);
+      const TGraphAligned* hilbertEnvelope= wf->hilbertEnvelope();
+      const TGraphAligned* power= wf->power();
+      const TGraphAligned* gr = wf->even();
+      double mean,rms, rmsPower, meanPower;
+      gr->getMeanAndRMS(&mean,&rms);
+      power->getMeanAndRMS(&meanPower,&rmsPower);
+
+      summary->channels[polInd][ant].rms = rms;
+      summary->channels[polInd][ant].avgPower = meanPower;
+      summary->channels[polInd][ant].peakHilbert = hilbertEnvelope->peakVal();
+      //TODO: snr.
+    }
+  }
 }
 
 
@@ -957,9 +1015,12 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   {
     flags->pulser = AnitaEventSummary::EventFlags::LDB; 
   }
-  else if ( isWAISHPol(pat, fae->getHeader(), cfg) || isWAISVPol (pat, fae->getHeader(), cfg))
+  else if ( isWAISHPol(pat, fae->getHeader(), cfg) )
   {
     flags->pulser = AnitaEventSummary::EventFlags::WAIS; 
+  }
+  else if( isWAISVPol (pat, fae->getHeader(), cfg)){
+    flags->pulser = AnitaEventSummary::EventFlags::WAIS_V;
   }
   else
   {
@@ -980,5 +1041,19 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
 
   flags->isGood = !flags->isVarner && !flags->isVarner2 && !flags->strongCWFlag; 
 
+	//added for a class of anita 4 events that only happens on one lab and channel
+	if(AnitaVersion::get() == 4) flags->isStepFunction = fae->checkStepFunction(1, AnitaRing::kMiddleRing, 8, AnitaPol::kVertical);
+	else flags->isStepFunction = 0;
 }
 
+void UCorrelator::Analyzer::setExtraFilters(FilterStrategy* extra)
+{
+	wfcomb_filtered.setExtraFilters(extra);
+	wfcomb_xpol_filtered.setExtraFilters(extra);
+}
+
+void UCorrelator::Analyzer::setExtraFiltersDeconvolved(FilterStrategy* extra)
+{
+	wfcomb_filtered.setExtraFiltersDeconvolved(extra);
+	wfcomb_xpol_filtered.setExtraFiltersDeconvolved(extra);
+}
