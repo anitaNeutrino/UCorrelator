@@ -2,8 +2,9 @@
 #define UCORRELATOR_RESOLUTION_MODEL_H
 
 #include "AnitaEventSummary.h"
+#include "TF1.h" 
 class TRandom; 
-class TF1; 
+class TProfile; 
 
 namespace UCorrelator
 {
@@ -51,20 +52,47 @@ namespace UCorrelator
 
 
 
+  class HeadingErrorEstimator 
+  {
+    public: 
+      HeadingErrorEstimator(int nseconds = 60)  : current_run(-1), nsecs(nseconds), prof(0) { ; } 
+      int estimateHeadingError(double t,  double * stdev, double * offset = 0); 
+      virtual ~HeadingErrorEstimator(); 
+
+    private: 
+      HeadingErrorEstimator(const HeadingErrorEstimator & );
+      HeadingErrorEstimator operator= (const HeadingErrorEstimator &); 
+      int current_run; 
+      int nsecs; 
+      TProfile * prof; 
+  }; 
+
+  class PointingResolutionModelPlusHeadingError : public PointingResolutionModel
+  {
+    public: 
+     PointingResolutionModelPlusHeadingError(int nsecs, const PointingResolutionModel * other); 
+     virtual PointingResolution * computePointingResolution(const AnitaEventSummary * sum, AnitaPol::AnitaPol_t pol, int peak, PointingResolution *p) const; 
+    private: 
+     mutable HeadingErrorEstimator h; 
+     PointingResolutionModel *p; 
+
+  }; 
   
   class PointingResolutionParSNRModel : public PointingResolutionModel
   {
     public: 
-     PointingResolutionParSNRModel(TF1 * f_dtheta, TF1 * f_dphi, bool use_deconvolved = false)
-     : f_th(f_dtheta), f_ph(f_dphi), deconv(use_deconvolved)  {; } 
+     PointingResolutionParSNRModel() :  deconv(false){ ; } 
+     PointingResolutionParSNRModel(const TF1 & f_dtheta, const TF1 & f_dphi, bool use_deconvolved = false, double scale_by_cos_theta = true)
+     : f_th(f_dtheta), f_ph(f_dphi), deconv(use_deconvolved), cos_theta_scale(scale_by_cos_theta)  {; } 
        ; 
 
      virtual PointingResolution * computePointingResolution(const AnitaEventSummary * sum, AnitaPol::AnitaPol_t pol, int peak, PointingResolution *p) const; 
 
     private: 
-     TF1 * f_th; 
-     TF1 * f_ph; 
+     TF1 f_th; 
+     TF1 f_ph; 
      bool deconv; 
+     bool cos_theta_scale; 
       ClassDef(PointingResolutionParSNRModel,1); 
 
   }; 

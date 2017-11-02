@@ -29,7 +29,7 @@ namespace UCorrelator
   const AntarcticSegmentationScheme &  defaultSegmentationScheme(); 
   const UCorrelator::PointingResolutionModel & defaultPointingResolutionModel(); 
 
-  class ProbabilityMap  
+  class ProbabilityMap   : public TObject 
   {
     public: 
 
@@ -50,22 +50,21 @@ namespace UCorrelator
       {
 
         Params() 
+          : seg(&defaultSegmentationScheme()), 
+            point(&defaultPointingResolutionModel()), 
+            level_thresholds(defaultLevelThresholds, defaultLevelThresholds + sizeof(defaultLevelThresholds) / sizeof(*defaultLevelThresholds)), 
+            dataset(RampdemReader::rampdem), 
+            refract(0), 
+            maximum_distance(20),
+            projection(BACKWARD), 
+            collision_detection(true) 
         {
-          seg = &defaultSegmentationScheme(); //default
-          point = &defaultPointingResolutionModel(); 
-          n_level_thresholds = sizeof(defaultLevelThresholds) / sizeof(*defaultLevelThresholds); 
-          level_thresholds = defaultLevelThresholds; 
-          maximum_distance = 10; 
-          projection = BACKWARD; 
-          collision_detection = true; 
-          refract = 0; 
-          dataset = RampdemReader::rampdem; 
+
         }
 
         const AntarcticSegmentationScheme * seg; 
         const PointingResolutionModel * point;  
-        int n_level_thresholds;
-        const double * level_thresholds; //[n_level_thresholds] 
+        std::vector<double> level_thresholds; 
         RampdemReader::dataSet dataset; 
         const Refraction::Model * refract; 
         double maximum_distance; 
@@ -103,7 +102,7 @@ namespace UCorrelator
         {
           BackwardParams() 
           {
-            num_samples_per_bin = 64; 
+            num_samples_per_bin = 16; 
             el_cutoff = 0; 
             random_samples = false; 
           }
@@ -112,6 +111,9 @@ namespace UCorrelator
           double el_cutoff; 
           bool random_samples;
         } backwards_params; 
+
+        ClassDef(Params,1); 
+        virtual ~Params() { ; }  
       }; 
 
 
@@ -148,32 +150,43 @@ namespace UCorrelator
                                 std::vector<std::pair<int,double> > * maximum_density = 0, 
                                 TFile * debugfile = 0) const; 
 
+
+
+      enum OverlapMode
+      {
+        OVERLAP_SUM_SQRTS,  //use sum of sqrts  
+        OVERLAP_SQRT_SUMS,  //use sqrt of sums
+        OVERLAP_SUMS,       //use sums (doesn't really make sense) 
+        OVERLAP_MAXES       //use maxes (emulating the old clustering style) 
+      }; 
+
       /** Check the overlap of a point with the probability map.
        *  If the point is already in the probability map, remove_self_contribution should be true so that it won't count against itself. If you are checking a point not in the map already with the map, you should set it to false. 
        */ 
-      double overlap(const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, 
-                     std::vector<std::pair<int,double> >  * overlapped_bases = 0, bool remove_self_contribution =true) const ; 
 
-      /* These are probability densities */ 
-      const double* getDensitySums() const { return &ps[0]; } 
-      const double* getDensitySumsWithBases() const { return &ps_with_base[0]; } 
-      const double* getDensitySumsWithoutBases() const { return &ps_without_base[0]; } 
+      double overlap(const AnitaEventSummary * sum , const Adu5Pat * pat, 
+                     AnitaPol::AnitaPol_t pol, int peak = 0, bool normalized = false, 
+                     std::vector<std::pair<int,double> >  * bases = 0,
+                     OverlapMode mode = OVERLAP_SUM_SQRTS, 
+                     bool remove_self_contribution =true) const ; 
 
-      const double* getDensitySumsNormalized() const { return &ps_norm[0]; } 
-      const double* getDensitySumsNormalizedWithBases() const { return &ps_norm_with_base[0]; } 
-      const double* getDensitySumsNormalizedWithoutBases() const { return &ps_norm_without_base[0]; } 
-
+      /* These are probability sums */ 
+      const double* getProbSums(bool normalized = false) const { return normalized ? &ps_norm[0] : &ps[0]; } 
+      const double* getProbSumsWithoutBases(int base_level, bool normalized = false) const { return normalized ? &ps_norm_without_base[base_level][0] : &ps_without_base[base_level][0]; } 
+      const double* getProbSqrtSums(bool normalized = false) const { return normalized ? &sqrt_ps_norm[0] : &sqrt_ps[0]; } 
+      const double* getProbSqrtSumsWithoutBases(int base_level, bool normalized = false) const { return normalized ? &sqrt_ps_norm_without_base[base_level][0] : &sqrt_ps_without_base[base_level][0]; } 
+      const double* getProbMaxes(bool normalized = false) const { return normalized ? &max1_ps_norm[0] : & max1_ps[0]; } 
       const double* getOccludedFractionSum() const { return &fraction_occluded[0]; } 
 
-      const int* getNAboveLevel(int level) const { return & n_above_level[level][0]; } 
-      const int* getNAboveLevelWithBases(int level) const { return & n_above_level_with_base[level][0]; } 
-      const int* getNAboveLevelWithoutBases(int level) const { return & n_above_level_without_base[level][0]; } 
+      const int* getNAboveLevel(int level, bool normalized = false) const { return normalized ? &n_above_level_norm[level][0] : &n_above_level[level][0]; } 
+      const int* getNAboveLevelWithoutBases(int level, bool normalized = false) const { return normalized ? &n_above_level_without_base_norm[level][0] : &n_above_level_without_base[level][0]; } 
 
-      const double* getWgtAboveLevel(int level) const { return & wgt_above_level[level][0]; } 
-      const double* getWgtAboveLevelWithBases(int level) const { return &wgt_above_level_with_base[level][0]; } 
-      const double* getWgtAboveLevelWithoutBases(int level) const { return &wgt_above_level_without_base[level][0]; } 
+      const double* getWgtAboveLevel(int level, bool normalized=false) const
+      { return normalized ? &wgt_above_level_norm[level][0] : & wgt_above_level[level][0]; } 
+      const double* getWgtAboveLevelWithoutBases(int level, bool normalized=false) const 
+      { return normalized ? &wgt_above_level_without_base_norm[level][0] : &wgt_above_level_without_base[level][0]; } 
 
-      size_t NLevels() const { return p.n_level_thresholds; } 
+      size_t NLevels() const { return p.level_thresholds.size(); } 
       double getLevel(int level) const { return p.level_thresholds[level]; } 
 
       const AntarcticSegmentationScheme * segmentationScheme() const { return p.seg; } 
@@ -184,10 +197,12 @@ namespace UCorrelator
        *
        * The bases are indexed with stationary bases first followed by paths. 
        **/ 
-      size_t getNBases() const { return base_ps.size(); } 
+      size_t getNBases() const { return base_sums.size(); } 
 
-      const double  * getBaseDensitySums()  const { return & base_ps[0]; } 
-      const int* getBaseNAboveLevel(int level) const { return & base_n_above_level[level][0]; } 
+      const double  * getBaseSums(bool normalized = false)  const 
+      { return normalized ? &base_sums_norm[0] : &base_sums[0]; } 
+      const int* getBaseNAboveLevel(int level, bool normalized = false) const
+      { return normalized ? &base_n_above_level_norm[level][0] : & base_n_above_level[level][0]; } 
 
 
       /** This will take a set of of values (indexed by segment) 
@@ -202,42 +217,57 @@ namespace UCorrelator
 
       int dumpNonZeroBases() const; 
 
+      int makeMultiplicityTable(int level, bool blind = true) const; 
       
     private:
       Params p; 
 
       //indexed by segment
       std::vector<double> ps; 
-      std::vector<double> ps_with_base; //like ps, but require that a base is contained
-      std::vector<double> ps_without_base; //like ps, but require that no base is contained
+      std::vector< std::vector<double> >  ps_without_base; //like ps, but require that no base above level is contained
       std::vector<double> ps_norm; //like ps, but normalized so integral is 1 
-      std::vector<double> ps_norm_with_base; //like ps_with_base, but normalized so integral is 1 
-      std::vector<double> ps_norm_without_base; //like ps_without_base, but normalized so integral is 1 
+      std::vector< std::vector<double> >ps_norm_without_base; //like ps_without_base, but normalized so integral is 1 
+
+      std::vector<double> max1_ps;  //maximum value
+      std::vector<double> max1_ps_norm; //max1_ps, but normalized so integral is 1 
+      std::vector<double> max2_ps;  //second to maximum value 
+      std::vector<double> max2_ps_norm; //max2_ps, but normalized so integral is 1 
+
+
+      // these are all the sums of the square roots instead, needed for computing the overlaps properly
+      std::vector<double> sqrt_ps; 
+      std::vector< std::vector<double> >  sqrt_ps_without_base; 
+      std::vector<double> sqrt_ps_norm; 
+      std::vector< std::vector<double> >sqrt_ps_norm_without_base;
  
       std::vector<double> fraction_occluded; 
       //indexed by level then segment 
       std::vector< std::vector<int> > n_above_level; 
+      std::vector< std::vector<int> > n_above_level_norm; 
       std::vector< std::vector<double> > wgt_above_level; // like n_above_level, but 1/N_over_level_per_event is put in each bin, so that the number of contributing events can be reliably determined 
+      std::vector< std::vector<double> > wgt_above_level_norm; // like n_above_level, but 1/N_over_level_per_event is put in each bin, so that the number of contributing events can be reliably determined 
 
 
 
       //mapping of segment to base in segment  (for stationary bases) 
       std::vector<std::vector<int> > bases_in_segment; 
 
-      //This stores the number of events which both have both at least this level with the segment AND with a base, so can be used as a proxy for if a base is present or not
-      std::vector< std::vector<int> > n_above_level_with_base; 
-      std::vector< std::vector<double> > wgt_above_level_with_base; 
-
       std::vector< std::vector<int> > n_above_level_without_base; 
+      std::vector< std::vector<int> > n_above_level_without_base_norm; 
       std::vector< std::vector<double> > wgt_above_level_without_base; 
+      std::vector< std::vector<double> > wgt_above_level_without_base_norm; 
 
 
       //indexed by base
       std::vector< std::vector<int> > base_n_above_level; ; 
-      std::vector<double> base_ps; 
+      std::vector< std::vector<int> > base_n_above_level_norm; ; 
+      std::vector<double> base_sums; 
+      std::vector<double> base_sums_norm; 
 
+      //guards the add method (everything else doesn't touch the internals) 
+      TMutex m; 
 
-      ClassDefNV(ProbabilityMap, 7); 
+      ClassDefNV(ProbabilityMap, 11); 
   }; 
 }
 

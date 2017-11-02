@@ -3,6 +3,10 @@
 #include "TRandom.h" 
 #include "TF1.h" 
 
+#include "AnitaDataset.h" 
+#include "TFile.h" 
+#include "TTree.h" 
+#include "TProfile.h" 
 
 ClassImp(UCorrelator::PointingResolution); 
 ClassImp(UCorrelator::PointingResolutionModel); 
@@ -75,14 +79,62 @@ UCorrelator::PointingResolution * UCorrelator::PointingResolutionParSNRModel::co
   const AnitaEventSummary::WaveformInfo * info = deconv ? &sum->deconvolved[pol][peak] : &sum->coherent[pol][peak]; 
   double snr = info->snr; 
   double snr_min, snr_max; 
-  f_ph->GetRange(snr_min, snr_max); 
+  f_ph.GetRange(snr_min, snr_max); 
   if (snr < snr_min) snr = snr_min; 
-  if (snr < snr_max) snr = snr_max; 
-  f_th->GetRange(snr_min, snr_max); 
+  if (snr > snr_max) snr = snr_max; 
+  f_th.GetRange(snr_min, snr_max); 
   if (snr < snr_min) snr = snr_min; 
-  if (snr < snr_max) snr = snr_max; 
+  if (snr > snr_max) snr = snr_max; 
 
-  new (p) PointingResolution(sum->peak[pol][peak].phi, sum->peak[pol][peak].theta, f_ph->Eval(snr), f_th->Eval(snr), 0); 
+  double scale = 1; 
+  if (cos_theta_scale) 
+  {
+    scale = 1./cos(TMath::DegToRad() *  sum->peak[pol][peak].theta); 
+  }
+
+  new (p) PointingResolution(sum->peak[pol][peak].phi, sum->peak[pol][peak].theta, f_ph.Eval(snr) * scale, f_th.Eval(snr) * scale, 0); 
   return p; 
 
+}
+
+static __thread int prof_counter = 0; 
+
+int UCorrelator::HeadingErrorEstimator::estimateHeadingError(double t, double * stdev, double * offset) 
+{
+  int run = AnitaDataset::getRunAtTime(t); 
+
+  if (current_run != run) 
+  {
+    TString str; 
+    str.Form("%s/run%d/gpsEvent%d.root", AnitaDataset::getDataDir(), run,run); 
+    TFile f(str); 
+    if (!f.IsOpen()) return -1; 
+    TTree * tree = (TTree*) f.Get("adu5PatTree"); 
+    double min = tree->GetMinimum("realTime"); 
+    double max = tree->GetMaximum("realTime"); 
+    if (!prof) 
+    {
+      prof = new  TProfile(TString::Format("heading_prof_%d", prof_counter++), "heading profile", (max-min)/nsecs+2, min-nsecs, max+nsecs); 
+      prof->SetErrorOption("s"); 
+    }
+    else
+    {
+      prof->Clear(); 
+      prof->SetBins((max-min)/nsecs+2, min-nsecs, max+nsecs); 
+      prof->SetDirectory(&f); 
+    }
+    tree->Draw(TString::Format("headingA-headingB:realTime>>%s", prof->GetName()), "weightA && weightB","profs goff");  
+    prof->SetDirectory(0); 
+    current_run = run; 
+  }
+
+  int bin = prof->GetXaxis()->FindBin(t); 
+  if (stdev) *stdev = prof->GetBinError(bin); 
+  if (offset) *offset = prof->GetBinContent(bin); 
+  return prof->GetBinEntries(bin); 
+}
+
+UCorrelator::HeadingErrorEstimator::~HeadingErrorEstimator() 
+{
+  delete prof; 
 }
