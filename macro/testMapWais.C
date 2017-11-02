@@ -2,7 +2,7 @@
 #include "FFTtools.h" 
 #include "AnitaConventions.h" 
 
-UCorrelator::ProbabilityMap* testMapWais(int run =342, int max = 20, int nskip = 0) 
+UCorrelator::ProbabilityMap* testMapWais(int run =342, int max = 1, int nskip = 0) 
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
@@ -26,29 +26,20 @@ UCorrelator::ProbabilityMap* testMapWais(int run =342, int max = 20, int nskip =
 
   f_dphi.SetParameter(0, 1.065); 
   f_dphi.SetParameter(1, 0.2479); 
+  Refraction::SphRay ref; 
 
   UCorrelator::PointingResolutionParSNRModel m(&f_dtheta, &f_dphi, true);
  
-  StereographicGrid *g = new StereographicGrid(4096,4096); 
+  StereographicGrid *g = new StereographicGrid(2048,2048); 
+
   UCorrelator::ProbabilityMap::Params p; 
-  Refraction::SphRay ref; 
-  p.refract = &ref; 
   p.seg = g; 
+  p.refract = &ref; 
   p.point = &m; 
   p.collision_detection = true; 
-  p.mc_params.n = 1e5; 
-  p.projection = UCorrelator::ProbabilityMap::Params::MC; 
   p.backwards_params.el_cutoff = 0; 
-
-  UCorrelator::ProbabilityMap::Params p2; 
-  p2.seg = g; 
-  p2.refract = &ref; 
-  p2.point = &m; 
-  p2.collision_detection = true; 
-  p2.backwards_params.el_cutoff = 0; 
  
   UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(&p); 
-  UCorrelator::ProbabilityMap *map2 = new UCorrelator::ProbabilityMap(&p2); 
   int ndone = 0; 
 
   TGraph *  g_anita = new TGraph; 
@@ -79,7 +70,7 @@ UCorrelator::ProbabilityMap* testMapWais(int run =342, int max = 20, int nskip =
 
 
   //    map->add(&sum,d.gps(), AnitaPol::kHorizontal, 0); 
-      map2->add(&sum,d.gps(), AnitaPol::kHorizontal, 0); 
+      map->add(&sum,d.gps(), AnitaPol::kHorizontal, 0); 
       map->dumpNonZeroBases(); 
 
       ndone++;
@@ -125,21 +116,21 @@ UCorrelator::ProbabilityMap* testMapWais(int run =342, int max = 20, int nskip =
   TCanvas *c = new TCanvas; 
   c->Divide(2,2); 
   c->cd(1)->SetLogz(); 
-  map->segmentationScheme()->Draw("colz", map2->getDensitySums(),range); 
+  map->segmentationScheme()->Draw("colz", map->getProbSums(),range); 
   wais->SetMarkerColor(3); 
   wais->Draw("psame"); 
   g_anita->Draw("lpsame"); 
   g_proj->Draw("psame"); 
 
   c->cd(2)->SetLogz(); 
-  map->segmentationScheme()->Draw("colz", map2->getDensitySumsNormalized(),range); 
+  map->segmentationScheme()->Draw("colz", map->getProbSums(true),range); 
   g_anita->Draw("lpsame"); 
   g_proj->Draw("psame"); 
   wais->Draw("psame"); 
 
   c->cd(3); 
 
-  map->segmentationScheme()->DrawI("colz", map2->getNAboveLevel(0),range); 
+  map->segmentationScheme()->DrawI("colz", map->getNAboveLevel(0),range); 
   g_proj->Draw("psame"); 
   wais->Draw("psame"); 
   /*
@@ -148,9 +139,9 @@ UCorrelator::ProbabilityMap* testMapWais(int run =342, int max = 20, int nskip =
   for (size_t i = 0; i < ratio.size(); i++)
   {
 
-    if (map->getDensitySums()[i] && map2->getDensitySums()[i]) 
+    if (map->getDensitySums()[i] && map->getDensitySums()[i]) 
     {
-      ratio[i] = (map->getDensitySums()[i]  - map2->getDensitySums()[i]) / map2->getDensitySums()[i]; 
+      ratio[i] = (map->getDensitySums()[i]  - map->getDensitySums()[i]) / map->getDensitySums()[i]; 
     }
 
   }
@@ -159,6 +150,7 @@ UCorrelator::ProbabilityMap* testMapWais(int run =342, int max = 20, int nskip =
   g_anita->Draw("lpsame"); 
   wais->Draw("psame"); 
   c->cd(4); 
+  /*
 
   TH2 * huge = new TH2D("surface","surface", 1024, range[0], range[1], 1024,range[2],range[3]); 
 
@@ -172,11 +164,17 @@ UCorrelator::ProbabilityMap* testMapWais(int run =342, int max = 20, int nskip =
 
   huge->SetStats(0); 
   huge->Draw("colz"); 
+  */ 
+
+  map->segmentationScheme()->Draw("colz", map->getProbSumsWithoutBases(5,true),range); 
+  g_proj->Draw("psame"); 
+  wais->Draw("psame"); 
+ 
   wais->Draw("psame"); 
 
   map->dumpNonZeroBases(); 
 
-  printf("wais: %g\n", map->getBaseDensitySums()[293]); 
+  printf("wais: %g\n", map->getBaseSums()[293]); 
 
   map->dumpNonZeroBases(); 
 

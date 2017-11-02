@@ -1,35 +1,13 @@
+#include "FFTtools.h"
 
-#include "FFTtools.h" 
-
-UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool decimated = false, bool simulated = false )
+UCorrelator::Analyzer *doInteractiveFake(int run = 342, int event = 0, bool simulated = false )
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
   FilterStrategy *strategy= new FilterStrategy; 
  
-//  TF1 fn("foo"," (x < 0.2) * exp((x-0.2)/0.01)  + (x > 0.2 && x < 1.2) * (1-0.05*x) + (x > 1.2) * exp((1.2-x)/0.02)", 0,2); 
 
-//  UCorrelator::SpectrumAverage *avg = new UCorrelator::SpectrumAverage(run,60); 
-//  avg->computePeakiness(); 
-
- // UCorrelator::CombinedSineSubtractFilter * ssf = new UCorrelator::CombinedSineSubtractFilter(0.05,10);
- // ssf->setInteractive(true); 
-//  printf("UCorrelator::CombinedSineSubtractFilter* ssf = (UCorrelator::CombinedSineSubtractFilter*) %p\n", ssf); 
-//  strategy.addOperation(ssf);
-//  strategy.addOperation(new SimplePassBandFilter(0.2,1.2)); 
-
-// UCorrelator::SineSubtractFilter * ssf = new UCorrelator::SineSubtractFilter(0.10,3);
-//  ssf->makeAdaptive(avg); 
-//  UCorrelator::AdaptiveMinimumPhaseFilter * mp = new UCorrelator::AdaptiveMinimumPhaseFilter(avg,-2,5); 
-//  printf("UCorrelator::AdaptiveMinimumPhaseFilter * mp = (UCorrelator::AdaptiveMinimumPhaseFilter *) %p\n",mp); 
-//  strategy->addOperation(mp); 
-//
-//UCorrelator::AdaptiveButterworthFilter * butter = new UCorrelator::AdaptiveButterworthFilter(&avg); 
-//printf("UCorrelator::AdaptiveButterworthFilter * butter = (UCorrelator::AdaptiveButterworthFilter *) %p\n",butter); 
-//strategy.addOperation(butter); 
-
-
-  AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kNoBlinding );
+  AnitaDataset d(run,false, WaveCalType::kDefault, simulated ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kNoBlinding );
 
   event > 0 ? d.getEvent(event) : d.getEntry(-event); 
 
@@ -39,8 +17,8 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
   cfg.nmaxima = 1; 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
   cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
-  cfg.enable_group_delay= !simulated; 
-  cfg.max_peak_trigger_angle =45; 
+  cfg.max_peak_trigger_angle =60; 
+  cfg.use_forced_trigger_rms = false; 
 //  cfg.correlator_theta_lowest=90; 
 //  cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
 //  cfg.response_option = UCorrelator::AnalysisConfig::ResponseHarmSignalOnly; 
@@ -53,6 +31,9 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
 //  strategy->addOperation(ssf); 
 
 //  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("adsinsub_3_10_3"), d.gps(), d.header()); 
+  AnitaEventFaker faker("IndividualBRotter"); 
+  faker.makePureNoiseEvent(0.1,d.useful()); 
+  faker.addSignal(d.useful(),10,175,10, std::complex<double>(1/sqrt(2),0), std::complex<double>(-1/sqrt(2),0)); 
   FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("sinsub_10_3_ad_2"), d.gps(), d.header()); 
   printf("auto fae = (FilteredAnitaEvent *) %p;\n",ev); 
 
