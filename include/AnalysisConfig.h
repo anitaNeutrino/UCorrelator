@@ -139,7 +139,11 @@ namespace UCorrelator
       bool delay_to_center;
 
       /** TODO: this has to be loaded from file somehow */ 
-    AnitaResponse::DeconvolutionMethod * deconvolution_method; 
+      AnitaResponse::DeconvolutionMethod * deconvolution_method; 
+      
+
+      double combine_t0;
+      double combine_t1;
     private: 
       mutable TH2 * the_ldb_hist; 
   };

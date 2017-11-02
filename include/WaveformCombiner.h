@@ -40,7 +40,7 @@ namespace UCorrelator
       virtual ~WaveformCombiner(); 
 
       /** Combines the waveforms from the given event */ 
-      void combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, ULong64_t disallowed = 0); 
+      void combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, ULong64_t disallowed = 0, double t0 = 0, double t1 = 100); 
 
       const AnalysisWaveform * getCoherent() const { return &coherent; }
       const AnalysisWaveform * getDeconvolved() const; 
@@ -66,7 +66,7 @@ namespace UCorrelator
 	void setDelayToCenter(bool opt) {delay_to_center = opt; }
 
       /** Static helper used to combine arbitrary waveforms */
-      static AnalysisWaveform *  combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0); 
+      static AnalysisWaveform *  combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0, double t0 = 0, double t1 = 100); 
 
 	/** function allowing extra filters to be applied to just the coherently summed waveforms */
 	void setExtraFilters(FilterStrategy* extra);
