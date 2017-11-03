@@ -108,7 +108,7 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
 #endif
 
 
-const int wais_hpol_time_offset[5] = {0,0,0,93,1100}; 
+const int wais_hpol_time_offset[5] = {0,0,0,93,11000}; 
 const int wais_vpol_time_offset[5] = {0,0,0,-99757,1000}; 
 const int siple_hpol_time_offset = -41;
 const int siple_vpol_time_offset = +328;
