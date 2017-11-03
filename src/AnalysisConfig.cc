@@ -108,15 +108,15 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
 #endif
 
 
-const int wais_hpol_time_offset = (AnitaVersion::get() == 4) ? 11000 : 93; 
-const int wais_vpol_time_offset = (AnitaVersion::get() == 4) ? 1000 : -99757; 
+const int wais_hpol_time_offset[5] = {0,0,0,93,1100}; 
+const int wais_vpol_time_offset[5] = {0,0,0,-99757,1000}; 
 const int siple_hpol_time_offset = -41;
 const int siple_vpol_time_offset = +328;
 
 UCorrelator::AnalysisConfig::AnalysisConfig(const char * config) 
   : 
-    wais_hpol(wais_hpol_time_offset, 800e3, 1e3), 
-    wais_vpol(wais_vpol_time_offset, 800e3, 1e3), 
+    wais_hpol(wais_hpol_time_offset[AnitaVersion::get()], 800e3, 1e3), 
+    wais_vpol(wais_vpol_time_offset[AnitaVersion::get()], 800e3, 1e3), 
     siple_hpol(siple_hpol_time_offset, 800e3, 1e3), 
     siple_vpol(siple_vpol_time_offset, 800e3, 1e3)
 {
