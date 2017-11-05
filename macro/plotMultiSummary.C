@@ -7,7 +7,7 @@ void plotMultiSummary()
 {
 	TString PlotPrefix = "Plot_";
 	TString pointDir = "../drivers/wais/";
-	TString fEnd = "_max_30007_sinsub_10_3_ad_2.root";	
+	TString fEnd = "_max_30010_sinsub_10_3_ad_2.root";	
 	// TString fEnd = "_max_30002_.root";	
 	TString outf = pointDir + PlotPrefix + fEnd;
 	
@@ -15,7 +15,7 @@ void plotMultiSummary()
 	for(int i = 123; i < 153; i++)
 	// for(int i = 139; i < 141; i++)
 	{
-		// if(i==129 || i==130 || i==131 || i==132) continue;
+		if(i==129 || i==130 || i==131 || i==132) continue;
 		//if(i==132) continue;
 		TString inf = pointDir + TString::Itoa(i, 10) + fEnd;
 		chain->Add(inf);

@@ -12,6 +12,8 @@
 #include "AnalysisConfig.h"
 #include "AnitaDataset.h"
 #include "RawAnitaHeader.h"
+#include "BH13Filter.h"
+
 
 #ifdef UCORRELATOR_OPENMP
 #include <omp.h>
@@ -25,14 +27,16 @@ void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sin
 
   AnitaDataset d(run, false, WaveCalType::kDefault, AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kRandomizePolarity); 
   UCorrelator::AnalysisConfig cfg; 
+
   
 #ifdef UCORRELATOR_OPENMP
   printf("Max threads: %d\n", omp_get_max_threads()); 
 #endif
 
+  cfg.response_option = UCorrelator::AnalysisConfig::ResponseTUFF;
 
-  cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
-  cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
+  // cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
+  // cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
   cfg.max_peak_trigger_angle = 60; 
 
   UCorrelator::Analyzer analyzer(&cfg); 
@@ -49,12 +53,20 @@ void doAll(int run = 352, int max = 0, int start = 0, const char * filter = "sin
   tree->SetAutoFlush(1000); 
   AnitaEventSummary * sum = new AnitaEventSummary; 
 
+  double dtheta = 1.; double dphi = 2.; bool blockout = true;
+  analyzer.setTrackSun(dtheta, dphi, blockout);
+
+  FilterStrategy* forDeco = new FilterStrategy;
+  forDeco->addOperation(new UCorrelator::AntiBH13Filter());
+  analyzer.setExtraFiltersDeconvolved(forDeco);
+
   TNamed comment("blinding","Randomize Polarity"); 
   comment.Write(); 
 
   FilterStrategy strategy (&ofile); 
 
   UCorrelator::fillStrategyWithKey(&strategy, filter); 
+  strategy.addOperation(new UCorrelator::BH13Filter());
 
 //  printf("Strategy applied!\n"); 
 

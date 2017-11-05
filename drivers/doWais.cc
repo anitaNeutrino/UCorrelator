@@ -11,6 +11,8 @@
 #include "AnalysisConfig.h"
 #include "AnitaDataset.h"
 #include "RawAnitaHeader.h"
+#include "BH13Filter.h"
+
 
 
 void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_10_3_ad_2" )
@@ -26,9 +28,10 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "s
   cfg.start_pol = AnitaPol::kHorizontal; 
   cfg.end_pol = AnitaPol::kVertical; 
   
-  cfg.response_option = UCorrelator::AnalysisConfig::ResponseSingleBRotter; 
-  cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
-  cfg.max_peak_trigger_angle = 60; 
+  cfg.response_option = UCorrelator::AnalysisConfig::ResponseTUFF;
+  // cfg.response_option = UCorrelator::AnalysisConfig::ResponseSingleBRotter; 
+  // cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
+  // cfg.max_peak_trigger_angle = 60; 
 
 
   UCorrelator::Analyzer analyzer(&cfg); 
@@ -43,10 +46,16 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "s
   TTree * tree = new TTree("wais","WAIS Hpol"); 
   AnitaEventSummary * sum = new AnitaEventSummary; 
 
+  double dtheta = 1.; double dphi = 2.; bool blockout = true;
+  analyzer.setTrackSun(dtheta, dphi, blockout);
 
-  FilterStrategy strategy (&ofile); 
-  UCorrelator::fillStrategyWithKey(&strategy, filter); 
+  FilterStrategy* forDeco = new FilterStrategy;
+  forDeco->addOperation(new UCorrelator::AntiBH13Filter());
+  analyzer.setExtraFiltersDeconvolved(forDeco);
 
+  FilterStrategy strategy (&ofile);
+  UCorrelator::fillStrategyWithKey(&strategy, filter);
+  strategy.addOperation(new UCorrelator::BH13Filter());
 
   RawAnitaHeader *hdr = 0 ; 
   UsefulAdu5Pat *patptr = 0; 
