@@ -189,7 +189,6 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
   // loop over wanted polarizations 
   for (int pol = cfg->start_pol; pol <= cfg->end_pol; pol++) 
   {
-    std::cout<< "polarizations=" << pol <<std::endl;
 
     UShort_t triggeredPhi = AnitaPol::AnitaPol_t(pol) == AnitaPol::kHorizontal ? event->getHeader()->l3TrigPatternH : event->getHeader()->l3TrigPattern; 
     UShort_t triggeredPhiXpol = AnitaPol::AnitaPol_t(pol) == AnitaPol::kVertical ? event->getHeader()->l3TrigPatternH : event->getHeader()->l3TrigPattern; 

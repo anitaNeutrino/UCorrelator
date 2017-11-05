@@ -403,9 +403,6 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2)
 
 TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi, double dphi, int ntheta, double dtheta, int nant, TH2D * answer) 
 {
-    std::cout<< "computeZoomed "<<std::endl;
-
-
   if (!ev) 
   {
     fprintf(stderr, "Must call Correlator::compute() prior to Correlator::computeZoomed!!!!"); 
@@ -705,8 +702,6 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t whichpol) 
 {
   // std::cout<< "compute "<<std::endl;
-  std::cout<< "compute pol= "<< whichpol<< std::endl;
-
 //  TStopwatch sw; 
 
   pol = whichpol; 
