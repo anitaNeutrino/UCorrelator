@@ -653,13 +653,13 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        
        int phibin = phibins[i];; 
        int thetabin = thetabins[i]; 
-       times_to_fill[i] = getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag); 
-       // times_to_fill[i] = getDeltaTFromANN(ant1, ant2, phibin-1, thetabin-1,pol,cache); 
-       float annT = getDeltaTFromANN(ant1, ant2, phibin-1, thetabin-1,pol,cache); 
-       if(i == 0){
-        std::cout<<times_to_fill[i]<< " " << annT << " ---- " << annT -times_to_fill[i] <<" --- "<< " "<< ant1<< " "<< ant2<< " "<<pol<<std::endl;
-      }
-       times_to_fill[i] = annT;
+       // times_to_fill[i] = getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag); 
+       times_to_fill[i] = getDeltaTFromANN(ant1, ant2, phibin-1, thetabin-1,pol,cache); 
+       // float annT = getDeltaTFromANN(ant1, ant2, phibin-1, thetabin-1,pol,cache); 
+      //  if(i == 0 ){
+      //   std::cout<<times_to_fill[i]<< " " << annT << " ---- " << annT -times_to_fill[i] <<" --- "<< " "<< ant1<< " "<< ant2<< " "<<pol<<std::endl;
+      // }
+       // times_to_fill[i] = annT;
 
    }
 
@@ -704,7 +704,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
 void UCorrelator::Correlator::compute(const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t whichpol) 
 {
-  std::cout<< "compute "<<std::endl;
+  // std::cout<< "compute "<<std::endl;
+  std::cout<< "compute pol= "<< whichpol<< std::endl;
 
 //  TStopwatch sw; 
 

@@ -306,9 +306,11 @@ static void doQuadraticPeakFinding(const TH2D * hist, UCorrelator::peakfinder::F
 
 #endif
 
-  double xcenter = hist->GetXaxis()->GetBinCenter(xmax); 
-  double ycenter = hist->GetYaxis()->GetBinCenter(ymax); 
-  
+  // double xcenter = hist->GetXaxis()->GetBinCenter(xmax); 
+  // double ycenter = hist->GetYaxis()->GetBinCenter(ymax); 
+  //peng, change the center of bin to low edge of bin.
+  double xcenter = hist->GetXaxis()->GetBinLowEdge(xmax);
+  double ycenter = hist->GetYaxis()->GetBinLowEdge(ymax); 
 
   int halfway = N/2; 
   for (unsigned i = 0; i < N; i++)

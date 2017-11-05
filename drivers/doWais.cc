@@ -13,8 +13,8 @@
 #include "RawAnitaHeader.h"
 
 
-// void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_10_3_ad_2" )
-void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "" )
+void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_10_3_ad_2" )
+// void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "" )
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
@@ -24,7 +24,7 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = ""
   AnitaDataset d(run,false,WaveCalType::kDefault, AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kNoBlinding ); 
   UCorrelator::AnalysisConfig cfg; 
   cfg.start_pol = AnitaPol::kHorizontal; 
-  cfg.end_pol = AnitaPol::kHorizontal; 
+  cfg.end_pol = AnitaPol::kVertical; 
   
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseSingleBRotter; 
   cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
@@ -63,7 +63,8 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = ""
 
       UsefulAdu5Pat pat(d.gps()); 
 
-      if (UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
+      // if (UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
+      if ( UCorrelator::isWAISVPol(&pat, d.header()))
       {
         printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone); 
         FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
