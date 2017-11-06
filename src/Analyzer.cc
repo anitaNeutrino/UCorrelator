@@ -1,5 +1,6 @@
 #include "Analyzer.h" 
 #include "AnalysisConfig.h" 
+#include "Polarimetry.h" 
 #include "TPaveText.h"
 #include "AnalysisWaveform.h"
 #include "AnitaVersion.h" 
@@ -725,61 +726,14 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
   info->power_10_10 = even->getSumV2(ifirst, ilast); 
 
-  int nmax = TMath::Min(wf->Neven(), xpol_wf->Neven()); 
 
-  if (!cfg->windowStokes) {
-    ifirst = 0;
-    ilast = nmax-1-1;
-  }
-  else {
-    if (cfg->stokesWindowLength > 0) {
-      ilast = ifirst + cfg->stokesWindowLength;
-    }
-    if (ifirst < 0) ifirst = 0; 
-    if (ilast < 0 || ilast > nmax) ilast = nmax-1; 
-  }
+  polarimetry::StokesAnalysis stokes( pol == AnitaPol::kHorizontal ? wf : xpol_wf,  pol == AnitaPol::kHorizontal ? xpol_wf: wf); 
+  info->I = stokes.getAvgI(); 
+  info->Q = stokes.getAvgQ(); 
+  info->U = stokes.getAvgU(); 
+  info->V = stokes.getAvgV(); 
+  info->NPointsMaxStokes = stokes.computeWindowedAverage(cfg->stokes_fracI, &info->max_dI, &info->max_dQ, &info->max_dU, &info->max_dV); 
 
-  int nstokes = ilast-ifirst+1 ; 
-
-  if (pol == AnitaPol::kHorizontal)
-  {
-
-    FFTtools::stokesParameters(nstokes,
-                               even->GetY()+ifirst, 
-                               wf->hilbertTransform()->even()->GetY()+ifirst, 
-                               xpol_even->GetY()+ifirst, 
-                               xpol_wf->hilbertTransform()->even()->GetY()+ifirst, 
-                               &(info->I), &(info->Q), &(info->U), &(info->V),
-                               &(info->max_dI),&(info->max_dQ),&(info->max_dU), &(info->max_dV)
-                               ); 
-  }
-  else
-  {
-    FFTtools::stokesParameters(nstokes, 
-                               xpol_even->GetY()+ifirst, 
-                               xpol_wf->hilbertTransform()->even()->GetY()+ifirst, 
-                               even->GetY()+ifirst, 
-                               wf->hilbertTransform()->even()->GetY()+ifirst, 
-                               &(info->I), &(info->Q), &(info->U), &(info->V), 
-                               &(info->max_dI),&(info->max_dQ),&(info->max_dU), &(info->max_dV)
-                               ); 
- 
-  }
-
-
-  //now fill in the maximum "insaneous" stokes parametres
-  
-
-  /* //pol and xpol aren't required to be the same length(uncomment to see).
-  // So, you'll get invalid accesses and garbage results sometimes.
-  if (info->I > 1e4) {
-    std::cout << "Warning in Analyzer(): Weird stokes value? ";
-    std::cout << info->power_10_10 <<" stokesI=" << info->I << " nstokes=" << nstokes << " ";
-    std::cout << xpol_even->GetN() << " " << xpol_wf->hilbertTransform()->even()->GetN() << " ";
-    std::cout << even->GetN() << " " << wf->hilbertTransform()->even()->GetN();
-    std::cout << " shortest->" << shortestRecoLen << std::endl;
-  }               
-  */
 
   TGraph distance_cdf; 
   info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf, &distance_cdf); 

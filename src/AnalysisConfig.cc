@@ -82,10 +82,9 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(min_peak_distance_from_unmasked); 
   LOOKUP(fill_blast_Fraction); 
   LOOKUP(max_theta_adjustment); 
-  LOOKUP(windowStokes);
-  LOOKUP(stokesWindowLength);
   LOOKUP(set_bottom_first);
   LOOKUP(delay_to_center);
+  LOOKUP(stokes_fracI); 
   LOOKUP(use_forced_trigger_rms); 
   LOOKUP(use_coherent_spectra); 
   LOOKUP(combine_t0); 
@@ -175,10 +174,9 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
 
   ldb_max_run = 160; 
 
-  windowStokes = true;
   fill_blast_fraction = true; 
-  stokesWindowLength = -1;
   set_bottom_first = true;
+  stokes_fracI = 0.2; 
 
   delay_to_center = true;
   use_forced_trigger_rms = true; 
