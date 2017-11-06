@@ -448,6 +448,8 @@ SECTIONS
   SECTION
       fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol, 0); 
  }
+  // comment this line out if you don't want channel information in summary file.
+  fillChannelInfo(event, summary);
 
 
 
@@ -735,7 +737,6 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   info->V = stokes.getAvgV(); 
   info->NPointsMaxStokes = stokes.computeWindowedAverage(cfg->stokes_fracI, &info->max_dI, &info->max_dQ, &info->max_dU, &info->max_dV); 
 
-
   TGraph distance_cdf; 
   info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf, &distance_cdf); 
 
@@ -773,6 +774,29 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   }
 
   spectrum::fillSpectrumParameters(&power, avg_spectra[pol], info, cfg); 
+}
+
+/** 
+ * Fill Peng's ChannelInfo object, it might come in handy...
+ */
+void UCorrelator::Analyzer::fillChannelInfo(const FilteredAnitaEvent* event, AnitaEventSummary* summary){
+  for(int polInd=0; polInd < AnitaPol::kNotAPol; polInd++){
+    AnitaPol::AnitaPol_t pol = (AnitaPol::AnitaPol_t) polInd;
+    for(int ant=0; ant<NUM_SEAVEYS; ant++){
+      const AnalysisWaveform* wf = event->getFilteredGraph(ant, pol);
+      const TGraphAligned* hilbertEnvelope= wf->hilbertEnvelope();
+      const TGraphAligned* power= wf->power();
+      const TGraphAligned* gr = wf->even();
+      double mean,rms, rmsPower, meanPower;
+      gr->getMeanAndRMS(&mean,&rms);
+      power->getMeanAndRMS(&meanPower,&rmsPower);
+
+      summary->channels[polInd][ant].rms = rms;
+      summary->channels[polInd][ant].avgPower = meanPower;
+      summary->channels[polInd][ant].peakHilbert = hilbertEnvelope->peakVal();
+      //TODO: snr.
+    }
+  }
 }
 
 

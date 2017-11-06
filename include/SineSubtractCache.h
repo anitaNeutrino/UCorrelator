@@ -41,6 +41,7 @@ class SineSubtractCache {
   UInt_t fDescHash; 
   TString fSpecDir;
   Int_t fCurrentRun;
+  Int_t fLastAttemptedRun;
   UInt_t fLastEventNumber;
   FFTtools::SineSubtractResult* results[AnitaPol::kNotAPol][NUM_SEAVEYS];
 
