@@ -89,6 +89,7 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(use_coherent_spectra); 
   LOOKUP(combine_t0); 
   LOOKUP(combine_t1); 
+  LOOKUP(use_hilbert_for_antenna_average); 
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", (int*) &start_pol, 2,pols); 
   lookupEnum(&cfg, "end_pol", (int*) &end_pol, 2,pols); 
@@ -184,6 +185,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   use_coherent_spectra = false; 
   combine_t0 = -25; 
   combine_t1 = 125; 
+  use_hilbert_for_antenna_average = true; 
 
 }
 

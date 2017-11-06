@@ -425,7 +425,8 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 SECTIONS
 {
   SECTION
-      wfcomb.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol], cfg->combine_t0, cfg->combine_t1); 
+      wfcomb.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol], 
+                     cfg->combine_t0, cfg->combine_t1, &summary->peak[pol][i].antennaPeakAverage, cfg->use_hilbert_for_antenna_average); 
   SECTION
       wfcomb_xpol.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol], cfg->combine_t0, cfg->combine_t1); 
   SECTION

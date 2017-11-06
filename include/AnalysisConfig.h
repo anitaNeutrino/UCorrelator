@@ -145,7 +145,10 @@ namespace UCorrelator
       bool use_forced_trigger_rms; 
       
       /** Whether or not to use the average of the spectra or the spectra of the coherent/deconvolved */ 
-      bool use_coherent_spectra = true; 
+      bool use_coherent_spectra; 
+
+      /** Whether or not to compute the antennaPeakAverage with hilbert peak */ 
+      bool use_hilbert_for_antenna_average; 
 
       double combine_t0;
       double combine_t1;
