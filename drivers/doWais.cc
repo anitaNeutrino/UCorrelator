@@ -27,7 +27,7 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = ""
   cfg.start_pol = AnitaPol::kHorizontal; 
   cfg.end_pol = AnitaPol::kHorizontal; 
   
-  cfg.response_option = UCorrelator::AnalysisConfig::ResponseSingleBRotter; 
+  cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
   cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
 //  cfg.max_peak_trigger_angle = 90; 
   cfg.fill_blast_fraction = true; 
