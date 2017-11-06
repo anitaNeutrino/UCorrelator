@@ -277,17 +277,22 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
   {
     int seg = segs[i].first; 
 
-    double p_this  =  segs[i].second; 
+    double p_this  =  segs[i].second / norm; 
+
+
+
     double p_other = the_rest[seg]; 
 
-    if (remove_self && mode == OVERLAP_SQRT_SUMS)  p_other -= p_this; 
-    if (remove_self && mode == OVERLAP_MAXES && p_this == p_other) p_this = normalized ? max2_ps_norm[seg] : max2_ps[seg]; 
 
-    double danswer = segs[i].second * the_rest[i]; 
+    if (remove_self && mode == OVERLAP_SQRT_SUMS)  p_other -= p_this; 
+    if (remove_self && mode == OVERLAP_MAXES && p_this == p_other) p_other = normalized ? max2_ps_norm[seg] : max2_ps[seg]; 
+
+    double danswer = (mode == OVERLAP_SUM_SQRTS ? sqrt(p_this) : p_this) * p_other; 
     
     if (mode == OVERLAP_SQRT_SUMS || mode == OVERLAP_MAXES) danswer = sqrt(danswer); 
 
     if (remove_self && (mode == OVERLAP_SUM_SQRTS || mode == OVERLAP_SUMS)) danswer -= p_this; 
+    answer += danswer; 
 
   }
 
