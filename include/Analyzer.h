@@ -66,22 +66,22 @@ namespace UCorrelator
       const gui::Map * getZoomedCorrelationMap(AnitaPol::AnitaPol_t pol, int i) const { return zoomed_correlation_maps[pol][i]; }
 
       /** Return the ith coherent waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const AnalysisWaveform * getCoherent(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent[pol][i][filtered ? 1 : 0]; } 
+      const AnalysisWaveform * getCoherent(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent[pol][filtered ? 1 : 0][i]; } 
 
        /** Return the ith deconvolved waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const AnalysisWaveform * getDeconvolved(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved[pol][i][filtered ? 1: 0]; } 
+      const AnalysisWaveform * getDeconvolved(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved[pol][filtered ? 1: 0][i]; } 
 
       /** Return the ith coherent xpol waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const AnalysisWaveform * getCoherentXpol(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent_xpol[pol][i][filtered ? 1: 0]; } 
+      const AnalysisWaveform * getCoherentXpol(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent_xpol[pol][filtered ? 1: 0][i]; } 
 
        /** Return the ith deconvolved xpol waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const AnalysisWaveform * getDeconvolvedXpol(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_xpol[pol][i][filtered ? 1: 0]; } 
+      const AnalysisWaveform * getDeconvolvedXpol(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_xpol[pol][filtered ? 1: 0][i]; } 
 
       /** Return the ith coherent averaged power for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const TGraphAligned * getCoherentPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent_power[pol][i][filtered ? 1: 0]; } 
+      const TGraphAligned * getCoherentPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent_power[pol][filtered ? 1: 0][i]; } 
 
        /** Return the ith deconvolved averaged power for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const TGraphAligned * getDeconvolvedPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_power[pol][i][filtered ? 1: 0]; } 
+      const TGraphAligned * getDeconvolvedPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_power[pol][filtered ? 1: 0][i]; } 
 
       AnitaResponse::ResponseManager * getResponseManager() { return &responses; } 
 
