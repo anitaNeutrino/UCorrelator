@@ -30,5 +30,4 @@ namespace UCorrelator {
 	double getMapPeakZScore(const TH2 * interfMap, bool sphWeight = true, double antOffset = 10);
 }
 
-
 #endif
