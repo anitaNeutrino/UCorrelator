@@ -74,7 +74,8 @@ namespace UCorrelator
      virtual PointingResolution * computePointingResolution(const AnitaEventSummary * sum, AnitaPol::AnitaPol_t pol, int peak, PointingResolution *p) const; 
     private: 
      mutable HeadingErrorEstimator h; 
-     PointingResolutionModel *p; 
+     const PointingResolutionModel *p; 
+     ClassDef(PointingResolutionModelPlusHeadingError,1); 
 
   }; 
   

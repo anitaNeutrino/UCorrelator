@@ -10,6 +10,7 @@
 
 ClassImp(UCorrelator::PointingResolution); 
 ClassImp(UCorrelator::PointingResolutionModel); 
+ClassImp(UCorrelator::PointingResolutionModelPlusHeadingError); 
 ClassImp(UCorrelator::ConstantPointingResolutionModel); 
 ClassImp(UCorrelator::PointingResolutionParSNRModel); 
 
@@ -24,6 +25,7 @@ UCorrelator::PointingResolution::PointingResolution(double phi, double theta,
   norm = 1./ ( 2 * TMath::Pi() * dphi * dtheta * sqrt ( 1-rho*rho)); 
 
 }
+
 
 
 double UCorrelator::PointingResolution::computeProbabilityDensity(double _phi, double _theta)
@@ -92,7 +94,7 @@ UCorrelator::PointingResolution * UCorrelator::PointingResolutionParSNRModel::co
     scale = 1./cos(TMath::DegToRad() *  sum->peak[pol][peak].theta); 
   }
 
-  new (p) PointingResolution(sum->peak[pol][peak].phi, sum->peak[pol][peak].theta, f_ph.Eval(snr) * scale, f_th.Eval(snr) * scale, 0); 
+  new (p) PointingResolution(sum->peak[pol][peak].phi, sum->peak[pol][peak].theta, f_ph.Eval(snr) * scale, f_th.Eval(snr) * scale *scale, 0); 
   return p; 
 
 }
@@ -138,3 +140,34 @@ UCorrelator::HeadingErrorEstimator::~HeadingErrorEstimator()
 {
   delete prof; 
 }
+
+UCorrelator::PointingResolutionModelPlusHeadingError::PointingResolutionModelPlusHeadingError(int nsecs, const PointingResolutionModel * other)
+  : h(nsecs), p(other)
+{
+
+
+}
+
+UCorrelator::PointingResolution * UCorrelator::PointingResolutionModelPlusHeadingError::computePointingResolution(const AnitaEventSummary * sum, AnitaPol::AnitaPol_t pol, int peak, PointingResolution * point) const
+{
+  point = p->computePointingResolution(sum,pol,peak,point); 
+
+  double stdev, mean;
+  int n = h.estimateHeadingError(sum->realTime, &stdev,&mean); 
+
+  double dphi = point->getdPhi();
+  if (!n) //no nearby GPS, Indiscriminately add 1 degree to dphi 
+  {
+    dphi = sqrt(dphi*dphi + 1); 
+  }
+  else
+  {
+    dphi = sqrt(dphi*dphi + stdev*stdev + mean*mean); //worsen the resolution 
+  }
+
+  new (point)  PointingResolution(sum->peak[pol][peak].phi, sum->peak[pol][peak].theta, dphi, point->getdTheta(), point->getCorr()); 
+
+  return point; 
+}
+
+
