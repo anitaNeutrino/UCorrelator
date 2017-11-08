@@ -28,7 +28,7 @@ UCorrelator::ProbabilityMap* testMapWais(int run =342, int max = 1, int nskip = 
   f_dphi.SetParameter(1, 0.2479); 
   Refraction::SphRay ref; 
 
-  UCorrelator::PointingResolutionParSNRModel m(&f_dtheta, &f_dphi, true);
+  UCorrelator::PointingResolutionParSNRModel m(f_dtheta, f_dphi, true);
  
   StereographicGrid *g = new StereographicGrid(2048,2048); 
 
@@ -38,6 +38,7 @@ UCorrelator::ProbabilityMap* testMapWais(int run =342, int max = 1, int nskip = 
   p.point = &m; 
   p.collision_detection = true; 
   p.backwards_params.el_cutoff = 0; 
+  p.backwards_params.num_samples_per_bin = 64; 
  
   UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(&p); 
   int ndone = 0; 
@@ -116,6 +117,7 @@ UCorrelator::ProbabilityMap* testMapWais(int run =342, int max = 1, int nskip = 
   TCanvas *c = new TCanvas; 
   c->Divide(2,2); 
   c->cd(1)->SetLogz(); 
+  printf("sum: %g\n", std::accumulate(map->getProbSums(), map->segmentationScheme()->NSegments()+ map->getProbSums(),0.)); 
   map->segmentationScheme()->Draw("colz", map->getProbSums(),range); 
   wais->SetMarkerColor(3); 
   wais->Draw("psame"); 

@@ -33,9 +33,10 @@ void runTMVA(const char * outname = "tmva/a3all_fisher_tmva_all.root", const cha
 
   //setup methods 
   factory->BookMethod(dl, TMVA::Types::kFisher, "Fisher",""); 
+//  factory->BookMethod(dl, TMVA::Types::kFisher, "TransformedFisher","VarTransform=G,D"); 
+//  factory->BookMethod(dl, TMVA::Types::kKNN, "kNN"); 
 //  factory->BookMethod(dl, TMVA::Types::kCuts, "Cuts"); 
 //  factory->BookMethod(dl, TMVA::Types::kCuts, "Cuts","CreateMVAPdfs=true"); 
-//  factory->BookMethod(dl, TMVA::Types::kKNN, "kNN"); 
 //  factory->BookMethod(dl, TMVA::Types::kBDT, "BDT"); 
 //  factory->BookMethod(dl, TMVA::Types::kMLP, "MLP"); 
 //  factory->BookMethod(dl, TMVA::Types::kSVM, "SVM"); 

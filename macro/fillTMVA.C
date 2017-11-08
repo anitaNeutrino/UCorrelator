@@ -19,7 +19,7 @@ void fillAllTMVA()
   {
     TString str; 
     str.Form("thermalTrees/simulated_%d-%d_sinsub_10_3_ad_2.root", i, i + 99); 
-//    fillTMVA(str.Data(),"simulation"); 
+    fillTMVA(str.Data(),"simulation"); 
   }
 
   for (int i = 130; i <=430; i+=10) 
