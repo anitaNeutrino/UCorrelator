@@ -1235,7 +1235,7 @@ void UCorrelator::CombinedSineSubtractFilter::process(FilteredAnitaEvent * ev)
    }
 }
 
-void UCorrelator::CombinedSineSubtractFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol) 
+void UCorrelator::CombinedSineSubtractFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol)
 {
 	printf("processOne not implemented yet, sorry!\n");
 }
@@ -1345,7 +1345,7 @@ void UCorrelator::AdaptiveMinimumPhaseFilter::process(FilteredAnitaEvent * ev)
 
 }
 
-void UCorrelator::AdaptiveMinimumPhaseFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol) 
+void UCorrelator::AdaptiveMinimumPhaseFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol)
 {
 	printf("processOne not implemented yet, sorry!\n");
 }
@@ -1481,7 +1481,7 @@ void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
 
 }
 
-void UCorrelator::AdaptiveBrickWallFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol) 
+void UCorrelator::AdaptiveBrickWallFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol)
 {
 	printf("processOne not implemented yet, sorry!\n");
 }

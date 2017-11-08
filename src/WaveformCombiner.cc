@@ -82,7 +82,7 @@ const AnalysisWaveform * UCorrelator::WaveformCombiner::wf (const FilteredAnitaE
 
 static SimplePassBandFilter alfa_filter(0,0.6);  
 
-void UCorrelator::WaveformCombiner::combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, ULong64_t disallowed, double t0, double t1)
+void UCorrelator::WaveformCombiner::combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, ULong64_t disallowed, double t0, double t1, double * avg_of_peaks, bool use_hilbert)
 {
 
   std::vector<AnalysisWaveform> padded(nant);
@@ -105,6 +105,7 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
     }
   }
 
+  double sum_peak = 0; 
   for (int i = 0; i < nant; i++) 
   {
     //ensure transform already calculated so we don't have to repeat when deconvolving
@@ -138,6 +139,12 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
     {
       alfa_filter.processOne(&padded[i]); 
     }
+
+    if (avg_of_peaks) 
+    {
+      sum_peak += (use_hilbert ? padded[i].hilbertEnvelope() : padded[i].even())->peakVal(); 
+    } 
+
 
     padded[i].padFreq(npad);
 
@@ -178,6 +185,11 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
   {
     combineWaveforms(nant, &deconv[0], delays,0, &deconvolved, t0, t1); 
     scaleGraph(&deconvolved_avg_spectrum, 1./nant); 
+  }
+
+  if (avg_of_peaks) 
+  {
+    *avg_of_peaks = sum_peak / nant; 
   }
 }
 

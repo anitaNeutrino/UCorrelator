@@ -47,7 +47,6 @@ UCorrelator::ProbabilityMap::ProbabilityMap(const Params * par)
     n_above_level_norm(NLevels(), std::vector<int>(p.seg->NSegments(),0)),
     wgt_above_level(NLevels(), std::vector<double>(p.seg->NSegments(),0)),
     wgt_above_level_norm(NLevels(), std::vector<double>(p.seg->NSegments(),0)),
-    bases_in_segment(p.seg->NSegments()), 
     n_above_level_without_base(NLevels(), std::vector<int>(p.seg->NSegments(),0)),
     n_above_level_without_base_norm(NLevels(), std::vector<int>(p.seg->NSegments(),0)),
     wgt_above_level_without_base(NLevels(), std::vector<double>(p.seg->NSegments(),0)),
@@ -59,13 +58,6 @@ UCorrelator::ProbabilityMap::ProbabilityMap(const Params * par)
 {
 
 
-  for (size_t i = 0; i < BaseList::getNumBases(); i++)
-  {
-    const BaseList::base & b = BaseList::getBase(i); 
-    int segment = p.seg->getSegmentIndex(b.getPosition(0));
-    if (segment !=-1) 
-      bases_in_segment[segment].push_back(i); 
-  }
 }
 
 
@@ -277,17 +269,22 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
   {
     int seg = segs[i].first; 
 
-    double p_this  =  segs[i].second; 
+    double p_this  =  segs[i].second / norm; 
+
+
+
     double p_other = the_rest[seg]; 
 
-    if (remove_self && mode == OVERLAP_SQRT_SUMS)  p_other -= p_this; 
-    if (remove_self && mode == OVERLAP_MAXES && p_this == p_other) p_this = normalized ? max2_ps_norm[seg] : max2_ps[seg]; 
 
-    double danswer = segs[i].second * the_rest[i]; 
+    if (remove_self && mode == OVERLAP_SQRT_SUMS)  p_other -= p_this; 
+    if (remove_self && mode == OVERLAP_MAXES && p_this == p_other) p_other = normalized ? max2_ps_norm[seg] : max2_ps[seg]; 
+
+    double danswer = (mode == OVERLAP_SUM_SQRTS ? sqrt(p_this) : p_this) * p_other; 
     
     if (mode == OVERLAP_SQRT_SUMS || mode == OVERLAP_MAXES) danswer = sqrt(danswer); 
 
     if (remove_self && (mode == OVERLAP_SUM_SQRTS || mode == OVERLAP_SUMS)) danswer -= p_this; 
+    answer += danswer; 
 
   }
 
@@ -431,11 +428,23 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
 
     int nsamples = p.backwards_params.num_samples_per_bin;
     /* set up vectors for sample phis /thetas/ densities */ 
-    std::vector<AntarcticCoord> samples(nsamples); 
-    std::vector<double> dens(nsamples);; 
-    std::vector<double> phis(nsamples);; 
-    std::vector<double> thetas(nsamples);; 
-    std::vector<bool> occluded(nsamples); 
+
+    //Figure out the enhancement steps; 
+    std::vector<int> enhancement_steps (1+p.backwards_params.max_enhance); 
+    enhancement_steps[0] = nsamples; 
+    for (int e = 1; e <= p.backwards_params.max_enhance; e++)
+    {
+        enhancement_steps[e] = pow( ceil (sqrt(enhancement_steps[e-1] * 2)),2); 
+    }
+
+    int max_samples = enhancement_steps[p.backwards_params.max_enhance]; 
+
+
+    std::vector<AntarcticCoord> samples(max_samples); 
+    std::vector<double> dens(max_samples);; 
+    std::vector<double> phis(max_samples);; 
+    std::vector<double> thetas(max_samples);; 
+    std::vector<bool> occluded(max_samples); 
 
     /** Loop over segments we need to check to see if p > cutoff */
     while (nchecked < segs_to_check.size())
@@ -444,147 +453,185 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
 
 
   //    printf("%g %g %g %g %g\n", check.source_phi, check.source_theta, check.payload_az, check.payload_el, check.distance); 
+      bool done_with_this_segment = false; 
+      int enhance_factor = 0; 
+      int noccluded = 0; 
+      double seg_p = 0;
+      double max_dens = 0; 
+
+      while(!done_with_this_segment) 
+      {
+
+        //ENHANCE 
+        // we want to find the smallest perfect square at least twice as many nsamples
+        if (enhance_factor) 
+        {
+          nsamples = enhancement_steps[enhance_factor]; 
+          printf("ENHANCE! To %d\n", nsamples); 
+        }
       
-      // segment into a bunch of positions
-      segmentationScheme()->sampleSegment(seg, nsamples, &samples[0], p.backwards_params.random_samples);  // do we want to randomize? i dunno. I'll decide later. 
-      
+        // segment into a bunch of positions
+        segmentationScheme()->sampleSegment(seg, nsamples, &samples[0], p.backwards_params.random_samples);  // do we want to randomize? i dunno. I'll decide later. 
+        
       // loop over the samples, 
       //  we want to check:
       //     - can this sample probably see ANITA? 
       //     - what are the coordinates of this sample in ANITA's frame? 
       //
 //#pragma omp parallel for
-      for (int i = 0; i < nsamples; i++)
-      {
-        //This computes the payload in source coords and vice versa
-        PayloadParameters pp(gps, samples[i], p.refract); 
-
-        pos = samples[i].as(AntarcticCoord::STEREOGRAPHIC); 
-//        printf("sample position: %g %g %g\n", pos.x, pos.y, pos.z); 
-//        printf("delta phi: %g\n",pp.source_phi - sum->peak[pol][peak].phi); 
-//        printf("delta el: %g\n",pp.source_theta - sum->peak[pol][peak].theta); 
-//        printf("payload el: %g %g\n", pp.payload_el, p.backwards_params.el_cutoff); 
-  //
-        //payload is below horizon.  or collides
-        AntarcticCoord collid, collid_exit; 
-        if (pp.payload_el < p.backwards_params.el_cutoff || ( p.collision_detection && pp.checkForCollision(p.collision_params.dx,&collid,&collid_exit, p.dataset, p.collision_params.grace))) 
+        for (int i = 0; i < nsamples; i++)
         {
-          if (pp.payload_el >=p.backwards_params.el_cutoff)  //colides
+          //This computes the payload in source coords and vice versa
+          PayloadParameters pp(gps, samples[i], p.refract); 
+
+          pos = samples[i].as(AntarcticCoord::STEREOGRAPHIC); 
+  //        printf("sample position: %g %g %g\n", pos.x, pos.y, pos.z); 
+  //        printf("delta phi: %g\n",pp.source_phi - sum->peak[pol][peak].phi); 
+  //        printf("delta el: %g\n",pp.source_theta - sum->peak[pol][peak].theta); 
+  //        printf("payload el: %g %g\n", pp.payload_el, p.backwards_params.el_cutoff); 
+    //
+          //payload is below horizon.  or collides
+          AntarcticCoord collid, collid_exit; 
+          if (pp.payload_el < p.backwards_params.el_cutoff || ( p.collision_detection && pp.checkForCollision(p.collision_params.dx,&collid,&collid_exit, p.dataset, p.collision_params.grace))) 
           {
-             collid.to(AntarcticCoord::STEREOGRAPHIC); 
-//             printf("Collision at (%g %g %g), surface at %g\n", collid.x,collid.y,collid.z, RampdemReader::SurfaceAboveGeoidEN(collid.x,collid.y, p.dataset)); 
+            if (pp.payload_el >=p.backwards_params.el_cutoff)  //colides
+            {
+               collid.to(AntarcticCoord::STEREOGRAPHIC); 
+  //             printf("Collision at (%g %g %g), surface at %g\n", collid.x,collid.y,collid.z, RampdemReader::SurfaceAboveGeoidEN(collid.x,collid.y, p.dataset)); 
 
 
-             // we want to make sure that whatever segment is occluding is is considered, if it isn't already. So let's project to continent from payload and ensure we have that segment already 
-             int potential_seg = p.seg->getSegmentIndex(collid_exit); 
-             if (!used[potential_seg]) 
-             {
-                 used[potential_seg] = segs_to_check.size(); 
-                 segs_to_check.push_back(potential_seg); 
-             }
-            
+               // we want to make sure that whatever segment is occluding is is considered, if it isn't already. So let's project to continent from payload and ensure we have that segment already 
+               int potential_seg = p.seg->getSegmentIndex(collid_exit); 
+               if (!used[potential_seg]) 
+               {
+                   used[potential_seg] = segs_to_check.size(); 
+                   segs_to_check.push_back(potential_seg); 
+               }
+              
+            }
+            occluded[i] = true; 
           }
-          occluded[i] = true; 
+          else occluded[i] = false; 
+
+          /* add to phis and thetas for this segment */
+
+          phis[i]=pp.source_phi; 
+
+          // Have to do something funny with phi if it's too different from initial phi 
+          while(phis[i] - phi0 > 180) phis[i] -=360; 
+          while(phis[i] - phi0 < -180) phis[i] +=360; 
+
+          thetas[i]=pp.source_theta; 
         }
-        else occluded[i] = false; 
-
-        /* add to phis and thetas for this segment */
-
-        phis[i]=pp.source_phi; 
-
-        // Have to do something funny with phi if it's too different from initial phi 
-        while(phis[i] - phi0 > 180) phis[i] -=360; 
-        while(phis[i] - phi0 < -180) phis[i] +=360; 
-
-        thetas[i]=pp.source_theta; 
-      }
       
 
-      /* compute the probabilities for each set of angles */ 
-      pr.computeProbabilityDensity(nsamples, &phis[0], &thetas[0], &dens[0]); 
+        /* compute the probabilities for each set of angles */ 
+        pr.computeProbabilityDensity(nsamples, &phis[0], &thetas[0], &dens[0]); 
 
-      /** Set occluded to 0
-       *
-       * Why not just get rid of them entirely you ask? I think the zero's might be important
-       * for calculating the integral properly. But maybe they're not. I'll look into it. 
-       *
-       * */ 
-      int noccluded = 0; 
-      double max_dens = 0;
-      for (int i =0; i < nsamples; i++)
-      {
-        if (occluded[i])
+        /** Set occluded to 0
+         *
+         * Why not just get rid of them entirely you ask? I think the zero's might be important
+         * for calculating the integral properly. But maybe they're not. I'll look into it. 
+         *
+         * */ 
+        noccluded = 0; 
+        max_dens = 0;
+        for (int i =0; i < nsamples; i++)
         {
-          dens[i] = 0; 
-//          printf("OCCLUDED\n"); 
-          noccluded++; 
+          if (occluded[i])
+          {
+            dens[i] = 0; 
+  //          printf("OCCLUDED\n"); 
+            noccluded++; 
+          }
+          else if (dens[i] > max_dens)
+          {
+            max_dens = dens[i]; 
+          }
         }
-        else if (dens[i] > max_dens)
+
+    //    printf("%d/%d samples occluded in segment %d\n", noccluded, nsamples, seg); 
+
+
+        /* Now we want to compute the integral  */
+
+        /** write out triangles for debugging if wanted*/ 
+        if (debugfile)
         {
-          max_dens = dens[i]; 
+          if (!debugfile->Get("triangles")) debugfile->mkdir("triangles"); 
+          debugfile->cd("triangles"); 
+          TGraph2D g2d (nsamples,&phis[0], &thetas[0], &dens[0]); 
+          g2d.Write(TString::Format("g%d",seg)); 
         }
+
+  #ifdef HAVE_DELAUNAY
+        ROOT::Math::Delaunay2D del (nsamples,&phis[0], &thetas[0], &dens[0]); 
+        del.FindAllTriangles(); 
+        // the delaunay triangulation stupidly normalizes... have to unnormalize it
+        double max_phi = -360000; 
+        double min_phi = 360000; 
+        double max_theta = -360000; 
+        double min_theta = 360000; 
+        for (int i = 0; i < nsamples; i++) 
+        {
+          if (phis[i] > max_phi) max_phi = phis[i]; 
+          if (thetas[i] > max_theta) max_theta = thetas[i]; 
+          if (phis[i] < min_phi) min_phi = phis[i]; 
+          if (thetas[i] < min_theta) min_theta = thetas[i]; 
+        }
+
+        double scale=  (max_phi-min_phi) * (max_theta-min_theta)  / ((del.XMax()-del.XMin())*(del.YMax()-del.YMin())); 
+
+        double sum = 0; 
+        bool enhance_flag = false;
+        for (std::vector<ROOT::Math::Delaunay2D::Triangle>::const_iterator it = del.begin(); it!=del.end(); it++)
+        {
+          const ROOT::Math::Delaunay2D::Triangle & tri = *it; 
+
+          double area = 0.5 *scale* fabs(( tri.x[0] - tri.x[2]) * (tri.y[1] - tri.y[0]) - (tri.x[0] - tri.x[1]) * (tri.y[2] - tri.y[0])); 
+          for (int j = 0; j < 3; j++) 
+          {
+            double darea =area /3. *  dens[tri.idx[j]];
+            if (p.backwards_params.enhance_threshold < darea && enhance_factor < p.backwards_params.max_enhance) 
+            {
+              enhance_flag = true; 
+              break; 
+            }
+            sum += darea; 
+          }
+        }
+  #else
+        double sum =-1; 
+        fprintf(stderr,"ROOT 5 not currently supported in Probability Map due to lack of ROOT/Math/Delaunay2D.h. Will be fixed someday if necessary. \n"); 
+  #endif
+
+        seg_p = sum; 
+  //      printf("%d %g %d\n",seg, seg_p, noccluded); 
+ 
+
+
+        if (seg_p > 1) 
+        {
+          if ( enhance_factor < p.backwards_params.max_enhance) 
+          {
+            enhance_flag = true; 
+          }
+          else
+          {
+            printf("OOPS %d %g %g\n", seg, scale, seg_p); 
+            seg_p = 1; 
+          }
+        }
+
+        done_with_this_segment = !enhance_flag; 
+        enhance_factor++; 
       }
 
       if (occlusion) 
       {
-        occlusion->push_back(std::pair<int,double> ( seg, double(noccluded)/nsamples)); 
+          occlusion->push_back(std::pair<int,double> ( seg, double(noccluded)/nsamples)); 
       }
 
-  //    printf("%d/%d samples occluded in segment %d\n", noccluded, nsamples, seg); 
-
-
-      /* Now we want to compute the integral  */
-
-      /** write out triangles for debugging if wanted*/ 
-      if (debugfile)
-      {
-        if (!debugfile->Get("triangles")) debugfile->mkdir("triangles"); 
-        debugfile->cd("triangles"); 
-        TGraph2D g2d (nsamples,&phis[0], &thetas[0], &dens[0]); 
-        g2d.Write(TString::Format("g%d",seg)); 
-      }
-
-#ifdef HAVE_DELAUNAY
-      ROOT::Math::Delaunay2D del (nsamples,&phis[0], &thetas[0], &dens[0]); 
-      del.FindAllTriangles(); 
-      // the delaunay triangulation stupidly normalizes... have to unnormalize it
-      double max_phi = -360000; 
-      double min_phi = 360000; 
-      double max_theta = -360000; 
-      double min_theta = 360000; 
-      for (int i = 0; i < nsamples; i++) 
-      {
-        if (phis[i] > max_phi) max_phi = phis[i]; 
-        if (thetas[i] > max_theta) max_theta = thetas[i]; 
-        if (phis[i] < min_phi) min_phi = phis[i]; 
-        if (thetas[i] < min_theta) min_theta = thetas[i]; 
-      }
-
-      double scale=  (max_phi-min_phi) * (max_theta-min_theta)  / ((del.XMax()-del.XMin())*(del.YMax()-del.YMin())); 
-
-      double sum = 0; 
-      for (std::vector<ROOT::Math::Delaunay2D::Triangle>::const_iterator it = del.begin(); it!=del.end(); it++)
-      {
-        const ROOT::Math::Delaunay2D::Triangle & tri = *it; 
-
-        double area = 0.5 *scale* fabs(( tri.x[0] - tri.x[2]) * (tri.y[1] - tri.y[0]) - (tri.x[0] - tri.x[1]) * (tri.y[2] - tri.y[0])); 
-        for (int j = 0; j < 3; j++) 
-        {
-          sum += area /3. *  dens[tri.idx[j]];
-        }
-      }
-#else
-      double sum =-1; 
-      fprintf(stderr,"ROOT 5 not currently supported in Probability Map due to lack of ROOT/Math/Delaunay2D.h. Will be fixed someday if necessary. \n"); 
-#endif
-
-      double seg_p = sum; 
-//      printf("%d %g %d\n",seg, seg_p, noccluded); 
-      if (seg_p > 1) 
-      {
-        printf("OOPS %d %g %g\n", seg, scale, seg_p); 
-
-      }
 
 
       contribution.push_back(std::pair<int,double>(seg,seg_p)); 

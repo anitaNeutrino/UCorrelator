@@ -66,22 +66,22 @@ namespace UCorrelator
       const gui::Map * getZoomedCorrelationMap(AnitaPol::AnitaPol_t pol, int i) const { return zoomed_correlation_maps[pol][i]; }
 
       /** Return the ith coherent waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const AnalysisWaveform * getCoherent(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent[pol][i][filtered ? 1 : 0]; } 
+      const AnalysisWaveform * getCoherent(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent[pol][filtered ? 1 : 0][i]; } 
 
        /** Return the ith deconvolved waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const AnalysisWaveform * getDeconvolved(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved[pol][i][filtered ? 1: 0]; } 
+      const AnalysisWaveform * getDeconvolved(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved[pol][filtered ? 1: 0][i]; } 
 
       /** Return the ith coherent xpol waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const AnalysisWaveform * getCoherentXpol(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent_xpol[pol][i][filtered ? 1: 0]; } 
+      const AnalysisWaveform * getCoherentXpol(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent_xpol[pol][filtered ? 1: 0][i]; } 
 
        /** Return the ith deconvolved xpol waveform for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const AnalysisWaveform * getDeconvolvedXpol(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_xpol[pol][i][filtered ? 1: 0]; } 
+      const AnalysisWaveform * getDeconvolvedXpol(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_xpol[pol][filtered ? 1: 0][i]; } 
 
       /** Return the ith coherent averaged power for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const TGraphAligned * getCoherentPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent_power[pol][i][filtered ? 1: 0]; } 
+      const TGraphAligned * getCoherentPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent_power[pol][filtered ? 1: 0][i]; } 
 
        /** Return the ith deconvolved averaged power for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const TGraphAligned * getDeconvolvedPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_power[pol][i][filtered ? 1: 0]; } 
+      const TGraphAligned * getDeconvolvedPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_power[pol][filtered ? 1: 0][i]; } 
 
       AnitaResponse::ResponseManager * getResponseManager() { return &responses; } 
 
@@ -122,7 +122,6 @@ namespace UCorrelator
       void setTrackWAIS(double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {sourceLon = AnitaLocations::getWaisLongitude(); sourceLat = AnitaLocations::getWaisLatitude(); sourceAlt = AnitaLocations::getWaisAltitude(); dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSource = true; }
       /** Tracks LDB for peak finding  */
       void setTrackLDB(double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {sourceLon = AnitaLocations::LONGITUDE_LDB; sourceLat = AnitaLocations::LATITUDE_LDB; sourceAlt = AnitaLocations::ALTITUDE_LDB; dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSource = true; }
-			
 			/** Allows you to set extra filters used only for combining waveforms */
 			void setExtraFilters(FilterStrategy* extra);
 			/** Allows you to set extra filters used only for combining deconvolved waveforms */
@@ -134,6 +133,7 @@ namespace UCorrelator
       void fillPointingInfo(double rough_phi, double rough_theta, AnitaEventSummary::PointingHypothesis * point,
                             UsefulAdu5Pat * pat, double hwAngle, UShort_t triggered_sectors, UShort_t masked_sectors, UShort_t triggered_sectors_xpol, UShort_t masked_sectors_xpol); 
       void fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary::EventFlags * flags, UsefulAdu5Pat * pat); 
+      void fillChannelInfo(const FilteredAnitaEvent* event, AnitaEventSummary* summary);
 
       gui::Map* correlation_maps[2]; 
       std::vector<gui::Map*>  zoomed_correlation_maps[2]; 

@@ -39,8 +39,9 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
   cfg.nmaxima = 1; 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
   cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
+  //cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
   cfg.enable_group_delay= !simulated; 
-  cfg.max_peak_trigger_angle =45; 
+//  cfg.max_peak_trigger_angle =45; 
 //  cfg.correlator_theta_lowest=90; 
 //  cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
 //  cfg.response_option = UCorrelator::AnalysisConfig::ResponseHarmSignalOnly; 

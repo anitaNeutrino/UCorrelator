@@ -12,7 +12,7 @@ source /home/cozzyd/anita/env.sh
 
 RUN=$1
 N=${2-0}
-START=${3-2}
+START=${3-0}
 FILTER=${4-sinsub_10_3_ad_2}
 
 export OMP_NUM_THREADS=4 

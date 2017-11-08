@@ -122,15 +122,6 @@ namespace UCorrelator
       TH2* ldb_hist() const; 
       int ldb_max_run; 
 
-      /** When calculating average stokes parameters, do you want to window the waveform around the hilbert envelope?
-         windowStokes == false: no windowing at all
-         if true:
-                    stokesWindowLength =< 0: dynamic window length (default)
-                   stokesWindowLength > 0: set window length
-       * */
-      bool windowStokes;
-      int stokesWindowLength;
-
       /** Fill the payload blast fraction in the flags. Requires having the time dependent averages right now , so default is false*/ 
       bool fill_blast_fraction; 
 
@@ -146,13 +137,18 @@ namespace UCorrelator
 
       /** TODO: this has to be loaded from file somehow */ 
       AnitaResponse::DeconvolutionMethod * deconvolution_method; 
+
+      double stokes_fracI; 
       
 
       /** Use the nearby forced trigger rms instead of estimating it from the waveform */ 
       bool use_forced_trigger_rms; 
       
       /** Whether or not to use the average of the spectra or the spectra of the coherent/deconvolved */ 
-      bool use_coherent_spectra = true; 
+      bool use_coherent_spectra; 
+
+      /** Whether or not to compute the antennaPeakAverage with hilbert peak */ 
+      bool use_hilbert_for_antenna_average; 
 
       double combine_t0;
       double combine_t1;

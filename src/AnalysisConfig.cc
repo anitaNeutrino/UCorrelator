@@ -82,14 +82,14 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(min_peak_distance_from_unmasked); 
   LOOKUP(fill_blast_Fraction); 
   LOOKUP(max_theta_adjustment); 
-  LOOKUP(windowStokes);
-  LOOKUP(stokesWindowLength);
   LOOKUP(set_bottom_first);
   LOOKUP(delay_to_center);
+  LOOKUP(stokes_fracI); 
   LOOKUP(use_forced_trigger_rms); 
   LOOKUP(use_coherent_spectra); 
   LOOKUP(combine_t0); 
   LOOKUP(combine_t1); 
+  LOOKUP(use_hilbert_for_antenna_average); 
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", (int*) &start_pol, 2,pols); 
   lookupEnum(&cfg, "end_pol", (int*) &end_pol, 2,pols); 
@@ -108,15 +108,15 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
 #endif
 
 
-const int wais_hpol_time_offset = (AnitaVersion::get() == 4) ? 11000 : 93; 
-const int wais_vpol_time_offset = (AnitaVersion::get() == 4) ? 1000 : -99757; 
+const int wais_hpol_time_offset[5] = {0,0,0,93,11000}; 
+const int wais_vpol_time_offset[5] = {0,0,0,-99757,1000}; 
 const int siple_hpol_time_offset = -41;
 const int siple_vpol_time_offset = +328;
 
 UCorrelator::AnalysisConfig::AnalysisConfig(const char * config) 
   : 
-    wais_hpol(wais_hpol_time_offset, 800e3, 1e3), 
-    wais_vpol(wais_vpol_time_offset, 800e3, 1e3), 
+    wais_hpol(wais_hpol_time_offset[AnitaVersion::get()], 800e3, 1e3), 
+    wais_vpol(wais_vpol_time_offset[AnitaVersion::get()], 800e3, 1e3), 
     siple_hpol(siple_hpol_time_offset, 800e3, 1e3), 
     siple_vpol(siple_vpol_time_offset, 800e3, 1e3)
 {
@@ -175,10 +175,9 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
 
   ldb_max_run = 160; 
 
-  windowStokes = true;
   fill_blast_fraction = true; 
-  stokesWindowLength = -1;
   set_bottom_first = true;
+  stokes_fracI = 0.2; 
 
   delay_to_center = true;
   use_forced_trigger_rms = true; 
@@ -186,6 +185,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   use_coherent_spectra = false; 
   combine_t0 = -25; 
   combine_t1 = 125; 
+  use_hilbert_for_antenna_average = true; 
 
 }
 

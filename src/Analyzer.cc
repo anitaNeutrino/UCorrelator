@@ -1,5 +1,6 @@
 #include "Analyzer.h" 
 #include "AnalysisConfig.h" 
+#include "Polarimetry.h" 
 #include "TPaveText.h"
 #include "AnalysisWaveform.h"
 #include "AnitaVersion.h" 
@@ -424,7 +425,8 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 SECTIONS
 {
   SECTION
-      wfcomb.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol], cfg->combine_t0, cfg->combine_t1); 
+      wfcomb.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol], 
+                     cfg->combine_t0, cfg->combine_t1, &summary->peak[pol][i].antennaPeakAverage, cfg->use_hilbert_for_antenna_average); 
   SECTION
       wfcomb_xpol.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol], cfg->combine_t0, cfg->combine_t1); 
   SECTION
@@ -446,6 +448,8 @@ SECTIONS
   SECTION
       fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol, 0); 
  }
+  // comment this line out if you don't want channel information in summary file.
+  fillChannelInfo(event, summary);
 
 
 
@@ -725,61 +729,13 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
   info->power_10_10 = even->getSumV2(ifirst, ilast); 
 
-  int nmax = TMath::Min(wf->Neven(), xpol_wf->Neven()); 
 
-  if (!cfg->windowStokes) {
-    ifirst = 0;
-    ilast = nmax-1-1;
-  }
-  else {
-    if (cfg->stokesWindowLength > 0) {
-      ilast = ifirst + cfg->stokesWindowLength;
-    }
-    if (ifirst < 0) ifirst = 0; 
-    if (ilast < 0 || ilast > nmax) ilast = nmax-1; 
-  }
-
-  int nstokes = ilast-ifirst+1 ; 
-
-  if (pol == AnitaPol::kHorizontal)
-  {
-
-    FFTtools::stokesParameters(nstokes,
-                               even->GetY()+ifirst, 
-                               wf->hilbertTransform()->even()->GetY()+ifirst, 
-                               xpol_even->GetY()+ifirst, 
-                               xpol_wf->hilbertTransform()->even()->GetY()+ifirst, 
-                               &(info->I), &(info->Q), &(info->U), &(info->V),
-                               &(info->max_dI),&(info->max_dQ),&(info->max_dU), &(info->max_dV)
-                               ); 
-  }
-  else
-  {
-    FFTtools::stokesParameters(nstokes, 
-                               xpol_even->GetY()+ifirst, 
-                               xpol_wf->hilbertTransform()->even()->GetY()+ifirst, 
-                               even->GetY()+ifirst, 
-                               wf->hilbertTransform()->even()->GetY()+ifirst, 
-                               &(info->I), &(info->Q), &(info->U), &(info->V), 
-                               &(info->max_dI),&(info->max_dQ),&(info->max_dU), &(info->max_dV)
-                               ); 
- 
-  }
-
-
-  //now fill in the maximum "insaneous" stokes parametres
-  
-
-  /* //pol and xpol aren't required to be the same length(uncomment to see).
-  // So, you'll get invalid accesses and garbage results sometimes.
-  if (info->I > 1e4) {
-    std::cout << "Warning in Analyzer(): Weird stokes value? ";
-    std::cout << info->power_10_10 <<" stokesI=" << info->I << " nstokes=" << nstokes << " ";
-    std::cout << xpol_even->GetN() << " " << xpol_wf->hilbertTransform()->even()->GetN() << " ";
-    std::cout << even->GetN() << " " << wf->hilbertTransform()->even()->GetN();
-    std::cout << " shortest->" << shortestRecoLen << std::endl;
-  }               
-  */
+  polarimetry::StokesAnalysis stokes( pol == AnitaPol::kHorizontal ? wf : xpol_wf,  pol == AnitaPol::kHorizontal ? xpol_wf: wf); 
+  info->I = stokes.getAvgI(); 
+  info->Q = stokes.getAvgQ(); 
+  info->U = stokes.getAvgU(); 
+  info->V = stokes.getAvgV(); 
+  info->NPointsMaxStokes = stokes.computeWindowedAverage(cfg->stokes_fracI, &info->max_dI, &info->max_dQ, &info->max_dU, &info->max_dV); 
 
   TGraph distance_cdf; 
   info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf, &distance_cdf); 
@@ -818,6 +774,29 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   }
 
   spectrum::fillSpectrumParameters(&power, avg_spectra[pol], info, cfg); 
+}
+
+/** 
+ * Fill Peng's ChannelInfo object, it might come in handy...
+ */
+void UCorrelator::Analyzer::fillChannelInfo(const FilteredAnitaEvent* event, AnitaEventSummary* summary){
+  for(int polInd=0; polInd < AnitaPol::kNotAPol; polInd++){
+    AnitaPol::AnitaPol_t pol = (AnitaPol::AnitaPol_t) polInd;
+    for(int ant=0; ant<NUM_SEAVEYS; ant++){
+      const AnalysisWaveform* wf = event->getFilteredGraph(ant, pol);
+      const TGraphAligned* hilbertEnvelope= wf->hilbertEnvelope();
+      const TGraphAligned* power= wf->power();
+      const TGraphAligned* gr = wf->even();
+      double mean,rms, rmsPower, meanPower;
+      gr->getMeanAndRMS(&mean,&rms);
+      power->getMeanAndRMS(&meanPower,&rmsPower);
+
+      summary->channels[polInd][ant].rms = rms;
+      summary->channels[polInd][ant].avgPower = meanPower;
+      summary->channels[polInd][ant].peakHilbert = hilbertEnvelope->peakVal();
+      //TODO: snr.
+    }
+  }
 }
 
 

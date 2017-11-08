@@ -37,6 +37,7 @@
 #pragma link C++ class UCorrelator::ProbabilityMap::Params::BackwardParams;
 #pragma link C++ class UCorrelator::ProbabilityMap::Params::MCParams;
 #pragma link C++ class UCorrelator::PointingResolutionModel;
+#pragma link C++ class UCorrelator::PointingResolutionModelPlusHeadingError;
 #pragma link C++ class UCorrelator::PointingResolutionParSNRModel;
 #pragma link C++ class UCorrelator::ConstantPointingResolutionModel;
 #pragma link C++ class UCorrelator::HeadingErrorEstimator;

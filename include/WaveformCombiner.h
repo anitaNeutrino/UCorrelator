@@ -28,7 +28,10 @@ namespace UCorrelator
 
     public: 
 
-    WaveformCombiner(int nantennas = 10, int npad = 3, bool useUnfiltered = true, bool deconvolve = false, const AnitaResponse::ResponseManager * response = 0, bool enableALFAHack=true); 
+    WaveformCombiner(int nantennas = 12, int npad = 3, bool useUnfiltered = true,
+                     bool deconvolve = false,
+                     const AnitaResponse::ResponseManager * response = 0,
+                     bool enableALFAHack=true); 
 
       /** Sets the responses used when deconvolving. 
        * If a response is 0, nothing is done. 
@@ -40,7 +43,9 @@ namespace UCorrelator
       virtual ~WaveformCombiner(); 
 
       /** Combines the waveforms from the given event */ 
-      void combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, ULong64_t disallowed = 0, double t0 = 0, double t1 = 100); 
+      void combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, 
+                  ULong64_t disallowed = 0, double t0 = 0, double t1 = 100, 
+                    double * avg_of_peaks =0, bool use_hilbert = true); 
 
       const AnalysisWaveform * getCoherent() const { return &coherent; }
       const AnalysisWaveform * getDeconvolved() const; 
@@ -78,7 +83,7 @@ namespace UCorrelator
 
     private: 
 
-      
+     
       AnalysisWaveform coherent; 
       AnalysisWaveform deconvolved; 
       TGraphAligned coherent_avg_spectrum; 

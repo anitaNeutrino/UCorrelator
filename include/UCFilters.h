@@ -120,7 +120,7 @@ namespace UCorrelator
 
       const char * tag() const { return "ComplicatedNotchFilter"; } 
       const char * description() const { return desc.Data(); } 
-      virtual  void processOne(AnalysisWaveform * aw, const RawAnitaHeader * header = 0, int ant = 0, int pol = 0); 
+      virtual void processOne(AnalysisWaveform* aw, const RawAnitaHeader * header = 0, int ant = 0, int pol = 0); 
     private: 
       TString desc; ; 
       double min,max; 
@@ -152,7 +152,7 @@ namespace UCorrelator
       const char * tag() const { return "AdaptiveFilter"; } 
       const char * description() const { return desc_string.Data(); }
       virtual void process(FilteredAnitaEvent * event); 
-      virtual  void processOne(AnalysisWaveform * aw, const RawAnitaHeader * header = 0, int ant = 0, int pol = 0); 
+      virtual void processOne(AnalysisWaveform* aw, const RawAnitaHeader * header = 0, int ant = 0, int pol = 0); 
       unsigned nOutputs() const { return 6 ; } 
       virtual void fillOutput(unsigned i, double * vars) const; 
       const char * outputName(unsigned i) const; 
@@ -249,7 +249,7 @@ namespace UCorrelator
       const char * tag() const { return "AdaptiveBrickWallFilter"; } 
       const char * description() const{ return desc_string.Data(); } 
       virtual void process(FilteredAnitaEvent *ev); 
-      virtual  void processOne(AnalysisWaveform * aw, const RawAnitaHeader * header = 0, int ant = 0, int pol = 0); 
+			virtual void processOne(AnalysisWaveform* aw, const RawAnitaHeader * header = 0, int ant = 0, int pol = 0);
       virtual ~AdaptiveBrickWallFilter();
     private:
       TString desc_string; 
@@ -272,7 +272,7 @@ namespace UCorrelator
       const char * tag() const { return "AdaptiveMinimumPhaseFilter"; } 
       const char * description() const{ return desc_string.Data(); } 
       virtual void process(FilteredAnitaEvent *ev); 
-      virtual  void processOne(AnalysisWaveform * aw, const RawAnitaHeader * header = 0, int ant = 0, int pol = 0); 
+			virtual void processOne(AnalysisWaveform* aw, const RawAnitaHeader * header = 0, int ant = 0, int pol = 0);
       virtual ~AdaptiveMinimumPhaseFilter();  
       TGraph * getCurrentFilterTimeDomain(AnitaPol::AnitaPol_t pol, int i) const; 
       TGraph * getCurrentFilterPower(AnitaPol::AnitaPol_t pol, int i) const; 
@@ -294,7 +294,7 @@ namespace UCorrelator
       AdaptiveButterworthFilter(const TimeDependentAverageLoader *avg, double peakiness_threshold = 2, int order = 2, double width = 0.05) ; 
 
       virtual void process(FilteredAnitaEvent *ev) ; 
-      virtual  void processOne(AnalysisWaveform * aw, const RawAnitaHeader * header = 0, int ant = 0, int pol = 0); 
+			virtual void processOne(AnalysisWaveform* aw, const RawAnitaHeader * header = 0, int ant = 0, int pol = 0);
       virtual ~AdaptiveButterworthFilter() {; } 
       const char * tag() const { return "AdaptiveButterworthFilter"; } 
       const char * description() const{ return desc_string.Data(); } 
@@ -327,7 +327,7 @@ namespace UCorrelator
       unsigned outputLength(unsigned i) const; 
       void fillOutput(unsigned i, double * vars) const; 
       virtual void process(FilteredAnitaEvent * ev); 
-      virtual  void processOne(AnalysisWaveform * aw, const RawAnitaHeader * header = 0, int ant = 0, int pol = 0); 
+			virtual void processOne(AnalysisWaveform* aw, const RawAnitaHeader * header = 0, int ant = 0, int pol = 0);
       const FFTtools::SineSubtract* sinsub(AnitaPol::AnitaPol_t pol, int phi) const { return subs[phi][pol] ;} 
       void setInteractive(bool set); 
     private:
