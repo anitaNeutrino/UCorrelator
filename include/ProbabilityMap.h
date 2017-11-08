@@ -102,13 +102,17 @@ namespace UCorrelator
         {
           BackwardParams() 
           {
-            num_samples_per_bin = 16; 
+            num_samples_per_bin = 9; 
+            enhance_threshold = 0.01; //threshold to enhance if any delauanay region has an area greater than this 
+            max_enhance = 4; 
             el_cutoff = 0; 
             random_samples = false; 
           }
 
           int num_samples_per_bin; 
           double el_cutoff; 
+          double enhance_threshold;
+          int max_enhance; 
           bool random_samples;
         } backwards_params; 
 
@@ -249,8 +253,6 @@ namespace UCorrelator
 
 
 
-      //mapping of segment to base in segment  (for stationary bases) 
-      std::vector<std::vector<int> > bases_in_segment; 
 
       std::vector< std::vector<int> > n_above_level_without_base; 
       std::vector< std::vector<int> > n_above_level_without_base_norm; 
@@ -266,6 +268,7 @@ namespace UCorrelator
 
       //guards the add method (everything else doesn't touch the internals) 
       TMutex m; 
+
 
       ClassDefNV(ProbabilityMap, 11); 
   }; 
