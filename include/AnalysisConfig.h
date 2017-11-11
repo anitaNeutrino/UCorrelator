@@ -152,6 +152,8 @@ namespace UCorrelator
 
       double combine_t0;
       double combine_t1;
+
+      bool fill_channel_info; 
     private: 
       mutable TH2 * the_ldb_hist; 
   };
