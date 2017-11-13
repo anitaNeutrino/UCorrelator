@@ -41,12 +41,13 @@ void doWaisA4( int run = 352, int max = 0, int start = 0, const char * filter = 
   AnitaEventSummary * sum = new AnitaEventSummary;
 
 
-    double dtheta = 1.; double dphi = 2.; bool blockout = true;
-    analyzer.setTrackSun(dtheta, dphi, blockout);
+  double dtheta = 1.; double dphi = 2.; bool blockout = true;
+  analyzer.setTrackSun(dtheta, dphi, blockout);
 
-    FilterStrategy* forDeco = new FilterStrategy;
-    forDeco->addOperation(new UCorrelator::AntiBH13Filter());
-    analyzer.setExtraFiltersDeconvolved(forDeco);
+  FilterStrategy* forDeco = new FilterStrategy;
+  forDeco->addOperation(new UCorrelator::AntiBH13Filter());
+  analyzer.setExtraFiltersDeconvolved(forDeco);
+  analyzer.setDisallowedAntennas(0, (1ul<<45));  // Vpol ant45 is bad! So disable it.
 
   FilterStrategy strategy (&ofile);
   UCorrelator::fillStrategyWithKey(&strategy, filter);
@@ -106,9 +107,9 @@ int main (int nargs, char ** args)
   const char * filter = nargs < 5 ? 0 :args[4];
 
   if (filter)
-    doWais2(run,max,start,filter);
+    doWaisA4(run,max,start,filter);
   else
-    doWais2(run,max,start);
+    doWaisA4(run,max,start);
 
 
 }
