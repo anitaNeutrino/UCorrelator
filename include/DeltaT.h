@@ -20,10 +20,16 @@ namespace UCorrelator
   inline double getAntennaGroupDelay(double phidiff, double theta) 
   {
     theta-=10;
-    const double c1 = 1.45676e-8; 
-    const double c2 = 5.01452e-6; 
+    // const double c1 = 1.45676e-8; 
+    // const double c2 = 5.01452e-6; 
 
-    double totalAngle2=theta*theta+phidiff*phidiff;//TODO
+    // double totalAngle2=theta*theta+phidiff*phidiff;//TODO
+
+     const double c1 = 3.09e-8; 
+    const double c2 = 3.57e-5; 
+
+    double totalAngle2=phidiff*phidiff;//TODO
+
     if (totalAngle2>50*50) return (50*50*50*50 * c1 - 50*50 * c2); 
 
     double delayTime=totalAngle2 * totalAngle2 * c1 - totalAngle2 * c2; 
