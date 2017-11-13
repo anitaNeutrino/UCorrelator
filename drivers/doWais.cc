@@ -24,7 +24,7 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = ""
   AnitaDataset d(run,false,WaveCalType::kDefault, AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kNoBlinding ); 
   UCorrelator::AnalysisConfig cfg; 
   cfg.start_pol = AnitaPol::kHorizontal; 
-  cfg.end_pol = AnitaPol::kVeritcal; 
+  cfg.end_pol = AnitaPol::kVertical; 
   
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseSingleBRotter; 
   cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
