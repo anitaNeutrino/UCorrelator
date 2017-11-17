@@ -80,7 +80,8 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(baseline_weight); 
   LOOKUP(max_peak_trigger_angle); 
   LOOKUP(min_peak_distance_from_unmasked); 
-  LOOKUP(fill_blast_Fraction); 
+  LOOKUP(fill_blast_fraction); 
+  LOOKUP(compute_shape_parameters); 
   LOOKUP(max_theta_adjustment); 
   LOOKUP(set_bottom_first);
   LOOKUP(delay_to_center);
@@ -178,6 +179,8 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   fill_blast_fraction = true; 
   set_bottom_first = true;
   stokes_fracI = 0.2; 
+
+  compute_shape_parameters = true;
 
   delay_to_center = true;
   use_forced_trigger_rms = true; 

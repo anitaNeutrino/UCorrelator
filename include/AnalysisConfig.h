@@ -73,7 +73,7 @@ namespace UCorrelator
         ResponseSingleBRotter, /// Ben's unified respone 
         ResponseIndividualBRotter, ///Ben's individual responses 
         ResponseHarmSignalOnly, ///Harm's signal chain only thing (currently used in icemc) 
-                            ResponseTUFF /// response with TUFFs convolved in
+        ResponseTUFF /// response with TUFFs convolved in
       } response_option;  
 
       static const char * getResponseString(ResponseOption_t opt); 
@@ -125,6 +125,8 @@ namespace UCorrelator
       /** Fill the payload blast fraction in the flags. Requires having the time dependent averages right now , so default is false*/ 
       bool fill_blast_fraction; 
 
+      /** option to turn off computing/saving shape parameters, should save time and space if you aren't planning on using them, default is to compute them */
+      bool compute_shape_parameters;
 
       /** set_bottom_first:  Re-arrange the coherently summed waveforms so that the bottom-most ring is always the
          first antenna to be summed.
