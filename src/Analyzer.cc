@@ -879,7 +879,7 @@ static void setOnClickHandler(TPad * pad)
 
 
 
-void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
+void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv, int draw_filtered) const
 {
   TPad * pads[2] = {ch,cv}; 
 
@@ -906,7 +906,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
     for (int i = 0; i < last.nPeaks[ipol]; i++) 
     {
       pads[ipol]->cd(1)->cd(2); 
-      UCorrelator::gui::SummaryText * pt  = new gui::SummaryText(i, AnitaPol::AnitaPol_t(ipol), this); 
+      UCorrelator::gui::SummaryText * pt  = new gui::SummaryText(i, AnitaPol::AnitaPol_t(ipol), this, draw_filtered); 
       delete_list.push_back(pt); 
       pt->Draw(); 
     }
@@ -924,11 +924,11 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 
       pads[ipol]->cd(2)->cd(i+last.nPeaks[ipol]+1); 
 
-      ((TGraph*) coherent[ipol][0][i]->even())->SetTitle(TString::Format ( "Coherent (+ xpol) %d", i+1)); 
-      coherent[ipol][0][i]->drawEven("al"); 
+      ((TGraph*) coherent[ipol][draw_filtered][i]->even())->SetTitle(TString::Format ( "Coherent (+ xpol) %d", i+1)); 
+      coherent[ipol][draw_filtered][i]->drawEven("al"); 
 
 
-      coherent_xpol[ipol][0][i]->drawEven("lsame"); 
+      coherent_xpol[ipol][draw_filtered][i]->drawEven("lsame"); 
 
 
       pads[ipol]->cd(2)->cd(i+2*last.nPeaks[ipol]+1); 
@@ -936,15 +936,15 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 
       if (cfg->use_coherent_spectra) 
       {
-        ((TGraph*) coherent[ipol][0][i]->powerdB())->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
-        coherent[ipol][0][i]->drawPowerdB("al"); 
-        coherent_xpol[ipol][0][i]->drawPowerdB("lsame"); 
+        ((TGraph*) coherent[ipol][draw_filtered][i]->powerdB())->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
+        coherent[ipol][draw_filtered][i]->drawPowerdB("al"); 
+        coherent_xpol[ipol][draw_filtered][i]->drawPowerdB("lsame"); 
       }
       else
       {
-        (((TGraph*)coherent_power[ipol][0][i]))->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
-        ((TGraph*)coherent_power[ipol][0][i])->Draw("al"); 
-        coherent_power_xpol[ipol][0][i]->Draw("lsame"); 
+        (((TGraph*)coherent_power[ipol][draw_filtered][i]))->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
+        ((TGraph*)coherent_power[ipol][draw_filtered][i])->Draw("al"); 
+        coherent_power_xpol[ipol][draw_filtered][i]->Draw("lsame"); 
       }
 
 
@@ -978,11 +978,11 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       if (interactive_deconvolved)
       {
         pads[ipol]->cd(2)->cd(i+3*last.nPeaks[ipol]+1); 
-        ((TGraph*) deconvolved[ipol][0][i]->even())->SetTitle(TString::Format ( "Deconvolved (+ xpol) %d", i+1)); 
-        deconvolved[ipol][0][i]->drawEven("alp"); 
+        ((TGraph*) deconvolved[ipol][draw_filtered][i]->even())->SetTitle(TString::Format ( "Deconvolved (+ xpol) %d", i+1)); 
+        deconvolved[ipol][draw_filtered][i]->drawEven("alp"); 
         if (interactive_xpol_deconvolved)
         {
-            deconvolved_xpol[ipol][0][i]->drawEven("lsame"); 
+            deconvolved_xpol[ipol][draw_filtered][i]->drawEven("lsame"); 
         }
 
         pads[ipol]->cd(2)->cd(i+4*last.nPeaks[ipol]+1); 
@@ -990,21 +990,21 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
         if (cfg->use_coherent_spectra) 
         {
 
-          ((TGraph*) deconvolved[ipol][0][i]->powerdB())->SetTitle(TString::Format ( "Power Deconvolved (+ xpol) %d", i+1)); 
-          (deconvolved[ipol][0][i])->drawPowerdB();; 
+          ((TGraph*) deconvolved[ipol][draw_filtered][i]->powerdB())->SetTitle(TString::Format ( "Power Deconvolved (+ xpol) %d", i+1)); 
+          (deconvolved[ipol][draw_filtered][i])->drawPowerdB();; 
           if (interactive_xpol_deconvolved)
           {
-            (deconvolved_xpol[ipol][0][i])->drawPowerdB("lsame"); 
+            (deconvolved_xpol[ipol][draw_filtered][i])->drawPowerdB("lsame"); 
           }
         
         }
         else
         {
-          (((TGraph*)deconvolved_power[ipol][0][i]))->SetTitle(TString::Format ( "Power Deconvolved (+ xpol) %d", i+1)); 
-          ((TGraph*)deconvolved_power[ipol][0][i])->Draw();; 
+          (((TGraph*)deconvolved_power[ipol][draw_filtered][i]))->SetTitle(TString::Format ( "Power Deconvolved (+ xpol) %d", i+1)); 
+          ((TGraph*)deconvolved_power[ipol][draw_filtered][i])->Draw();; 
           if (interactive_xpol_deconvolved)
           {
-            ((TGraph*)deconvolved_power_xpol[ipol][0][i])->Draw("lsame"); 
+            ((TGraph*)deconvolved_power_xpol[ipol][draw_filtered][i])->Draw("lsame"); 
           }
         }
 

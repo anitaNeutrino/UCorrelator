@@ -268,7 +268,7 @@ void UCorrelator::gui::Map::drawWf(double phi, double theta)
 }
 
 
-UCorrelator::gui::SummaryText::SummaryText(int i,AnitaPol::AnitaPol_t pol, const Analyzer *analyzer)
+UCorrelator::gui::SummaryText::SummaryText(int i,AnitaPol::AnitaPol_t pol, const Analyzer *analyzer, int use_filtered)
   : TPaveText(i/double(analyzer->getSummary()->nPeaks[(int)pol]), 0, (i+1) /double(analyzer->getSummary()->nPeaks[(int) pol]),1)
 
 {
@@ -279,10 +279,21 @@ UCorrelator::gui::SummaryText::SummaryText(int i,AnitaPol::AnitaPol_t pol, const
   AddText(TString::Format("#phi: %0.2f (rough) , %0.3f (fine)", rough_phi, ev->peak[ipol][i].phi)); 
   AddText(TString::Format("#theta: %0.2f (rough) , %0.3f (fine)", rough_theta, ev->peak[ipol][i].theta)); 
   AddText(TString::Format("peak val: %f", ev->peak[ipol][i].value)); 
-  AddText(TString::Format("peak_{hilbert}:  %0.3f (coher), %0.3f (deconv)", ev->coherent[ipol][i].peakHilbert, ev->deconvolved[ipol][i].peakHilbert)); 
-  AddText(TString::Format("stokes: (coher): (%0.3g, %0.3g, %0.3g, %0.3g)", ev->coherent[ipol][i].I, ev->coherent[ipol][i].Q, ev->coherent[ipol][i].U, ev->coherent[ipol][i].V));
-  AddText(TString::Format("stokes: (deconv): (%0.3g, %0.3g, %0.3g, %0.3g)", ev->deconvolved[ipol][i].I, ev->deconvolved[ipol][i].Q, ev->deconvolved[ipol][i].U, ev->deconvolved[ipol][i].V));
-  AddText(TString::Format("impulsivity measure: %0.3g (coher), %0.3g (deconv)", ev->coherent[ipol][i].impulsivityMeasure, ev->deconvolved[ipol][i].impulsivityMeasure));
-  AddText(TString::Format("SNR %0.3g (coher), %0.3g (deconv)", ev->coherent[ipol][i].snr, ev->deconvolved[ipol][i].snr));
+  if(use_filtered == 0)
+  {
+    AddText(TString::Format("peak_{hilbert}:  %0.3f (coher), %0.3f (deconv)", ev->coherent[ipol][i].peakHilbert, ev->deconvolved[ipol][i].peakHilbert)); 
+    AddText(TString::Format("stokes: (coher): (%0.3g, %0.3g, %0.3g, %0.3g)", ev->coherent[ipol][i].I, ev->coherent[ipol][i].Q, ev->coherent[ipol][i].U, ev->coherent[ipol][i].V));
+    AddText(TString::Format("stokes: (deconv): (%0.3g, %0.3g, %0.3g, %0.3g)", ev->deconvolved[ipol][i].I, ev->deconvolved[ipol][i].Q, ev->deconvolved[ipol][i].U, ev->deconvolved[ipol][i].V));
+    AddText(TString::Format("impulsivity measure: %0.3g (coher), %0.3g (deconv)", ev->coherent[ipol][i].impulsivityMeasure, ev->deconvolved[ipol][i].impulsivityMeasure));
+    AddText(TString::Format("SNR %0.3g (coher), %0.3g (deconv)", ev->coherent[ipol][i].snr, ev->deconvolved[ipol][i].snr));
+  }
+  else 
+  {
+    AddText(TString::Format("peak_{hilbert}:  %0.3f (coher), %0.3f (deconv)", ev->coherent_filtered[ipol][i].peakHilbert, ev->deconvolved_filtered[ipol][i].peakHilbert)); 
+    AddText(TString::Format("stokes: (coher): (%0.3g, %0.3g, %0.3g, %0.3g)", ev->coherent_filtered[ipol][i].I, ev->coherent_filtered[ipol][i].Q, ev->coherent_filtered[ipol][i].U, ev->coherent_filtered[ipol][i].V));
+    AddText(TString::Format("stokes: (deconv): (%0.3g, %0.3g, %0.3g, %0.3g)", ev->deconvolved_filtered[ipol][i].I, ev->deconvolved_filtered[ipol][i].Q, ev->deconvolved_filtered[ipol][i].U, ev->deconvolved_filtered[ipol][i].V));
+    AddText(TString::Format("impulsivity measure: %0.3g (coher), %0.3g (deconv)", ev->coherent_filtered[ipol][i].impulsivityMeasure, ev->deconvolved_filtered[ipol][i].impulsivityMeasure));
+    AddText(TString::Format("SNR %0.3g (coher), %0.3g (deconv)", ev->coherent_filtered[ipol][i].snr, ev->deconvolved_filtered[ipol][i].snr));
+  }
   AddText(TString::Format("position: %0.3f N, %0.3f E, %0.3f m", ev->peak[ipol][i].latitude, ev->peak[ipol][i].longitude, ev->peak[ipol][i].altitude)); 
 }

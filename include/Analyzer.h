@@ -90,8 +90,8 @@ namespace UCorrelator
 
 
       /** Populate the pads with a summary of the pointing. Only makes sense if interactive mode is on. If the analyzer wasn't instructed to do 
-       * both polarities, then it won't populate any it wasn't instructed to do. If 0 or NULL is passed, a new canvas is made. */ 
-      void drawSummary(TPad *chpol = 0, TPad * cvpol = 0) const; 
+       * both polarities, then it won't populate any it wasn't instructed to do. If 0 or NULL is passed, a new canvas is made. Added a flag to allow you to draw and populate the info from the filtered waveforms (off by default) */ 
+      void drawSummary(TPad *chpol = 0, TPad * cvpol = 0, int draw_filtered = 0) const; 
 
       double getRoughPhi(AnitaPol::AnitaPol_t pol, int i) const { return rough_peaks[pol][i].first; }
       double getRoughTheta(AnitaPol::AnitaPol_t pol, int i) const { return -rough_peaks[pol][i].second; }
