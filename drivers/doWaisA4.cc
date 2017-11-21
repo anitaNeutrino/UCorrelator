@@ -1,4 +1,5 @@
-//#include "FFTtools.h"
+#include "FFTtools.h"
+#include "AnitaConventions.h"
 #include "Analyzer.h"
 #include "FilteredAnitaEvent.h"
 #include "BasicFilters.h"

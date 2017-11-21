@@ -17,9 +17,15 @@ namespace UCorrelator
   inline double getAntennaGroupDelay(double phidiff, double theta) 
   {
     theta-=10;
-    const double c1 = 1.45676e-8; 
-    const double c2 = 5.01452e-6; 
+    
+    double c1 = 1.45676e-8; 
+    double c2 = 5.01452e-6; 
 
+    if(AnitaVersion::get() == 4){
+      // anita 4 group delay
+      c1 = 1.29e-8; 
+      c2 = 4.91e-6; 
+    }
     double totalAngle2=theta*theta+phidiff*phidiff;//TODO
     if (totalAngle2>50*50) return (50*50*50*50 * c1 - 50*50 * c2); 
 
