@@ -1,3 +1,12 @@
+
+double get_sum (int N, const double *v)
+{
+  double ans = 0; 
+  for (int i = 0; i < N; i++) ans+= v[i]; 
+  return ans; 
+}
+
+
 int waisMapDistributions(int N = 1000, int iout = 0, const char * output = "waismap/WaisMap_%d.root")
 {
 
@@ -23,7 +32,7 @@ int waisMapDistributions(int N = 1000, int iout = 0, const char * output = "wais
   f_dphi.SetParameter(0, 1.065); 
   f_dphi.SetParameter(1, 0.2479); 
   UCorrelator::PointingResolutionParSNRModel m1(f_dtheta, f_dphi, true,true);
-  UCorrelator::PointingResolutionModelPlusHeadingError m(60, &m1); 
+  UCorrelator::PointingResolutionModelPlusHeadingError m(20, &m1); 
 
 
 
@@ -60,6 +69,9 @@ int waisMapDistributions(int N = 1000, int iout = 0, const char * output = "wais
   double wais_density_2_norm; 
   double wais_distance_1_norm; 
   double wais_distance_2_norm; 
+  double sum_1, sum_2; 
+  double dphi1, dphi2; 
+  double dtheta1, dtheta2; 
   double snr_1;
   double snr_2;
   double L; 
@@ -85,6 +97,12 @@ int waisMapDistributions(int N = 1000, int iout = 0, const char * output = "wais
   tree->Branch("L",&L); 
   tree->Branch("snr_1",&snr_1);
   tree->Branch("snr_2",&snr_2);
+  tree->Branch("dphi1",&dphi1);
+  tree->Branch("dphi2",&dphi2);
+  tree->Branch("dtheta1",&dtheta1);
+  tree->Branch("dtheta2",&dtheta2);
+  tree->Branch("sum_1",&sum_1);
+  tree->Branch("sum_2",&sum_2);
 
   while (tree->GetEntries() < N) 
   {
@@ -101,6 +119,8 @@ int waisMapDistributions(int N = 1000, int iout = 0, const char * output = "wais
 
     UCorrelator::ProbabilityMap map (&p);
     map.add(sum, pat, AnitaPol::kHorizontal, 0); 
+
+    sum_1 = get_sum(g->NSegments(), map.getProbSums(false)); 
 
     m.computePointingResolution(sum, AnitaPol::kHorizontal, 0, &pointA); 
 
@@ -143,6 +163,8 @@ int waisMapDistributions(int N = 1000, int iout = 0, const char * output = "wais
 //    printf("2nd: %d\n", second_entry); 
 
     map.add(sum, pat, AnitaPol::kHorizontal, 0); 
+    sum_2 = get_sum(g->NSegments(), map.getProbSums(false)) - sum_1; 
+
     m.computePointingResolution(sum, AnitaPol::kHorizontal, sum->trainingPeakInd(), &pointB); 
     wais_density_2 = map.getBaseSums()[293] - wais_density_1; 
     wais_density_2_norm = map.getBaseSums(true)[293] - wais_density_1_norm; 
@@ -161,6 +183,11 @@ int waisMapDistributions(int N = 1000, int iout = 0, const char * output = "wais
     phiBA *= TMath::RadToDeg();
     thetaAB *= TMath::RadToDeg();
     thetaBA *= TMath::RadToDeg();
+
+    dphi1 = pointA.getdPhi(); 
+    dphi2 = pointB.getdPhi(); 
+    dtheta1 = pointA.getdTheta(); 
+    dtheta2 = pointB.getdTheta(); 
 
     L = sqrt(
         TMath::Power( FFTtools::wrap(phiAA-phiAB,360,0) / pointA.getdPhi(),2)  + 
