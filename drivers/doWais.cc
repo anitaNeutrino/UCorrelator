@@ -30,7 +30,8 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = ""
   cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
 //  cfg.max_peak_trigger_angle = 90; 
   cfg.fill_blast_fraction = true; 
-
+  cfg.combine_nantennas = 15; 
+  cfg.zoomed_nant = 15; 
 
   UCorrelator::Analyzer analyzer(&cfg); 
 
