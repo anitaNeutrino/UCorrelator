@@ -723,18 +723,32 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 
   double hilbertRange = info->peakHilbert - minHilbert; 
 
-  info->riseTime_10_90 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.9*hilbertRange,peakHilbertBin); 
-  info->riseTime_10_50 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.5*hilbertRange,peakHilbertBin); 
-  info->fallTime_90_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.9*hilbertRange,peakHilbertBin); 
-  info->fallTime_50_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.5*hilbertRange,peakHilbertBin); 
+	if(cfg->compute_shape_parameters)
+	{
+	  info->riseTime_10_90 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.9*hilbertRange,peakHilbertBin); 
+	  info->riseTime_10_50 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.5*hilbertRange,peakHilbertBin); 
+	  info->fallTime_90_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.9*hilbertRange,peakHilbertBin); 
+	  info->fallTime_50_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.5*hilbertRange,peakHilbertBin); 
 
-  int ifirst, ilast; 
-  info->width_50_50 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.5*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
-  info->power_50_50 = even->getSumV2(ifirst, ilast); 
-  even->getMoments(sizeof(info->peakMoments)/sizeof(double), info->peakTime, info->peakMoments); 
-  info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
-  info->power_10_10 = even->getSumV2(ifirst, ilast); 
+	  int ifirst, ilast; 
+	  info->width_50_50 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.5*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
+	  info->power_50_50 = even->getSumV2(ifirst, ilast); 
+	  even->getMoments(sizeof(info->peakMoments)/sizeof(double), info->peakTime, info->peakMoments); 
+	  info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
+	  info->power_10_10 = even->getSumV2(ifirst, ilast); 
+	}
+	if(!cfg->compute_shape_parameters)
+	{
+	  info->riseTime_10_90 = 0; 
+	  info->riseTime_10_50 = 0; 
+	  info->fallTime_90_10 = 0; 
+	  info->fallTime_50_10 = 0; 
 
+	  info->width_50_50 = 0; 
+	  info->power_50_50 = 0; 
+	  info->width_10_10 = 0; 
+	  info->power_10_10 = 0; 
+	}
 
   polarimetry::StokesAnalysis stokes( pol == AnitaPol::kHorizontal ? wf : xpol_wf,  pol == AnitaPol::kHorizontal ? xpol_wf: wf); 
   info->I = stokes.getAvgI(); 
@@ -872,7 +886,7 @@ static void setOnClickHandler(TPad * pad)
 
 
 
-void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
+void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv, int draw_filtered) const
 {
   TPad * pads[2] = {ch,cv}; 
 
@@ -899,7 +913,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
     for (int i = 0; i < last.nPeaks[ipol]; i++) 
     {
       pads[ipol]->cd(1)->cd(2); 
-      UCorrelator::gui::SummaryText * pt  = new gui::SummaryText(i, AnitaPol::AnitaPol_t(ipol), this); 
+      UCorrelator::gui::SummaryText * pt  = new gui::SummaryText(i, AnitaPol::AnitaPol_t(ipol), this, draw_filtered); 
       delete_list.push_back(pt); 
       pt->Draw(); 
     }
@@ -917,11 +931,11 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 
       pads[ipol]->cd(2)->cd(i+last.nPeaks[ipol]+1); 
 
-      ((TGraph*) coherent[ipol][0][i]->even())->SetTitle(TString::Format ( "Coherent (+ xpol) %d", i+1)); 
-      coherent[ipol][0][i]->drawEven("al"); 
+      ((TGraph*) coherent[ipol][draw_filtered][i]->even())->SetTitle(TString::Format ( "Coherent (+ xpol) %d", i+1)); 
+      coherent[ipol][draw_filtered][i]->drawEven("al"); 
 
 
-      coherent_xpol[ipol][0][i]->drawEven("lsame"); 
+      coherent_xpol[ipol][draw_filtered][i]->drawEven("lsame"); 
 
 
       pads[ipol]->cd(2)->cd(i+2*last.nPeaks[ipol]+1); 
@@ -929,15 +943,15 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
 
       if (cfg->use_coherent_spectra) 
       {
-        ((TGraph*) coherent[ipol][0][i]->powerdB())->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
-        coherent[ipol][0][i]->drawPowerdB("al"); 
-        coherent_xpol[ipol][0][i]->drawPowerdB("lsame"); 
+        ((TGraph*) coherent[ipol][draw_filtered][i]->powerdB())->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
+        coherent[ipol][draw_filtered][i]->drawPowerdB("al"); 
+        coherent_xpol[ipol][draw_filtered][i]->drawPowerdB("lsame"); 
       }
       else
       {
-        (((TGraph*)coherent_power[ipol][0][i]))->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
-        ((TGraph*)coherent_power[ipol][0][i])->Draw("al"); 
-        coherent_power_xpol[ipol][0][i]->Draw("lsame"); 
+        (((TGraph*)coherent_power[ipol][draw_filtered][i]))->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
+        ((TGraph*)coherent_power[ipol][draw_filtered][i])->Draw("al"); 
+        coherent_power_xpol[ipol][draw_filtered][i]->Draw("lsame"); 
       }
 
 
@@ -971,11 +985,11 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
       if (interactive_deconvolved)
       {
         pads[ipol]->cd(2)->cd(i+3*last.nPeaks[ipol]+1); 
-        ((TGraph*) deconvolved[ipol][0][i]->even())->SetTitle(TString::Format ( "Deconvolved (+ xpol) %d", i+1)); 
-        deconvolved[ipol][0][i]->drawEven("alp"); 
+        ((TGraph*) deconvolved[ipol][draw_filtered][i]->even())->SetTitle(TString::Format ( "Deconvolved (+ xpol) %d", i+1)); 
+        deconvolved[ipol][draw_filtered][i]->drawEven("alp"); 
         if (interactive_xpol_deconvolved)
         {
-            deconvolved_xpol[ipol][0][i]->drawEven("lsame"); 
+            deconvolved_xpol[ipol][draw_filtered][i]->drawEven("lsame"); 
         }
 
         pads[ipol]->cd(2)->cd(i+4*last.nPeaks[ipol]+1); 
@@ -983,21 +997,21 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
         if (cfg->use_coherent_spectra) 
         {
 
-          ((TGraph*) deconvolved[ipol][0][i]->powerdB())->SetTitle(TString::Format ( "Power Deconvolved (+ xpol) %d", i+1)); 
-          (deconvolved[ipol][0][i])->drawPowerdB();; 
+          ((TGraph*) deconvolved[ipol][draw_filtered][i]->powerdB())->SetTitle(TString::Format ( "Power Deconvolved (+ xpol) %d", i+1)); 
+          (deconvolved[ipol][draw_filtered][i])->drawPowerdB();; 
           if (interactive_xpol_deconvolved)
           {
-            (deconvolved_xpol[ipol][0][i])->drawPowerdB("lsame"); 
+            (deconvolved_xpol[ipol][draw_filtered][i])->drawPowerdB("lsame"); 
           }
         
         }
         else
         {
-          (((TGraph*)deconvolved_power[ipol][0][i]))->SetTitle(TString::Format ( "Power Deconvolved (+ xpol) %d", i+1)); 
-          ((TGraph*)deconvolved_power[ipol][0][i])->Draw();; 
+          (((TGraph*)deconvolved_power[ipol][draw_filtered][i]))->SetTitle(TString::Format ( "Power Deconvolved (+ xpol) %d", i+1)); 
+          ((TGraph*)deconvolved_power[ipol][draw_filtered][i])->Draw();; 
           if (interactive_xpol_deconvolved)
           {
-            ((TGraph*)deconvolved_power_xpol[ipol][0][i])->Draw("lsame"); 
+            ((TGraph*)deconvolved_power_xpol[ipol][draw_filtered][i])->Draw("lsame"); 
           }
         }
 
@@ -1069,12 +1083,15 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
 
   flags->isGood = !flags->isVarner && !flags->isVarner2 && !flags->strongCWFlag; 
 
-	//added for a class of anita 4 events that only happens on one lab and channel, added in a check for glitches in surf 11 on lab c and surf 0 on lab b since i also want to remove those
+	//added for a class of anita 4 events that only happens on one lab and channel
+	//also added in a check for glitches in surf 11 on lab c and surf 0 on lab b and c and surf8 lab c since i also want to remove those
 	if(AnitaVersion::get() == 4)
 	{
 		flags->isStepFunction |= fae->checkStepFunction(1, AnitaRing::kMiddleRing, 8, AnitaPol::kVertical);
-		flags->isStepFunction |= (fae->checkSurfForGlitch(0 , 1)<<1);
-		flags->isStepFunction |= (fae->checkSurfForGlitch(11, 2)<<2);
+		flags->isStepFunction |= (fae->checkSurfForGlitch(0 , 1, 600)<<1);
+		flags->isStepFunction |= (fae->checkSurfForGlitch(0 , 2, 600)<<2);
+		flags->isStepFunction |= (fae->checkSurfForGlitch(11, 2, 600)<<3);
+		flags->isStepFunction |= (fae->checkSurfForGlitch(8,  2, 600)<<4);
 	}
 	else flags->isStepFunction = 0;
 }

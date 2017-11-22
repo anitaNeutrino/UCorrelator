@@ -18,6 +18,7 @@
 #include "PointingResolutionModel.h" 
 #include <vector> 
 #include "TBits.h" 
+#include "TMutex.h"
 
 class Adu5Pat; 
 class TFile; 
