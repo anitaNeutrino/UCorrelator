@@ -99,6 +99,8 @@ namespace UCorrelator
   /** same as above, but returns a newly allocated strategy and no description */ 
   FilterStrategy * getStrategyWithKey(const char * key) ; 
   
+  void setAdaptiveFilterSpectrumAverageNSecs(int nsecs); 
+
 
 
   /** Condition used for satellite filter */ 

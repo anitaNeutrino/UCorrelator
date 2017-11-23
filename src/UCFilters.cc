@@ -40,6 +40,10 @@ static AnitaResponse::AllPassDeconvolution allpass;
 // static UCorrelator::ResponseManager * responseManager = 0; 
 // static UCorrelator::AllPassDeconvolution allpass; 
 
+void UCorrelator::setAdaptiveFilterSpectrumAverageNSecs(int nsecs) 
+{
+  avgldr.setNSecs(nsecs); 
+}
 
 static TString desc; 
 const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const char * key) 
