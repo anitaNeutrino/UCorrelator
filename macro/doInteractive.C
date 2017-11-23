@@ -1,11 +1,6 @@
-#include "Analyzer.h" 
 #include "AnitaDataset.h"
-#include "BasicFilters.h"
+#include "FFTtools.h" 
 #include "AnalysisConfig.h"
-#include "UCFilters.h"
-#include "SystemResponse.h"
-#include "FFTtools.h"
-#include "DigitalFilter.h" 
 
 UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool decimated = false, bool simulated = false )
 {
@@ -44,9 +39,11 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
   UCorrelator::AnalysisConfig cfg; 
   cfg.nmaxima = 1; 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
-  cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
+  cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
   cfg.enable_group_delay= !simulated; 
-  cfg.max_peak_trigger_angle =45; 
+  cfg.zoomed_nant = 15; 
+  cfg.combine_nantennas = 15; 
+//  cfg.max_peak_trigger_angle =45; 
 //  cfg.correlator_theta_lowest=90; 
 //  cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
 //  cfg.response_option = UCorrelator::AnalysisConfig::ResponseHarmSignalOnly; 
@@ -59,10 +56,11 @@ UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool d
 //  strategy->addOperation(ssf); 
 
 //  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("adsinsub_3_10_3"), d.gps(), d.header()); 
-  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("sinsub_10_3_ad_3 + tapergaus_10_3"), d.gps(), d.header()); 
+  UCorrelator::setAdaptiveFilterSpectrumAverageNSecs(10); 
+  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("sinsub_10_3_ad_2"), d.gps(), d.header()); 
   printf("auto fae = (FilteredAnitaEvent *) %p;\n",ev); 
 
-//  ev->plotSummary(0,0); 
+  //ev->plotSummary(0,0); 
 
 
   AnitaEventSummary sum; 
