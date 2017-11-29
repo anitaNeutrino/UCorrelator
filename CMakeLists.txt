@@ -205,5 +205,6 @@ do_driver(doLDB)
 do_driver(doAll) 
 do_driver(evaluateFiltersA3) 
 do_driver(doGenerateSineSubCache)
+do_driver(eventTxtSaver)
 
 
