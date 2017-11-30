@@ -1,6 +1,6 @@
 #include "AnitaTMVA.h" 
 
-void fillTMVA(const char * file, const char * tree="simulation", const char * weights="thermal/weights/thermal_cuts_Fisher.weights.xml", const char * name="Fisher", const char * vars_file="tree_vars.tmva") 
+void fillTMVA(const char * file, const char * tree="simulation", const char * weights="thermal/weights/thermal_cuts_Fisher.weights.xml", const char * name="F", const char * vars_file="tree_vars.tmva") 
 {
   AnitaTMVA::MVAVarSet vars(vars_file); 
 

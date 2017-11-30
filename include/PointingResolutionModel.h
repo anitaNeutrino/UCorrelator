@@ -70,6 +70,7 @@ namespace UCorrelator
   class PointingResolutionModelPlusHeadingError : public PointingResolutionModel
   {
     public: 
+     PointingResolutionModelPlusHeadingError() { ; }
      PointingResolutionModelPlusHeadingError(int nsecs, const PointingResolutionModel * other); 
      virtual PointingResolution * computePointingResolution(const AnitaEventSummary * sum, AnitaPol::AnitaPol_t pol, int peak, PointingResolution *p) const; 
     private: 

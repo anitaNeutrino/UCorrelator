@@ -1,6 +1,6 @@
 #include "FFTtools.h" 
 
-void makeFakeEventPointingTree(int run = 342, bool replace_noise = false, bool make_images = false) 
+void makeFakeEventPointingTree(int run = 342, int Amp = 0, bool randomize_jones = false,  bool replace_noise = false, bool make_images = false) 
 {
 
  FFTtools::loadWisdom("wisdom.dat"); 
@@ -26,7 +26,7 @@ void makeFakeEventPointingTree(int run = 342, bool replace_noise = false, bool m
   }
 
 
-  TFile fout(TString::Format("fake/fakeEvents%d_%d.root",run, replace_noise),"RECREATE"); 
+  TFile fout(TString::Format("fake/fakeEvents%d_%d_%d_%d.root",run, Amp, randomize_jones, replace_noise),"RECREATE"); 
 
   AnitaEventFaker faker("IndividualBRotter"); 
   TTree * tree = new TTree("fake","Fake events"); 
@@ -63,14 +63,14 @@ void makeFakeEventPointingTree(int run = 342, bool replace_noise = false, bool m
     if (d.header()->trigType & 1) continue; //only force triggers  
     printf("%d\n",i); 
     if (replace_noise) faker.makePureNoiseEvent(0.1, d.useful()); 
-    A = gRandom->Uniform(1,30); 
+    A = Amp ? Amp : gRandom->Uniform(1,30); 
     truePhi = gRandom->Uniform(0,360); 
     trueTheta = gRandom->Uniform(-20,50); 
     truth.payloadPhi = truePhi; 
     truth.payloadTheta = trueTheta; 
 
-    JonesH = gRandom->Uniform(0,1); 
-    JonesV = gRandom->Uniform(0,1); 
+    JonesH = randomize_jones ? gRandom->Uniform(0,1) : 1 ; 
+    JonesV = randomize_jones ? gRandom->Uniform(0,1) : 1 ; 
 
     double mag = sqrt(JonesH*JonesH + JonesV*JonesV); 
     JonesH/= mag; 

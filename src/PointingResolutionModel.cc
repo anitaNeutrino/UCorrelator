@@ -88,15 +88,19 @@ UCorrelator::PointingResolution * UCorrelator::PointingResolutionParSNRModel::co
   if (snr < snr_min) snr = snr_min; 
   if (snr > snr_max) snr = snr_max; 
 
-  double scale = 1; 
+  double phi_scale = 1; 
+  double theta_scale = 1; 
+
   if (cos_theta_scale) 
   {
-    scale = 1./cos(TMath::DegToRad() *  sum->peak[pol][peak].theta); 
+    //TODO 
+    //fix this later 
+    theta_scale = pow(cos(TMath::DegToRad() *  (sum->peak[pol][peak].theta - 5.8)), 6.68); 
+    phi_scale = pow(cos(TMath::DegToRad() *  (sum->peak[pol][peak].theta - 8.8)), 8.2); 
   }
 
-  new (p) PointingResolution(sum->peak[pol][peak].phi, sum->peak[pol][peak].theta, f_ph.Eval(snr) * scale, f_th.Eval(snr) * scale *scale, 0); 
+  new (p) PointingResolution(sum->peak[pol][peak].phi, sum->peak[pol][peak].theta, f_ph.Eval(snr) * phi_scale, f_th.Eval(snr) * theta_scale , 0); 
   return p; 
-
 }
 
 static __thread int prof_counter = 0; 

@@ -107,13 +107,13 @@ void testMapWaisOverlap(int run0 =342, int ev0 = 0, int run1=343, int ev1 = 0, b
   ar1->Draw("psame"); 
   wais->Draw("psame"); 
 
-  double overlap0 = map->overlap(sum0,gps0,AnitaPol::kHorizontal,0,false,0, UCorrelator::ProbabilityMap::OVERLAP_MAXES); 
-  double overlap1 = map->overlap(sum1,gps1,AnitaPol::kHorizontal,0,false,0); 
+  double overlap0 = map->overlap(sum0,gps0,AnitaPol::kHorizontal,0,false,1,0, UCorrelator::ProbabilityMap::OVERLAP_MAXES); 
+  double overlap1 = map->overlap(sum1,gps1,AnitaPol::kHorizontal,0,false,1,0); 
 
   printf("%g %g\n", overlap0, overlap1); 
 
-  overlap0 = map->overlap(sum0,gps0,AnitaPol::kHorizontal,0,true,0); 
-  overlap1 = map->overlap(sum1,gps1,AnitaPol::kHorizontal,0,true,0); 
+  overlap0 = map->overlap(sum0,gps0,AnitaPol::kHorizontal,0,true,1,0); 
+  overlap1 = map->overlap(sum1,gps1,AnitaPol::kHorizontal,0,true,1,0); 
 
   printf("%g %g\n", overlap0, overlap1); 
 

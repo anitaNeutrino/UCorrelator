@@ -347,6 +347,7 @@ const TH2F * UCorrelator::TimeDependentAverage::getSpectrogram(AnitaPol::AnitaPo
 
   
   __sync_synchronize(); //memory barrier
+
   if (!avgs_loaded)
   {
     m.Lock(); 
@@ -672,26 +673,24 @@ UCorrelator:: TimeDependentAverageLoader::TimeDependentAverageLoader(const char 
   tavg = 0; 
 }
 
-static TMutex mut; 
 
 const UCorrelator::TimeDependentAverage* UCorrelator::TimeDependentAverageLoader::avg(double t) const
 {
-  mut.Lock(); 
+  static TMutex mut; 
+  TLockGuard l(&mut); 
 
 //  printf("%g\n",t); 
 
   if (tavg && t >= tavg->getStartTime()-5 && t <= tavg->getEndTime()+5 ) 
   {
-    mut.UnLock(); 
     return tavg; 
   }
 
   int run = AnitaDataset::getRunAtTime(t); 
-  printf("loading average from run %d\n",run); 
+//  printf("loading average from run %d\n",run); 
   
   if (tavg) delete tavg; 
   tavg = new TimeDependentAverage(run,nsecs, dir); 
-  mut.UnLock(); 
   
   return tavg; 
 
@@ -721,16 +720,20 @@ double UCorrelator::TimeDependentAverage::getBlastFraction(double t) const
 }
 
 
+TMutex loader_map_lock; 
+std::map<int,UCorrelator::TimeDependentAverageLoader*> loader_map; 
 
 static UCorrelator::TimeDependentAverageLoader * getLoader(int nsecs) 
 {
-  static __thread UCorrelator::TimeDependentAverageLoader * ldr = 0; 
-  if (!ldr || ldr->getNsecs() != nsecs) 
+  TLockGuard l(&loader_map_lock); 
+
+  if (loader_map.count(nsecs))
   {
-    if (ldr) delete ldr; 
-    ldr = new UCorrelator::TimeDependentAverageLoader(0,nsecs); 
+    return loader_map[nsecs]; 
   }
 
+  UCorrelator::TimeDependentAverageLoader *  ldr = new UCorrelator::TimeDependentAverageLoader(0,nsecs); 
+  loader_map[nsecs] = ldr; 
   return ldr; 
 }
 

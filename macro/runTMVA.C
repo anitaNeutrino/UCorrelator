@@ -28,8 +28,8 @@ void runTMVA(const char * outname = "tmva/a3all_fisher_tmva_all.root", const cha
   dl->AddBackgroundTree(&bg); 
   TCut cut("!isnan(blastFraction) && !isnan(absHwAngle) && !isnan(deconvLinearPolFraction) && !isnan(absDeconvLinearPolAngle) "); 
   dl->AddCut(cut); 
-  dl->AddCut(TCut("isMC"),"Signal"); 
-  dl->AddCut(TCut("theta < 0 && !payloadBlast && !payloadBlastExtended && isMostImpulsive  && chisq < 0.01 && blastFraction < 0.2 && nSectorsWhereBottomExceedsTop > 4 && nSectorsWhereBottomExceedsTop < 29"),"Background"); 
+  dl->AddCut(TCut("isMostImpulsive && pointsToMC && (MaxPeak < 1000) && !payloadBlast && chisq < 0.01 && ((iteration < 5 && HPolTrigger) || (iteration >=5 && VPolTrigger))"),"Signal"); 
+  dl->AddCut(TCut("theta < 0 && !payloadBlast && isMostImpulsive  && chisq < 0.01 && MaxPeak < 1000 &&  ((iteration < 5 && HPolTrigger)  || (iteration >=5 && VPolTrigger))") ,"Background"); 
 
   //setup methods 
   factory->BookMethod(dl, TMVA::Types::kFisher, "Fisher",""); 

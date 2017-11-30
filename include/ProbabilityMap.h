@@ -57,8 +57,12 @@ namespace UCorrelator
             dataset(RampdemReader::rampdem), 
             refract(0), 
             maximum_distance(20),
+            min_p_on_continent (1e-3) , 
             projection(BACKWARD), 
-            collision_detection(true) 
+            collision_detection(true) , 
+            max_dphi(5), 
+            max_dtheta(5),
+            verbosity(0) 
         {
 
         }
@@ -69,6 +73,7 @@ namespace UCorrelator
         RampdemReader::dataSet dataset; 
         const Refraction::Model * refract; 
         double maximum_distance; 
+        double min_p_on_continent; 
 
         enum ProjectionMode
         {
@@ -117,7 +122,11 @@ namespace UCorrelator
           bool random_samples;
         } backwards_params; 
 
-        ClassDef(Params,1); 
+        double max_dphi; 
+        double max_dtheta; 
+        int verbosity; 
+
+        ClassDef(Params,6); 
         virtual ~Params() { ; }  
       }; 
 
@@ -171,6 +180,7 @@ namespace UCorrelator
 
       double overlap(const AnitaEventSummary * sum , const Adu5Pat * pat, 
                      AnitaPol::AnitaPol_t pol, int peak = 0, bool normalized = false, 
+                     double weight = 1, 
                      std::vector<std::pair<int,double> >  * bases = 0,
                      OverlapMode mode = OVERLAP_SUM_SQRTS, 
                      bool remove_self_contribution =true) const ; 
@@ -181,6 +191,7 @@ namespace UCorrelator
       const double* getProbSqrtSums(bool normalized = false) const { return normalized ? &sqrt_ps_norm[0] : &sqrt_ps[0]; } 
       const double* getProbSqrtSumsWithoutBases(int base_level, bool normalized = false) const { return normalized ? &sqrt_ps_norm_without_base[base_level][0] : &sqrt_ps_without_base[base_level][0]; } 
       const double* getProbMaxes(bool normalized = false) const { return normalized ? &max1_ps_norm[0] : & max1_ps[0]; } 
+      const double* getProbSecondMaxes(bool normalized = false) const { return normalized ? &max2_ps_norm[0] : & max2_ps[0]; } 
       const double* getOccludedFractionSum() const { return &fraction_occluded[0]; } 
 
       const int* getNAboveLevel(int level, bool normalized = false) const { return normalized ? &n_above_level_norm[level][0] : &n_above_level[level][0]; } 
@@ -253,13 +264,10 @@ namespace UCorrelator
       std::vector< std::vector<double> > wgt_above_level_norm; // like n_above_level, but 1/N_over_level_per_event is put in each bin, so that the number of contributing events can be reliably determined 
 
 
-
-
       std::vector< std::vector<int> > n_above_level_without_base; 
       std::vector< std::vector<int> > n_above_level_without_base_norm; 
       std::vector< std::vector<double> > wgt_above_level_without_base; 
       std::vector< std::vector<double> > wgt_above_level_without_base_norm; 
-
 
       //indexed by base
       std::vector< std::vector<int> > base_n_above_level; ; 

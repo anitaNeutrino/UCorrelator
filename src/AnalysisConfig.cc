@@ -81,6 +81,7 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(max_peak_trigger_angle); 
   LOOKUP(min_peak_distance_from_unmasked); 
   LOOKUP(fill_blast_fraction); 
+  LOOKUP(fill_channel_info); 
   LOOKUP(compute_shape_parameters); 
   LOOKUP(max_theta_adjustment); 
   LOOKUP(set_bottom_first);
@@ -134,7 +135,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   zoomed_nant = 12; 
 
 
-  combine_nantennas = 12; 
+  combine_nantennas = 15; 
   combine_npad = 3; 
 
   saturation_threshold = 1500; 
@@ -177,6 +178,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   ldb_max_run = 160; 
 
   fill_blast_fraction = true; 
+  fill_channel_info = true; 
   set_bottom_first = true;
   stokes_fracI = 0.2; 
 

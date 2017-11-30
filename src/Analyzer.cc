@@ -69,6 +69,7 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mo
 {
 #ifdef UCORRELATOR_OPENMP
   TThread::Initialize(); 
+  ROOT::EnableThreadSafety(); 
 #endif
   zoomed = new TH2D(TString::Format("zoomed_%d", instance_counter), "Zoomed!", cfg->zoomed_nphi, 0 ,1, cfg->zoomed_ntheta, 0, 1);
   zoomed->SetDirectory(0); 
@@ -388,6 +389,13 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
     event->getMedianSpectrum(avg_spectra[pol], AnitaPol::AnitaPol_t(pol),0.5); 
 
+    //optionally fill the channel info 
+    if (cfg->fill_channel_info) 
+    {
+      fillChannelInfo(event, summary);
+    }
+
+
     // Loop over found peaks 
     for (int i = 0; i < npeaks; i++) 
     {
@@ -448,10 +456,7 @@ SECTIONS
       fillWaveformInfo(wfcomb_filtered.getCoherent(), wfcomb_xpol_filtered.getCoherent(), wfcomb_filtered.getCoherentAvgSpectrum(), &summary->coherent_filtered[pol][i], (AnitaPol::AnitaPol_t) pol, rms); 
   SECTION
       fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol, 0); 
- }
-  // comment this line out if you don't want channel information in summary file.
-  fillChannelInfo(event, summary);
-
+}
 
 
       if (interactive) //copy everything
@@ -569,6 +574,7 @@ SECTIONS
   }
 
   fillFlags(event, &summary->flags, pat); 
+
 
   if (truth)
   { 
@@ -776,7 +782,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
     rms = TMath::RMS(n, even->GetY() + i0); 
   }
   
-  info->snr = info->peakVal / rms;
+  info->snr = info->peakHilbert / rms;
   if(cfg->use_coherent_spectra) pwr = wf->powerdB(); 
   
   TGraphAligned power(pwr->GetN(),pwr->GetX(),pwr->GetY()); 
@@ -797,19 +803,20 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 void UCorrelator::Analyzer::fillChannelInfo(const FilteredAnitaEvent* event, AnitaEventSummary* summary){
   for(int polInd=0; polInd < AnitaPol::kNotAPol; polInd++){
     AnitaPol::AnitaPol_t pol = (AnitaPol::AnitaPol_t) polInd;
-    for(int ant=0; ant<NUM_SEAVEYS; ant++){
+#ifdef UCORRELATOR_OPENMP
+#pragma omp parallel for
+#endif
+    for (int ant=0; ant<NUM_SEAVEYS; ant++)
+    {
       const AnalysisWaveform* wf = event->getFilteredGraph(ant, pol);
       const TGraphAligned* hilbertEnvelope= wf->hilbertEnvelope();
-      const TGraphAligned* power= wf->power();
       const TGraphAligned* gr = wf->even();
-      double mean,rms, rmsPower, meanPower;
-      gr->getMeanAndRMS(&mean,&rms);
-      power->getMeanAndRMS(&meanPower,&rmsPower);
+      double rms =  cfg->use_forced_trigger_rms ? UCorrelator::TimeDependentAverageLoader::getRMS( event->getHeader()->triggerTime, pol, ant) : gr->GetRMS(2);
 
-      summary->channels[polInd][ant].rms = rms;
-      summary->channels[polInd][ant].avgPower = meanPower;
+      summary->channels[polInd][ant].rms = rms; 
+      summary->channels[polInd][ant].avgPower = gr->getSumV2() / gr->GetN();
       summary->channels[polInd][ant].peakHilbert = hilbertEnvelope->peakVal();
-      //TODO: snr.
+      summary->channels[polInd][ant].snr = FFTtools::getPeakVal(gr) / rms; 
     }
   }
 }

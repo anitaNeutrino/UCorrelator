@@ -77,7 +77,10 @@ int UCorrelator::ProbabilityMap::add(const AnitaEventSummary * sum, const Adu5Pa
   for (int i = 0; i < int(NLevels()); i++)
   {
     levels_p[i] = dist2dens(p.level_thresholds[i], inv_two_pi_sqrt_det); 
-//    printf("mahalanobis distance: %g, probability density: %g\n", p.level_thresholds[i], levels_p[i]); 
+    if (p.verbosity > 2) 
+    {
+      printf("mahalanobis distance: %g, probability density: %g\n", p.level_thresholds[i], levels_p[i]); 
+    }
   }
   
   TLockGuard lock(&m); 
@@ -94,12 +97,15 @@ int UCorrelator::ProbabilityMap::add(const AnitaEventSummary * sum, const Adu5Pa
     norm += segments_to_fill[i].second; 
   }
 
+  double invnorm = norm < p.min_p_on_continent ? 0 : 1./norm;
+  if (p.verbosity > 2) printf("invnorm: %g\n", invnorm); 
+
   for (int i = 0; i < Nbases; i++)
   {
     int ibase = base_ps_to_fill[i].first; 
-    double dens_base = base_ps_to_fill[i].second; 
-    base_sums[ibase] += dens_base * weight; 
-    base_sums_norm[ibase] += dens_base * weight / norm; 
+    double dens_base = base_ps_to_fill[i].second * weight; 
+    base_sums[ibase] += dens_base;
+    base_sums_norm[ibase] += dens_base * invnorm; 
 
     for (int j = 0; j < (int) NLevels(); j++)
     {
@@ -109,7 +115,7 @@ int UCorrelator::ProbabilityMap::add(const AnitaEventSummary * sum, const Adu5Pa
         if (min_base_level > j) min_base_level = j; 
       }
 
-      if (dens_base / norm > levels_p[j])
+      if (dens_base * invnorm > levels_p[j])
       {
         base_n_above_level_norm[j][ibase]+=incr; 
         if (min_base_level_norm > j) min_base_level_norm = j; 
@@ -125,8 +131,8 @@ int UCorrelator::ProbabilityMap::add(const AnitaEventSummary * sum, const Adu5Pa
 
   for (int i = 0; i < NFilled; i++)
   {
-    double max_dens_seg = max_densities[i].second; 
-    double max_dens_seg_norm = max_densities[i].second / norm; 
+    double max_dens_seg = max_densities[i].second * weight; 
+    double max_dens_seg_norm = max_densities[i].second * invnorm * weight; 
     for (int j = 0; j < (int) NLevels(); j++) 
     {
       if (max_dens_seg > levels_p[j])
@@ -145,47 +151,47 @@ int UCorrelator::ProbabilityMap::add(const AnitaEventSummary * sum, const Adu5Pa
   for (int i = 0; i < NFilled; i++)
   {
     int iseg = segments_to_fill[i].first; 
-    double pseg = segments_to_fill[i].second; 
-    double max_dens_seg = max_densities[i].second; 
-    double max_dens_seg_norm = max_densities[i].second / norm; 
+    double pseg = segments_to_fill[i].second * weight; 
+    double max_dens_seg = max_densities[i].second * weight; 
+    double max_dens_seg_norm = max_dens_seg * invnorm; 
 
-    double pseg_norm = pseg / norm; 
+    double pseg_norm = pseg * invnorm; 
 
-    if (pseg * weight > max1_ps[iseg] ) 
+    if (pseg > max1_ps[iseg] ) 
     {
       max2_ps[iseg] = max1_ps[iseg];
-      max1_ps[iseg ] = pseg * weight; 
+      max1_ps[iseg ] = pseg ; 
     }
-    else if (pseg * weight > max2_ps[iseg]) 
+    else if (pseg > max2_ps[iseg]) 
     {
-      max2_ps[iseg] = pseg * weight;
+      max2_ps[iseg] = pseg ;
     }
 
-    if (pseg_norm * weight > max1_ps_norm[iseg] ) 
+    if (pseg_norm > max1_ps_norm[iseg] ) 
     {
       max2_ps_norm[iseg] = max1_ps_norm[iseg];
-      max1_ps_norm[iseg ] = pseg_norm * weight; 
+      max1_ps_norm[iseg ] = pseg_norm ; 
     }
-    else if (pseg * weight > max2_ps_norm[iseg]) 
+    else if (pseg  > max2_ps_norm[iseg]) 
     {
-      max2_ps_norm[iseg] = pseg_norm * weight;
+      max2_ps_norm[iseg] = pseg_norm ;
     }
 
 
-    ps[iseg] += pseg *weight; 
-    ps_norm[iseg] += (pseg_norm) * weight; 
-    sqrt_ps[iseg]  += sqrt(pseg) *weight; 
-    sqrt_ps_norm[iseg] += sqrt(pseg_norm) * weight; 
+    ps[iseg] += pseg; 
+    ps_norm[iseg] += (pseg_norm); 
+    sqrt_ps[iseg]  += sqrt(pseg); 
+    sqrt_ps_norm[iseg] += sqrt(pseg_norm); 
 
     for (int level = 0; level < min_base_level; level++) 
     {
-      ps_without_base[level][iseg] += (pseg) *weight; 
-      sqrt_ps_without_base[level][iseg] += sqrt(pseg) *weight; 
+      ps_without_base[level][iseg] += (pseg);
+      sqrt_ps_without_base[level][iseg] += sqrt(pseg); 
     }
     for (int level = 0; level < min_base_level_norm; level++)
     {
-      ps_norm_without_base[level][iseg] += (pseg / norm) * weight; 
-      sqrt_ps_norm_without_base[level][iseg] += sqrt(pseg / norm) * weight; 
+      ps_norm_without_base[level][iseg] += (pseg_norm);
+      sqrt_ps_norm_without_base[level][iseg] += sqrt(pseg_norm);
     }
 
     fraction_occluded[iseg] += occluded_to_fill[i].second; 
@@ -238,7 +244,7 @@ int UCorrelator::ProbabilityMap::dumpNonZeroBases()  const
 }
 
 double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , const Adu5Pat * pat,  AnitaPol::AnitaPol_t pol, int peak, 
-                                            bool normalized, std::vector<std::pair<int,double> > * bases,
+                                            bool normalized, double weight,  std::vector<std::pair<int,double> > * bases,
                                             OverlapMode mode,  bool remove_self) const
 {
   std::vector<std::pair<int,double> > segs; 
@@ -249,15 +255,21 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
   double answer = 0;
 
 
-  double norm = 1;
+  double invnorm = 1;
 
   if (normalized)
   {
-    norm = 0;
+    double norm = 0;
     for (int i =0; i< N; i++)
     {
       norm += segs[i].second; 
     }
+    if (norm < p.min_p_on_continent)
+    {
+      printf("below minimum: %g!\n", norm); 
+      return -1; // there can be no overlap 
+    }
+    invnorm = 1./norm; 
   }
 
   //pick the right thing to overlap with 
@@ -269,15 +281,13 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
   {
     int seg = segs[i].first; 
 
-    double p_this  =  segs[i].second / norm; 
-
-
+    double p_this  =  weight*segs[i].second * invnorm; 
 
     double p_other = the_rest[seg]; 
 
 
     if (remove_self && mode == OVERLAP_SQRT_SUMS)  p_other -= p_this; 
-    if (remove_self && mode == OVERLAP_MAXES && p_this == p_other) p_other = normalized ? max2_ps_norm[seg] : max2_ps[seg]; 
+    if (remove_self && mode == OVERLAP_MAXES &&  p_this == p_other) p_other = normalized ? max2_ps_norm[seg] : max2_ps[seg]; 
 
     double danswer = (mode == OVERLAP_SUM_SQRTS ? sqrt(p_this) : p_this) * p_other; 
     
@@ -354,15 +364,31 @@ int UCorrelator::ProbabilityMap::combineWith(const ProbabilityMap & other)
   {
     ps[i] += other.getProbSums()[i]; 
     ps_norm[i] += other.getProbSums(true)[i]; 
+    sqrt_ps[i] += other.getProbSqrtSums()[i]; 
+    sqrt_ps_norm[i] += other.getProbSqrtSums(true)[i]; 
 
+
+    double other_max = TMath::Min(max1_ps[i], other.getProbMaxes()[i]); 
+    max1_ps[i] = TMath::Max(max1_ps[i], other.getProbMaxes()[i]); 
+    double other_max_norm = TMath::Min(max1_ps[i], other.getProbMaxes(true)[i]); 
+    max1_ps_norm[i] = TMath::Max(max1_ps_norm[i], other.getProbMaxes(true)[i]); 
+
+    max2_ps[i] = TMath::Max(other_max, TMath::Max(max2_ps[i], other.getProbSecondMaxes()[i])); 
+    max2_ps_norm[i] = TMath::Max(other_max_norm, TMath::Max(max2_ps_norm[i], other.getProbSecondMaxes(true)[i])); 
+
+    
     for (int j = 0; j < (int) NLevels(); j++)
     {
       ps_without_base[j][i] += other.getProbSumsWithoutBases(j)[i]; 
       ps_norm_without_base[j][i] += other.getProbSumsWithoutBases(j,true)[i]; 
+      sqrt_ps_without_base[j][i] += other.getProbSqrtSumsWithoutBases(j)[i]; 
+      sqrt_ps_norm_without_base[j][i] += other.getProbSqrtSumsWithoutBases(j,true)[i]; 
       n_above_level[j][i] += other.getNAboveLevel(j)[i]; 
       wgt_above_level[j][i] += other.getWgtAboveLevel(j)[i]; 
       n_above_level_without_base[j][i] += other.getNAboveLevelWithoutBases(j)[i]; 
       wgt_above_level_without_base[j][i] += other.getWgtAboveLevelWithoutBases(j)[i]; 
+      n_above_level_without_base_norm[j][i] += other.getNAboveLevelWithoutBases(j,true)[i]; 
+      wgt_above_level_without_base_norm[j][i] += other.getWgtAboveLevelWithoutBases(j,true)[i]; 
     }
   }
 
@@ -372,9 +398,11 @@ int UCorrelator::ProbabilityMap::combineWith(const ProbabilityMap & other)
     {
 
       base_sums[i] += other.getBaseSums()[i]; 
+      base_sums_norm[i] += other.getBaseSums(true)[i]; 
       for (int j = 0; j < (int) NLevels(); j++)
       {
         base_n_above_level[j][i] += other.getBaseNAboveLevel(j)[i]; 
+        base_n_above_level_norm[j][i] += other.getBaseNAboveLevel(j,true)[i]; 
       }
     }
   }
@@ -396,6 +424,18 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
   PointingResolution pr; 
   p.point->computePointingResolution(sum,pol, peak, &pr);  
   contribution.clear(); 
+
+
+  if ( pr.getdPhi() > p.max_dphi || pr.getdTheta() > p.max_dtheta) 
+  {
+    if (p.verbosity > 0) 
+    {
+      printf("Rejecting %d:%d:%d due to failing pointing resolution cut (dphi: %g, dtheta: %g\n", sum->eventNumber, (int) pol, peak, pr.getdPhi(), pr.getdTheta()); 
+    }
+
+    return 0 ;
+  }
+
   double phi0 = sum->peak[pol][peak].phi; 
 
   double inv_two_pi_sqrt_det = get_inv_two_pi_sqrt_det(pr.getdPhi(), pr.getdTheta(), pr.getCorr()); 
@@ -409,10 +449,12 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
     //start with guess
     const AnitaEventSummary::PointingHypothesis *pk = &sum->peak[pol][peak];  
     PayloadParameters guess;  
-    PayloadParameters::findSourceOnContinent(pk->theta,pk->phi,gps, &guess, p.refract, p.collision_detection ? p.collision_params.dx : 0); 
-//    guess.source.to(AntarcticCoord::STEREOGRAPHIC); 
-//    printf("%d %g %g %g\n", status, guess.source.x, guess.source.y, guess.source.z); 
-   
+    int status =  PayloadParameters::findSourceOnContinent(pk->theta,pk->phi,gps, &guess, p.refract, p.collision_detection ? p.collision_params.dx : 0); 
+    if (p.verbosity > 2) 
+    {
+      guess.source.to(AntarcticCoord::STEREOGRAPHIC); 
+      printf("%d %g %g %g\n", status, guess.source.x, guess.source.y, guess.source.z); 
+    }
     /* set up vector of segments to check */
     size_t nchecked = 0; 
     std::vector<int> segs_to_check; 
@@ -424,9 +466,12 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
 
     AntarcticCoord pos = segmentationScheme()->getSegmentCenter(segs_to_check[0]); 
     pos.to(AntarcticCoord::WGS84); 
- //   printf("center position: %g %g %g\n", pos.x, pos.y, pos.z); 
 
-    int nsamples = p.backwards_params.num_samples_per_bin;
+    if (p.verbosity > 2) 
+    {
+      printf("center position: %g %g %g\n", pos.x, pos.y, pos.z); 
+    }
+    int nsamples = p.backwards_params.num_samples_per_bin; 
     /* set up vectors for sample phis /thetas/ densities */ 
 
     //Figure out the enhancement steps; 
@@ -438,6 +483,8 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
     }
 
     int max_samples = enhancement_steps[p.backwards_params.max_enhance]; 
+
+
 
 
     std::vector<AntarcticCoord> samples(max_samples); 
@@ -452,9 +499,9 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
       int seg = segs_to_check[nchecked++]; 
 
 
-  //    printf("%g %g %g %g %g\n", check.source_phi, check.source_theta, check.payload_az, check.payload_el, check.distance); 
       bool done_with_this_segment = false; 
-      int enhance_factor = 0; 
+      //if we are at a steep angle, we should enhance anyway 
+      int enhance_factor =  TMath::Min(p.backwards_params.max_enhance ,  int(sum->peak[pol][peak].theta / 15)); 
       int noccluded = 0; 
       double seg_p = 0;
       double max_dens = 0; 
@@ -467,7 +514,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
         if (enhance_factor) 
         {
           nsamples = enhancement_steps[enhance_factor]; 
-          printf("ENHANCE! To %d\n", nsamples); 
+          if (p.verbosity > 0) printf("ENHANCE! To %d\n", nsamples); 
         }
       
         // segment into a bunch of positions
@@ -484,12 +531,15 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
           //This computes the payload in source coords and vice versa
           PayloadParameters pp(gps, samples[i], p.refract); 
 
+
           pos = samples[i].as(AntarcticCoord::STEREOGRAPHIC); 
-  //        printf("sample position: %g %g %g\n", pos.x, pos.y, pos.z); 
-  //        printf("delta phi: %g\n",pp.source_phi - sum->peak[pol][peak].phi); 
-  //        printf("delta el: %g\n",pp.source_theta - sum->peak[pol][peak].theta); 
-  //        printf("payload el: %g %g\n", pp.payload_el, p.backwards_params.el_cutoff); 
-    //
+          if (p.verbosity > 3) 
+          {
+            printf("sample position: %g %g %g\n", pos.x, pos.y, pos.z); 
+            printf("delta phi: %g\n",pp.source_phi - sum->peak[pol][peak].phi); 
+            printf("delta el: %g\n",pp.source_theta - sum->peak[pol][peak].theta); 
+            printf("payload el: %g %g\n", pp.payload_el, p.backwards_params.el_cutoff); 
+          }
           //payload is below horizon.  or collides
           AntarcticCoord collid, collid_exit; 
           if (pp.payload_el < p.backwards_params.el_cutoff || ( p.collision_detection && pp.checkForCollision(p.collision_params.dx,&collid,&collid_exit, p.dataset, p.collision_params.grace))) 
@@ -497,7 +547,10 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
             if (pp.payload_el >=p.backwards_params.el_cutoff)  //colides
             {
                collid.to(AntarcticCoord::STEREOGRAPHIC); 
-  //             printf("Collision at (%g %g %g), surface at %g\n", collid.x,collid.y,collid.z, RampdemReader::SurfaceAboveGeoidEN(collid.x,collid.y, p.dataset)); 
+               if (p.verbosity > 3) 
+               {
+                 printf("Collision at (%g %g %g), surface at %g\n", collid.x,collid.y,collid.z, RampdemReader::SurfaceAboveGeoidEN(collid.x,collid.y, p.dataset)); 
+               }
 
 
                // we want to make sure that whatever segment is occluding is is considered, if it isn't already. So let's project to continent from payload and ensure we have that segment already 
@@ -609,6 +662,12 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
   //      printf("%d %g %d\n",seg, seg_p, noccluded); 
  
 
+        if (p.verbosity > 2) 
+        {
+
+          printf("p(seg) %d: = %g\n",  seg, seg_p); 
+
+        }
 
         if (seg_p > 1) 
         {
@@ -624,7 +683,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
         }
 
         done_with_this_segment = !enhance_flag; 
-        enhance_factor++; 
+        enhance_factor++; //TODO, we can enhance more than once depending on how much above threshold we are 
       }
 
       if (occlusion) 
@@ -703,7 +762,11 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
     {
 
       const BaseList::abstract_base & base = BaseList::getAbstractBase(ibase); 
-      PayloadParameters pp (gps,base.getPosition(gps->realTime), p.refract); 
+      AntarcticCoord base_pos= base.getPosition(gps->realTime);
+
+      //TODO: can veto most bases early probalby 
+
+      PayloadParameters pp (gps,base_pos, p.refract); 
       if (pp.payload_el < p.backwards_params.el_cutoff || ( p.collision_detection && pp.checkForCollision(p.collision_params.dx,0,0, p.dataset, p.collision_params.grace))) continue ; 
 
       double base_phi = pp.source_phi; 
