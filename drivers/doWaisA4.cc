@@ -62,6 +62,7 @@ void doWaisA4( int run = 352, int max = 0, int start = 0, const char * filter = 
   tree->Branch("pat",&patptr);
 
   int ndone = 0;
+  std::hash<int> int_hash;
   for (int i =start ; i < d.N(); i++)
   {
     try{
@@ -69,8 +70,9 @@ void doWaisA4( int run = 352, int max = 0, int start = 0, const char * filter = 
       printf("----(%d)-----\n",i);
 
       UsefulAdu5Pat pat(d.gps());
-
-      if (UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
+      //select random 1 percent events and all wais events.
+      if (int_hash(d.header()->eventNumber%100)%100 == 0 || UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
+      // if (UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
       {
         printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone);
         FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header());
