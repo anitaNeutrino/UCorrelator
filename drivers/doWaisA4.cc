@@ -69,8 +69,9 @@ void doWaisA4( int run = 352, int max = 0, int start = 0, const char * filter = 
       printf("----(%d)-----\n",i);
 
       UsefulAdu5Pat pat(d.gps());
-
-      if (UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
+      //select random 1 percent events and all wais events.
+      if (TString::Hash(&d.header()->eventNumber, sizeof(d.header()->eventNumber))%100 == 0 || UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
+      // if (UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
       {
         printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone);
         FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header());
