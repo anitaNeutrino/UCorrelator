@@ -127,6 +127,9 @@ namespace UCorrelator
 
       /** option to turn off computing/saving shape parameters, should save time and space if you aren't planning on using them, default is to compute them */
       bool compute_shape_parameters;
+      
+      /** option to turn off computing/saving the source location on the continent, can probably turn off until clustering, default is ON */
+      bool trace_to_continent;
 
       /** set_bottom_first:  Re-arrange the coherently summed waveforms so that the bottom-most ring is always the
          first antenna to be summed.
