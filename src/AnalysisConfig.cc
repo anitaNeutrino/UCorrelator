@@ -83,6 +83,7 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(fill_blast_fraction); 
   LOOKUP(fill_channel_info); 
   LOOKUP(compute_shape_parameters); 
+  LOOKUP(trace_to_continent); 
   LOOKUP(max_theta_adjustment); 
   LOOKUP(set_bottom_first);
   LOOKUP(delay_to_center);
@@ -183,6 +184,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   stokes_fracI = 0.2; 
 
   compute_shape_parameters = true;
+  trace_to_continent = true;
 
   delay_to_center = true;
   use_forced_trigger_rms = true; 

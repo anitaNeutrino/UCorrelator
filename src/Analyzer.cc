@@ -6,6 +6,7 @@
 #include "AnitaVersion.h" 
 #include "TCanvas.h"
 #include "ImpulsivityMeasure.h" 
+#include "BandwidthMeasure.h" 
 #include "TStyle.h"
 #include "TMarker.h"
 #include "TEllipse.h"
@@ -56,15 +57,15 @@ static int instance_counter = 0;
 
 
 
-UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mode) 
-  : cfg(conf ? conf: &defaultConfig),
-    corr(cfg->correlator_nphi,0,360,  cfg->correlator_ntheta, -cfg->correlator_theta_lowest, cfg->correlator_theta_highest) , 
-    responses(AnalysisConfig::getResponseString(cfg->response_option), cfg->response_npad, cfg->deconvolution_method), 
-    wfcomb(cfg->combine_nantennas, cfg->combine_npad, true, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
-    wfcomb_xpol(cfg->combine_nantennas, cfg->combine_npad, true, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
-    wfcomb_filtered(cfg->combine_nantennas, cfg->combine_npad, false, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
-    wfcomb_xpol_filtered(cfg->combine_nantennas, cfg->combine_npad, false, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
-    interactive(interactive_mode)
+  UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mode) 
+: cfg(conf ? conf: &defaultConfig),
+  corr(cfg->correlator_nphi,0,360,  cfg->correlator_ntheta, -cfg->correlator_theta_lowest, cfg->correlator_theta_highest) , 
+  responses(AnalysisConfig::getResponseString(cfg->response_option), cfg->response_npad, cfg->deconvolution_method), 
+  wfcomb(cfg->combine_nantennas, cfg->combine_npad, true, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
+  wfcomb_xpol(cfg->combine_nantennas, cfg->combine_npad, true, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
+  wfcomb_filtered(cfg->combine_nantennas, cfg->combine_npad, false, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
+  wfcomb_xpol_filtered(cfg->combine_nantennas, cfg->combine_npad, false, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
+  interactive(interactive_mode)
 {
 #ifdef UCORRELATOR_OPENMP
   TThread::Initialize(); 
@@ -76,19 +77,19 @@ UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mo
   avg_spectra[0] = 0; 
   avg_spectra[1] = 0; 
 
-	disallowedAnts[0] = 0;
-	disallowedAnts[1] = 0;
+  disallowedAnts[0] = 0;
+  disallowedAnts[1] = 0;
 
-	phiRange[0] = 0.;
-	phiRange[1] = 0.;
-	thetaRange[0] = 0.;
-	thetaRange[1] = 0.;
-	exclude = false;	
-	dPhi = 0;
-	dTheta = 0;
-	trackSource = false;
-	trackSun = false;
-	sourceLon = 0; sourceLat = 0; sourceAlt = 0;
+  phiRange[0] = 0.;
+  phiRange[1] = 0.;
+  thetaRange[0] = 0.;
+  thetaRange[1] = 0.;
+  exclude = false;	
+  dPhi = 0;
+  dTheta = 0;
+  trackSource = false;
+  trackSun = false;
+  sourceLon = 0; sourceLat = 0; sourceAlt = 0;
 
   corr.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb.setGroupDelayFlag(cfg->enable_group_delay); 
@@ -146,8 +147,8 @@ static double computeCombinedRMS(double t, AnitaPol::AnitaPol_t pol, const UCorr
 
   for (int ant =0; ant < wfcomb->getNAntennas(); ant++) 
   {
-     double ant_rms = UCorrelator::TimeDependentAverageLoader::getRMS(t, pol, wfcomb->getUsedAntennas()[ant]); 
-     rms += ant_rms * ant_rms; 
+    double ant_rms = UCorrelator::TimeDependentAverageLoader::getRMS(t, pol, wfcomb->getUsedAntennas()[ant]); 
+    rms += ant_rms * ant_rms; 
   }
 
   rms = sqrt(rms) / wfcomb->getNAntennas(); 
@@ -159,45 +160,45 @@ static double computeCombinedRMS(double t, AnitaPol::AnitaPol_t pol, const UCorr
 
 void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEventSummary * summary, const TruthAnitaEvent * truth) 
 {
-  
+
   const RawAnitaHeader * hdr = event->getHeader(); 
-	//this is for time dependent responses (right now only TUFFs)	
-	responses.checkTime(hdr->payloadTime);
+  //this is for time dependent responses (right now only TUFFs)	
+  responses.checkTime(hdr->payloadTime);
   //we need a UsefulAdu5Pat for this event
   UsefulAdu5Pat * pat =  (UsefulAdu5Pat*) event->getGPS();  //unconstifying it .. hopefully that won't cause problems
- 
+
   /* Initialize the summary */ 
   summary = new (summary) AnitaEventSummary(hdr, (UsefulAdu5Pat*) event->getGPS(),truth); 
 
   //just right away store where the payload is
   summary->anitaLocation.update(pat);
 
-	//check if were blocking out/looking at a source
-	if(trackSource)
-	{
-		pat->getThetaAndPhiWave(sourceLon, sourceLat, sourceAlt, thetaRange[0], phiRange[0]);
-		phiRange[0] *= 180./TMath::Pi();
-		thetaRange[0] *= -180./TMath::Pi();
-		phiRange[1] = phiRange[0] + dPhi;
-		thetaRange[1] = thetaRange[0] + dTheta;
-		phiRange[0] -= dPhi;
-		thetaRange[0] -= dTheta;
-	}
-	//sun is done separately because its easier this way
-	if(trackSun)
-	{
-		pat->getSunPosition(summary->sun.phi, summary->sun.theta);
-		phiRange[0] = summary->sun.phi - dPhi;
-		phiRange[1] = summary->sun.phi + dPhi;
-		thetaRange[0] = -summary->sun.theta - dTheta;
-		thetaRange[1] = -summary->sun.theta + dTheta;
-	}
+  //check if were blocking out/looking at a source
+  if(trackSource)
+  {
+    pat->getThetaAndPhiWave(sourceLon, sourceLat, sourceAlt, thetaRange[0], phiRange[0]);
+    phiRange[0] *= 180./TMath::Pi();
+    thetaRange[0] *= -180./TMath::Pi();
+    phiRange[1] = phiRange[0] + dPhi;
+    thetaRange[1] = thetaRange[0] + dTheta;
+    phiRange[0] -= dPhi;
+    thetaRange[0] -= dTheta;
+  }
+  //sun is done separately because its easier this way
+  if(trackSun)
+  {
+    pat->getSunPosition(summary->sun.phi, summary->sun.theta);
+    phiRange[0] = summary->sun.phi - dPhi;
+    phiRange[1] = summary->sun.phi + dPhi;
+    thetaRange[0] = -summary->sun.theta - dTheta;
+    thetaRange[1] = -summary->sun.theta + dTheta;
+  }
 
   //check for saturation
   ULong64_t saturated[2] = {0,0}; 
   event->checkSaturation( &saturated[AnitaPol::kHorizontal], 
-                          &saturated[AnitaPol::kVertical], 
-                          cfg->saturation_threshold); 
+      &saturated[AnitaPol::kVertical], 
+      cfg->saturation_threshold); 
 
   //also disable missing sectors 
   UCorrelator::flags::checkEmpty(event->getUsefulAnitaEvent(), &saturated[AnitaPol::kHorizontal], &saturated[AnitaPol::kVertical]); 
@@ -265,7 +266,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
         maskedL2 = event->getHeader()->l1TrigMask;
 #endif
 #endif
- 
+
         maskedL2Xpol = maskedL2; 
       }
 
@@ -282,12 +283,12 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     //
     // I'm going to take the aggressive approach where an L3 mask means we mark a pointing hypothesis as masked
     // if it falls in phi sector N or N-1. 
-   
+
 
 #ifdef __cpp_static_assert
     static_assert(sizeof(maskedPhi == NUM_PHI),"masked phi must be same size as num phi "); 
 #endif
-     
+
     maskedPhi |= ( (maskedPhi >> 1) | ( maskedPhi << (NUM_PHI-1))) ; 
     //or with l2 mask
     maskedPhi |= maskedL2; 
@@ -317,15 +318,15 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       if (which_trigger & (1 << i))
       {
         //TODO: this 45 is hardcoded here. Should come from GeomTool or something... 
-         double ang = (i * phi_sector_width - 45) * TMath::Pi()/180;
-         triggerAngle += TVector2(cos(ang), sin(ang)) / which_ntriggered; 
+        double ang = (i * phi_sector_width - 45) * TMath::Pi()/180;
+        triggerAngle += TVector2(cos(ang), sin(ang)) / which_ntriggered; 
       }
     }
 
     double avgHwAngle = triggerAngle.Phi() * RAD2DEG; 
 
     // tell the correlator not to use saturated events or disallowed antennas and make the correlation map
-		saturated[pol] |= disallowedAnts[pol];
+    saturated[pol] |= disallowedAnts[pol];
 
     //if we are only considering antennas that are unmasked, figure out which ones are 
     uint64_t maskedAnts= 0; 
@@ -334,7 +335,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       for (uint64_t iphi = 0; iphi < 16; iphi++)
       {
         bool unmasked = !(maskedPhi & (1ul << iphi)) ; 
-        
+
         for (int neighboring = 0; neighboring < cfg->min_peak_distance_from_unmasked; neighboring++)
         {
           if (unmasked) break; 
@@ -368,10 +369,10 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     // Find the isolated peaks in the image 
     peakfinder::RoughMaximum maxima[cfg->nmaxima]; 
     int npeaks = UCorrelator::peakfinder::findIsolatedMaxima((const TH2D*) corr.getHist(),
-                                                              cfg->peak_isolation_requirement,
-                                                              cfg->nmaxima, maxima, phiRange[0], phiRange[1], 
-                                                              thetaRange[0], thetaRange[1], exclude, cfg->use_bin_center); 
-//    printf("npeaks: %d\n", npeaks); 
+        cfg->peak_isolation_requirement,
+        cfg->nmaxima, maxima, phiRange[0], phiRange[1], 
+        thetaRange[0], thetaRange[1], exclude, cfg->use_bin_center); 
+    //    printf("npeaks: %d\n", npeaks); 
     summary->nPeaks[pol] = npeaks; 
 
     rough_peaks[pol].clear(); 
@@ -399,7 +400,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     for (int i = 0; i < npeaks; i++) 
     {
       // zoom in on the values 
-//      printf("rough phi:%f, rough theta: %f\n", maxima[i].x, -maxima[i].y); 
+      //      printf("rough phi:%f, rough theta: %f\n", maxima[i].x, -maxima[i].y); 
 
 
       fillPointingInfo(maxima[i].x, maxima[i].y, &summary->peak[pol][i], pat, avgHwAngle, triggeredPhi, maskedPhi, triggeredPhiXpol, maskedPhiXpol); 
@@ -419,7 +420,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
         summary->peak[pol][i].phi_separation = TMath::Min(summary->peak[pol][i].phi_separation, fabs(FFTtools::wrap(summary->peak[pol][i].phi - summary->peak[pol][j].phi, 360, 0))); 
       }
 
-//      printf("phi:%f, theta:%f\n", summary->peak[pol][i].phi, summary->peak[pol][i].theta); 
+      //      printf("phi:%f, theta:%f\n", summary->peak[pol][i].phi, summary->peak[pol][i].theta); 
 
 
     }
@@ -428,34 +429,34 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     {
       rough_peaks[pol].push_back(std::pair<double,double>(maxima[i].x, maxima[i].y)); 
       //now make the combined waveforms 
-     
-      
-SECTIONS
-{
-  SECTION
-      wfcomb.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol], 
-                     cfg->combine_t0, cfg->combine_t1, &summary->peak[pol][i].antennaPeakAverage, cfg->use_hilbert_for_antenna_average); 
-  SECTION
-      wfcomb_xpol.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol], cfg->combine_t0, cfg->combine_t1); 
-  SECTION
-      wfcomb_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol], cfg->combine_t0, cfg->combine_t1); 
-  SECTION
-      wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol], cfg->combine_t0, cfg->combine_t1); 
- }
 
-     double rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, (AnitaPol::AnitaPol_t) pol, &wfcomb) : 0 ; 
 
-SECTIONS 
-{
-  SECTION
-      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol, rms); 
-  SECTION
-      fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol, 0); 
-  SECTION
-      fillWaveformInfo(wfcomb_filtered.getCoherent(), wfcomb_xpol_filtered.getCoherent(), wfcomb_filtered.getCoherentAvgSpectrum(), &summary->coherent_filtered[pol][i], (AnitaPol::AnitaPol_t) pol, rms); 
-  SECTION
-      fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol, 0); 
-}
+      SECTIONS
+      {
+        SECTION
+          wfcomb.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol], 
+              cfg->combine_t0, cfg->combine_t1, &summary->peak[pol][i].antennaPeakAverage, cfg->use_hilbert_for_antenna_average); 
+        SECTION
+          wfcomb_xpol.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol], cfg->combine_t0, cfg->combine_t1); 
+        SECTION
+          wfcomb_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) pol, saturated[pol], cfg->combine_t0, cfg->combine_t1); 
+        SECTION
+          wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol], cfg->combine_t0, cfg->combine_t1); 
+      }
+
+      double rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, (AnitaPol::AnitaPol_t) pol, &wfcomb) : 0 ; 
+
+      SECTIONS 
+      {
+        SECTION
+          fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol, rms); 
+        SECTION
+          fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol, 0); 
+        SECTION
+          fillWaveformInfo(wfcomb_filtered.getCoherent(), wfcomb_xpol_filtered.getCoherent(), wfcomb_filtered.getCoherentAvgSpectrum(), &summary->coherent_filtered[pol][i], (AnitaPol::AnitaPol_t) pol, rms); 
+        SECTION
+          fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol, 0); 
+      }
 
 
       if (interactive) //copy everything
@@ -496,7 +497,7 @@ SECTIONS
           deconvolved_power[pol][1][i] = new (deconvolved_power[pol][1][i]) TGraphAligned(*wfcomb_filtered.getDeconvolvedAvgSpectrum()); 
           deconvolved_power[pol][1][i]->dBize(); 
           deconvolved_power[pol][1][i]->SetLineColor(2); 
- 
+
           interactive_deconvolved = true; 
         }
         else
@@ -514,8 +515,8 @@ SECTIONS
         coherent_xpol[pol][1][i] = new (coherent_xpol[pol][1][i]) AnalysisWaveform(*wfcomb_xpol_filtered.getCoherent()); 
         coherent_xpol[pol][1][i]->updateEven()->SetLineColor(11); 
         coherent_xpol[pol][1][i]->updateEven()->SetLineStyle(3); 
- 
-        
+
+
         coherent_power_xpol[pol][0][i]->~TGraphAligned(); 
         coherent_power_xpol[pol][0][i] = new (coherent_power_xpol[pol][0][i]) TGraphAligned(*wfcomb_xpol.getCoherentAvgSpectrum()); 
         coherent_power_xpol[pol][0][i]->dBize(); 
@@ -567,8 +568,8 @@ SECTIONS
     }
     if (interactive) 
     {
-       if (correlation_maps[pol]) delete correlation_maps[pol];
-       correlation_maps[pol] = new gui::Map(*corr.getHist(), event, &wfcomb, &wfcomb_filtered,AnitaPol::AnitaPol_t(pol), summary ); 
+      if (correlation_maps[pol]) delete correlation_maps[pol];
+      correlation_maps[pol] = new gui::Map(*corr.getHist(), event, &wfcomb, &wfcomb_filtered,AnitaPol::AnitaPol_t(pol), summary ); 
     }
   }
 
@@ -577,22 +578,22 @@ SECTIONS
 
   if (truth)
   { 
-//    SECTIONS
+    //    SECTIONS
     {
-//      SECTION
+      //      SECTION
       wfcomb.combine(summary->mc.phi, summary->mc.theta, event, AnitaPol::kHorizontal, 0, cfg->combine_t0, cfg->combine_t1); 
-//      SECTION 
+      //      SECTION 
       wfcomb_xpol.combine(summary->mc.phi, summary->mc.theta, event, AnitaPol::kVertical, 0, cfg->combine_t0, cfg->combine_t1); 
     }
 
-     double hpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kHorizontal, &wfcomb) : 0 ; 
-     double vpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kVertical, &wfcomb_xpol) : 0 ; 
+    double hpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kHorizontal, &wfcomb) : 0 ; 
+    double vpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kVertical, &wfcomb_xpol) : 0 ; 
 
-//    SECTIONS
+    //    SECTIONS
     {
-//      SECTION
+      //      SECTION
       fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kHorizontal]), AnitaPol::kHorizontal, hpol_rms); 
-//      SECTION
+      //      SECTION
       fillWaveformInfo(wfcomb_xpol.getCoherent(), wfcomb.getCoherent(), wfcomb_xpol.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kVertical]), AnitaPol::kVertical, vpol_rms); 
     }
   }
@@ -605,92 +606,103 @@ static bool outside(const TH2 * h, double x, double y)
 {
 
   return x > h->GetXaxis()->GetXmax() || 
-         x < h->GetXaxis()->GetXmin() || 
-         y < h->GetYaxis()->GetXmin() ||
-         y > h->GetYaxis()->GetXmax(); 
+    x < h->GetXaxis()->GetXmin() || 
+    y < h->GetYaxis()->GetXmin() ||
+    y > h->GetYaxis()->GetXmax(); 
 
 }
 
 void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_theta, AnitaEventSummary::PointingHypothesis * point, 
-                                             UsefulAdu5Pat * pat, double hwPeakAngle, UShort_t triggered_sectors, UShort_t masked_sectors, UShort_t triggered_sectors_xpol, UShort_t masked_sectors_xpol)
+    UsefulAdu5Pat * pat, double hwPeakAngle, UShort_t triggered_sectors, UShort_t masked_sectors, UShort_t triggered_sectors_xpol, UShort_t masked_sectors_xpol)
 {
-      corr.computeZoomed(rough_phi, rough_theta, cfg->zoomed_nphi, cfg->zoomed_dphi,  cfg->zoomed_ntheta, cfg->zoomed_dtheta, cfg->zoomed_nant, zoomed); 
+  corr.computeZoomed(rough_phi, rough_theta, cfg->zoomed_nphi, cfg->zoomed_dphi,  cfg->zoomed_ntheta, cfg->zoomed_dtheta, cfg->zoomed_nant, zoomed); 
 
-      //get pointer to the pointing hypothesis we are about to fill 
+  //get pointer to the pointing hypothesis we are about to fill 
 
-      // This will fill in phi, theta, value, var_theta, var_phi and covar 
-      
-      peakfinder::FineMaximum max; 
-      switch (cfg->fine_peak_finding_option)
-      {
-        case AnalysisConfig::FinePeakFindingAbby: 
-          UCorrelator::peakfinder::doInterpolationPeakFindingAbby(zoomed, &max); 
-          break; 
-        case AnalysisConfig::FinePeakFindingBicubic: 
-          UCorrelator::peakfinder::doInterpolationPeakFindingBicubic(zoomed, &max); 
-          break; 
-        case AnalysisConfig::FinePeakFindingHistogram: 
-          UCorrelator::peakfinder::doPeakFindingHistogram(zoomed, &max); 
-          break; 
-        case AnalysisConfig::FinePeakFindingQuadraticFit16: 
-          UCorrelator::peakfinder::doPeakFindingQuadratic16(zoomed, &max); 
-          break; 
-        case AnalysisConfig::FinePeakFindingQuadraticFit25: 
-          UCorrelator::peakfinder::doPeakFindingQuadratic25(zoomed, &max); 
-          break; 
-        case AnalysisConfig::FinePeakFindingGaussianFit: 
-          UCorrelator::peakfinder::doPeakFindingGaussian(zoomed, &max); 
-          break; 
-        case AnalysisConfig::FinePeakFindingQuadraticFit9: 
-        default: 
-          UCorrelator::peakfinder::doPeakFindingQuadratic9(zoomed, &max); 
-          break; 
-      }; 
+  // This will fill in phi, theta, value, var_theta, var_phi and covar 
 
-
-      //Check to make sure that fine max isn't OUTSIDE of zoomed window
-      // If it is, revert to very stupid method  of just using histogram 
-      
-      if (outside(zoomed, max.x, max.y))
-      {
-        UCorrelator::peakfinder::doPeakFindingHistogram(zoomed, &max); 
-      }
-      
+  peakfinder::FineMaximum max; 
+  switch (cfg->fine_peak_finding_option)
+  {
+    case AnalysisConfig::FinePeakFindingAbby: 
+      UCorrelator::peakfinder::doInterpolationPeakFindingAbby(zoomed, &max); 
+      break; 
+    case AnalysisConfig::FinePeakFindingBicubic: 
+      UCorrelator::peakfinder::doInterpolationPeakFindingBicubic(zoomed, &max); 
+      break; 
+    case AnalysisConfig::FinePeakFindingHistogram: 
+      UCorrelator::peakfinder::doPeakFindingHistogram(zoomed, &max); 
+      break; 
+    case AnalysisConfig::FinePeakFindingQuadraticFit16: 
+      UCorrelator::peakfinder::doPeakFindingQuadratic16(zoomed, &max); 
+      break; 
+    case AnalysisConfig::FinePeakFindingQuadraticFit25: 
+      UCorrelator::peakfinder::doPeakFindingQuadratic25(zoomed, &max); 
+      break; 
+    case AnalysisConfig::FinePeakFindingGaussianFit: 
+      UCorrelator::peakfinder::doPeakFindingGaussian(zoomed, &max); 
+      break; 
+    case AnalysisConfig::FinePeakFindingQuadraticFit9: 
+    default: 
+      UCorrelator::peakfinder::doPeakFindingQuadratic9(zoomed, &max); 
+      break; 
+  }; 
 
 
-      
-      max.copyToPointingHypothesis(point); 
+  //Check to make sure that fine max isn't OUTSIDE of zoomed window
+  // If it is, revert to very stupid method  of just using histogram 
 
-      //snr is ratio of point value to map rms
-      point->snr = point->value / maprms; 
-      point->mapRMS = maprms;
-      point->dphi_rough = FFTtools::wrap(point->phi - rough_phi, 360,0); 
-      point->dtheta_rough = FFTtools::wrap(point->theta - (-rough_theta), 360,0); //sign reversal. doh. 
+  if (outside(zoomed, max.x, max.y))
+  {
+    UCorrelator::peakfinder::doPeakFindingHistogram(zoomed, &max); 
+  }
 
-      point->hwAngle = FFTtools::wrap(point->phi - hwPeakAngle,360,0); 
 
-      //TODO: I don't believe this really yet
-      int sector = 2+fmod(point->phi + 11.25,360) / 22.5; 
 
-      point->masked = masked_sectors & ( 1 << sector); 
-      point->triggered = triggered_sectors & ( 1 << sector); 
-      point->masked_xpol = masked_sectors_xpol & ( 1 << sector); 
-      point->triggered_xpol = triggered_sectors_xpol & ( 1 << sector); 
 
-      //Compute intersection with continent, or set values to -9999 if no intersection
-      if (!pat->traceBackToContinent(point->phi * DEG2RAD, point->theta * DEG2RAD, &point->longitude, &point->latitude, &point->altitude, &point->theta_adjustment_needed, cfg->max_theta_adjustment * DEG2RAD)) 
-      {
-        point->latitude = -9999; 
-        point->longitude = -9999;  
-        point->altitude = -9999; 
-        point->distanceToSource = -9999; 
-        point->theta_adjustment_needed = -9999; 
-      }
-      else
-      {
-        point->distanceToSource=pat->getDistanceFromSource(point->latitude, point->longitude, point->altitude); 
-        point->theta_adjustment_needed *= RAD2DEG; 
-      }
+  max.copyToPointingHypothesis(point); 
+
+  //snr is ratio of point value to map rms
+  point->snr = point->value / maprms; 
+  point->mapRMS = maprms;
+  point->dphi_rough = FFTtools::wrap(point->phi - rough_phi, 360,0); 
+  point->dtheta_rough = FFTtools::wrap(point->theta - (-rough_theta), 360,0); //sign reversal. doh. 
+
+  point->hwAngle = FFTtools::wrap(point->phi - hwPeakAngle,360,0); 
+
+  //TODO: I don't believe this really yet
+  int sector = 2+fmod(point->phi + 11.25,360) / 22.5; 
+
+  point->masked = masked_sectors & ( 1 << sector); 
+  point->triggered = triggered_sectors & ( 1 << sector); 
+  point->masked_xpol = masked_sectors_xpol & ( 1 << sector); 
+  point->triggered_xpol = triggered_sectors_xpol & ( 1 << sector); 
+
+  if(cfg->trace_to_continent)
+  {
+    //Compute intersection with continent, or set values to -9999 if no intersection
+    if (!pat->traceBackToContinent(point->phi * DEG2RAD, point->theta * DEG2RAD, &point->longitude, &point->latitude, &point->altitude, &point->theta_adjustment_needed, cfg->max_theta_adjustment * DEG2RAD)) 
+    {
+      point->latitude = -9999; 
+      point->longitude = -9999;  
+      point->altitude = -9999; 
+      point->distanceToSource = -9999; 
+      point->theta_adjustment_needed = -9999; 
+    }
+    else
+    {
+      point->distanceToSource=pat->getDistanceFromSource(point->latitude, point->longitude, point->altitude); 
+      point->theta_adjustment_needed *= RAD2DEG; 
+    }
+  }
+  else
+  {
+    point->latitude = 0; 
+    point->longitude = 0;  
+    point->altitude = 0; 
+    point->distanceToSource = 0; 
+    point->theta_adjustment_needed = 0; 
+  }
 }
 
 
@@ -723,32 +735,32 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 
   double hilbertRange = info->peakHilbert - minHilbert; 
 
-	if(cfg->compute_shape_parameters)
-	{
-	  info->riseTime_10_90 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.9*hilbertRange,peakHilbertBin); 
-	  info->riseTime_10_50 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.5*hilbertRange,peakHilbertBin); 
-	  info->fallTime_90_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.9*hilbertRange,peakHilbertBin); 
-	  info->fallTime_50_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.5*hilbertRange,peakHilbertBin); 
+  if(cfg->compute_shape_parameters)
+  {
+    info->riseTime_10_90 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.9*hilbertRange,peakHilbertBin); 
+    info->riseTime_10_50 = shape::getRiseTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.5*hilbertRange,peakHilbertBin); 
+    info->fallTime_90_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.9*hilbertRange,peakHilbertBin); 
+    info->fallTime_50_10 = shape::getFallTime((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, minHilbert + 0.5*hilbertRange,peakHilbertBin); 
 
-	  int ifirst, ilast; 
-	  info->width_50_50 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.5*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
-	  info->power_50_50 = even->getSumV2(ifirst, ilast); 
-	  even->getMoments(sizeof(info->peakMoments)/sizeof(double), info->peakTime, info->peakMoments); 
-	  info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
-	  info->power_10_10 = even->getSumV2(ifirst, ilast); 
-	}
-	if(!cfg->compute_shape_parameters)
-	{
-	  info->riseTime_10_90 = 0; 
-	  info->riseTime_10_50 = 0; 
-	  info->fallTime_90_10 = 0; 
-	  info->fallTime_50_10 = 0; 
+    int ifirst, ilast; 
+    info->width_50_50 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.5*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
+    info->power_50_50 = even->getSumV2(ifirst, ilast); 
+    even->getMoments(sizeof(info->peakMoments)/sizeof(double), info->peakTime, info->peakMoments); 
+    info->width_10_10 = shape::getWidth((TGraph*) wf->hilbertEnvelope(), minHilbert + 0.1*hilbertRange, &ifirst, &ilast,peakHilbertBin); 
+    info->power_10_10 = even->getSumV2(ifirst, ilast); 
+  }
+  if(!cfg->compute_shape_parameters)
+  {
+    info->riseTime_10_90 = 0; 
+    info->riseTime_10_50 = 0; 
+    info->fallTime_90_10 = 0; 
+    info->fallTime_50_10 = 0; 
 
-	  info->width_50_50 = 0; 
-	  info->power_50_50 = 0; 
-	  info->width_10_10 = 0; 
-	  info->power_10_10 = 0; 
-	}
+    info->width_50_50 = 0; 
+    info->power_50_50 = 0; 
+    info->width_10_10 = 0; 
+    info->power_10_10 = 0; 
+  }
 
   polarimetry::StokesAnalysis stokes( pol == AnitaPol::kHorizontal ? wf : xpol_wf,  pol == AnitaPol::kHorizontal ? xpol_wf: wf); 
   info->I = stokes.getAvgI(); 
@@ -780,10 +792,10 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
     if (n < 0 || n > even->GetN()) n = even->GetN();
     rms = TMath::RMS(n, even->GetY() + i0); 
   }
-  
+
   info->snr = info->peakHilbert / rms;
   if(cfg->use_coherent_spectra) pwr = wf->powerdB(); 
-  
+
   TGraphAligned power(pwr->GetN(),pwr->GetX(),pwr->GetY()); 
 
   if (cfg->use_coherent_spectra) power.dBize(); 
@@ -835,7 +847,7 @@ UCorrelator::Analyzer::~Analyzer()
     {
       for (int i = 0; i < cfg->nmaxima; i++)
       {
-          delete zoomed_correlation_maps[pol][i];
+        delete zoomed_correlation_maps[pol][i];
 
         for (int ifilt = 0; ifilt < 2; ifilt++) 
         {
@@ -876,11 +888,11 @@ void UCorrelator::Analyzer::clearInteractiveMemory(double frac) const
 
 
 /* Nevermind this... wanted to zoom in on analyzer canvas on click, but too much work :( 
-static void setOnClickHandler(TPad * pad) 
-{
+   static void setOnClickHandler(TPad * pad) 
+   {
 
-}
-*/
+   }
+   */
 
 
 
@@ -892,7 +904,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv, int draw_filtered)
 
   clearInteractiveMemory(); 
 
-//  gStyle->SetOptStat(0); 
+  //  gStyle->SetOptStat(0); 
   for (int ipol = cfg->start_pol; ipol <= cfg->end_pol; ipol++)
   {
     if (!pads[ipol])
@@ -962,29 +974,29 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv, int draw_filtered)
 
 
       /*
-      TF1 * spectral_slope = new TF1(TString::Format("__slope_%d", i), "pol1",0.2,0.7); 
-      spectral_slope->SetParameter(0, last.coherent[ipol][i].spectrumIntercept) ;
-      spectral_slope->SetParameter(1, last.coherent[ipol][i].spectrumSlope) ;
+         TF1 * spectral_slope = new TF1(TString::Format("__slope_%d", i), "pol1",0.2,0.7); 
+         spectral_slope->SetParameter(0, last.coherent[ipol][i].spectrumIntercept) ;
+         spectral_slope->SetParameter(1, last.coherent[ipol][i].spectrumSlope) ;
 
 
-      TGraphErrors *gbw = new TGraphErrors(AnitaEventSummary::peaksPerSpectrum); 
-      gbw->SetTitle("Bandwidth Peaks"); 
-      for (int bwpeak = 0; bwpeak < AnitaEventSummary::peaksPerSpectrum; bwpeak++) 
-      {
-        double bwf = last.coherent[ipol][i].peakFrequency[bwpeak]; 
-        gbw->SetPoint(bwpeak, bwf, avg_spectra[ipol]->Eval(bwf)+ last.coherent[ipol][i].peakPower[bwpeak]); 
-        gbw->SetPointError(bwpeak  , last.coherent[ipol][i].bandwidth[bwpeak]/2,0);
-      }
-      gbw->SetMarkerColor(4); 
-      gbw->SetMarkerStyle(20); 
-      gbw->Draw("psame"); 
+         TGraphErrors *gbw = new TGraphErrors(AnitaEventSummary::peaksPerSpectrum); 
+         gbw->SetTitle("Bandwidth Peaks"); 
+         for (int bwpeak = 0; bwpeak < AnitaEventSummary::peaksPerSpectrum; bwpeak++) 
+         {
+         double bwf = last.coherent[ipol][i].peakFrequency[bwpeak]; 
+         gbw->SetPoint(bwpeak, bwf, avg_spectra[ipol]->Eval(bwf)+ last.coherent[ipol][i].peakPower[bwpeak]); 
+         gbw->SetPointError(bwpeak  , last.coherent[ipol][i].bandwidth[bwpeak]/2,0);
+         }
+         gbw->SetMarkerColor(4); 
+         gbw->SetMarkerStyle(20); 
+         gbw->Draw("psame"); 
 
 
-      delete_list.push_back(spectral_slope); 
-      delete_list.push_back(gbw);
+         delete_list.push_back(spectral_slope); 
+         delete_list.push_back(gbw);
 
-      */  
-      
+*/  
+
       if (interactive_deconvolved)
       {
         pads[ipol]->cd(2)->cd(i+3*last.nPeaks[ipol]+1); 
@@ -992,7 +1004,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv, int draw_filtered)
         deconvolved[ipol][draw_filtered][i]->drawEven("alp"); 
         if (interactive_xpol_deconvolved)
         {
-            deconvolved_xpol[ipol][draw_filtered][i]->drawEven("lsame"); 
+          deconvolved_xpol[ipol][draw_filtered][i]->drawEven("lsame"); 
         }
 
         pads[ipol]->cd(2)->cd(i+4*last.nPeaks[ipol]+1); 
@@ -1008,7 +1020,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv, int draw_filtered)
             ((TGraph*) deconvolved_xpol[ipol][draw_filtered][i]->powerdB())->SetLineColor(15); 
             (deconvolved_xpol[ipol][draw_filtered][i])->drawPowerdB("lsame"); 
           }
-        
+
         }
         else
         {
@@ -1022,7 +1034,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv, int draw_filtered)
 
 
       }
-       
+
     }
   }
 }
@@ -1034,7 +1046,7 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
 
   if (cfg->fill_blast_fraction) 
     flags->blastFraction = TimeDependentAverageLoader::getPayloadBlastFraction(fae->getHeader()->triggerTime); 
-  
+
   flags->meanPower[0] = fae->getAveragePower(); 
   flags->medianPower[0] = fae->getMedianPower(); 
   flags->meanPowerFiltered[0] = fae->getAveragePower(AnitaPol::kNotAPol, AnitaRing::kNotARing, true); 
@@ -1052,9 +1064,9 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   flags->nSectorsWhereBottomExceedsTop = 0;
   for (int pol = AnitaPol::kHorizontal; pol <= AnitaPol::kVertical; pol++)
   {
-     int n_above_this_pol; 
-     fae->getMinMaxRatio(AnitaPol::AnitaPol_t(pol), &flags->maxBottomToTopRatio[pol], &flags->minBottomToTopRatio[pol], &flags->maxBottomToTopRatioSector[pol], &flags->minBottomToTopRatioSector[pol], AnitaRing::kBottomRing, AnitaRing::kTopRing,1, &n_above_this_pol); 
-     flags->nSectorsWhereBottomExceedsTop += n_above_this_pol; 
+    int n_above_this_pol; 
+    fae->getMinMaxRatio(AnitaPol::AnitaPol_t(pol), &flags->maxBottomToTopRatio[pol], &flags->minBottomToTopRatio[pol], &flags->maxBottomToTopRatioSector[pol], &flags->minBottomToTopRatioSector[pol], AnitaRing::kBottomRing, AnitaRing::kTopRing,1, &n_above_this_pol); 
+    flags->nSectorsWhereBottomExceedsTop += n_above_this_pol; 
   }
 
 
@@ -1088,27 +1100,30 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
 
   flags->isGood = !flags->isVarner && !flags->isVarner2 && !flags->strongCWFlag; 
 
-	//added for a class of anita 4 events that only happens on one lab and channel
-	//also added in a check for glitches in surf 11 on lab c and surf 0 on lab b and c and surf8 lab c since i also want to remove those
-	if(AnitaVersion::get() == 4)
-	{
-		flags->isStepFunction |= fae->checkStepFunction(1, AnitaRing::kMiddleRing, 8, AnitaPol::kVertical);
-		flags->isStepFunction |= (fae->checkSurfForGlitch(0 , 1, 600)<<1);
-		flags->isStepFunction |= (fae->checkSurfForGlitch(0 , 2, 600)<<2);
-		flags->isStepFunction |= (fae->checkSurfForGlitch(11, 2, 600)<<3);
-		flags->isStepFunction |= (fae->checkSurfForGlitch(8,  2, 600)<<4);
-	}
-	else flags->isStepFunction = 0;
+  //added for a class of anita 4 events that only happens on one lab and channel
+  //also added in a check for glitches in surf 11 on lab c and surf 0 on lab b and c and surf8 lab c since i also want to remove those
+  if(AnitaVersion::get() == 4)
+  {
+    flags->isStepFunction |= fae->checkStepFunction(1, AnitaRing::kMiddleRing, 8, AnitaPol::kVertical);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(0 , 1, 500)<<1);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(0 , 2, 500)<<2);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(11, 2, 500)<<2);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(8,  2, 500)<<2);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(6,  3, 500)<<3);
+    if(fae->checkSaturation( 0, 0, cfg->saturation_threshold) > 0) 
+      flags->isStepFunction |= (1<<4);
+  }
+  else flags->isStepFunction = 0;
 }
 
 void UCorrelator::Analyzer::setExtraFilters(FilterStrategy* extra)
 {
-	wfcomb_filtered.setExtraFilters(extra);
-	wfcomb_xpol_filtered.setExtraFilters(extra);
+  wfcomb_filtered.setExtraFilters(extra);
+  wfcomb_xpol_filtered.setExtraFilters(extra);
 }
 
 void UCorrelator::Analyzer::setExtraFiltersDeconvolved(FilterStrategy* extra)
 {
-	wfcomb_filtered.setExtraFiltersDeconvolved(extra);
-	wfcomb_xpol_filtered.setExtraFiltersDeconvolved(extra);
+  wfcomb_filtered.setExtraFiltersDeconvolved(extra);
+  wfcomb_xpol_filtered.setExtraFiltersDeconvolved(extra);
 }
