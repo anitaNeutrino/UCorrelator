@@ -17,13 +17,19 @@ namespace UCorrelator
   {
     public: 
 
-      BH13Filter(){;} 
+      BH13Filter(); 
+      ~BH13Filter(); 
 
       virtual const char * tag() const { return "BH13Filter"; } 
       virtual const char * description() const { return "BH13Filter"; } 
 
       virtual void process(FilteredAnitaEvent * ev); 
       virtual void processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int whichAnt, int whichPol); 
+
+    private:
+
+      TGraph* gPhase;
+      TGraph* gMag;
       
   }; 
 	/** Filter that changes the response of antenna BH13 to back to normal, undoing the effects of BH13Filter.  This needs to be done for combining deconvolved waveforms upon which the BH13Filter has been applied */
@@ -31,13 +37,19 @@ namespace UCorrelator
   {
     public: 
 
-      AntiBH13Filter(){;} 
+      AntiBH13Filter(); 
+      ~AntiBH13Filter(); 
 
       virtual const char * tag() const { return "AntiBH13Filter"; } 
       virtual const char * description() const { return "AntiBH13Filter"; } 
 
       virtual void process(FilteredAnitaEvent * ev); 
       virtual void processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int whichAnt, int whichPol); 
+     
+    private:
+      
+      TGraph* gPhase;
+      TGraph* gMag;
       
   }; 
   class timePadFilter : public FilterOperation

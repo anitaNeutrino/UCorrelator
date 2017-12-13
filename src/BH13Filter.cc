@@ -16,6 +16,20 @@
 #include <math.h>// for isnan
 #include "AntennaPositions.h"
 
+UCorrelator::BH13Filter::BH13Filter()
+{
+	TFile f(Form("%s/share/AnitaAnalysisFramework/responses/BH13TransferFn.root", getenv("ANITA_UTIL_INSTALL_DIR")));
+	gPhase = (TGraph*) f.Get("fixPhase");
+	gMag = (TGraph*) f.Get("fixAmp");
+  f.Close();
+}
+
+UCorrelator::BH13Filter::~BH13Filter()
+{
+  delete gPhase;
+  delete gMag;
+}
+
 void UCorrelator::BH13Filter::process(FilteredAnitaEvent * ev)
 {
 	for(int i = 0; i < 48; i++)
@@ -33,9 +47,6 @@ void UCorrelator::BH13Filter::processOne(AnalysisWaveform * awf, const RawAnitaH
 	int old_size = awf->Neven();
 	int nf = awf->Nfreq();
 	double df = awf->deltaF();
-	TFile f(Form("%s/share/AnitaAnalysisFramework/responses/BH13TransferFn.root", getenv("ANITA_UTIL_INSTALL_DIR")));
-	TGraph* gPhase = (TGraph*) f.Get("fixPhase");
-	TGraph* gMag = (TGraph*) f.Get("fixAmp");;
 	for( int i =0; i < nf; i++)
 	{
 		double f =i*df*1e9;
@@ -44,8 +55,20 @@ void UCorrelator::BH13Filter::processOne(AnalysisWaveform * awf, const RawAnitaH
 		if( f>=.1e9 && f<=1.3e9) awf->updateFreq()[i].setMagPhase(mag, phase);
 	}
 	awf->updateEven()->Set(old_size);
-	delete gPhase;
-	delete gMag;
+}
+
+UCorrelator::AntiBH13Filter::AntiBH13Filter()
+{
+	TFile f(Form("%s/share/AnitaAnalysisFramework/responses/BH13TransferFn.root", getenv("ANITA_UTIL_INSTALL_DIR")));
+	gPhase = (TGraph*) f.Get("fixPhase");
+	gMag = (TGraph*) f.Get("fixAmp");
+  f.Close();
+}
+
+UCorrelator::AntiBH13Filter::~AntiBH13Filter()
+{
+  delete gPhase;
+  delete gMag;
 }
 
 void UCorrelator::AntiBH13Filter::process(FilteredAnitaEvent * ev)
@@ -65,9 +88,6 @@ void UCorrelator::AntiBH13Filter::processOne(AnalysisWaveform * awf, const RawAn
 	int old_size = awf->Neven();
 	int nf = awf->Nfreq();
 	double df = awf->deltaF();
-	TFile f(Form("%s/share/AnitaAnalysisFramework/responses/BH13TransferFn.root", getenv("ANITA_UTIL_INSTALL_DIR")));
-	TGraph* gPhase = (TGraph*) f.Get("fixPhase");
-	TGraph* gMag = (TGraph*) f.Get("fixAmp");;
 	for( int i =0; i < nf; i++)
 	{
 		double f =i*df*1e9;
@@ -76,8 +96,6 @@ void UCorrelator::AntiBH13Filter::processOne(AnalysisWaveform * awf, const RawAn
 		if( f>=.1e9 && f<=1.3e9) awf->updateFreq()[i].setMagPhase(mag, phase);
 	}
 	awf->updateEven()->Set(old_size);
-	delete gPhase;
-	delete gMag;
 }
 
 void UCorrelator::timePadFilter::process(FilteredAnitaEvent* ev)
