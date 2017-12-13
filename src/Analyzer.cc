@@ -944,19 +944,22 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv, int draw_filtered)
       if (cfg->use_coherent_spectra) 
       {
         ((TGraph*) coherent[ipol][draw_filtered][i]->powerdB())->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
+        ((TGraph*) coherent[ipol][draw_filtered][i]->powerdB())->GetXaxis()->SetRangeUser(0,1.3); 
         coherent[ipol][draw_filtered][i]->drawPowerdB("al"); 
+        ((TGraph*)coherent_xpol[ipol][draw_filtered][i]->powerdB())->SetLineColor(15); 
         coherent_xpol[ipol][draw_filtered][i]->drawPowerdB("lsame"); 
       }
       else
       {
         (((TGraph*)coherent_power[ipol][draw_filtered][i]))->SetTitle(TString::Format ( "Power Coherent (+ xpol) %d", i+1)); 
         ((TGraph*)coherent_power[ipol][draw_filtered][i])->Draw("al"); 
+        ((TGraph*)coherent_power[ipol][draw_filtered][i])->GetXaxis()->SetRangeUser(0,1.3); 
         coherent_power_xpol[ipol][draw_filtered][i]->Draw("lsame"); 
+        ((TGraph*)avg_spectra[ipol])->SetLineColor(2); 
+        ((TGraph*)avg_spectra[ipol])->Draw("lsame"); 
       }
 
 
-      ((TGraph*)avg_spectra[ipol])->SetLineColor(2); 
-      ((TGraph*)avg_spectra[ipol])->Draw("lsame"); 
 
       /*
       TF1 * spectral_slope = new TF1(TString::Format("__slope_%d", i), "pol1",0.2,0.7); 
@@ -998,9 +1001,11 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv, int draw_filtered)
         {
 
           ((TGraph*) deconvolved[ipol][draw_filtered][i]->powerdB())->SetTitle(TString::Format ( "Power Deconvolved (+ xpol) %d", i+1)); 
+          ((TGraph*) deconvolved[ipol][draw_filtered][i]->powerdB())->GetXaxis()->SetRangeUser(0,1.3); 
           (deconvolved[ipol][draw_filtered][i])->drawPowerdB();; 
           if (interactive_xpol_deconvolved)
           {
+            ((TGraph*) deconvolved_xpol[ipol][draw_filtered][i]->powerdB())->SetLineColor(15); 
             (deconvolved_xpol[ipol][draw_filtered][i])->drawPowerdB("lsame"); 
           }
         
