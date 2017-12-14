@@ -92,6 +92,7 @@ static int instance_counter = 0;
   sourceLon = 0; sourceLat = 0; sourceAlt = 0;
 
   corr.setGroupDelayFlag(cfg->enable_group_delay); 
+
   wfcomb.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_xpol.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_filtered.setGroupDelayFlag(cfg->enable_group_delay); 
@@ -106,6 +107,12 @@ static int instance_counter = 0;
   wfcomb_xpol.setDelayToCenter(cfg->delay_to_center);
   wfcomb_filtered.setDelayToCenter(cfg->delay_to_center);
   wfcomb_xpol_filtered.setDelayToCenter(cfg->delay_to_center);
+
+  wfcomb.setRTimeShiftFlag(cfg->r_time_shift_correction);
+  wfcomb_xpol.setRTimeShiftFlag(cfg->r_time_shift_correction);
+  wfcomb_filtered.setRTimeShiftFlag(cfg->r_time_shift_correction);
+  wfcomb_xpol_filtered.setRTimeShiftFlag(cfg->r_time_shift_correction);
+
 
 
   instance_counter++; 

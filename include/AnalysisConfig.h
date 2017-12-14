@@ -140,6 +140,8 @@ namespace UCorrelator
          Makes it so the delays in the coherent sum are referenced to the center point */
       bool delay_to_center;
 
+      bool r_time_shift_correction; //if delaying to center, apply a correction for the effective different R's 
+
       /** TODO: this has to be loaded from file somehow */ 
       AnitaResponse::DeconvolutionMethod * deconvolution_method; 
 

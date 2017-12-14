@@ -56,6 +56,7 @@ namespace UCorrelator
       void setDeconvolve(bool deconvolve) {do_deconvolution = deconvolve ;}
       void setUseUnfiltered(bool raw_opt) {use_raw = raw_opt;}
       void setGroupDelayFlag(bool opt) { enable_group_delay = opt; } 
+      void setRTimeShiftFlag(bool opt) { enable_r_time_shift = opt; } 
       bool wasAlfaFiltered() { return alfa_hack; } 
 
       int getNAntennas() const { return nant; }  
@@ -100,6 +101,7 @@ namespace UCorrelator
       bool alfa_hack; 
       bool bottom_first;
       bool delay_to_center;
+      bool enable_r_time_shift; 
       std::vector<int> antennas; 
 			FilterStrategy* extra_filters;
 			FilterStrategy* extra_filters_deconvolved;

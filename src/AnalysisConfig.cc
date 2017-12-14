@@ -93,6 +93,7 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(combine_t0); 
   LOOKUP(combine_t1); 
   LOOKUP(use_hilbert_for_antenna_average); 
+  LOOKUP(r_time_shift_correction); 
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", (int*) &start_pol, 2,pols); 
   lookupEnum(&cfg, "end_pol", (int*) &end_pol, 2,pols); 
@@ -187,6 +188,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   trace_to_continent = true;
 
   delay_to_center = true;
+  r_time_shift_correction = true; 
   use_forced_trigger_rms = true; 
 
   use_coherent_spectra = false; 
