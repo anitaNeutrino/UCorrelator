@@ -87,6 +87,7 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(max_theta_adjustment); 
   LOOKUP(set_bottom_first);
   LOOKUP(delay_to_center);
+  LOOKUP(only_use_usable);
   LOOKUP(stokes_fracI); 
   LOOKUP(use_forced_trigger_rms); 
   LOOKUP(use_coherent_spectra); 
@@ -188,6 +189,8 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
 
   delay_to_center = true;
   use_forced_trigger_rms = true; 
+  
+  only_use_usable = false;
 
   use_coherent_spectra = false; 
   combine_t0 = -25; 
