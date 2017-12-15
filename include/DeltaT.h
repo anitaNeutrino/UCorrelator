@@ -17,7 +17,7 @@ namespace UCorrelator
   inline double getAntennaGroupDelay(double phidiff, double theta) 
   {
     theta-=10;
-    
+
     double c1 = 1.45676e-8; 
     double c2 = 5.01452e-6; 
 
@@ -42,18 +42,20 @@ namespace UCorrelator
     const AntennaPositions * ap = AntennaPositions::instance(); 
     double ph1_deg = (phi- ap->phiAnt[pol][ant1]) ; 
     double ph1  = ph1_deg * DEG2RAD; 
+    double r1 = ap->rAnt[pol][ant1];
+    double tshift = (pol==AnitaPol::kHorizontal) ? 0:1.* (r1 - ap->rAnt[pol^1][ant1])*cos(ph1) * 1e9/C_LIGHT;
 
     double part1=ap->zAnt[pol][ant1]*tan(th) - ap->rAnt[pol][ant1] * cos(ph1);
-    
+
     double geomDelay=1e9*((cos(th) * part1)/C_LIGHT);    //returns time in ns
-    
+
 
     if (includeGroupDelay)
     {
       geomDelay +=  getAntennaGroupDelay(FFTtools::wrap(ph1_deg,360,0), theta);
     }
 
-    return geomDelay;
+    return geomDelay + tshift;
   }
 
   /**Geometric delay between antennas  */
@@ -68,9 +70,9 @@ namespace UCorrelator
 
     double part1=ap->zAnt[pol][ant1]*tan(th) - ap->rAnt[pol][ant1] * cos(ph1);
     double part2=ap->zAnt[pol][ant2]*tan(th) - ap->rAnt[pol][ant2] * cos(ph2); 
-    
+
     double geomDelay=1e9*((cos(th) * (part1 - part2))/C_LIGHT);    //returns time in ns
-    
+
 
     if (includeGroupDelay)
     {
@@ -91,7 +93,7 @@ namespace UCorrelator
     const int nphi = cache->nphi; 
     double part1=ap->zAnt[pol][ant1]*cache->tan_theta[thetabin] - ap->rAnt[pol][ant1] * cache->cos_phi[2*(phibin + nphi * ant1) + pol];
     double part2=ap->zAnt[pol][ant2]*cache->tan_theta[thetabin] - ap->rAnt[pol][ant2] * cache->cos_phi[2*(phibin + nphi * ant2) + pol];
-    
+
     double geomDelay=(1.e9/C_LIGHT)*(cache->cos_theta[thetabin] * (part1 - part2));    //returns time in ns
 
 
@@ -106,7 +108,7 @@ namespace UCorrelator
     return geomDelay;
   }
 
-  
+
 }
 
 #endif
