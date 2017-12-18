@@ -9,6 +9,7 @@
 #include "simpleStructs.h"
 #include "AnitaEventSummary.h" 
 #include "ResponseManager.h" 
+#include "UsefulAnitaEvent.h" 
 
 class FilteredAnitaEvent; 
 class UsefulAdu5Pat; 

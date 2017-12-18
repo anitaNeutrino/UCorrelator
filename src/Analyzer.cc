@@ -1042,8 +1042,19 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   flags->isGood = !flags->isVarner && !flags->isVarner2 && !flags->strongCWFlag; 
 
 	//added for a class of anita 4 events that only happens on one lab and channel
-	if(AnitaVersion::get() == 4) flags->isStepFunction = fae->checkStepFunction(1, AnitaRing::kMiddleRing, 8, AnitaPol::kVertical);
-	else flags->isStepFunction = 0;
+	if(AnitaVersion::get() == 4){
+    flags->isStepFunction |= fae->checkStepFunction(1, AnitaRing::kMiddleRing, 8, AnitaPol::kVertical);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(0 , 1, 500)<<1);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(0 , 2, 500)<<2);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(11, 2, 500)<<2);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(8,  2, 500)<<2);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(6,  3, 500)<<3);
+    if(fae->checkSaturation( 0, 0, cfg->saturation_threshold) > 0){ 
+      flags->isStepFunction |= (1<<4);
+    };
+    flags->hasGlitch = fae->getUsefulAnitaEvent()->fRFSpike;
+  }
+
 }
 
 void UCorrelator::Analyzer::setExtraFilters(FilterStrategy* extra)
