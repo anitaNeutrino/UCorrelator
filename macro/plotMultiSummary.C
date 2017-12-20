@@ -6,16 +6,17 @@
 void plotMultiSummary()
 {
 	TString PlotPrefix = "Plot_";
-	TString pointDir = "../drivers/wais/";
-	TString fEnd = "_max_30015_sinsub_10_3_ad_2.root";	
+	// TString pointDir = "../drivers/wais/";
+	TString pointDir = "/Volumes/SDCard/data/wais/";
+	TString fEnd = "_max_30001_sinsub_10_3_ad_2.root";	
 	// TString fEnd = "_max_30002_.root";	
 	TString outf = pointDir + PlotPrefix + fEnd;
 	
 	TChain* chain = new TChain("wais");
-	for(int i = 123; i < 153; i++)
+	for(int i = 50; i < 267; i++)
 	// for(int i = 139; i < 141; i++)
 	{
-		if(i==129 || i==130 || i==131 || i==132) continue;
+		// if(i==129 || i==130 || i==131 || i==132) continue;
 		//if(i==132) continue;
 		TString inf = pointDir + TString::Itoa(i, 10) + fEnd;
 		chain->Add(inf);
@@ -24,6 +25,7 @@ void plotMultiSummary()
 	TFile *file = TFile::Open("../drivers/wais/allWais" + fEnd,"RECREATE");
 	  chain->CloneTree(-1,"fast");
 	  file->Write();
+	 return;
 	AnitaEventSummary* sum = new AnitaEventSummary;
 	AnitaEventSummary::PointingHypothesis point;
 	AnitaEventSummary::SourceHypothesis w;
