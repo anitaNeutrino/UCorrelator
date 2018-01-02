@@ -688,7 +688,9 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
   if(cfg->trace_to_continent)
   {
     //Compute intersection with continent, or set values to -9999 if no intersection
-    if (!pat->traceBackToContinent(point->phi * DEG2RAD, point->theta * DEG2RAD, &point->longitude, &point->latitude, &point->altitude, &point->theta_adjustment_needed, cfg->max_theta_adjustment * DEG2RAD)) 
+    if (!pat->traceBackToContinent(point->phi * DEG2RAD, point->theta * DEG2RAD, 
+                                  &point->longitude, &point->latitude, &point->altitude, 
+                                  &point->theta_adjustment_needed, cfg->max_theta_adjustment * DEG2RAD)) 
     {
       point->latitude = -9999; 
       point->longitude = -9999;  
@@ -966,6 +968,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv, int draw_filtered)
         ((TGraph*) coherent[ipol][draw_filtered][i]->powerdB())->GetXaxis()->SetRangeUser(0,1.3); 
         coherent[ipol][draw_filtered][i]->drawPowerdB("al"); 
         ((TGraph*)coherent_xpol[ipol][draw_filtered][i]->powerdB())->SetLineColor(15); 
+        ((TGraph*)coherent_xpol[ipol][draw_filtered][i]->powerdB())->SetName("powerdBXpol"); 
         coherent_xpol[ipol][draw_filtered][i]->drawPowerdB("lsame"); 
       }
       else
@@ -1025,6 +1028,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv, int draw_filtered)
           if (interactive_xpol_deconvolved)
           {
             ((TGraph*) deconvolved_xpol[ipol][draw_filtered][i]->powerdB())->SetLineColor(15); 
+            ((TGraph*) deconvolved_xpol[ipol][draw_filtered][i]->powerdB())->SetName("powerdBXpol"); 
             (deconvolved_xpol[ipol][draw_filtered][i])->drawPowerdB("lsame"); 
           }
 
