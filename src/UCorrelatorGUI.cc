@@ -290,8 +290,8 @@ UCorrelator::gui::SummaryText::SummaryText(int i,AnitaPol::AnitaPol_t pol, const
   else 
   {
     AddText(TString::Format("peak_{hilbert}:  %0.3f (coher), %0.3f (deconv)", ev->coherent_filtered[ipol][i].peakHilbert, ev->deconvolved_filtered[ipol][i].peakHilbert)); 
-    AddText(TString::Format("stokes: (coher): (%0.3g, %0.3g, %0.3g, %0.3g)", ev->coherent_filtered[ipol][i].I, ev->coherent_filtered[ipol][i].Q, ev->coherent_filtered[ipol][i].U, ev->coherent_filtered[ipol][i].V));
-    AddText(TString::Format("stokes: (deconv): (%0.3g, %0.3g, %0.3g, %0.3g)", ev->deconvolved_filtered[ipol][i].I, ev->deconvolved_filtered[ipol][i].Q, ev->deconvolved_filtered[ipol][i].U, ev->deconvolved_filtered[ipol][i].V));
+    AddText(TString::Format("max stokes: (coher): (%0.3g, %0.3g, %0.3g, %0.3g)", ev->coherent_filtered[ipol][i].max_dI, ev->coherent_filtered[ipol][i].max_dQ, ev->coherent_filtered[ipol][i].max_dU, ev->coherent_filtered[ipol][i].max_dV));
+    AddText(TString::Format("max stokes: (deconv): (%0.3g, %0.3g, %0.3g, %0.3g)", ev->deconvolved_filtered[ipol][i].max_dI, ev->deconvolved_filtered[ipol][i].max_dQ, ev->deconvolved_filtered[ipol][i].max_dU, ev->deconvolved_filtered[ipol][i].max_dV));
     AddText(TString::Format("impulsivity measure: %0.3g (coher), %0.3g (deconv)", ev->coherent_filtered[ipol][i].impulsivityMeasure, ev->deconvolved_filtered[ipol][i].impulsivityMeasure));
     AddText(TString::Format("SNR %0.3g (coher), %0.3g (deconv)", ev->coherent_filtered[ipol][i].snr, ev->deconvolved_filtered[ipol][i].snr));
   }
