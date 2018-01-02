@@ -129,7 +129,7 @@ int UCorrelator::HeadingErrorEstimator::estimateHeadingError(double t, double * 
       prof->SetBins((max-min)/nsecs+2, min-nsecs, max+nsecs); 
       prof->SetDirectory(&f); 
     }
-    tree->Draw(TString::Format("headingA-headingB:realTime>>%s", prof->GetName()), "weightA && weightB","profs goff");  
+    tree->Draw(TString::Format("FFTtools::wrap(headingA-headingB,360,0):realTime>>%s", prof->GetName()), "weightA && weightB","profs goff");  
     prof->SetDirectory(0); 
     current_run = run; 
   }

@@ -72,6 +72,8 @@ int UCorrelator::ProbabilityMap::add(const AnitaEventSummary * sum, const Adu5Pa
 
   double inv_two_pi_sqrt_det = computeContributions(sum,pat,pol,peak,segments_to_fill, &base_ps_to_fill, &occluded_to_fill, &max_densities, debugfile); 
 
+  if (!inv_two_pi_sqrt_det) return 0; 
+
   std::vector<double> levels_p(NLevels()); 
 
   for (int i = 0; i < int(NLevels()); i++)
@@ -180,18 +182,18 @@ int UCorrelator::ProbabilityMap::add(const AnitaEventSummary * sum, const Adu5Pa
 
     ps[iseg] += pseg; 
     ps_norm[iseg] += (pseg_norm); 
-    sqrt_ps[iseg]  += sqrt(pseg); 
-    sqrt_ps_norm[iseg] += sqrt(pseg_norm); 
+    sqrt_ps[iseg]  += weight < 0 ? -sqrt(-pseg) : sqrt(pseg); 
+    sqrt_ps_norm[iseg] +=  weight < 0 ? -sqrt(-pseg_norm) : sqrt(pseg_norm); 
 
     for (int level = 0; level < min_base_level; level++) 
     {
       ps_without_base[level][iseg] += (pseg);
-      sqrt_ps_without_base[level][iseg] += sqrt(pseg); 
+      sqrt_ps_without_base[level][iseg] += weight < 0 ? -sqrt(-pseg) : sqrt(pseg); 
     }
     for (int level = 0; level < min_base_level_norm; level++)
     {
       ps_norm_without_base[level][iseg] += (pseg_norm);
-      sqrt_ps_norm_without_base[level][iseg] += sqrt(pseg_norm);
+      sqrt_ps_norm_without_base[level][iseg] += weight < 0 ? -sqrt(-pseg_norm): sqrt(pseg_norm);
     }
 
     fraction_occluded[iseg] += occluded_to_fill[i].second; 
@@ -245,12 +247,12 @@ int UCorrelator::ProbabilityMap::dumpNonZeroBases()  const
 
 double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , const Adu5Pat * pat,  AnitaPol::AnitaPol_t pol, int peak, 
                                             bool normalized, double weight,  std::vector<std::pair<int,double> > * bases,
-                                            OverlapMode mode,  bool remove_self) const
+                                            OverlapMode mode,  bool remove_self, std::vector<std::pair<int, double >> * segments, 
+                                            std::vector<std::pair<int,double> > * max_dens, double * inv_two_pi_sqrt_det ) const
 {
   std::vector<std::pair<int,double> > segs; 
 
-  computeContributions(sum,pat,pol,peak,segs,bases); 
-
+  double inv = computeContributions(sum,pat,pol,peak,segs,bases,0,max_dens); 
   int N = segs.size(); 
   double answer = 0;
 
@@ -264,13 +266,16 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
     {
       norm += segs[i].second; 
     }
-    if (norm < p.min_p_on_continent)
+    if (!inv || norm < p.min_p_on_continent)
     {
       printf("below minimum: %g!\n", norm); 
       return -1; // there can be no overlap 
     }
     invnorm = 1./norm; 
   }
+
+  if (inv_two_pi_sqrt_det) *inv_two_pi_sqrt_det = inv; 
+
 
   //pick the right thing to overlap with 
   const double * the_rest = mode == OVERLAP_SUM_SQRTS ? getProbSqrtSums(normalized) : 
@@ -286,18 +291,35 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
     double p_other = the_rest[seg]; 
 
 
-    if (remove_self && mode == OVERLAP_SQRT_SUMS)  p_other -= p_this; 
+    if (remove_self && mode == OVERLAP_SQRT_SUMS)
+    {
+      p_other -= p_this; 
+    }
+
+    if (remove_self && mode == OVERLAP_SUM_SQRTS) 
+    {
+      p_other -= sqrt(p_this);  //this might help with floating point precision to do first... maybe. 
+    }
+
     if (remove_self && mode == OVERLAP_MAXES &&  p_this == p_other) p_other = normalized ? max2_ps_norm[seg] : max2_ps[seg]; 
 
     double danswer = (mode == OVERLAP_SUM_SQRTS ? sqrt(p_this) : p_this) * p_other; 
     
     if (mode == OVERLAP_SQRT_SUMS || mode == OVERLAP_MAXES) danswer = sqrt(danswer); 
 
-    if (remove_self && (mode == OVERLAP_SUM_SQRTS || mode == OVERLAP_SUMS)) danswer -= p_this; 
+    if (remove_self &&  mode == OVERLAP_SUMS)
+    {
+      danswer -= p_this; 
+    }
+
     answer += danswer; 
 
   }
 
+  if (segments) *segments = segs; 
+
+  // avoid negative roundoff 
+  if (answer < 0) answer = 0; 
   return answer; 
 }
 
@@ -453,7 +475,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
     if (p.verbosity > 2) 
     {
       guess.source.to(AntarcticCoord::STEREOGRAPHIC); 
-      printf("%d %g %g %g\n", status, guess.source.x, guess.source.y, guess.source.z); 
+      printf("status =%d , loc = %g %g %g\n", status, guess.source.x, guess.source.y, guess.source.z); 
     }
     /* set up vector of segments to check */
     size_t nchecked = 0; 
@@ -501,7 +523,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
 
       bool done_with_this_segment = false; 
       //if we are at a steep angle, we should enhance anyway 
-      int enhance_factor =  TMath::Min(p.backwards_params.max_enhance ,  int(sum->peak[pol][peak].theta / 15)); 
+      int enhance_factor =  TMath::Min(p.backwards_params.max_enhance ,  int(sum->peak[pol][peak].theta / 10)); 
       int noccluded = 0; 
       double seg_p = 0;
       double max_dens = 0; 
@@ -783,10 +805,17 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
   return inv_two_pi_sqrt_det; 
 }
 
-int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, double * counts, std::vector<double>  * dist) const
+int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, std::vector<std::vector<int> > * groups, double * counts, std::vector<double>  * dist) const
 {
   std::vector<bool> consumed (p.seg->NSegments()); 
   int ngroups = 0; 
+
+
+  //clean up input 
+  if (groups) groups->clear(); 
+  if (dist) dist->clear(); 
+  if (counts) memset(counts, 0, sizeof(double) * p.seg->NSegments()); 
+
   for (int i = 0; i < p.seg->NSegments(); i++) 
   {
      if (! vals_to_group[i]) continue; 
@@ -826,6 +855,8 @@ int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, dou
          counts[group[i]] = group_sum; 
        }
      }
+
+     if (groups) groups->push_back(group); 
   }
   
   return ngroups; 
@@ -833,29 +864,44 @@ int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, dou
 }
 
 
-int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, bool blind) const
+int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, bool blind, bool draw) const
 {
 
 
   //non base table 
   std::vector<double> non_base; 
-  groupAdjacent(getWgtAboveLevelWithoutBases(level), 0, &non_base); 
 
+  std::vector<double> non_base_counts(draw ? segmentationScheme()->NSegments(): 0); 
+  std::vector<double> wgt_without_base(getWgtAboveLevelWithoutBases(level), getWgtAboveLevelWithoutBases(level) + segmentationScheme()->NSegments()); 
   std::vector<double> wgt_with_base(getWgtAboveLevel(level), getWgtAboveLevel(level) + segmentationScheme()->NSegments()); 
   for (int i = 0; i < segmentationScheme()->NSegments(); i++) 
   {
-    wgt_with_base[i] -= getWgtAboveLevelWithoutBases(level)[i];
+    if (wgt_with_base[i] && wgt_without_base[i])
+    {
+
+      if (wgt_with_base[i] == wgt_without_base[i]) 
+      {
+        wgt_with_base[i] = 0; 
+      }
+      else
+      {
+        wgt_without_base[i] = 0; 
+      }
+    }
   }
 
+  groupAdjacent(&wgt_without_base[0], 0,draw ? &non_base_counts[0] : 0, &non_base); 
   std::vector<double> base; 
-  groupAdjacent(&wgt_with_base[0], 0, &base); 
+  std::vector<double> base_counts(draw ? segmentationScheme()->NSegments(): 0); 
+  groupAdjacent(&wgt_with_base[0], 0,draw ? &base_counts[0] : 0, &base); 
 
   const int maxes[] = {1,5,10,20,50,100,(int) 100e6}; 
   const int mins[] =  {1,2,6,11,21,51,101}; 
   int n_rows = sizeof(maxes) / sizeof(*maxes); 
 
-  int n_base[n_rows]; 
-  int n_non_base[n_rows]; 
+  int n_base[n_rows] = { 0 }; 
+  int n_non_base[n_rows] = { 0 } ; 
+
 
   for (size_t i = 0; i < non_base.size(); i++) 
   {
@@ -887,11 +933,17 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, bool blind) co
   }
 
 
+
+
+  printf("============================================================================\n"); 
+  printf(" Clustering / base association based on Mahalanobis distance of %g\n", getLevel(level)); 
+  if (blind) printf(" BLINDED TO NON-BASE SINGLES\n"); 
+
   printf("  Non-Base   |   Base  |   Size \n");
   printf("-------------------------------------\n");
   for (int row = 0; row < n_rows; row++) 
   {
-    printf("   %04d    |    %0d   |  ", n_non_base[row], n_base[row]);
+    printf("   %04d    | %04d   |  ", n_non_base[row], n_base[row]);
 
     if (row == 0) 
       printf ("1\n"); 
@@ -905,11 +957,35 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, bool blind) co
 
 
 
+  if (draw) 
+  {
+    for (int i = 0; i  < segmentationScheme()->NSegments(); i++) 
+    {
+      if (non_base_counts[i] && base_counts[i]) printf("OOPS!!!: %g %g\n", non_base_counts[i], base_counts[i]); 
+      if (blind && non_base_counts[i] == 1)  non_base_counts[i] = 0; 
+      non_base_counts[i] =  non_base_counts[i] - base_counts[i]; 
+    }
+
+    segmentationScheme()->Draw("colz",&non_base_counts[0]); 
+  }
 
   return 0; 
 
 }
 
+
+double UCorrelator::ProbabilityMap::getProbSumsIntegral(bool norm) const
+{
+  const double * V = getProbSums(norm); 
+  int N = segmentationScheme()->NSegments(); 
+  double sum = 0; 
+  for (int i = 0; i < N; i++) 
+  {
+    sum += V[i]; 
+  }
+
+  return sum; 
+}
 
 
 

@@ -183,9 +183,14 @@ namespace UCorrelator
                      double weight = 1, 
                      std::vector<std::pair<int,double> >  * bases = 0,
                      OverlapMode mode = OVERLAP_SUM_SQRTS, 
-                     bool remove_self_contribution =true) const ; 
+                     bool remove_self_contribution =true,
+                     std::vector<std::pair<int,double> > * segments = 0, //way 
+                     std::vector<std::pair<int,double> > * max_dens = 0,  //too 
+                     double * inv_two_pi_sqrt_det = 0 //much
+                     ) const ;   //auxiliary stuff 
 
       /* These are probability sums */ 
+      double getProbSumsIntegral(bool normalizd = false) const; 
       const double* getProbSums(bool normalized = false) const { return normalized ? &ps_norm[0] : &ps[0]; } 
       const double* getProbSumsWithoutBases(int base_level, bool normalized = false) const { return normalized ? &ps_norm_without_base[base_level][0] : &ps_without_base[base_level][0]; } 
       const double* getProbSqrtSums(bool normalized = false) const { return normalized ? &sqrt_ps_norm[0] : &sqrt_ps[0]; } 
@@ -229,11 +234,11 @@ namespace UCorrelator
        *  Returns the number of groupings. 
        *
        *  */ 
-      int groupAdjacent(const double * vals_to_group, double* counts, std::vector<double>  * distribution = 0) const; 
+      int groupAdjacent(const double * vals_to_group, std::vector<std::vector<int> > *  groups  = 0, double* counts = 0, std::vector<double>  * distribution = 0) const; 
 
       int dumpNonZeroBases() const; 
 
-      int makeMultiplicityTable(int level, bool blind = true) const; 
+      int makeMultiplicityTable(int level, bool blind = true, bool draw = false) const; 
       
     private:
       Params p; 
