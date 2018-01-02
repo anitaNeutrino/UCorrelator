@@ -432,8 +432,7 @@ UCorrelator::TimeDependentAverage::TimeDependentAverage(int run, int nsecs, cons
   peakiness_loaded = false;
   avgs_loaded = false; 
 
-  const char * check_dir = persistdir ? persistdir 
-                                      :  getenv("UCORRELATOR_TIMEAVG_DIR") ? : 0; 
+  const char * check_dir = persistdir ?: getenv("UCORRELATOR_TIMEAVG_DIR") ?: getenv("UCORRELATOR_SPECAVG_DIR") ?: 0; 
 
 
   if (check_dir)

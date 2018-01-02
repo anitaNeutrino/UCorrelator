@@ -127,6 +127,7 @@ namespace UCorrelator
       static double getRMS(double t, int ipol, int ant, int nsecs = 10);  
       static double getPayloadBlastFraction(double t,  int nsecs =10);  
       
+      void setNSecs(int n) { nsecs  = n; }  
       int getNsecs() const { return nsecs; } 
     private: 
       mutable TimeDependentAverage * tavg; 

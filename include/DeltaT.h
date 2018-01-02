@@ -45,7 +45,6 @@ namespace UCorrelator
     double ph1  = ph1_deg * DEG2RAD; 
     double r1 = ap->rAnt[pol][ant1];
 
-    double part1=ap->zAnt[pol][ant1]*tan(th) - ap->rAnt[pol][ant1] * cos(ph1);
 
     double tshift = includeTimeShift ? ((pol==AnitaPol::kHorizontal) ? 0:1.* (r1 - ap->rAnt[pol^1][ant1])*cos(ph1) * 1e9/C_LIGHT) : 0;
 
