@@ -4,6 +4,7 @@
 #include "TPaveText.h"
 #include "AnalysisWaveform.h"
 #include "AnitaVersion.h" 
+#include "AnitaFlightInfo.h" 
 #include "TCanvas.h"
 #include "ImpulsivityMeasure.h" 
 #include "BandwidthMeasure.h" 
@@ -11,6 +12,7 @@
 #include "TMarker.h"
 #include "TEllipse.h"
 #include "FilteredAnitaEvent.h"
+#include "UsefulAnitaEvent.h"
 #include "UCUtil.h"
 #include "DigitalFilter.h" 
 #include "FFTtools.h" 
@@ -334,6 +336,8 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
     // tell the correlator not to use saturated events or disallowed antennas and make the correlation map
     saturated[pol] |= disallowedAnts[pol];
+    if(cfg->only_use_usable) saturated[pol] |= ~AnitaFlightInfo::getUsableAntennas(hdr, event->getUsefulAnitaEvent(), AnitaPol::AnitaPol_t(pol));
+
 
     //if we are only considering antennas that are unmasked, figure out which ones are 
     uint64_t maskedAnts= 0; 
@@ -780,6 +784,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 
   TGraph distance_cdf; 
   info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf, &distance_cdf); 
+  //info->bandwidthMeasure = bandwidth::powerInBand(wf); 
 
   //fill in narrowest widths
   for (int iw = 0; iw < AnitaEventSummary::numFracPowerWindows; iw++)

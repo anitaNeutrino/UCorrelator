@@ -43,7 +43,6 @@ namespace UCorrelator
       unsigned combine_nantennas;  /// number of antennas used to create coherent / deconvolved waveforms
       unsigned combine_npad;  /// supersampling factor for combining waveforms (i.e. how many times to pad in fourier domain. npad = 1 is super sample by 100%) 
 
-
       double saturation_threshold; /// threshold to consider a waveform saturated 
 
       AnitaPol::AnitaPol_t start_pol;  /// Start polarization for Analyer (kHORIZONTAL if you want just hpol or both, kVERTICAL if you want just vpol)
@@ -144,6 +143,9 @@ namespace UCorrelator
 
       /** TODO: this has to be loaded from file somehow */ 
       AnitaResponse::DeconvolutionMethod * deconvolution_method; 
+      
+      /** option to turn off using antennas marked as not usable by anita flight info. default is OFF (use all antennas) */
+      bool only_use_usable;
 
       double stokes_fracI; 
       
