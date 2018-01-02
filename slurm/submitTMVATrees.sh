@@ -31,3 +31,4 @@ sbatch slurm/makeTMVATrees.sh a3all anita3 400 409 10
 sbatch slurm/makeTMVATrees.sh a3all anita3 410 419 10 
 sbatch slurm/makeTMVATrees.sh a3all anita3 420 429 10 
 sbatch slurm/makeTMVATrees.sh a3all anita3 430 439 10 
+sbatch slurm/makeTMVATrees.sh simulated simulation 1 500 100

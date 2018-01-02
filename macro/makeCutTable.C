@@ -8,7 +8,7 @@ double sum(int n,const double * W)
 }
 
 
-void doCutTable(int N, TCut base, TChain & c, TCut * cuts, const char ** names) 
+void doCutTable(int N, TCut base, TChain & c, TCut * cuts, const char ** names, FILE * fout = stdout) 
 {
 
   c.SetEstimate(c.GetEntries() * 10); 
@@ -17,9 +17,9 @@ void doCutTable(int N, TCut base, TChain & c, TCut * cuts, const char ** names)
 
   double total = sum(n, c.GetW()); 
 
-  printf("\\begin{tabular}{l|l|l|l}\n"); 
-  printf("Cut & N After (Cumulative) & N If Only Cut & N If All But \\\\\n"); 
-  printf("None & %0.2f & %0.2f &  \\\\\n", total,total); 
+  fprintf(fout,"\\begin{tabular}{l|l|l|l}\n"); 
+  fprintf(fout,"Cut & N After (Cumulative) & N If Only Cut & N If All But \\\\\n"); 
+  fprintf(fout,"None & %0.2f & %0.2f &  \\\\\n", total,total); 
   
 
   TCut cumulative = base;
@@ -48,19 +48,19 @@ void doCutTable(int N, TCut base, TChain & c, TCut * cuts, const char ** names)
     
     int nbut = c.Draw("theta",cut_all_but,"goff"); 
     double but = sum(nbut, c.GetW()); 
-    printf("%s & %0.2f & %0.2f & %0.2f \\\\\n",names[i], cum,only,but); 
+    fprintf(fout,"%s & %0.2f & %0.2f & %0.2f \\\\\n",names[i], cum,only,but); 
 
   }
 
-  printf("\\end{tabular}\n"); 
+  fprintf(fout,"\\end{tabular}\n"); 
 
 }
 
-void makeMCCutTable()
+void makeMCCutTable(const char * addstr = "thermalTrees/simulated*.root", FILE * fout = stdout)
 {
 
   TChain c("simulation"); 
-  c.Add("thermalTrees/simulated*.root"); 
+  c.Add(addstr); 
 
 
   const char * names[] = { "MostImpulsivePointsMC", "TrigMostImpulsive","MaxPeak$<$1000","Blast","Thermal" }; 
@@ -74,7 +74,7 @@ void makeMCCutTable()
 
   TCut  cuts[] = {points,trig,maxpeak,blast, thermal}; 
 
-  doCutTable(5, base, c, cuts, names); 
+  doCutTable(5, base, c, cuts, names,fout); 
 
 
 
@@ -82,7 +82,7 @@ void makeMCCutTable()
 
 }
 
-void makeDataCutTable()
+void makeDataCutTable(FILE * fout = stdout)
 {
 
   TChain c("anita3"); 
@@ -101,7 +101,7 @@ void makeDataCutTable()
   TCut quality = trig * maxpeak * blast; 
   TCut  cuts[] = {quality, down, thermal}; 
 
-  doCutTable(3, base, c, cuts, names); 
+  doCutTable(3, base, c, cuts, names, fout); 
 
 }
 

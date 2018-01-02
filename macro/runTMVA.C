@@ -1,5 +1,5 @@
 #include "AnitaTMVA.h" 
-void runTMVA(const char * outname = "tmva/a3all_fisher_tmva_all.root", const char * signal_file = "thermalTrees/simulated_*_sinsub_10_3_ad_2.root", const char * signal_tree_name = "simulation", const char * bg_file = "thermalTrees/a3all_*_sinsub_10_3_ad_2.root", const char *  bg_tree_name = "anita3") 
+void runTMVA(const char * outname = "tmva/a3all_fisher_tmva_newmc.root", const char * signal_file = "thermalTrees/simulated_*_sinsub_10_3_ad_2.root", const char * signal_tree_name = "simulation", const char * bg_file = "thermalTrees/a3all_*_sinsub_10_3_ad_2.root", const char *  bg_tree_name = "anita3") 
 {
   TChain sig(signal_tree_name); 
   sig.Add(signal_file);
@@ -13,7 +13,7 @@ void runTMVA(const char * outname = "tmva/a3all_fisher_tmva_all.root", const cha
 
   TMVA::Factory *factory = new TMVA::Factory("thermal_cuts", &tmvaOut,"V"); 
 
-  TMVA::DataLoader *dl = new TMVA::DataLoader("thermal"); 
+  TMVA::DataLoader *dl = new TMVA::DataLoader("thermal_newmc"); 
 
   if (!strcmp(signal_tree_name,"simulation"))
   {
@@ -26,10 +26,10 @@ void runTMVA(const char * outname = "tmva/a3all_fisher_tmva_all.root", const cha
 
   dl->AddSignalTree(&sig); 
   dl->AddBackgroundTree(&bg); 
-  TCut cut("!isnan(blastFraction) && !isnan(absHwAngle) && !isnan(deconvLinearPolFraction) && !isnan(absDeconvLinearPolAngle) "); 
+  TCut cut("!isnan(absHwAngle) && !isnan(deconvLinearPolFraction)"); 
   dl->AddCut(cut); 
-  dl->AddCut(TCut("isMostImpulsive && pointsToMC && (MaxPeak < 1000) && !payloadBlast && chisq < 0.01 && ((iteration < 5 && HPolTrigger) || (iteration >=5 && VPolTrigger))"),"Signal"); 
-  dl->AddCut(TCut("theta < 0 && !payloadBlast && isMostImpulsive  && chisq < 0.01 && MaxPeak < 1000 &&  ((iteration < 5 && HPolTrigger)  || (iteration >=5 && VPolTrigger))") ,"Background"); 
+  dl->AddCut(TCut("isMostImpulsive && pointsToMC && (MaxPeak < 1000) && !payloadBlast && ((iteration < 5 && HPolTrigger) || (iteration >=5 && VPolTrigger))"),"Signal"); 
+  dl->AddCut(TCut("theta < 0 && !payloadBlast && isMostImpulsive && MaxPeak < 1000 &&  ((iteration < 5 && HPolTrigger)  || (iteration >=5 && VPolTrigger))") ,"Background"); 
 
   //setup methods 
   factory->BookMethod(dl, TMVA::Types::kFisher, "Fisher",""); 

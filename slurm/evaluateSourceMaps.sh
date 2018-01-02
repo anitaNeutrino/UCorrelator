@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=makeSourceMaps 
-#SBATCH --time=03:00:00
+#SBATCH --job-name=evalSourceMaps 
+#SBATCH --time=06:00:00
 #SBATCH --account=pi-avieregg
 #SBATCH --partition=broadwl
 #SBATCH --cpus-per-task=2
