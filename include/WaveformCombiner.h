@@ -28,7 +28,7 @@ namespace UCorrelator
 
     public: 
 
-    WaveformCombiner(int nantennas = 10, int npad = 3, bool useUnfiltered = true, bool deconvolve = false, const AnitaResponse::ResponseManager * response = 0, bool enableALFAHack=true); 
+    WaveformCombiner(int nantennas = 15, int npad = 3, bool useUnfiltered = true, bool deconvolve = false, const AnitaResponse::ResponseManager * response = 0, bool enableALFAHack=true); 
 
       /** Sets the responses used when deconvolving. 
        * If a response is 0, nothing is done. 

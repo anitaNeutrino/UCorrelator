@@ -90,6 +90,7 @@ namespace UCorrelator
       /* Tries to find a SpectrumAverage with the right run */ 
       const SpectrumAverage * avg(double t) const; 
       
+      void setNSecs(int secs) { nsecs =secs; }
       int getNsecs() const { return nsecs; } 
 
     private: 

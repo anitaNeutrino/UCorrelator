@@ -549,7 +549,7 @@ SECTIONS
     }
   }
 
-  fillFlags(event, &summary->flags, pat); 
+  fillFlags(event, summary, pat); 
 
   if (truth)
   { 
@@ -985,9 +985,9 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv) const
   }
 }
 
-void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary::EventFlags * flags, UsefulAdu5Pat * pat) 
+void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary* summary, UsefulAdu5Pat * pat) 
 {
-
+  AnitaEventSummary::EventFlags * flags = &summary->flags;
   flags->nadirFlag = true; // we should get rid of htis I guess? 
 
   
@@ -1030,20 +1030,41 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   // more than 80 percent filterd out 
   flags->strongCWFlag = flags->medianPowerFiltered[0] / flags->medianPower[0] < 0.2; 
 
-  flags->isPayloadBlast =  
-    (cfg->max_mean_power_filtered && flags->meanPowerFiltered[0] > cfg->max_mean_power_filtered) ||
-    (cfg->max_median_power_filtered && flags->medianPowerFiltered[0] > cfg->max_median_power_filtered) ||
-    (cfg->max_bottom_to_top_ratio && flags->maxBottomToTopRatio[0] > cfg->max_bottom_to_top_ratio) || 
-    (cfg->max_bottom_to_top_ratio && flags->maxBottomToTopRatio[1] > cfg->max_bottom_to_top_ratio); 
-
+  if(AnitaVersion::get() == 4){
+    //Blast event multi variant selector
+    // 1)more than 30 channels that waveform rms > 100mV  2)p2p bottom to top ratio 3)meanPower bottom to top ratio
+    flags->isPayloadBlast =
+      summary->countChannelAboveThreshold(100)>30 ||
+      flags->maxBottomToTopRatio[0] <0.9 || flags->maxBottomToTopRatio[0] >2.6 ||
+      flags->maxBottomToTopRatio[1] <0.9 || flags->maxBottomToTopRatio[1] >2.6 ||
+      flags->meanPower[3]/flags->meanPower[1] <0.2 || flags->meanPower[3]/flags->meanPower[1] >1.7; 
+  }else{
+    flags->isPayloadBlast =  
+      (cfg->max_mean_power_filtered && flags->meanPowerFiltered[0] > cfg->max_mean_power_filtered) ||
+      (cfg->max_median_power_filtered && flags->medianPowerFiltered[0] > cfg->max_median_power_filtered) ||
+      (cfg->max_bottom_to_top_ratio && flags->maxBottomToTopRatio[0] > cfg->max_bottom_to_top_ratio) || 
+      (cfg->max_bottom_to_top_ratio && flags->maxBottomToTopRatio[1] > cfg->max_bottom_to_top_ratio); 
+  }
+  
   flags->isVarner = false; 
   flags->isVarner2 = false; 
 
   flags->isGood = !flags->isVarner && !flags->isVarner2 && !flags->strongCWFlag; 
 
 	//added for a class of anita 4 events that only happens on one lab and channel
-	if(AnitaVersion::get() == 4) flags->isStepFunction = fae->checkStepFunction(1, AnitaRing::kMiddleRing, 8, AnitaPol::kVertical);
-	else flags->isStepFunction = 0;
+	if(AnitaVersion::get() == 4){
+    flags->isStepFunction |= fae->checkStepFunction(1, AnitaRing::kMiddleRing, 8, AnitaPol::kVertical);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(0 , 1, 500)<<1);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(0 , 2, 500)<<2);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(11, 2, 500)<<2);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(8,  2, 500)<<2);
+    flags->isStepFunction |= (fae->checkSurfForGlitch(6,  3, 500)<<3);
+    if(fae->checkSaturation( 0, 0, cfg->saturation_threshold) > 0){ 
+      flags->isStepFunction |= (1<<4);
+    };
+    flags->hasGlitch = fae->getUsefulAnitaEvent()->fRFSpike;
+  }
+
 }
 
 void UCorrelator::Analyzer::setExtraFilters(FilterStrategy* extra)
