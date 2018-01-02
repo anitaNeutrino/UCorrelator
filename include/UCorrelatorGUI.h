@@ -81,7 +81,7 @@ namespace UCorrelator
     class SummaryText : public TPaveText
     { 
       public: 
-        SummaryText(int i, AnitaPol::AnitaPol_t pol, const Analyzer* a); 
+        SummaryText(int i, AnitaPol::AnitaPol_t pol, const Analyzer* a, int use_filtered); 
 
         ClassDef(SummaryText,1); 
     }; 

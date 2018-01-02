@@ -1,75 +1,51 @@
-#include "ProbabilityMap.h" 
-#include "UCUtil.h"
-#include "UCFilters.h" 
-#include "PointingResolutionModel.h"
-#include "Analyzer.h" 
-#include "AnalysisConfig.h" 
-#include "AnitaDataset.h" 
-#include "SystemResponse.h" 
+#include "AnitaConventions.h" 
+#include "AnitaEventSummary.h" 
 
-
-UCorrelator::ProbabilityMap* testMapMC(int run =223, int max = 1000) 
+UCorrelator::ProbabilityMap* testMapMC(int event_number, int pol = 1, int peak = 0) 
 {
 
-  FFTtools::loadWisdom("wisdom.dat"); 
-  AnitaDataset d(run,false,WaveCalType::kDefault, AnitaDataset::ANITA_MC_DATA); 
+  TChain c("simulation"); 
+  c.Add("simulated/*.root"); 
+  c.BuildIndex("eventNumber"); 
+  AnitaEventSummary * sum = 0; 
+  Adu5Pat * pat = 0; 
+  c.SetBranchAddress("summary",&sum); 
+  c.SetBranchAddress("pat",&pat); 
 
+  c.GetEntryWithIndex(event_number); 
 
-  UCorrelator::AnalysisConfig cfg; 
-  cfg.nmaxima = 2; 
-  cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
-  cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
+  TFile f("debug_mc.root","RECREATE"); 
 
-  UCorrelator::Analyzer  analyzer (&cfg); 
-  AnitaEventSummary sum; 
-  FilterStrategy strategy; 
-  UCorrelator::fillStrategyWithKey(&strategy,"sinsub_10_3_ad_2"); 
+  StereographicGrid  * g = new StereographicGrid(1024,1024); 
 
-  StereographicGrid g(4096,4096); 
-  UCorrelator::ConstantPointingResolutionModel m(0.2,0.3);
-  UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(&g,&m); 
-  int ndone = 0; 
+  TF1 f_dtheta("ftheta", "[0] / x^[1]", 1, 50);
+  TF1 f_dphi("fphi", "[0] / x^[1]", 1, 50);
+  f_dtheta.SetParameter(0, 0.3936); 
+  f_dtheta.SetParameter(1, 0.2102); 
+  f_dphi.SetParameter(0, 1.065); 
+  f_dphi.SetParameter(1, 0.2479); 
+  UCorrelator::PointingResolutionParSNRModel * m1 = new UCorrelator::PointingResolutionParSNRModel(f_dtheta, f_dphi, true,true);
+  UCorrelator::PointingResolutionModelPlusHeadingError*  m = new UCorrelator::PointingResolutionModelPlusHeadingError(20, m1); 
 
-  int eventNumber = 0;
-  for (int i = 0; i< d.N(); i++)
-  {
-    d.getEntry(i); 
-    if (d.header()->eventNumber == eventNumber) continue; 
-    printf("----(%d, %d)-----\n",i, d.header()->eventNumber); 
-    eventNumber = d.header()->eventNumber; 
+  Refraction::SphRay * ref = new Refraction::SphRay; 
 
-    UsefulAdu5Pat pat(d.gps()); 
-    FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
-    analyzer.analyze(&ev, &sum,d.truth()); 
+  UCorrelator::ProbabilityMap::Params p; 
+  p.refract = ref; 
+  p.seg = g; 
+  p.point = m; 
+  p.collision_detection = false; 
+  p.backwards_params.enhance_threshold = 1e-2; 
+//  p.backwards_params.num_samples_per_bin=16;
+  p.verbosity = 3;
 
+  printf("THETA: %g\n", sum->peak[pol][peak].theta); 
+  UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(&p); 
+  map->add( sum, pat, AnitaPol::AnitaPol_t(pol), peak,1,&f); 
+  map->segmentationScheme()->Draw("colz", map->getProbSums(true)); 
 
-    int ipol = sum.mc.wf[0].peakHilbert > sum.mc.wf[1].peakHilbert ? 0 : 1; 
+  f.cd(); 
+  map->Write("map"); 
 
-    for (int j = 0; j < cfg.nmaxima;j++)
-    {
+  return map ; 
 
-      if ( fabs(FFTtools::wrap(sum.mc.phi-sum.peak[ipol][j].phi,360,0)) < 3 
-          && fabs(FFTtools::wrap(sum.mc.theta-sum.peak[ipol][j].theta,360,0)) < 2)
-      {
-
-        map->add(&sum,d.gps(), AnitaPol::AnitaPol_t (ipol), j); 
-        ndone++;
-      }
-    }
-
-    if (max && ndone >= max) break; 
-  }
-
-
-  FFTtools::saveWisdom("wisdom.dat"); 
-
-  
-  map->segmentationScheme()->Draw("colz", map->getProbabilities()); 
-
-  TFile f("g.root"); 
-  TGraph * gg = (TGraph*) f.Get("Graph"); 
-  gg->SetLineColor(1); 
-  gg->Draw("lsame"); 
-
-  return map; 
 }

@@ -17,7 +17,8 @@
 #pragma link C++ class UCorrelator::peakfinder::RoughMaximum;
 #pragma link C++ class UCorrelator::AntennaPositions;
 #pragma link C++ class UCorrelator::Baseline;
-#pragma link C++ class UCorrelator::SpectrumAverage;
+#pragma link C++ class UCorrelator::TimeDependentAverage;
+#pragma link C++ class UCorrelator::TimeDependentAverageLoader;
 #pragma link C++ class UCorrelator::Correlator;
 #pragma link C++ class UCorrelator::ComplicatedNotchFilter;
 #pragma link C++ class UCorrelator::SineSubtractFilter;
@@ -31,8 +32,15 @@
 #pragma link C++ class UCorrelator::AnalysisConfig;
 #pragma link C++ class UCorrelator::PointingResolution;
 #pragma link C++ class UCorrelator::ProbabilityMap;
+#pragma link C++ class UCorrelator::ProbabilityMap::Params;
+#pragma link C++ class UCorrelator::ProbabilityMap::Params::CollisionDetectionParams;
+#pragma link C++ class UCorrelator::ProbabilityMap::Params::BackwardParams;
+#pragma link C++ class UCorrelator::ProbabilityMap::Params::MCParams;
 #pragma link C++ class UCorrelator::PointingResolutionModel;
+#pragma link C++ class UCorrelator::PointingResolutionModelPlusHeadingError;
+#pragma link C++ class UCorrelator::PointingResolutionParSNRModel;
 #pragma link C++ class UCorrelator::ConstantPointingResolutionModel;
+#pragma link C++ class UCorrelator::HeadingErrorEstimator;
 
 #pragma link C++ class UCorrelator::gui::Map+; 
 #pragma link C++ class UCorrelator::gui::SummaryText; 

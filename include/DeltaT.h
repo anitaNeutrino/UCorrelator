@@ -26,6 +26,7 @@ namespace UCorrelator
       c1 = 1.29e-8; 
       c2 = 4.91e-6; 
     }
+
     double totalAngle2=theta*theta+phidiff*phidiff;//TODO
     if (totalAngle2>50*50) return (50*50*50*50 * c1 - 50*50 * c2); 
 
@@ -36,17 +37,20 @@ namespace UCorrelator
 
 
   /**Geometric delay between the phase center of an antenna and a center point  */
-  inline double getDeltaTtoCenter(int ant1, double phi, double theta, AnitaPol::AnitaPol_t pol, bool includeGroupDelay = false) 
+  inline double getDeltaTtoCenter(int ant1, double phi, double theta, AnitaPol::AnitaPol_t pol, bool includeGroupDelay = false, bool includeTimeShift = true) 
   {
     double th = theta * DEG2RAD; 
     const AntennaPositions * ap = AntennaPositions::instance(); 
     double ph1_deg = (phi- ap->phiAnt[pol][ant1]) ; 
     double ph1  = ph1_deg * DEG2RAD; 
     double r1 = ap->rAnt[pol][ant1];
-    double tshift = (pol==AnitaPol::kHorizontal) ? 0:1.* (r1 - ap->rAnt[pol^1][ant1])*cos(ph1) * 1e9/C_LIGHT;
 
     double part1=ap->zAnt[pol][ant1]*tan(th) - ap->rAnt[pol][ant1] * cos(ph1);
 
+    double tshift = includeTimeShift ? ((pol==AnitaPol::kHorizontal) ? 0:1.* (r1 - ap->rAnt[pol^1][ant1])*cos(ph1) * 1e9/C_LIGHT) : 0;
+
+    double part1=ap->zAnt[pol][ant1]*tan(th) - r1 * cos(ph1);
+    
     double geomDelay=1e9*((cos(th) * part1)/C_LIGHT);    //returns time in ns
 
 

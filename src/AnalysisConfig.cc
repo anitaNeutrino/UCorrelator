@@ -80,14 +80,21 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(baseline_weight); 
   LOOKUP(max_peak_trigger_angle); 
   LOOKUP(min_peak_distance_from_unmasked); 
-  LOOKUP(windowStokes);
-  LOOKUP(stokesWindowLength);
+  LOOKUP(fill_blast_fraction); 
+  LOOKUP(fill_channel_info); 
+  LOOKUP(compute_shape_parameters); 
+  LOOKUP(trace_to_continent); 
+  LOOKUP(max_theta_adjustment); 
   LOOKUP(set_bottom_first);
   LOOKUP(delay_to_center);
+  LOOKUP(only_use_usable);
+  LOOKUP(stokes_fracI); 
   LOOKUP(use_forced_trigger_rms); 
   LOOKUP(use_coherent_spectra); 
   LOOKUP(combine_t0); 
   LOOKUP(combine_t1); 
+  LOOKUP(use_hilbert_for_antenna_average); 
+  LOOKUP(r_time_shift_correction); 
   const char * pols[] = {"horizontal", "vertical" }; 
   lookupEnum(&cfg, "start_pol", (int*) &start_pol, 2,pols); 
   lookupEnum(&cfg, "end_pol", (int*) &end_pol, 2,pols); 
@@ -124,17 +131,17 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   correlator_theta_highest = 40; 
   enable_group_delay = true; 
   use_offline_mask = true; 
-  zoomed_nphi = 60; 
-  zoomed_ntheta = 60; 
+  zoomed_nphi = 40; 
+  zoomed_ntheta = 40; 
   zoomed_dphi = 0.5; 
   zoomed_dtheta = 0.5; 
   zoomed_nant = 12; 
 
 
-  combine_nantennas = 12; 
+  combine_nantennas = 15; 
   combine_npad = 3; 
 
-  saturation_threshold = 2500; 
+  saturation_threshold = 1500; 
 
   start_pol = AnitaPol::kHorizontal; 
   end_pol = AnitaPol::kVertical; 
@@ -161,6 +168,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   max_mean_power_filtered = 1e6; 
   max_median_power_filtered = 1e6; 
   max_bottom_to_top_ratio = 5; 
+  max_theta_adjustment = 3; 
 
   baseline_weight = 0; 
 
@@ -172,14 +180,24 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
 
   ldb_max_run = 160; 
 
-  windowStokes = true;
-  stokesWindowLength = -1;
-  
-  set_bottom_first = false;
+  fill_blast_fraction = true; 
+  fill_channel_info = true; 
+  set_bottom_first = true;
+  stokes_fracI = 0.2; 
 
-  delay_to_center = false;
+  compute_shape_parameters = true;
+  trace_to_continent = true;
+
+  delay_to_center = true;
+  r_time_shift_correction = true; 
+  use_forced_trigger_rms = true; 
+  
+  only_use_usable = false;
+
+  use_coherent_spectra = false; 
   combine_t0 = -25; 
   combine_t1 = 125; 
+  use_hilbert_for_antenna_average = true; 
 
 }
 

@@ -14,7 +14,7 @@
 #include "RawAnitaHeader.h"
 
 
-void doSimulated(int run = 1, int max = 0, int start = 0, const char * filter = "sinsub_10_3_ad_2")
+void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir = "simulated", const char * filter = "sinsub_10_3_ad_2")
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
@@ -26,17 +26,20 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * filter = 
   cfg.nmaxima = 3;
   cfg.enable_group_delay = false; 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter; 
-  cfg.deconvolution_method = new AnitaResponse::ImpulseResponseXCorr; 
-  cfg.max_peak_trigger_angle = 90; 
+  cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
+//  cfg.max_peak_trigger_angle = 90; 
+  cfg.fill_blast_fraction = true; 
+  cfg.combine_nantennas = 15; 
+  cfg.zoomed_nant = 15; 
 
   UCorrelator::Analyzer analyzer(&cfg); 
 
   TString outname; 
 
-  if (max && start) outname.Form("simulated/%d_max_%d_start_%d_%s.root",run,max,start,filter); 
-  else if (max) outname.Form("simulated/%d_max_%d_%s.root",run,max,filter); 
-  else if (start) outname.Form("simulated/%d_start_%d_%s.root",run,start,filter); 
-  else outname.Form("simulated/%d_%s.root",run, filter); 
+  if (max && start) outname.Form("%s/%d_max_%d_start_%d_%s.root",out_dir,run,max,start,filter); 
+  else if (max) outname.Form("%s/%d_max_%d_%s.root",out_dir,run,max,filter); 
+  else if (start) outname.Form("%s/%d_start_%d_%s.root",out_dir,run,start,filter); 
+  else outname.Form("%s/%d_%s.root",out_dir,run, filter); 
 
 
 
@@ -97,13 +100,14 @@ int main (int nargs, char ** args)
   int run = nargs < 2 ? 352 : atoi(args[1]); 
   int max = nargs < 3 ? 0 : atoi(args[2]); 
   int start = nargs < 4 ? 0 : atoi(args[3]); 
-  const char * filter = nargs < 5 ? 0 :args[4]; 
+  const char * outdir = nargs < 5 ? "simulated" : args[4]; 
+  const char * filter = nargs < 6 ? 0 :args[5]; 
 
 
   if (filter) 
-    doSimulated(run,max,start,filter); 
+    doSimulated(run,max,start,outdir, filter); 
   else
-    doSimulated(run,max,start); 
+    doSimulated(run,max,start,outdir); 
 
 
 }

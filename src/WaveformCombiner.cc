@@ -20,6 +20,7 @@ UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool us
   setDeconvolve(deconvolve); 
   setUseUnfiltered(useUnfiltered); 
   setGroupDelayFlag(true); 
+  setRTimeShiftFlag(true); 
   use_raw= useUnfiltered; 
   setResponseManager(response); 
   setBottomFirst(false);
@@ -82,30 +83,30 @@ const AnalysisWaveform * UCorrelator::WaveformCombiner::wf (const FilteredAnitaE
 
 static SimplePassBandFilter alfa_filter(0,0.6);  
 
-void UCorrelator::WaveformCombiner::combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, ULong64_t disallowed, double t0, double t1)
+void UCorrelator::WaveformCombiner::combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, ULong64_t disallowed, double t0, double t1, double * avg_of_peaks, bool use_hilbert)
 {
 
-  int antennas[nant]; 
   std::vector<AnalysisWaveform> padded(nant);
   const int numDeconv = do_deconvolution ? nant : 0;
   std::vector<AnalysisWaveform> deconv(numDeconv);
 
   const UCorrelator::AntennaPositions * antpos = UCorrelator::AntennaPositions::instance(); 
-  nant = antpos->getClosestAntennas(phi, nant, antennas, disallowed); 
+  nant = antpos->getClosestAntennas(phi, nant, &antennas[0], disallowed); 
   double delays[nant]; 
 
   if (bottom_first) {
     if (antennas[0] < 32) {
       int toMove = antennas[0];
       if (antennas[1] > 32) {
-	antennas[0] = antennas[1];
-	antennas[1] = toMove; }
+       antennas[0] = antennas[1];
+       antennas[1] = toMove; }
       else {
-	antennas[0] = antennas[2];
-	antennas[2] = toMove; }
+       antennas[0] = antennas[2];
+       antennas[2] = toMove; }
     }
   }
 
+  double sum_peak = 0; 
   for (int i = 0; i < nant; i++) 
   {
     //ensure transform already calculated so we don't have to repeat when deconvolving
@@ -140,6 +141,12 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
       alfa_filter.processOne(&padded[i]); 
     }
 
+    if (avg_of_peaks) 
+    {
+      sum_peak += (use_hilbert ? padded[i].hilbertEnvelope() : padded[i].even())->peakVal(); 
+    } 
+
+
     padded[i].padFreq(npad);
 
     if (do_deconvolution)
@@ -168,7 +175,7 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
       deconv[i].padFreq(npad); 
     }
 
-    if (delay_to_center) delays[i] = getDeltaTtoCenter(antennas[i], phi, theta, pol, enable_group_delay);
+    if (delay_to_center) delays[i] = getDeltaTtoCenter(antennas[i], phi, theta, pol, enable_group_delay, enable_r_time_shift);
     else delays[i] = i == 0 ? 0 : getDeltaT(antennas[i], antennas[0], phi, theta, pol, enable_group_delay); 
 
   }
@@ -179,6 +186,11 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
   {
     combineWaveforms(nant, &deconv[0], delays,0, &deconvolved, t0, t1); 
     scaleGraph(&deconvolved_avg_spectrum, 1./nant); 
+  }
+
+  if (avg_of_peaks) 
+  {
+    *avg_of_peaks = sum_peak / nant; 
   }
 }
 
