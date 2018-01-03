@@ -247,7 +247,7 @@ int UCorrelator::ProbabilityMap::dumpNonZeroBases()  const
 
 double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , const Adu5Pat * pat,  AnitaPol::AnitaPol_t pol, int peak, 
                                             bool normalized, double weight,  std::vector<std::pair<int,double> > * bases,
-                                            OverlapMode mode,  bool remove_self, std::vector<std::pair<int, double >> * segments, 
+                                            OverlapMode mode,  bool remove_self, std::vector<std::pair<int, double > > * segments, 
                                             std::vector<std::pair<int,double> > * max_dens, double * inv_two_pi_sqrt_det ) const
 {
   std::vector<std::pair<int,double> > segs; 
@@ -651,6 +651,8 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
 
         }
 
+        bool enhance_flag = false;
+        double scale = 0; 
   #ifdef HAVE_DELAUNAY
         ROOT::Math::Delaunay2D del (nsamples,&phis[0], &thetas[0], &dens[0]); 
         del.FindAllTriangles(); 
@@ -667,10 +669,9 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
           if (thetas[i] < min_theta) min_theta = thetas[i]; 
         }
 
-        double scale=  (max_phi-min_phi) * (max_theta-min_theta)  / ((del.XMax()-del.XMin())*(del.YMax()-del.YMin())); 
+        scale=  (max_phi-min_phi) * (max_theta-min_theta)  / ((del.XMax()-del.XMin())*(del.YMax()-del.YMin())); 
 
         double sum = 0; 
-        bool enhance_flag = false;
         for (std::vector<ROOT::Math::Delaunay2D::Triangle>::const_iterator it = del.begin(); it!=del.end(); it++)
         {
           const ROOT::Math::Delaunay2D::Triangle & tri = *it; 
@@ -911,9 +912,11 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, bool blind, bo
   const int mins[] =  {1,2,6,11,21,51,101}; 
   int n_rows = sizeof(maxes) / sizeof(*maxes); 
 
-  int n_base[n_rows] = { 0 }; 
-  int n_non_base[n_rows] = { 0 } ; 
+  int n_base[n_rows]; 
+  int n_non_base[n_rows]; 
 
+  memset(n_base,0, n_rows * sizeof(int)); 
+  memset(n_non_base,0, n_rows * sizeof(int)); 
 
   for (size_t i = 0; i < non_base.size(); i++) 
   {
