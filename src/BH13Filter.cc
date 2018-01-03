@@ -1,7 +1,6 @@
 #include "FFTtools.h" 
 #include "FilterStrategy.h"
 #include "BH13Filter.h" 
-#include "SpectrumAverage.h" 
 #include "BasicFilters.h" 
 #include "ResponseManager.h" 
 #include "SystemResponse.h" 
