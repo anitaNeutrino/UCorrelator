@@ -88,7 +88,7 @@ namespace UCorrelator
       double baselineWeight;
 
       AnalysisWaveform * getCorrelation(int ant1, int ant2); 
-      void doAntennas(int ant1, int ant2, TH2D ** hist, TH2I ** norm, const UCorrelator::TrigCache * tc, const double * center_point  = 0); 
+      void doAntennas(int ant1, int ant2, TH2D ** hist, TH2I ** norm, const UCorrelator::TrigCache * tc, const double * center_point  = 0, bool abbysMethod = true ); 
       void reset(); 
 
       CorrelatorLocks * locks; 

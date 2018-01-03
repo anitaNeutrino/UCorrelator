@@ -126,6 +126,10 @@ static void combineHists(int N, T ** hists )
 
 #define PHI_SECTOR_ANGLE (360. / NUM_PHI)
 
+#ifndef ANITA_BW
+#define ANITA_BW (1.2 - 0.180)  //  ANITA pass bandwidth in GHz.
+#define MAX_DELTA_T (1. / ANITA_BW)  //  Maximum geometric delay between antennas in ns.
+#endif
 
 
 UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, int ntheta, double theta_min, double theta_max, bool use_center, bool scale_by_cos_theta, double baseline_weight)
@@ -178,21 +182,27 @@ UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, in
   groupDelayFlag = 1; 
 }
 
-static int allowedPhisPairOfAntennas(double &lowerAngle, double &higherAngle, double &centerTheta1, double &centerTheta2, double &centerPhi1, double &centerPhi2, int ant1, int ant2, double max_phi, AnitaPol::AnitaPol_t pol)
+static int allowedPhisPairOfAntennas(double &lowerAngle, double &higherAngle, double &centerTheta1, double &centerTheta2, double &centerPhi1, double &centerPhi2, int ant1, int ant2, double max_phi, AnitaPol::AnitaPol_t pol, bool abbysMethod = true)
 {
 
   int phi1=AnitaGeomTool::Instance()->getPhiFromAnt(ant1);
   int phi2=AnitaGeomTool::Instance()->getPhiFromAnt(ant2);
   int allowedFlag=0;
   
-  int upperlimit=phi2+2;//2 phi sectors on either side
-  int lowerlimit=phi2-2;
+  int upperlimit, lowerlimit;
+  if (abbysMethod){
+    upperlimit=phi2+2;  //  2 phi sectors on either side
+    lowerlimit=phi2-2;
+  } else {
+    upperlimit=phi2+3;  //  Up to 3 phi sectors on either side.
+    lowerlimit=phi2-3;
+  }
 
   if(upperlimit>NUM_PHI-1)upperlimit-=NUM_PHI;
   if(lowerlimit<0)lowerlimit+=NUM_PHI;
 
   if (upperlimit>lowerlimit){
-    if (phi1<=upperlimit && phi1>=lowerlimit){//within 2 phi sectors of eachother
+    if (phi1<=upperlimit && phi1>=lowerlimit){//  within 2 (or 3) phi sectors of eachother
       allowedFlag=1;
     }
   }
@@ -485,19 +495,18 @@ static inline bool between(double phi, double low, double high)
 
 inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** these_hists, 
                                                 TH2I ** these_norms, const UCorrelator::TrigCache * cache , 
-                                                const double * center_point )
+                                                const double * center_point, bool abbysMethod)
 {
    int allowedFlag; 
    double lowerAngleThis, higherAngleThis, centerTheta1, centerTheta2, centerPhi1, centerPhi2;
 
    allowedFlag=allowedPhisPairOfAntennas(lowerAngleThis,higherAngleThis, 
                     centerTheta1, centerTheta2, centerPhi1, centerPhi2, 
-                    ant1,ant2, max_phi, pol);
-
+                    ant1,ant2, max_phi, pol, abbysMethod);
 
    assert(ant1 < 48); 
    assert(ant2 < 48); 
-   if(!allowedFlag) return; 
+   if (!allowedFlag) return; 
 
    TH2D * the_hist  = these_hists[gettid()]; 
    TH2I * the_norm  = these_norms[gettid()]; 
@@ -515,8 +524,10 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    int first_phi_bin = center_point ? 1 : the_hist->GetXaxis()->FindFixBin(lowerAngleThis); 
    int last_phi_bin  = center_point ? the_hist->GetNbinsX() : the_hist->GetXaxis()->FindFixBin(higherAngleThis); 
 
-   if (first_phi_bin == 0) first_phi_bin = 1; 
-   if (last_phi_bin == the_hist->GetNbinsX()+1) last_phi_bin = the_hist->GetNbinsX(); 
+   if (first_phi_bin == 0) ++first_phi_bin; 
+   if (last_phi_bin == the_hist->GetNbinsX()+1) --last_phi_bin; 
+//   if (first_phi_bin == 0) first_phi_bin = 1; 
+//   if (last_phi_bin == the_hist->GetNbinsX()+1) last_phi_bin = the_hist->GetNbinsX(); 
    bool must_wrap = (last_phi_bin < first_phi_bin) ; 
 
 
@@ -527,46 +538,47 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
 
    //This is bikeshedding, but allocate it all contiguosly 
-   int * alloc = new int[3*maxsize]; 
+   int * alloc = new int[3 * maxsize]; 
    int * phibins = alloc;
    int * thetabins = alloc + maxsize; 
-   int * bins_to_fill = alloc + 2 *maxsize; 
+   int * bins_to_fill = alloc + 2 * maxsize; 
 
-   int nbins_used =0; 
-
+   int nbins_used = 0; 
 
   
    for (int phibin = first_phi_bin; (phibin <= last_phi_bin) || must_wrap; phibin++)
    {
-     if (must_wrap && phibin == nphibins-1)
+     if (must_wrap && phibin == nphibins - 1)
      {
        phibin = 1; 
        must_wrap = false; 
      }
      
-     double phi =  cache->phi[phibin-1] ; 
+     double phi = cache->phi[phibin-1] ; 
 //     double phi4width = center_point ? center_point[0] : phi; 
      double dphi1 = center_point ? 0 : FFTtools::wrap(phi - centerPhi1,360,0); 
      double dphi2 = center_point ? 0 : FFTtools::wrap(phi - centerPhi2,360,0); 
 
 
      //Check if in beam width in phi 
-     if (!center_point && fabs(dphi1)  > max_phi) continue; 
-     if (!center_point && fabs(dphi2)  > max_phi) continue; 
+     if (!center_point && fabs(dphi1) > max_phi && fabs(dphi2) > max_phi) continue; 
+//     if (!center_point && fabs(dphi1) > max_phi) continue; 
+//     if (!center_point && fabs(dphi2) > max_phi) continue; 
 
      int ny = the_hist->GetNbinsY(); 
 
 
      for (int thetabin = 1; thetabin <= ny; thetabin++)
      {
-       double theta =  cache->theta[thetabin-1]; 
+       double theta = cache->theta[thetabin-1]; 
 //       double theta4width = center_point ? center_point[1] : theta; 
-       double dtheta1 = center_point ? 0 : FFTtools::wrap(theta- centerTheta1,360,0); 
-       double dtheta2 = center_point ? 0 : FFTtools::wrap(theta- centerTheta2,360,0); 
+       double dtheta1 = center_point ? 0 : FFTtools::wrap(theta - centerTheta1,360,0); 
+       double dtheta2 = center_point ? 0 : FFTtools::wrap(theta - centerTheta2,360,0); 
 
        // check if in beam width 
-       if (!center_point && dphi1*dphi1 + dtheta1*dtheta1 > max_phi * max_phi) continue; 
-       if (!center_point && dphi2*dphi2 + dtheta2*dtheta2 > max_phi * max_phi) continue; 
+       if (!center_point && dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi * max_phi && dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi * max_phi) continue; 
+//       if (!center_point && dphi1 * dphi1 + dtheta1*dtheta1 > max_phi * max_phi) continue; 
+//       if (!center_point && dphi2 * dphi2 + dtheta2*dtheta2 > max_phi * max_phi) continue; 
 
        phibins[nbins_used] = phibin; 
        thetabins[nbins_used] = thetabin; 
@@ -576,14 +588,13 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    }
 
 
-   double * dalloc = new double[2 *nbins_used]; 
+   double * dalloc = new double[2 * nbins_used]; 
    double * vals_to_fill = dalloc; 
    double * times_to_fill = dalloc + nbins_used; 
 
   //TODO vectorize this
    for (int i = 0; i < nbins_used; i++)
    {
-       
        int phibin = phibins[i];; 
        int thetabin = thetabins[i]; 
        times_to_fill[i] = getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag); 
@@ -594,7 +605,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
    if (scale_cos_theta)
    {
-     for(int i = 0; i < nbins_used; i++)
+     for (int i = 0; i < nbins_used; i++)
      {
        vals_to_fill[i] *= cache->cos_theta[thetabins[i]-1];
      }
@@ -614,13 +625,15 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    for (int bi = 0; bi < nbins_used; bi++)
    {
        double val = vals_to_fill[bi]; 
-       int bin = bins_to_fill[bi]; 
-       the_hist->GetArray()[bin]+= val; 
+       int bin = bins_to_fill[bi];
+       if (abbysMethod) the_hist->GetArray()[bin] += val;
+       else if (fabs(times_to_fill[bi]) <= MAX_DELTA_T) the_hist->GetArray()[bin] += val;
    }
    for (int bi = 0; bi < nbins_used; bi++)
    {
        int bin = bins_to_fill[bi]; 
-       the_norm->GetArray()[bin]++;
+       if (abbysMethod) the_norm->GetArray()[bin]++;
+       else if (fabs(times_to_fill[bi]) <= MAX_DELTA_T) the_norm->GetArray()[bin]++;
    }
 
    delete [] alloc; 
