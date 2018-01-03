@@ -513,7 +513,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
 //   printf("lowerAngleThis: %g higherAngleThis: %g\n", lowerAngleThis, higherAngleThis); 
    // More stringent check if we have a center point
-   if (center_point && !between(center_point[0], lowerAngleThis, higherAngleThis))  return; 
+   if (center_point && !between(center_point[0], lowerAngleThis, higherAngleThis)) return; 
 
    AnalysisWaveform * correlation = getCorrelation(ant1,ant2); 
    
@@ -528,7 +528,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    if (last_phi_bin == the_hist->GetNbinsX()+1) --last_phi_bin; 
 //   if (first_phi_bin == 0) first_phi_bin = 1; 
 //   if (last_phi_bin == the_hist->GetNbinsX()+1) last_phi_bin = the_hist->GetNbinsX(); 
-   bool must_wrap = (last_phi_bin < first_phi_bin) ; 
+   bool must_wrap = (last_phi_bin < first_phi_bin); 
 
 
    //So the maximum number of bins is going to be the total number of bins in the histogram. We probably won't fill all of them, 
@@ -554,14 +554,14 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        must_wrap = false; 
      }
      
-     double phi = cache->phi[phibin-1] ; 
+     double phi = cache->phi[phibin-1]; 
 //     double phi4width = center_point ? center_point[0] : phi; 
      double dphi1 = center_point ? 0 : FFTtools::wrap(phi - centerPhi1,360,0); 
      double dphi2 = center_point ? 0 : FFTtools::wrap(phi - centerPhi2,360,0); 
 
 
      //Check if in beam width in phi 
-     if (!center_point && fabs(dphi1) > max_phi && fabs(dphi2) > max_phi) continue; 
+     if (abbysMethod && !center_point && (fabs(dphi1) > max_phi || fabs(dphi2) > max_phi)) continue; 
 //     if (!center_point && fabs(dphi1) > max_phi) continue; 
 //     if (!center_point && fabs(dphi2) > max_phi) continue; 
 
@@ -576,7 +576,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        double dtheta2 = center_point ? 0 : FFTtools::wrap(theta - centerTheta2,360,0); 
 
        // check if in beam width 
-       if (!center_point && dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi * max_phi && dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi * max_phi) continue; 
+       if (abbysMethod && !center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi * max_phi || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi * max_phi)) continue; 
 //       if (!center_point && dphi1 * dphi1 + dtheta1*dtheta1 > max_phi * max_phi) continue; 
 //       if (!center_point && dphi2 * dphi2 + dtheta2*dtheta2 > max_phi * max_phi) continue; 
 
@@ -595,7 +595,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
   //TODO vectorize this
    for (int i = 0; i < nbins_used; i++)
    {
-       int phibin = phibins[i];; 
+       int phibin = phibins[i]; 
        int thetabin = thetabins[i]; 
        times_to_fill[i] = getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag); 
    }
@@ -626,15 +626,23 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    {
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi];
-       if (abbysMethod) the_hist->GetArray()[bin] += val;
-       else if (fabs(times_to_fill[bi]) <= MAX_DELTA_T) the_hist->GetArray()[bin] += val;
+       if (abbysMethod)
+       {
+         the_hist->GetArray()[bin] += val;
+         the_norm->GetArray()[bin]++;
+       }
+       else if (fabs(times_to_fill[bi]) <= MAX_DELTA_T)
+       {
+         the_hist->GetArray()[bin] += val;
+         the_norm->GetArray()[bin]++;
+       }
    }
-   for (int bi = 0; bi < nbins_used; bi++)
-   {
-       int bin = bins_to_fill[bi]; 
-       if (abbysMethod) the_norm->GetArray()[bin]++;
-       else if (fabs(times_to_fill[bi]) <= MAX_DELTA_T) the_norm->GetArray()[bin]++;
-   }
+//   for (int bi = 0; bi < nbins_used; bi++)
+//   {
+//       int bin = bins_to_fill[bi]; 
+//       if (abbysMethod) the_norm->GetArray()[bin]++;
+//       else if (fabs(times_to_fill[bi]) <= MAX_DELTA_T) the_norm->GetArray()[bin]++;
+//   }
 
    delete [] alloc; 
    delete [] dalloc; 
