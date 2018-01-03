@@ -27,7 +27,7 @@
 #include "AnitaDataset.h"
 #include "RawAnitaHeader.h"
 #include "WaveformCombiner.h" 
-#include "SpectrumAverage.h" 
+#include "TimeDependentAverage.h" 
 
 
 
