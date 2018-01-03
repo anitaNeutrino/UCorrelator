@@ -37,7 +37,7 @@ UCorrelator::ProbabilityMap* testMap(int run, int event_number, int pol = 1, int
   p.collision_detection = false; 
   p.backwards_params.enhance_threshold = 1e-2; 
 //  p.backwards_params.num_samples_per_bin=16;
-  p.verbosity = 3;
+  p.verbosity = 4;
 
   printf("THETA: %g\n", sum->peak[pol][peak].theta); 
   UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(&p); 
