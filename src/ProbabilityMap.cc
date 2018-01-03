@@ -513,6 +513,8 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
     std::vector<double> dens(max_samples);; 
     std::vector<double> phis(max_samples);; 
     std::vector<double> thetas(max_samples);; 
+    std::vector<double> xs(max_samples);; 
+    std::vector<double> ys(max_samples);; 
     std::vector<bool> occluded(max_samples); 
 
     /** Loop over segments we need to check to see if p > cutoff */
@@ -555,12 +557,13 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
 
 
           pos = samples[i].as(AntarcticCoord::STEREOGRAPHIC); 
+
           if (p.verbosity > 3) 
           {
-            printf("sample position: %g %g %g\n", pos.x, pos.y, pos.z); 
-            printf("delta phi: %g\n",pp.source_phi - sum->peak[pol][peak].phi); 
-            printf("delta el: %g\n",pp.source_theta - sum->peak[pol][peak].theta); 
-            printf("payload el: %g %g\n", pp.payload_el, p.backwards_params.el_cutoff); 
+            printf("   sample %d position: %g %g %g\n", i, pos.x, pos.y, pos.z); 
+            printf("      delta phi: %g\n",pp.source_phi - sum->peak[pol][peak].phi); 
+            printf("      delta el: %g\n",pp.source_theta - sum->peak[pol][peak].theta); 
+            printf("      payload el: %g %g\n", pp.payload_el, p.backwards_params.el_cutoff); 
           }
           //payload is below horizon.  or collides
           AntarcticCoord collid, collid_exit; 
@@ -597,6 +600,8 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
           while(phis[i] - phi0 < -180) phis[i] +=360; 
 
           thetas[i]=pp.source_theta; 
+          xs[i] = pos.x; 
+          ys[i] = pos.y; 
         }
       
 
@@ -633,10 +638,17 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
         /** write out triangles for debugging if wanted*/ 
         if (debugfile)
         {
-          if (!debugfile->Get("triangles")) debugfile->mkdir("triangles"); 
-          debugfile->cd("triangles"); 
+          if (!debugfile->Get("triangles_payload")) debugfile->mkdir("triangles_payload"); 
+          debugfile->cd("triangles_payload"); 
           TGraph2D g2d (nsamples,&phis[0], &thetas[0], &dens[0]); 
           g2d.Write(TString::Format("g%d",seg)); 
+
+          if (!debugfile->Get("triangles_continent")) debugfile->mkdir("triangles_continent"); 
+          debugfile->cd("triangles_continent"); 
+
+          TGraph2D g2d_continent (nsamples,&xs[0], &ys[0], &dens[0]); 
+          g2d_continent.Write(TString::Format("g%d",seg)); 
+
         }
 
   #ifdef HAVE_DELAUNAY
