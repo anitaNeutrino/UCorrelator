@@ -1,11 +1,4 @@
-<<<<<<< HEAD
-#include "AnitaDataset.h"
 #include "FFTtools.h" 
-#include "AnalysisConfig.h"
-=======
-
-#include "FFTtools.h" 
->>>>>>> changespecavg
 
 UCorrelator::Analyzer *doInteractive(int run = 342, int event = 58023120, bool decimated = false, bool simulated = false )
 {
