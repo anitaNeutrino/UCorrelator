@@ -53,7 +53,7 @@ void noiseSummary(int run=300, int numEntries=1000) {
   //make a filtering plan
   FilterStrategy *strategy = new FilterStrategy();
   char* specAvgDir = getenv("UCORRELATOR_SPECAVG_DIR");
-  const UCorrelator::SpectrumAverageLoader *specAvgLoader = new UCorrelator::SpectrumAverageLoader(specAvgDir);
+  const UCorrelator::TimeDependentAverageLoader *specAvgLoader = new UCorrelator::TimeDependentAverageLoader(specAvgDir);
   UCorrelator::AdaptiveBrickWallFilter *brickWall = new UCorrelator::AdaptiveBrickWallFilter(specAvgLoader,2,false);
   strategy->addOperation(brickWall);
 

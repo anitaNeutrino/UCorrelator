@@ -1,6 +1,8 @@
 {
 
 
+  TCut qualityCut("isMostImpulsive && !payloadBlast && MaxPeak < 1000 &&  ((iteration < 5 && HPolTrigger) || (iteration > 4 && VPolTrigger))"); 
+
   gSystem->Load("${ANITA_UTIL_INSTALL_DIR}/lib/libRootFftwWrapper.so") && gSystem->Load("$ANITA_UTIL_INSTALL_DIR/lib/libRootFftwWrapper.dylib");
   gSystem->Load("${ANITA_UTIL_INSTALL_DIR}/lib/libAnitaEvent.so") && gSystem->Load("$ANITA_UTIL_INSTALL_DIR/lib/libAnitaEvent.dylib"); 
   gSystem->Load("${ANITA_UTIL_INSTALL_DIR}/lib/libAnitaCorrelator.so") && gSystem->Load("$ANITA_UTIL_INSTALL_DIR/lib/libAnitaCorrelator.dylib"); 

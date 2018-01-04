@@ -91,8 +91,8 @@ namespace UCorrelator
 
 
       /** Populate the pads with a summary of the pointing. Only makes sense if interactive mode is on. If the analyzer wasn't instructed to do 
-       * both polarities, then it won't populate any it wasn't instructed to do. If 0 or NULL is passed, a new canvas is made. */ 
-      void drawSummary(TPad *chpol = 0, TPad * cvpol = 0) const; 
+       * both polarities, then it won't populate any it wasn't instructed to do. If 0 or NULL is passed, a new canvas is made. Added a flag to allow you to draw and populate the info from the filtered waveforms (off by default) */ 
+      void drawSummary(TPad *chpol = 0, TPad * cvpol = 0, int draw_filtered = 0) const; 
 
       double getRoughPhi(AnitaPol::AnitaPol_t pol, int i) const { return rough_peaks[pol][i].first; }
       double getRoughTheta(AnitaPol::AnitaPol_t pol, int i) const { return -rough_peaks[pol][i].second; }
@@ -123,7 +123,6 @@ namespace UCorrelator
       void setTrackWAIS(double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {sourceLon = AnitaLocations::getWaisLongitude(); sourceLat = AnitaLocations::getWaisLatitude(); sourceAlt = AnitaLocations::getWaisAltitude(); dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSource = true; }
       /** Tracks LDB for peak finding  */
       void setTrackLDB(double setdTheta = 2.5, double setdPhi = 5., bool blockOut = false) {sourceLon = AnitaLocations::LONGITUDE_LDB; sourceLat = AnitaLocations::LATITUDE_LDB; sourceAlt = AnitaLocations::ALTITUDE_LDB; dTheta = setdTheta; dPhi = setdPhi; exclude = blockOut; trackSource = true; }
-
 			/** Allows you to set extra filters used only for combining waveforms */
 			void setExtraFilters(FilterStrategy* extra);
 			/** Allows you to set extra filters used only for combining deconvolved waveforms */
@@ -131,7 +130,7 @@ namespace UCorrelator
       
   private:
 
-      void fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph * power, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol); 
+      void fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph * power, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol, double rms); 
       void fillPointingInfo(double rough_phi, double rough_theta, AnitaEventSummary::PointingHypothesis * point,
                             UsefulAdu5Pat * pat, double hwAngle, UShort_t triggered_sectors, UShort_t masked_sectors, UShort_t triggered_sectors_xpol, UShort_t masked_sectors_xpol); 
       void fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary* summary, UsefulAdu5Pat * pat); 

@@ -1,0 +1,33 @@
+#!/bin/sh 
+
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  130 139
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  140 149
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  150 159
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  160 169
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  170 179
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  180 189
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  190 199
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  200 209
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  210 219
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  220 229
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  230 239
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  240 249
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  250 259
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  260 269
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  270 279
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  280 289
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  290 299
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  300 309
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  310 319
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  320 329
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  330 339
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  340 349
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  350 359
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  360 369
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  370 379
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  380 389
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  390 399
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  400 409
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  410 419
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  420 429
+sbatch -J makeSourceMaps -c 10 --mem-per-cpu 4096 slurm/parallelHelper.sh makeSourceMap 1  430 439

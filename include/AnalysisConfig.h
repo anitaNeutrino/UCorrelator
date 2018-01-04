@@ -43,7 +43,6 @@ namespace UCorrelator
       unsigned combine_nantennas;  /// number of antennas used to create coherent / deconvolved waveforms
       unsigned combine_npad;  /// supersampling factor for combining waveforms (i.e. how many times to pad in fourier domain. npad = 1 is super sample by 100%) 
 
-
       double saturation_threshold; /// threshold to consider a waveform saturated 
 
       AnitaPol::AnitaPol_t start_pol;  /// Start polarization for Analyer (kHORIZONTAL if you want just hpol or both, kVERTICAL if you want just vpol)
@@ -73,7 +72,7 @@ namespace UCorrelator
         ResponseSingleBRotter, /// Ben's unified respone 
         ResponseIndividualBRotter, ///Ben's individual responses 
         ResponseHarmSignalOnly, ///Harm's signal chain only thing (currently used in icemc) 
-				ResponseTUFF /// response with TUFFs convolved in
+        ResponseTUFF /// response with TUFFs convolved in
       } response_option;  
 
       static const char * getResponseString(ResponseOption_t opt); 
@@ -100,6 +99,8 @@ namespace UCorrelator
       double max_median_power_filtered; 
       double max_bottom_to_top_ratio; 
 
+      //maximum amount theta can be adjusted downward (default, 3 degrees) 
+      double max_theta_adjustment; 
 
       /** Used to define when a waveform is likely from a cal pulser
        * This is only used for WAIS and Siple right now since hte LDB pulsing was so variable. 
@@ -120,30 +121,48 @@ namespace UCorrelator
       TH2* ldb_hist() const; 
       int ldb_max_run; 
 
-      /** When calculating stokes parameters, do you want to window the waveform around the hilbert envelope?
-	  windowStokes == false: no windowing at all
-	  if true:
-	             stokesWindowLength =< 0: dynamic window length (default)
-		     stokesWindowLength > 0: set window length
-       * */
-      bool windowStokes;
-      int stokesWindowLength;
+      /** Fill the payload blast fraction in the flags. Requires having the time dependent averages right now , so default is false*/ 
+      bool fill_blast_fraction; 
+
+      /** option to turn off computing/saving shape parameters, should save time and space if you aren't planning on using them, default is to compute them */
+      bool compute_shape_parameters;
+      
+      /** option to turn off computing/saving the source location on the continent, can probably turn off until clustering, default is ON */
+      bool trace_to_continent;
 
       /** set_bottom_first:  Re-arrange the coherently summed waveforms so that the bottom-most ring is always the
-	  first antenna to be summed.
-	  * */
+         first antenna to be summed.
+         * */
       bool set_bottom_first;
       
       /** delay_to_center:
-	  Makes it so the delays in the coherent sum are referenced to the center point */
+         Makes it so the delays in the coherent sum are referenced to the center point */
       bool delay_to_center;
+
+      bool r_time_shift_correction; //if delaying to center, apply a correction for the effective different R's 
 
       /** TODO: this has to be loaded from file somehow */ 
       AnitaResponse::DeconvolutionMethod * deconvolution_method; 
       
+      /** option to turn off using antennas marked as not usable by anita flight info. default is OFF (use all antennas) */
+      bool only_use_usable;
+
+      double stokes_fracI; 
+      
+
+      /** Use the nearby forced trigger rms instead of estimating it from the waveform */ 
+      bool use_forced_trigger_rms; 
+      
+      /** Whether or not to use the average of the spectra or the spectra of the coherent/deconvolved */ 
+      bool use_coherent_spectra; 
+
+      /** Whether or not to compute the antennaPeakAverage with hilbert peak */ 
+      bool use_hilbert_for_antenna_average; 
 
       double combine_t0;
       double combine_t1;
+
+      bool fill_channel_info; 
     private: 
       mutable TH2 * the_ldb_hist; 
   };

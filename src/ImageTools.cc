@@ -135,7 +135,7 @@ static const TAxis * getAxis(const TH2* H, int axis)
 }
 
 
-TH1* UCorrelator::image::getPctileProjection(const TH2 * H, int axis, double pct, bool ignoreEmpty) 
+TH1* UCorrelator::image::getPctileProjection(const TH2 * H, int axis, double pct, bool ignoreEmpty, const TH1 * norm) 
 {
   TString name; 
   TString title; 
@@ -152,19 +152,26 @@ TH1* UCorrelator::image::getPctileProjection(const TH2 * H, int axis, double pct
   {
     for (int j = 1; j <= nOrth; j++) 
     {
-      bool empty = true; 
-
-      for (int i =1; i <= h->GetNbinsX(); i++) 
+      if (norm && norm->GetBinContent(j) == 0) 
       {
-        if( H->GetBinContent( axis == 1 ? i : j, axis == 1 ? j : i))
-        {
-          empty = false; 
-          break; 
-        }
-      }
-
-      if (empty) 
         ignore.insert(j); 
+      }
+      else
+      {
+        bool empty = true; 
+
+        for (int i =1; i <= h->GetNbinsX(); i++) 
+        {
+          if( H->GetBinContent( axis == 1 ? i : j, axis == 1 ? j : i))
+          {
+            empty = false; 
+            break; 
+          }
+        }
+
+        if (empty) 
+          ignore.insert(j); 
+        }
     }
 
   }
