@@ -194,7 +194,6 @@ endmacro()
 
 
 do_driver(doWais)
-do_driver(doWaisA4)
 do_driver(doResolutions) 
 do_driver(doSummaryResolutions)
 do_driver(doCorrelationSummaryTree) 

@@ -39,6 +39,7 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "s
 
   TFile ofile(outname, "RECREATE");
   TTree * tree = new TTree("wais","WAIS");
+  tree->SetAutoFlush(1000); 
   AnitaEventSummary * sum = new AnitaEventSummary;
 
 
