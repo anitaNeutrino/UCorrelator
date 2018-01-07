@@ -576,7 +576,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        double dtheta2 = center_point ? 0 : FFTtools::wrap(theta - centerTheta2,360,0); 
 
        // check if in beam width 
-       if (!center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi * max_phi || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi * max_phi)) continue; 
+       if (!center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi2 || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi2)) continue; 
 //       if (!center_point && dphi1 * dphi1 + dtheta1*dtheta1 > max_phi * max_phi) continue; 
 //       if (!center_point && dphi2 * dphi2 + dtheta2*dtheta2 > max_phi * max_phi) continue; 
 
