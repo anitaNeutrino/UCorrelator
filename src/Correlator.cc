@@ -561,7 +561,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
 
      //Check if in beam width in phi 
-     if (abbysMethod && !center_point && (fabs(dphi1) > max_phi || fabs(dphi2) > max_phi)) continue; 
+     if (!center_point && (fabs(dphi1) > max_phi || fabs(dphi2) > max_phi)) continue; 
 //     if (!center_point && fabs(dphi1) > max_phi) continue; 
 //     if (!center_point && fabs(dphi2) > max_phi) continue; 
 
@@ -576,7 +576,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        double dtheta2 = center_point ? 0 : FFTtools::wrap(theta - centerTheta2,360,0); 
 
        // check if in beam width 
-       if (abbysMethod && !center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi * max_phi || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi * max_phi)) continue; 
+       if (!center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi * max_phi || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi * max_phi)) continue; 
 //       if (!center_point && dphi1 * dphi1 + dtheta1*dtheta1 > max_phi * max_phi) continue; 
 //       if (!center_point && dphi2 * dphi2 + dtheta2*dtheta2 > max_phi * max_phi) continue; 
 
@@ -631,7 +631,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
          the_hist->GetArray()[bin] += val;
          the_norm->GetArray()[bin]++;
        }
-       else if (fabs(times_to_fill[bi]) <= MAX_DELTA_T)
+       else if (fabs(times_to_fill[bi]) <= MAX_DELTA_T)  //  Should group delay correction be added here?
        {
          the_hist->GetArray()[bin] += val;
          the_norm->GetArray()[bin]++;
