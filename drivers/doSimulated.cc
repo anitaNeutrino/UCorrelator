@@ -12,6 +12,8 @@
 #include "AnalysisConfig.h"
 #include "AnitaDataset.h"
 #include "RawAnitaHeader.h"
+#include "BH13Filter.h"
+
 
 
 void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir = "simulated", const char * filter = "sinsub_10_3_ad_2")
@@ -37,16 +39,21 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
   else outname.Form("%s/%d_%s.root",out_dir,run, filter); 
 
 
-
-
   TFile ofile(outname, "RECREATE"); 
   TTree * tree = new TTree("simulation"," Simulated events"); 
   AnitaEventSummary * sum = new AnitaEventSummary; 
 
-  
-  FilterStrategy strategy (&ofile); 
-  UCorrelator::fillStrategyWithKey(&strategy, filter); 
-  printf("Strategy applied!\n"); 
+  double dtheta = 1.; double dphi = 2.; bool blockout = true;
+  analyzer.setTrackSun(dtheta, dphi, blockout);
+
+  FilterStrategy* forDeco = new FilterStrategy;
+  forDeco->addOperation(new UCorrelator::AntiBH13Filter());
+  analyzer.setExtraFiltersDeconvolved(forDeco);
+  analyzer.setDisallowedAntennas(0, (1ul<<45));  // Vpol ant45 is bad! So disable it.
+
+  FilterStrategy strategy (&ofile);
+  UCorrelator::fillStrategyWithKey(&strategy, filter);
+  strategy.addOperation(new UCorrelator::BH13Filter());
 
   RawAnitaHeader *hdr = 0 ; 
   Adu5Pat *patptr = 0; 
@@ -62,6 +69,10 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
 
     d.getEntry(i); 
     printf("----(%d)-----\n",i);
+    if(d.header()->realTime=1480725529 and d.header()->realTime<=1480730678){
+      printf("Skip this event which from run 46.\n");
+      continue;
+    }
     
     UsefulAdu5Pat pat(d.gps()); 
     
