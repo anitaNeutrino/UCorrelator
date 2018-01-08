@@ -39,7 +39,7 @@ namespace UCorrelator
       static double dist2cdf(double d) { return -expm1(-d*d/2.);      }  
 
       static double get_two_pi_sqrt_det(double sigma1, double sigma2, double corr) { return  2*M_PI * sigma1 * sigma2 * sqrt(1.-corr*corr); }
-      static double get_inv_two_pi_sqrt_det(double sigma1, double sigma2, double corr) { return pow ( get_two_pi_sqrt_det(sigma1,sigma2,corr),   -1); }
+      static double get_inv_two_pi_sqrt_det(double sigma1, double sigma2, double corr) { return pow ( get_two_pi_sqrt_det(sigma1,sigma2,corr),  double(-1)); }
 
       /** Conversion between probability density and mahalanobis  distance */ 
       static double dist2dens(double dist, double inv_two_pi_sqrt_det)  { return inv_two_pi_sqrt_det * exp(-dist*dist/2.); }
