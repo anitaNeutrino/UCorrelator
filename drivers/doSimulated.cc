@@ -57,11 +57,11 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
 
   RawAnitaHeader *hdr = 0 ; 
   Adu5Pat *patptr = 0; 
-  TruthAnitaEvent * truth = 0; 
+  // TruthAnitaEvent * truth = 0; 
   tree->Branch("summary",           &sum       ); 
   tree->Branch("header",            &hdr       ); 
   tree->Branch("pat",               &patptr    );
-  tree->Branch("truth",               &truth    );
+  // tree->Branch("truth",               &truth    );
   int ndone = 0; 
   
   for (int i =start ; i < d.N(); i++) {
@@ -84,7 +84,7 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
     ofile.cd(); 
     hdr = d.header(); 
     patptr = d.gps(); 
-    truth = d.truth(); 
+    // truth = d.truth(); 
 
     tree->Fill(); 
 

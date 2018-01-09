@@ -1,12 +1,12 @@
 
 
-const char * data_pattern = "a3all/%d_%s.root";
-const char * data_tree = "anita3"; 
+const char * data_pattern = "a4all/%d_%s.root";
+const char * data_tree = "anita4"; 
 const char * wais_pattern = "wais/%d_%s.root"  ; 
 const char * simulated_pattern = "%s/*%s.root"; 
 
-int wais_start= 332;
-int wais_stop = 362; 
+int wais_start= 120;
+int wais_stop = 155; 
 
 
 #ifndef CUTS_LOADED
@@ -15,7 +15,7 @@ int wais_stop = 362;
 #include "AnitaTMVA.h" 
 
 
-void makeTrees(int data_start = 160, int data_stop=439, const char * mc_dir = "simulated_kotera_max", const char * filter = "sinsub_10_3_ad_2", int nworkers = 8) 
+void makeTrees(int data_start = 50, int data_stop=367, const char * mc_dir = "simulated_kotera_max", const char * filter = "max_30001_sinsub_10_3_ad_2", int nworkers = 8) 
 {
 
   // Step 1: load data
@@ -82,7 +82,7 @@ void makeTrees(int data_start = 160, int data_stop=439, const char * mc_dir = "s
   newOut.Write(); 
 }
 
-void doTMVA(int data_start = 160, int data_stop=439, const char * mc_dir = "simulated_kotera_max",  const char * filter = "sinsub_10_3_ad_2", int nworkers = 8) 
+void doTMVA(int data_start = 50, int data_stop=367, const char * mc_dir = "simulated_kotera_max",  const char * filter = "max_30001_sinsub_10_3_ad_2", int nworkers = 8) 
 {
 
   TString treefilename; 
@@ -113,39 +113,54 @@ void doTMVA(int data_start = 160, int data_stop=439, const char * mc_dir = "simu
 
   TMVA::Factory *factory = new TMVA::Factory("thermal_cuts", &tmvaOut,"V"); 
 
-  TMVA::DataLoader *dl = new TMVA::DataLoader("thermal"); 
-
-  if (mc_dir) 
-  {
-    dl->SetSignalWeightExpression("weight"); 
+  if(ROOT_VERSION_CODE >= ROOT_VERSION(6,8,0)){
+    // TMVA::DataLoader *dl = new TMVA::DataLoader("thermal"); 
+    if (mc_dir) 
+    {
+      dl->SetSignalWeightExpression("weight"); 
+    }
+    /* These are the variables to be used. They must have been generated already */ 
+    // dl->AddVariable("mapPeak");
+    dl->AddVariable("mapSNR"); 
+    dl->AddVariable("coherentHilbertPeak"); 
+    dl->AddVariable("deconvHilbertPeak"); 
+    dl->AddVariable("deconvImpulsivity"); 
+    dl->AddVariable("deconvLinearPolFraction"); 
+    dl->AddVariable("deconvLinearPolAngle"); 
+    dl->AddVariable("deconvolvedWidth1010"); 
+    dl->AddVariable("deconvolvedWidth5050"); 
+    dl->AddSpectator("run"); 
+    dl->AddSpectator("weight"); 
+    dl->AddSpectator("eventNumber"); 
+    dl->AddSignalTree(sigtree); 
+    dl->AddBackgroundTree(bgtree); 
+  }else{
+    if (mc_dir) 
+    {
+      factory->SetSignalWeightExpression("weight"); 
+    }
+     /* These are the variables to be used. They must have been generated already */ 
+    // factory->AddVariable("mapPeak"); 
+    factory->AddVariable("mapSNR"); 
+    factory->AddVariable("deconvHilbertPeak"); 
+    factory->AddVariable("deconvImpulsivity"); 
+    factory->AddVariable("deconvLinearPolFraction"); 
+    factory->AddVariable("secondPeakRatio");
+    factory->AddSpectator("theta"); 
+    factory->AddSpectator("run"); 
+    factory->AddSpectator("weight"); 
+    factory->AddSpectator("eventNumber"); 
+    factory->AddSignalTree(sigtree); 
+    factory->AddBackgroundTree(bgtree);
   }
 
  
 
-  /* These are the variables to be used. They must have been generated already */ 
-  dl->AddVariable("mapPeak"); 
-  dl->AddVariable("coherentFilteredHilbertPeakRatio"); 
-  dl->AddVariable("filteredFraction"); 
-  dl->AddVariable("coherentHilbertPeak"); 
-  dl->AddVariable("deconvHilbertPeak"); 
-  dl->AddVariable("dPhiSun"); 
-  dl->AddVariable("dPhiNorth"); 
-  dl->AddVariable("deconvImpulsivity"); 
-  dl->AddVariable("deconvLinearPolFraction"); 
-  dl->AddVariable("deconvLinearPolAngle"); 
-  dl->AddVariable("deconvolvedWidth1010"); 
-  dl->AddVariable("deconvolvedWidth5050"); 
-  dl->AddSpectator("run"); 
-  dl->AddSpectator("weight"); 
-  dl->AddSpectator("eventNumber"); 
-  dl->AddSignalTree(sigtree); 
-  dl->AddBackgroundTree(bgtree); 
-
-
   //setup methods 
-  factory->BookMethod(dl, TMVA::Types::kFisher, "Fisher","CreateMVAPdfs=true"); 
+  factory->BookMethod(dl, TMVA::Types::kFisher, "Fisher","CreateMVAPdfs=true");
+// factory->BookMethod( TMVA::Types::kMLP, "MLPBFGS","H:!V:NeuronType=tanh:VarTransform=N:NCycles=200:HiddenLayers=N+5:TestRate=5:TrainingMethod=BFGS" ); 
 //  factory->BookMethod(dl, TMVA::Types::kKNN, "kNN"); 
-  factory->BookMethod(dl, TMVA::Types::kBDT, "BDT","CreateMVAPdfs=true"); 
+// factory->BookMethod(dl, TMVA::Types::kBDT, "BDT","CreateMVAPdfs=true"); 
 //  factory->BookMethod(dl, TMVA::Types::kMLP, "MLP"); 
 //  factory->BookMethod(dl, TMVA::Types::kSVM, "SVM","CreateMVAPdfs=true"); 
 
