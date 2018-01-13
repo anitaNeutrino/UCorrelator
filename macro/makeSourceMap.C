@@ -4,6 +4,13 @@
 
 
 
+double cutoff = 3; 
+const char * weight = "F > 3";
+// const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && theta < 40 )";
+// const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && isMostImpulsive && !payloadBlast && MaxPeak < 1000 && theta < 40 && ( (HPolTrigger && iteration < 5) || (VPolTrigger && iteration > 4))  && !isPulser  )";
+
+
+
 int combineSourceMaps(const char * dir, const char * output)
 {
 
@@ -89,18 +96,14 @@ UCorrelator::ProbabilityMap::Params * map_params()
 
 
 
-
-double cutoff = 3; 
-const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && isMostImpulsive && !payloadBlast && MaxPeak < 1000 && theta < 40 && ( (HPolTrigger && iteration < 5) || (VPolTrigger && iteration > 4))  && !isPulser  )";
-
-
 void addRuns(TChain & c, int start_run, int end_run)
 {
-  for (int i = 130; i <= 430; i+=10) 
+  for (int i = start_run; i <= end_run; i+=40) 
   {
-    if (start_run < i + 10 && end_run >= i)
+    if (start_run < i + 40 && end_run >= i)
     {
-      TString adding = TString::Format("thermalTrees/a3all_%d-%d_sinsub_10_3_ad_2.root",i,i+9);
+      // TString adding = TString::Format("thermalTrees/a4all_%d-%d_max_30001_sinsub_10_3_ad_2.root",i,i+39);
+      TString adding = TString::Format("thermalTrees/simulated_%d-%d_max_1001_sinsub_10_3_ad_2.root",i,i+39);
       printf("Adding %s\n", adding.Data() ); 
       c.Add(adding.Data() ); 
     }
@@ -161,14 +164,14 @@ int removeEvents(const char * maps_file = "all_source_maps.root",
     if (run!=loaded_run) 
     {
       if (sumfile) delete sumfile; 
-      sumfile = new TFile(TString::Format("%s/%d_sinsub_10_3_ad_2.root", "a3all",run));; 
+      sumfile = new TFile(TString::Format("/Volumes/SDCard/data/%s/%d_max_30001_sinsub_10_3_ad_2.root", "a4all",run));; 
       gROOT->cd(); 
 
       if (eventsfile) delete eventsfile; 
       eventsfile = new TFile(TString::Format("source_maps/%d_%d.root", run,run)); 
       gROOT->cd(); 
 
-      sumtree = (TTree*) sumfile->Get("anita3"); 
+      sumtree = (TTree*) sumfile->Get("anita4"); 
       eventstree = (TTree*) eventsfile->Get("events"); 
 
       sumtree->SetBranchAddress("summary",&sum); 
@@ -197,7 +200,7 @@ int removeEvents(const char * maps_file = "all_source_maps.root",
 
 
 
-int evaluateSourceMap(int start_run = 300, int end_run = 330, 
+int evaluateSourceMap(int start_run = 50, int end_run = 367, 
                       bool mc = false, bool decimated = true,
                       const char * prefix = "source_maps_eval/",
                       const char * infile="all_source_maps.root",
@@ -205,7 +208,7 @@ int evaluateSourceMap(int start_run = 300, int end_run = 330,
                       const char * removed_events_file = "removed_events.txt", 
                       bool weighted = true, bool vpol_only = false ) 
 {
-  TChain c(mc ? "simulation":"anita3"); 
+  TChain c(mc ? "simulation":"anita4"); 
   if (mc) 
   {
 //    c.Add("thermalTrees/simulated*.root"); 
@@ -259,7 +262,7 @@ int evaluateSourceMap(int start_run = 300, int end_run = 330,
   UCorrelator::ProbabilityMap * map = (UCorrelator::ProbabilityMap*) f.Get(key); 
   UCorrelator::ProbabilityMap * source_map = map; //for mc 
   UCorrelator::ProbabilityMap::Params * map_pars = map_params(); 
-  int n = c.Draw("run:eventNumber:iteration:F",  TCut(TString::Format("(%s) * (run >= %d && run <= %d)", weight,start_run,end_run)) , "goff" ); 
+  int n = c.Draw("run:eventNumber:iteration:F",  TCut(TString::Format("(%s) && (run >= %d && run <= %d)", weight,start_run,end_run)) , "goff" ); 
 
   std::vector<std::vector<double> > counts(10, std::vector<double> (map->segmentationScheme()->NSegments())); 
 
@@ -291,9 +294,9 @@ int evaluateSourceMap(int start_run = 300, int end_run = 330,
           d = new AnitaDataset(run,true); 
         }
 
-        sumfile = new TFile(TString::Format("%s/%d_sinsub_10_3_ad_2.root", mc ? "simulated_kotera_max" : "a3all",run));; 
+        sumfile = new TFile(TString::Format("/Volumes/SDCard/data/%s/%d_max_30001_sinsub_10_3_ad_2.root", mc ? "simulated" : "a4all",run));; 
         gROOT->cd(); 
-        sumtree = (TTree*) sumfile->Get(mc ? "simulation" : "anita3"); 
+        sumtree = (TTree*) sumfile->Get(mc ? "simulation" : "anita4"); 
         sumtree->SetBranchAddress("summary",&sum); 
         sumtree->SetBranchAddress("pat",&gps); 
         sumtree->BuildIndex("eventNumber"); 
@@ -403,19 +406,21 @@ int evaluateSourceMap(int start_run = 300, int end_run = 330,
 
 
 
-int makeSourceMap(int start_run = 300, int end_run = 330, const char * prefix = "source_maps/")
+// int makeSourceMap(int start_run = 50, int end_run = 367, const char * prefix = "source_maps/")
+int makeSourceMap(int start_run = 1, int end_run = 200, const char * prefix = "source_maps/")
 {
 
   // Start getting the run / event numbers of events that pass our cut
 
-  TChain c("anita3"); 
+  // TChain c("anita4"); 
+  TChain c("simulation"); 
 
   addRuns(c,start_run,end_run); 
 
   AnitaEventSummary * sum = new AnitaEventSummary; 
   Adu5Pat * gps = new Adu5Pat; 
 
-  int n = c.Draw("run:eventNumber:iteration:F",  TCut(TString::Format("(%s) * (run >= %d && run <= %d)", weight,start_run,end_run)) , "goff" ); 
+  int n = c.Draw("run:eventNumber:iteration:F",  TCut(TString::Format("(%s) && (run >= %d && run <= %d)", weight,start_run,end_run)) , "goff" ); 
   printf("%d events pass selection\n", n); 
 
 
@@ -445,15 +450,17 @@ int makeSourceMap(int start_run = 300, int end_run = 330, const char * prefix = 
   TTree * sumtree = 0; 
   double last_integ = 0; 
   double last_integ_norm = 0; 
-  for (int i = 0; i < n; i++) 
+  for (int i = 0; i < n; i+=1) 
   {
     run = c.GetV1()[i]; 
     if (run!= loaded_run)
     {
         if (sumfile) delete sumfile; 
-        sumfile = new TFile(TString::Format("%s/%d_sinsub_10_3_ad_2.root", "a3all",run));; 
+        // sumfile = new TFile(TString::Format("/Volumes/SDCard/data/%s/%d_max_30001_sinsub_10_3_ad_2.root", "a4all",run));; 
+        sumfile = new TFile(TString::Format("/Volumes/SDCard/data/%s/%d_max_1001_sinsub_10_3_ad_2.root", "simulated",run));; 
         gROOT->cd(); 
-        sumtree = (TTree*) sumfile->Get("anita3"); 
+        // sumtree = (TTree*) sumfile->Get("anita4"); 
+        sumtree = (TTree*) sumfile->Get("simulation"); 
         sumtree->SetBranchAddress("summary",&sum); 
         sumtree->SetBranchAddress("pat",&gps); 
         sumtree->BuildIndex("eventNumber"); 
@@ -466,7 +473,7 @@ int makeSourceMap(int start_run = 300, int end_run = 330, const char * prefix = 
     pol = int(c.GetV3()[i]) / 5; 
     peak = int(c.GetV3()[i]) % 5; 
     F = c.GetV4()[i]; 
-    printf("r/e: %d/%d/%g(%g)\n",run,ev, F, S); 
+    printf("index = %d \t run = %d \t eventNumber = %d \t F = %g \t S = %g \n",i,run,ev,F,S); 
 
     nsegs = map_weighted->add(sum, gps, AnitaPol::AnitaPol_t(pol), peak, S); 
 

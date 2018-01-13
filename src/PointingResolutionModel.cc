@@ -157,7 +157,9 @@ UCorrelator::PointingResolution * UCorrelator::PointingResolutionModelPlusHeadin
   point = p->computePointingResolution(sum,pol,peak,point); 
 
   double stdev, mean;
-  int n = h.estimateHeadingError(sum->realTime, &stdev,&mean); 
+  
+  // int n = h.estimateHeadingError(sum->realTime, &stdev,&mean);
+  int n =0; //comment out the line above by peng because gpsEvent is not ready to use
 
   double dphi = point->getdPhi();
   if (!n) //no nearby GPS, Indiscriminately add 1 degree to dphi 

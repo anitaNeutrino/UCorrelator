@@ -56,7 +56,7 @@ namespace UCorrelator
             level_thresholds(defaultLevelThresholds, defaultLevelThresholds + sizeof(defaultLevelThresholds) / sizeof(*defaultLevelThresholds)), 
             dataset(RampdemReader::rampdem), 
             refract(0), 
-            maximum_distance(20),
+            maximum_distance(5),
             min_p_on_continent (1e-3) , 
             projection(BACKWARD), 
             collision_detection(true) , 
