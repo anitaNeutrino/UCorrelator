@@ -361,6 +361,50 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
         desc += "(AbbyFilter)"; 
       }
     }
+
+
+    else if (strcasestr(tok.Data(),"simpleband_"))
+    {
+      double lower, upper; 
+      if(sscanf(tok.Data(),"simpleband_%lg_%lg",&lower,&upper)!=2) 
+      {
+        fprintf(stderr,"Problem with token: %s\n", tok.Data()); 
+      }
+
+
+      if (fillme) 
+      {
+
+        fillme->addOperation(new SimplePassBandFilter(lower/1e3, upper/1e3)); 
+
+      }
+
+      if (need_description) 
+      {
+          desc += TString::Format("(Simple Band Pass %lg-%lg MHz)",lower,upper); 
+      }
+    }
+    else if (strcasestr(tok.Data(),"simplenotch_"))
+    {
+      double lower, upper; 
+      if(sscanf(tok.Data(),"simplenotch_%lg_%lg",&lower,&upper)!=2) 
+      {
+        fprintf(stderr,"Problem with token: %s\n", tok.Data()); 
+      }
+
+
+      if (fillme) 
+      {
+
+        fillme->addOperation(new SimpleNotchFilter(lower/1e3, upper/1e3)); 
+
+      }
+
+      if (need_description) 
+      {
+          desc += TString::Format("(Simple Notch %lg-%lg MHz)",lower,upper); 
+      }
+    }
   }
   
 

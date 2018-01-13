@@ -92,6 +92,10 @@ namespace UCorrelator
    *
    *  abby  attempt at duplicating Abby's filter strategy (probably doesn't work for A3) 
    *
+   *  simpleband_%g_%g  fixed brickwall pass band filter, freqs in MHz (correspond to start and end of pass band)
+   *
+   *  simplenotch_%g_%g fixed brickwall notch filter, freqs in MHz (correspond to start and end of notch)
+   *
    *  Returns a human readable description.  
    */ 
   const char * fillStrategyWithKey(FilterStrategy * fillme, const char * key); 
