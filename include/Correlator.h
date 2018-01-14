@@ -32,7 +32,7 @@ namespace UCorrelator
       const TH2D * getHist() const { return hist; } 
  
       /** Get the rough correlation map normalization */ 
-      const TH2I * getNorm() const { return norm; } 
+      const TH2D * getNorm() const { return norm; } 
       
 
       /** Compute a zoomed in map around phi and theta. nphi,dphi,ntheta,dtheta. If nant is non-zero, only the nearest nant antennas are used. You can use useme to avoid allocating a new TH2.  */ 
@@ -66,10 +66,10 @@ namespace UCorrelator
       AnalysisWaveform* correlations[NANTENNAS][NANTENNAS]; 
 
       TH2D *hist; 
-      TH2I *norm; 
+      TH2D *norm; 
 
       std::vector<TH2D*> hists; 
-      std::vector<TH2I*> norms; 
+      std::vector<TH2D*> norms; 
 
 #ifndef NUM_ANITAS
 #define NUM_ANITAS 4
@@ -88,7 +88,7 @@ namespace UCorrelator
       double baselineWeight;
 
       AnalysisWaveform * getCorrelation(int ant1, int ant2); 
-      void doAntennas(int ant1, int ant2, TH2D ** hist, TH2I ** norm, const UCorrelator::TrigCache * tc, const double * center_point  = 0, bool abbysMethod = false ); 
+      void doAntennas(int ant1, int ant2, TH2D ** hist, TH2D ** norm, const UCorrelator::TrigCache * tc, const double * center_point  = 0, bool abbysMethod = false ); 
       void reset(); 
 
       CorrelatorLocks * locks; 
