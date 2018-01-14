@@ -837,8 +837,9 @@ void UCorrelator::Analyzer::fillChannelInfo(const FilteredAnitaEvent* event, Ani
       const TGraphAligned* hilbertEnvelope= wf->hilbertEnvelope();
       const TGraphAligned* gr = wf->even();
       double rms =  cfg->use_forced_trigger_rms ? UCorrelator::TimeDependentAverageLoader::getRMS( event->getHeader()->triggerTime, pol, ant) : gr->GetRMS(2);
-
-      summary->channels[polInd][ant].rms = rms; 
+      double later_half_mean, later_half_rms;
+      gr->getMeanAndRMS(&later_half_mean,&later_half_rms,116,-1);// only use the later half of the waveform (sample 116 to sample 256-1)
+      summary->channels[polInd][ant].rms = later_half_rms; 
       summary->channels[polInd][ant].avgPower = gr->getSumV2() / gr->GetN();
       summary->channels[polInd][ant].peakHilbert = hilbertEnvelope->peakVal();
       summary->channels[polInd][ant].snr = FFTtools::getPeakVal(gr) / rms; 
