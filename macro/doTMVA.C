@@ -161,7 +161,7 @@ void doTMVA(int data_start = 50, int data_stop=367, const char * mc_dir = "simul
     factory->AddSpectator("eventNumber"); 
     factory->AddSpectator("evnum1"); 
     factory->AddSpectator("evnum2"); 
-    factory->AddSpectator("countChan"); 
+    // factory->AddSpectator("countChan"); 
     factory->AddSignalTree(sigtree,1.0); 
     factory->AddBackgroundTree(bgtree,0.5);
   }
@@ -170,8 +170,8 @@ void doTMVA(int data_start = 50, int data_stop=367, const char * mc_dir = "simul
 
   //setup methods 
   // factory->BookMethod(dl, TMVA::Types::kFisher, "Fisher","CreateMVAPdfs=true");
-  factory->BookMethod(TMVA::Types::kFisher, "Fisher","CreateMVAPdfs=true");
-  // factory->BookMethod(TMVA::Types::kFisher, "Fisher","VarTransform=D+G+D+G+N");
+  // factory->BookMethod(TMVA::Types::kFisher, "Fisher","CreateMVAPdfs=true");
+  factory->BookMethod(TMVA::Types::kFisher, "Fisher","VarTransform=D+G+D+G+N");
 // factory->BookMethod( TMVA::Types::kMLP, "MLPBFGS","H:!V:NeuronType=tanh:VarTransform=N:NCycles=200:HiddenLayers=N+5:TestRate=5:TrainingMethod=BFGS" ); 
 //  factory->BookMethod(dl, TMVA::Types::kKNN, "kNN"); 
 // factory->BookMethod(dl, TMVA::Types::kBDT, "BDT","CreateMVAPdfs=true"); 
