@@ -69,7 +69,7 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
 
     d.getEntry(i); 
     printf("----(%d)-----\n",i);
-    if(d.header()->realTime=1480725529 and d.header()->realTime<=1480730678){
+    if(d.header()->realTime >= 1480725529 and d.header()->realTime<=1480730678){
       printf("Skip this event which from run 46.\n");
       continue;
     }
