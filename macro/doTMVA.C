@@ -121,62 +121,43 @@ void doTMVA(int data_start = 50, int data_stop=367, const char * mc_dir = "simul
   TFile tmvaOut(tmvaOutName.Data(),"RECREATE"); 
 
   TMVA::Factory *factory = new TMVA::Factory("thermal_cuts", &tmvaOut,"V"); 
-
-  if(ROOT_VERSION_CODE >= ROOT_VERSION(6,8,0)){
-    // TMVA::DataLoader *dl = new TMVA::DataLoader("thermal"); 
-    // if (mc_dir) 
-    // {
-    //   dl->SetSignalWeightExpression("weight"); 
-    // }
-    // /* These are the variables to be used. They must have been generated already */ 
-    // // dl->AddVariable("mapPeak");
-    // dl->AddVariable("mapSNR"); 
-    // dl->AddVariable("coherentHilbertPeak"); 
-    // dl->AddVariable("deconvHilbertPeak"); 
-    // dl->AddVariable("deconvImpulsivity"); 
-    // dl->AddVariable("deconvLinearPolFraction"); 
-    // dl->AddVariable("deconvLinearPolAngle"); 
-    // dl->AddVariable("deconvolvedWidth1010"); 
-    // dl->AddVariable("deconvolvedWidth5050"); 
-    // dl->AddSpectator("run"); 
-    // dl->AddSpectator("weight"); 
-    // dl->AddSpectator("eventNumber"); 
-    // dl->AddSignalTree(sigtree); 
-    // dl->AddBackgroundTree(bgtree); 
-  }else{
-    if (mc_dir) 
-    {
-      factory->SetSignalWeightExpression("weight"); 
-    }
-     /* These are the variables to be used. They must have been generated already */ 
-    // factory->AddVariable("mapPeak"); 
-    factory->AddVariable("mapSNR"); 
-    factory->AddVariable("deconvHilbertPeak"); 
-    factory->AddVariable("deconvImpulsivity"); 
-    factory->AddVariable("deconvLinearPolFraction"); 
-    factory->AddVariable("secondPeakRatio");
-    factory->AddSpectator("theta"); 
-    factory->AddSpectator("run"); 
-    factory->AddSpectator("weight"); 
-    factory->AddSpectator("eventNumber"); 
-    factory->AddSpectator("evnum1"); 
-    factory->AddSpectator("evnum2"); 
-    // factory->AddSpectator("countChan"); 
-    factory->AddSignalTree(sigtree,1.0); 
-    factory->AddBackgroundTree(bgtree,0.5);
+  TMVA::DataLoader *dl = new TMVA::DataLoader("thermal"); 
+  if (mc_dir) 
+  {
+    dl->SetSignalWeightExpression("weight"); 
   }
-
- 
-
+   /* These are the variables to be used. They must have been generated already */ 
+  dl->AddVariable("mapPeak"); 
+  // dl->AddVariable("mapSNR"); 
+  dl->AddVariable("deconvHilbertPeak"); 
+  dl->AddVariable("deconvImpulsivity"); 
+  dl->AddVariable("deconvLinearPolFraction"); 
+  dl->AddVariable("secondPeakRatio");
+  dl->AddSpectator("theta"); 
+  dl->AddSpectator("run"); 
+  dl->AddSpectator("weight"); 
+  dl->AddSpectator("eventNumber"); 
+  dl->AddSpectator("evnum1"); 
+  dl->AddSpectator("evnum2"); 
+  // dl->AddSpectator("countChan"); 
+  dl->AddSignalTree(sigtree,1.0); 
+  dl->AddBackgroundTree(bgtree,0.5);
   //setup methods 
   // factory->BookMethod(dl, TMVA::Types::kFisher, "Fisher","CreateMVAPdfs=true");
-  // factory->BookMethod(TMVA::Types::kFisher, "Fisher","CreateMVAPdfs=true");
-  factory->BookMethod(TMVA::Types::kFisher, "Fisher","VarTransform=D+G+D+G+N");
-// factory->BookMethod( TMVA::Types::kMLP, "MLPBFGS","H:!V:NeuronType=tanh:VarTransform=N:NCycles=200:HiddenLayers=N+5:TestRate=5:TrainingMethod=BFGS" ); 
+  // factory->BookMethod(dl, TMVA::Types::kFisher, "Fisher0","VarTransform=N");
+  // factory->BookMethod(dl, TMVA::Types::kFisher, "Fisher1","VarTransform=D+N");
+  factory->BookMethod(dl, TMVA::Types::kFisher, "Fisher2","VarTransform=D+G+N");
+  // factory->BookMethod(dl, TMVA::Types::kFisher, "Fisher3","VarTransform=D+G+D+G+N");
+
+  // factory->BookMethod(dl, TMVA::Types::kLD, "LD0","VarTransform=N");
+  // factory->BookMethod(dl, TMVA::Types::kLD, "LD1","VarTransform=D+N");
+  factory->BookMethod(dl, TMVA::Types::kLD, "LD2","VarTransform=D+G+N");
+  // factory->BookMethod(dl, TMVA::Types::kLD, "LD3","VarTransform=D+G+D+G+N");
+// factory->BookMethod(dl, TMVA::Types::kMLP, "MLPBFGS","H:!V:NeuronType=tanh:VarTransform=N:NCycles=200:HiddenLayers=N+5:TestRate=5:TrainingMethod=BFGS" ); 
 //  factory->BookMethod(dl, TMVA::Types::kKNN, "kNN"); 
 // factory->BookMethod(dl, TMVA::Types::kBDT, "BDT","CreateMVAPdfs=true"); 
 //  factory->BookMethod(dl, TMVA::Types::kMLP, "MLP"); 
-//  factory->BookMethod(dl, TMVA::Types::kSVM, "SVM","CreateMVAPdfs=true"); 
+ // factory->BookMethod(dl, TMVA::Types::kSVM, "SVM","CreateMVAPdfs=true"); 
 
 
   factory->TrainAllMethods(); 
