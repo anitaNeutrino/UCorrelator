@@ -36,8 +36,11 @@ namespace UCorrelator
   }
 
 
-  /**Geometric delay between the phase center of an antenna and a center point  */
-  inline double getDeltaTtoCenter(int ant1, double phi, double theta, AnitaPol::AnitaPol_t pol, bool includeGroupDelay = false, bool includeTimeShift = true) 
+  /**Geometric delay between the phase center of an antenna and a center point 
+   * @includeTimeShift set to TRUE corrects for the phase center R offset so that polarization measurements will come out correctly
+   * @simulationTimeShift set to TRUE makes the above correction in the opposite direction so that simulated event polarization measurements come out correctly
+   * */
+  inline double getDeltaTtoCenter(int ant1, double phi, double theta, AnitaPol::AnitaPol_t pol, bool includeGroupDelay = false, bool includeTimeShift = true, bool simulationTimeShift = false) 
   {
     double th = theta * DEG2RAD; 
     const AntennaPositions * ap = AntennaPositions::instance(); 
@@ -45,8 +48,8 @@ namespace UCorrelator
     double ph1  = ph1_deg * DEG2RAD; 
     double r1 = ap->rAnt[pol][ant1];
 
-
-    double tshift = includeTimeShift ? ((pol==AnitaPol::kHorizontal) ? 0:1.* (r1 - ap->rAnt[pol^1][ant1])*cos(ph1) * 1e9/C_LIGHT) : 0;
+    int whichShift = simulationTimeShift ? -1 : 1;
+    double tshift = includeTimeShift ? ((pol==AnitaPol::kHorizontal) ? 0 : whichShift * (r1 - ap->rAnt[pol^1][ant1])*cos(ph1) * 1e9/C_LIGHT) : 0;
 
     double part1=ap->zAnt[pol][ant1]*tan(th) - r1 * cos(ph1);
     

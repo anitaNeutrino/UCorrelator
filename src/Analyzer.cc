@@ -114,6 +114,10 @@ static int instance_counter = 0;
   wfcomb_xpol.setRTimeShiftFlag(cfg->r_time_shift_correction);
   wfcomb_filtered.setRTimeShiftFlag(cfg->r_time_shift_correction);
   wfcomb_xpol_filtered.setRTimeShiftFlag(cfg->r_time_shift_correction);
+  wfcomb.setSimulationTimeShiftFlag(cfg->simulation_time_shift_correction);
+  wfcomb_xpol.setSimulationTimeShiftFlag(cfg->simulation_time_shift_correction);
+  wfcomb_filtered.setSimulationTimeShiftFlag(cfg->simulation_time_shift_correction);
+  wfcomb_xpol_filtered.setSimulationTimeShiftFlag(cfg->simulation_time_shift_correction);
 
 
 
@@ -1141,13 +1145,9 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
     { 
       flags->isStepFunction |= (1<<4);
     }
-    else
-    {
-      flags->isStepFunction = 0; 
-    }
-
     flags->hasGlitch = fae->getUsefulAnitaEvent()->fRFSpike;
   }
+  else flags->isStepFunction = 0; 
 
 }
 
