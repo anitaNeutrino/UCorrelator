@@ -194,15 +194,15 @@ static int allowedPhisPairOfAntennas(double &lowerAngle, double &higherAngle, do
     upperlimit=phi2+2;  //  2 phi sectors on either side
     lowerlimit=phi2-2;
   } else {
-    upperlimit=phi2+3;  //  Up to 3 phi sectors on either side.
-    lowerlimit=phi2-3;
+    upperlimit=phi2+4;  //  Up to 4 phi sectors on either side.
+    lowerlimit=phi2-4;
   }
 
   if(upperlimit>NUM_PHI-1)upperlimit-=NUM_PHI;
   if(lowerlimit<0)lowerlimit+=NUM_PHI;
 
   if (upperlimit>lowerlimit){
-    if (phi1<=upperlimit && phi1>=lowerlimit){//  within 2 (or 3) phi sectors of eachother
+    if (phi1<=upperlimit && phi1>=lowerlimit){//  within 2 (or 4) phi sectors of eachother
       allowedFlag=1;
     }
   }
@@ -562,7 +562,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
 
      //Check if in beam width in phi 
-     if (!center_point && (fabs(dphi1) > max_phi || fabs(dphi2) > max_phi)) continue; 
+     if (abbysMethod && !center_point && (fabs(dphi1) > max_phi || fabs(dphi2) > max_phi)) continue; 
 //     if (!center_point && fabs(dphi1) > max_phi) continue; 
 //     if (!center_point && fabs(dphi2) > max_phi) continue; 
 
@@ -577,7 +577,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        double dtheta2 = center_point ? 0 : FFTtools::wrap(theta - centerTheta2,360,0); 
 
        // check if in beam width 
-       if (!center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi2 || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi2)) continue; 
+       if (abbysMethod && !center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi2 || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi2)) continue; 
 //       if (!center_point && dphi1 * dphi1 + dtheta1*dtheta1 > max_phi * max_phi) continue; 
 //       if (!center_point && dphi2 * dphi2 + dtheta2*dtheta2 > max_phi * max_phi) continue; 
 
@@ -638,12 +638,6 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
          the_norm->GetArray()[bin]++;
        }
    }
-//   for (int bi = 0; bi < nbins_used; bi++)
-//   {
-//       int bin = bins_to_fill[bi]; 
-//       if (abbysMethod) the_norm->GetArray()[bin]++;
-//       else if (fabs(times_to_fill[bi]) <= MAX_DELTA_T) the_norm->GetArray()[bin]++;
-//   }
 
    delete [] alloc; 
    delete [] dalloc; 
