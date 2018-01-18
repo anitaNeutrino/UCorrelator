@@ -443,20 +443,22 @@ UCorrelator::TimeDependentAverage::TimeDependentAverage(int run, int nsecs, cons
     {
       f.cd(); 
 
+      if (gDirectory->Get("norms") && gDirectory->Get("norms_minbias") && gDirectory->Get("nblasts"))
+      {
+        TH1I * found= (TH1I*) gDirectory->Get("norms"); 
+        norms = new TH1I(*found); 
+        norms->SetDirectory(0); 
 
-      TH1I * found= (TH1I*) gDirectory->Get("norms"); 
-      norms = new TH1I(*found); 
-      norms->SetDirectory(0); 
+        found= (TH1I*) gDirectory->Get("norms_minbias"); 
+        norms_minbias = new TH1I(*found); 
+        norms_minbias->SetDirectory(0); 
 
-      found= (TH1I*) gDirectory->Get("norms_minbias"); 
-      norms_minbias = new TH1I(*found); 
-      norms_minbias->SetDirectory(0); 
+        found= (TH1I*) gDirectory->Get("nblasts"); 
+        nblasts = new TH1I(*found); 
+        nblasts->SetDirectory(0); 
 
-      found= (TH1I*) gDirectory->Get("nblasts"); 
-      nblasts = new TH1I(*found); 
-      nblasts->SetDirectory(0); 
-
-      foundit = true;
+        foundit = true;
+      }
     }
     memset(rms,0,sizeof(rms)); 
 
