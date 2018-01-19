@@ -27,6 +27,8 @@ UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool us
   setDelayToCenter(false);
 	extra_filters = 0;
 	extra_filters_deconvolved = 0;
+  enable_r_time_shift = true;
+  enable_simulation_time_shift = false;
 }
 
 
@@ -175,7 +177,7 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
       deconv[i].padFreq(npad); 
     }
 
-    if (delay_to_center) delays[i] = getDeltaTtoCenter(antennas[i], phi, theta, pol, enable_group_delay, enable_r_time_shift);
+    if (delay_to_center) delays[i] = getDeltaTtoCenter(antennas[i], phi, theta, pol, enable_group_delay, enable_r_time_shift, enable_simulation_time_shift);
     else delays[i] = i == 0 ? 0 : getDeltaT(antennas[i], antennas[0], phi, theta, pol, enable_group_delay); 
 
   }

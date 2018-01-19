@@ -140,6 +140,8 @@ namespace UCorrelator
       bool delay_to_center;
 
       bool r_time_shift_correction; //if delaying to center, apply a correction for the effective different R's 
+      
+      bool simulation_time_shift_correction; //make the correction for different R's correct for simulated events (to fix polarization calculations).  Need r_time_shift_correction ON for this to work 
 
       /** TODO: this has to be loaded from file somehow */ 
       AnitaResponse::DeconvolutionMethod * deconvolution_method; 

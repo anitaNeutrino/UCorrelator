@@ -86,7 +86,7 @@ namespace UCorrelator
    *   if fill notch not 0,  notch is filled according to spectrum average
    *         
  
-   *  decon deconvolve filter  (using ``best'' known response) . Should be used in conjunction with others. 
+   *  deconv  deconvolve filter  (using ``best'' known response) . Should be used in conjunction with others. 
    *
    *  geom  geometric filter ( preliminary support) 
    *
