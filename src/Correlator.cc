@@ -279,7 +279,7 @@ for (int i = 0; i < NANTENNAS; i++)
 
 
 
-AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2) 
+AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2, bool abbysMethod) 
 {
 //  printf("%d %d / %d \n",ant1,ant2, NANTENNAS); 
 
@@ -328,7 +328,9 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2)
     omp_set_lock(&locks->waveform_locks[ant2]); 
 #endif
 //    printf("Computing correlation %d %d\n", ant1, ant2);  
-    correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],padded_waveforms[ant2],pad_factor, rms[ant1] * rms[ant2]); 
+  if (abbysMethod) correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],padded_waveforms[ant2],pad_factor, rms[ant1] * rms[ant2]);
+  else correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],padded_waveforms[ant2],pad_factor, 1);
+
 
 #ifdef UCORRELATOR_OPENMP
     omp_unset_lock(&locks->waveform_locks[ant2]); 
@@ -515,7 +517,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    // More stringent check if we have a center point
    if (center_point && !between(center_point[0], lowerAngleThis, higherAngleThis)) return; 
 
-   AnalysisWaveform * correlation = getCorrelation(ant1,ant2); 
+   AnalysisWaveform * correlation = getCorrelation(ant1, ant2, abbysMethod); 
    
    int nphibins = the_hist->GetNbinsX() + 2; 
 
