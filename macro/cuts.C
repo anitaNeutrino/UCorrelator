@@ -9,7 +9,12 @@ TCut isSun("flags.pulser == 0 && flags.isRF == 1 && abs(FFTtools::wrap(peak[1][0
 TCut isNorth("abs(FFTtools::wrap(peak[1][0].phi - heading,360,0)) < 90"); 
 TCut triggered(" abs(peak[1][0].hwAngle < 60)"); 
 TCut notMasked ("!peak[1][0].masked || !peak[1][0].masked_xpol"); 
-TCut aboveHorizon (" peak[1][0].theta < 0"); 
+TCut h0 ("peak[0][0].theta > 6"); 
+TCut h1 ("peak[0][0].theta > 0 && peak[0][0].theta < 5"); 
+TCut h2 ("peak[0][0].theta < 0"); 
+TCut v0 ("peak[1][0].theta > 6"); 
+TCut v1 ("peak[1][0].theta > 0 && peak[1][0].theta < 5"); 
+TCut v2 ("peak[1][0].theta < 0"); 
 // TCut isntSidelobe (" peak[1][0].phi_separation > 10"); 
 TCut isGlitch("flags.hasGlitch == 1");
 TCut badReconstructionCut = " abs(peak[1][0].dphi_rough) < 4 && abs(peak[1][0].dtheta_rough) <3"; 

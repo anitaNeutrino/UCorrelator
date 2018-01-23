@@ -36,8 +36,8 @@ void makeTMVATrees(const char * dir, const char * tree_name, int start_run, int 
     }else if(!strcmp(tree_name,"anita4")){
       cut = thermal_sample && !aboveHorizon;
     }else{
-      cut = anyMC && !aboveHorizon; // need to have pointing angle cut. 
-      filter = "max_1001_sinsub_10_3_ad_2";
+      cut = anyMC; // need to have pointing angle cut. 
+      filter = "max_1000_sinsub_10_3_ad_2";
     }
     std::cout << cut << " "<< filter << std::endl;
 

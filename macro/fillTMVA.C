@@ -1,6 +1,6 @@
 #include "AnitaTMVA.h" 
 
-void _fillTMVA(const char * file, const char * tree="simulation", const char * weights="weights/thermal_cuts_Fisher.weights.xml", const char * name="F", const char * vars_file="tree_vars.tmva") 
+void _fillTMVA(const char * file, const char * tree="simulation", const char * weights="thermal/weights/thermal_cuts_LD5.weights.xml", const char * name="F", const char * vars_file="tree_vars.tmva") 
 {
   AnitaTMVA::MVAVarSet vars(vars_file); 
 
@@ -18,10 +18,9 @@ void fillTMVA()
   for (int i = 1; i <=200; i+=40)
   {
     TString str; 
-    str.Form("thermalTrees/simulated_%d-%d_max_1001_sinsub_10_3_ad_2.root", i, i + 39); 
+    str.Form("thermalTrees/simulated_%d-%d_max_1000_sinsub_10_3_ad_2.root", i, i + 39); 
     _fillTMVA(str.Data(),"simulation"); 
   }
-return;
    for (int i = 120; i <=155; i+=40) 
   {
     TString str; 
