@@ -126,9 +126,9 @@ static void combineHists(int N, T ** hists )
 
 #define PHI_SECTOR_ANGLE (360. / NUM_PHI)
 
-#ifndef ANITA_BW
-#define ANITA_BW (1.2 - 0.180)  //  ANITA pass bandwidth in GHz.
-#define MAX_DELTA_T (1. / ANITA_BW)  //  Maximum geometric delay between antennas in ns.
+#ifndef ANITA_F_C
+#define ANITA_F_C (1.2 + 0.180) / 2  //  Central frequency in GHz of ANITA passband.
+#define ANITA_BW (1.2 - 0.180)  //  ANITA passwidth in GHz.
 #endif
 
 
@@ -182,7 +182,7 @@ UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, in
   groupDelayFlag = 1; 
 }
 
-static int allowedPhisPairOfAntennas(double &lowerAngle, double &higherAngle, double &centerTheta1, double &centerTheta2, double &centerPhi1, double &centerPhi2, int ant1, int ant2, double max_phi, AnitaPol::AnitaPol_t pol, bool abbysMethod = true)
+static int allowedPhisPairOfAntennas(double &lowerAngle, double &higherAngle, double &centerTheta1, double &centerTheta2, double &centerPhi1, double &centerPhi2, int ant1, int ant2, double max_phi, AnitaPol::AnitaPol_t pol, bool abbysMethod)
 {
 
   int phi1=AnitaGeomTool::Instance()->getPhiFromAnt(ant1);
@@ -193,7 +193,7 @@ static int allowedPhisPairOfAntennas(double &lowerAngle, double &higherAngle, do
   if (abbysMethod){
     upperlimit=phi2+2;  //  2 phi sectors on either side
     lowerlimit=phi2-2;
-  } else {
+  } else {;
     upperlimit=phi2+4;  //  Up to 4 phi sectors on either side.
     lowerlimit=phi2-4;
   }
@@ -328,8 +328,7 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2, b
     omp_set_lock(&locks->waveform_locks[ant2]); 
 #endif
 //    printf("Computing correlation %d %d\n", ant1, ant2);  
-  if (abbysMethod) correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],padded_waveforms[ant2],pad_factor, rms[ant1] * rms[ant2]);
-  else correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],padded_waveforms[ant2],pad_factor, 1);
+correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],padded_waveforms[ant2],pad_factor, abbysMethod ? rms[ant1] * rms[ant2] : 1);
 
 
 #ifdef UCORRELATOR_OPENMP
@@ -466,17 +465,18 @@ SECTION
     delete zoomed_norms[i]; 
   }
 
-
   int nonzero = 0;
-  //only keep values with at least  contributing antennas 
+  //only keep values with at least contributing antennas 
   for (int i = 0; i < (answer->GetNbinsX()+2) * (answer->GetNbinsY()+2); i++) 
   {
     double val = answer->GetArray()[i]; 
     if (val == 0) continue;
-    int this_norm = zoomed_norm->GetArray()[i]; 
-    answer->GetArray()[i] = this_norm > 0  ? val/this_norm : 0;
+    int this_norm = zoomed_norm->GetArray()[i];
+    answer->GetArray()[i] = this_norm > 0 ? val/this_norm : 0;
+//    answer->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
     nonzero++; 
   }
+
 
   answer->SetEntries(nonzero); 
  
@@ -499,6 +499,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
                                                 TH2I ** these_norms, const UCorrelator::TrigCache * cache , 
                                                 const double * center_point, bool abbysMethod)
 {
+   
    int allowedFlag; 
    double lowerAngleThis, higherAngleThis, centerTheta1, centerTheta2, centerPhi1, centerPhi2;
 
@@ -633,10 +634,11 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
          the_hist->GetArray()[bin] += val;
          the_norm->GetArray()[bin]++;
        }
-       else if (fabs(times_to_fill[bi]) <= MAX_DELTA_T)  //  Should group delay correction be added here?
+       else if (fabs(times_to_fill[bi]) <= 1 / ANITA_BW)  //  Should group delay correction be added here?
        {
          the_hist->GetArray()[bin] += val;
-         the_norm->GetArray()[bin]++;
+         the_norm->GetArray()[bin] = 1;
+//         the_norm->GetArray()[bin]++;
        }
    }
 
@@ -720,7 +722,6 @@ SECTIONS
     combineHists<TH2I,int>(nthreads(),&norms[0]); 
 }
 
-
   int nonzero = 0;
   //only keep values with at least 3 contributing antennas 
   for (int i = 0; i < (hist->GetNbinsX()+2) * (hist->GetNbinsY()+2); i++) 
@@ -728,7 +729,8 @@ SECTIONS
     double val = hist->GetArray()[i]; 
     if (val == 0) continue;
     int this_norm = norm->GetArray()[i]; 
-    hist->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
+    hist->GetArray()[i] = this_norm > 0 ? val/this_norm : 0;
+//    hist->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
 
   //  printf("%d %g %d\n",  i,  val, this_norm); 
     nonzero++; 
