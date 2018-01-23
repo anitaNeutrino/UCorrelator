@@ -75,8 +75,8 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
     }
     
     UsefulAdu5Pat pat(d.gps()); 
-    
-    printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone); 
+    const time_t ctt = time(0);
+    printf("Processing event %d (%d) \t|%s", d.header()->eventNumber,ndone,asctime(localtime(&ctt)));
     FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
 
     analyzer.analyze(&ev, sum,d.truth()); 
