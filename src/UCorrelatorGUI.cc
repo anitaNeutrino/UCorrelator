@@ -119,7 +119,10 @@ void UCorrelator::gui::Map::Paint(Option_t * opt)
   //we ignore most of the options 
   GetPainter(opt);
   fPainter->Paint(opt); 
-  heading_axis.Draw(); 
+  if (!strcasestr(opt,"nh"))
+  {
+    heading_axis.Draw(); 
+  }
 
   /* turn off peaks with np*/ 
   if (!strcasestr(opt,"np"))
