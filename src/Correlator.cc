@@ -126,9 +126,10 @@ static void combineHists(int N, T ** hists )
 
 #define PHI_SECTOR_ANGLE (360. / NUM_PHI)
 
-#ifndef ANITA_F_C
-#define ANITA_F_C (1.2 + 0.180) / 2  //  Central frequency in GHz of ANITA passband.
-#define ANITA_BW (1.2 - 0.180)  //  ANITA passwidth in GHz.
+#ifndef ANITA_BW
+#define ANITA_F_LO 0.180  //  Lower 3dB point in GHz of ANITA passband.
+#define ANITA_F_HI 1.2  //  Higher 3dB point in GHz of ANITA passband.
+#define ANITA_BW (ANITA_F_HI - ANITA_F_LO)  //  ANITA passwidth in GHz.
 #endif
 
 
@@ -193,9 +194,11 @@ static int allowedPhisPairOfAntennas(double &lowerAngle, double &higherAngle, do
   if (abbysMethod){
     upperlimit=phi2+2;  //  2 phi sectors on either side
     lowerlimit=phi2-2;
-  } else {;
-    upperlimit=phi2+4;  //  Up to 4 phi sectors on either side.
-    lowerlimit=phi2-4;
+  } else {
+    upperlimit=NUM_PHI-1;
+    lowerlimit=0;
+//    upperlimit=phi2+2;  //  Up to 4 phi sectors on either side.
+//    lowerlimit=phi2-2;
   }
 
   if(upperlimit>NUM_PHI-1)upperlimit-=NUM_PHI;
@@ -499,6 +502,12 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
                                                 TH2I ** these_norms, const UCorrelator::TrigCache * cache , 
                                                 const double * center_point, bool abbysMethod)
 {
+
+   const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions::instance();
+   double distance = ap -> distance(ant1, ant2, pol);
+   double fC = C_LIGHT * 1e-9 / distance;  //  Central frequency in GHz corresponding to baseline between antennas.
+   double maxDelay = fmax(1 / (2 * (fC - ANITA_F_LO)), 1 / (2 * (ANITA_F_HI - fC)));  //  Maximum geometric delay in ns allowed between antennas such that inside of ANITA passband. Also throws out values outside ANITA passband.
+   if (!abbysMethod && maxDelay < 1 / ANITA_BW) return;  //  Assuring the new band is narrower than the initial ANITA passband.
    
    int allowedFlag; 
    double lowerAngleThis, higherAngleThis, centerTheta1, centerTheta2, centerPhi1, centerPhi2;
@@ -634,7 +643,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
          the_hist->GetArray()[bin] += val;
          the_norm->GetArray()[bin]++;
        }
-       else if (fabs(times_to_fill[bi]) <= 1 / ANITA_BW)  //  Should group delay correction be added here?
+       else if (fabs(times_to_fill[bi]) <= maxDelay)  //  Should group delay correction be added here?
        {
          the_hist->GetArray()[bin] += val;
          the_norm->GetArray()[bin] = 1;
