@@ -184,72 +184,65 @@ UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, in
   groupDelayFlag = 1; 
 }
 
-static int allowedPhisPairOfAntennas(double &lowerAngle, double &higherAngle, double &centerTheta1, double &centerTheta2, double &centerPhi1, double &centerPhi2, int ant1, int ant2, double max_phi, AnitaPol::AnitaPol_t pol, bool abbysMethod)
+static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double &centerTheta1, double &centerTheta2, double &centerPhi1, double &centerPhi2, int ant1, int ant2, double max_phi, AnitaPol::AnitaPol_t pol, bool abbysMethod)
 {
-
-  int phi1=AnitaGeomTool::Instance()->getPhiFromAnt(ant1);
-  int phi2=AnitaGeomTool::Instance()->getPhiFromAnt(ant2);
-  int allowedFlag=0;
+  int phi1 = AnitaGeomTool::Instance() -> getPhiFromAnt(ant1);
+  int phi2 = AnitaGeomTool::Instance() -> getPhiFromAnt(ant2);
+  int allowedFlag = 0;
   
-  int upperlimit, lowerlimit;
-  if (abbysMethod){
-    upperlimit=phi2+2;  //  2 phi sectors on either side
-    lowerlimit=phi2-2;
-  } else {
-    upperlimit=NUM_PHI-1;
-    lowerlimit=0;
-  }
+  const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions::instance();
 
-  if(upperlimit>NUM_PHI-1)upperlimit-=NUM_PHI;
-  if(lowerlimit<0)lowerlimit+=NUM_PHI;
-
-  if (upperlimit>lowerlimit){
-    if (phi1<=upperlimit && phi1>=lowerlimit){//  within 2 phi sectors of eachother
-      allowedFlag=1;
-    }
-  }
-  if (upperlimit<lowerlimit){
-    if (phi1<=upperlimit || phi1>=lowerlimit){
-      allowedFlag=1;
-
-    }
-  }
-  
-  double centerAngle1, centerAngle2;
-
-  const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions::instance(); 
-
-  if (allowedFlag==1)
+  if (!abbysMethod)
   {
-    centerAngle1=ap->phiAnt[pol][ant1]; 
-    centerAngle2=ap->phiAnt[pol][ant2]; 
+    double fC = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
+    if (fC < ANITA_F_LO || fC > ANITA_F_HI) return allowedFlag;
+  }
+
+  int upperlimit, lowerlimit;
+  upperlimit = abbysMethod ? phi2 + 2 : NUM_PHI - 1;  //  2 phi sectors on either side with abbysMethod
+  lowerlimit = abbysMethod ? phi2 - 2 : 0;
+
+  if (upperlimit > NUM_PHI - 1) upperlimit -= NUM_PHI;
+  if (lowerlimit < 0) lowerlimit += NUM_PHI;
+
+  if (upperlimit > lowerlimit)
+  {
+    if (phi1 <= upperlimit && phi1 >= lowerlimit) allowedFlag = 1;  //  within 2 phi sectors of eachother.
+  } else if (upperlimit < lowerlimit)
+  {
+    if (phi1 <= upperlimit || phi1 >= lowerlimit) allowedFlag = 1;
+  }
+
+  if (allowedFlag == 1)
+  {
+    centerPhi1 = ap -> phiAnt[pol][ant1]; 
+    centerPhi2 = ap -> phiAnt[pol][ant2]; 
 //    assert(centerAngle1 == ap->phiAnt[0][ant1]); 
 
-    if (centerAngle2>centerAngle1)
+    if (centerPhi2 > centerPhi1)
     {
-      lowerAngle=centerAngle2-max_phi;
-      higherAngle=centerAngle1+max_phi;
+      lowerPhi = centerPhi2 - max_phi;
+      higherPhi = centerPhi1 + max_phi;
     }
     else
     {
-      lowerAngle=centerAngle1-max_phi;
-      higherAngle=centerAngle2+max_phi; 
+      lowerPhi = centerPhi1 - max_phi;
+      higherPhi = centerPhi2 + max_phi; 
     }
 
-    if (lowerAngle<0) lowerAngle+=360;
-    if (higherAngle>360) higherAngle-=360;
+    if (lowerPhi < 0) lowerPhi += 360;
+    if (higherPhi > 360) higherPhi -= 360;
     
+  } else
+  {
+    centerPhi1 = 0; 
+    centerPhi2 = 0; 
   }
-  else
- {
 
-    centerAngle1= 0; 
-    centerAngle2= 0; 
-  }
-  centerTheta1=10;//degrees down
-  centerTheta2=10;//degrees down
-  centerPhi1=centerAngle1;
-  centerPhi2=centerAngle2;
+  centerTheta1 = 10;  //  degrees down
+  centerTheta2 = 10;  //  degrees down
+//  centerPhi1=centerAngle1;
+//  centerPhi2=centerAngle2;
   
   return allowedFlag;
 
@@ -499,45 +492,42 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
                                                 TH2I ** these_norms, const UCorrelator::TrigCache * cache , 
                                                 const double * center_point, bool abbysMethod)
 {
-
-   double fC = C_LIGHT * 1e-9 / cache -> ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
-   double BW;  //  Bandwidth corresponding to baseline within ANITA passband in GHz.
-   if (fC < ANITA_F_LO || fC > ANITA_F_HI) return;
-   else if (fC < ANITA_F_C) BW = 2 * (fC - ANITA_F_LO);
-   else if (fC > ANITA_F_C) BW = 2 * (ANITA_F_HI - fC);
-   else BW = ANITA_BW;
    
    int allowedFlag; 
-   double lowerAngleThis, higherAngleThis, centerTheta1, centerTheta2, centerPhi1, centerPhi2;
+   double lowerPhiThis, higherPhiThis, centerTheta1, centerTheta2, centerPhi1, centerPhi2;
 
-   allowedFlag=allowedPhisPairOfAntennas(lowerAngleThis,higherAngleThis, 
+   allowedFlag=allowedPhisPairOfAntennas(lowerPhiThis,higherPhiThis, 
                     centerTheta1, centerTheta2, centerPhi1, centerPhi2, 
                     ant1,ant2, max_phi, pol, abbysMethod);
 
    assert(ant1 < 48); 
-   assert(ant2 < 48); 
-   if (!allowedFlag) return; 
+   assert(ant2 < 48);
+   if (!allowedFlag) return;
+
+   double fC = C_LIGHT * 1e-9 / cache -> ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
+   double BW;  //  Bandwidth corresponding to baseline within ANITA passband in GHz.
+   if (fC < ANITA_F_C) BW = 2 * (fC - ANITA_F_LO);
+   else if (fC > ANITA_F_C) BW = 2 * (ANITA_F_HI - fC);
+   else BW = ANITA_BW;
 
    TH2D * the_hist  = these_hists[gettid()]; 
    TH2I * the_norm  = these_norms[gettid()]; 
 
-//   printf("lowerAngleThis: %g higherAngleThis: %g\n", lowerAngleThis, higherAngleThis); 
+//   printf("lowerPhiThis: %g higherPhiThis: %g\n", lowerPhiThis, higherPhiThis); 
    // More stringent check if we have a center point
-   if (center_point && !between(center_point[0], lowerAngleThis, higherAngleThis)) return; 
+   if (center_point && !between(center_point[0], lowerPhiThis, higherPhiThis)) return; 
 
    AnalysisWaveform * correlation = getCorrelation(ant1, ant2); 
    
    int nphibins = the_hist->GetNbinsX() + 2; 
 
-   //find phi bin corresponding to lowerAngleThis and higherAngleThis
+   //find phi bin corresponding to lowerPhiThis and higherPhiThis
 
-   int first_phi_bin = center_point ? 1 : the_hist->GetXaxis()->FindFixBin(lowerAngleThis); 
-   int last_phi_bin  = center_point ? the_hist->GetNbinsX() : the_hist->GetXaxis()->FindFixBin(higherAngleThis); 
+   int first_phi_bin = center_point ? 1 : the_hist->GetXaxis()->FindFixBin(lowerPhiThis); 
+   int last_phi_bin  = center_point ? the_hist->GetNbinsX() : the_hist->GetXaxis()->FindFixBin(higherPhiThis); 
 
    if (first_phi_bin == 0) ++first_phi_bin; 
-   if (last_phi_bin == the_hist->GetNbinsX()+1) --last_phi_bin; 
-//   if (first_phi_bin == 0) first_phi_bin = 1; 
-//   if (last_phi_bin == the_hist->GetNbinsX()+1) last_phi_bin = the_hist->GetNbinsX(); 
+   if (last_phi_bin == the_hist->GetNbinsX()+1) --last_phi_bin;  
    bool must_wrap = (last_phi_bin < first_phi_bin); 
 
 
