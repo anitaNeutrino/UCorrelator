@@ -500,9 +500,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
                                                 const double * center_point, bool abbysMethod)
 {
 
-   const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions::instance();
-   double distance = ap -> distance(ant1, ant2, pol);
-   double fC = C_LIGHT * 1e-9 / distance;  //  Central frequency corresponding to baseline between antennas in GHz.
+   double fC = C_LIGHT * 1e-9 / cache -> ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
    double BW;  //  Bandwidth corresponding to baseline within ANITA passband in GHz.
    if (fC < ANITA_F_LO || fC > ANITA_F_HI) return;
    else if (fC < ANITA_F_C) BW = 2 * (fC - ANITA_F_LO);
