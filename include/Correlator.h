@@ -52,7 +52,7 @@ namespace UCorrelator
 
 
       /** Get the correlation between two antennas */
-      const AnalysisWaveform * getCorrelationGraph(int ant1, int ant2, bool abbysMethod) { return getCorrelation(ant1, ant2, abbysMethod); }
+      const AnalysisWaveform * getCorrelationGraph(int ant1, int ant2) { return getCorrelation(ant1, ant2); }
 
       /** Set the supersampling factor */ 
       void setPadFactor(int pad) { pad_factor = pad; } 
@@ -87,8 +87,8 @@ namespace UCorrelator
       bool scale_cos_theta; 
       double baselineWeight;
 
-      AnalysisWaveform * getCorrelation(int ant1, int ant2, bool abbysMethod); 
-      void doAntennas(int ant1, int ant2, TH2D ** hist, TH2I ** norm, const UCorrelator::TrigCache * tc, const double * center_point  = 0, bool abbysMethod = false ); 
+      AnalysisWaveform * getCorrelation(int ant1, int ant2); 
+      void doAntennas(int ant1, int ant2, TH2D ** hist, TH2I ** norm, const UCorrelator::TrigCache * tc, const double * center_point  = 0, bool abbysMethod = true); 
       void reset(); 
 
       CorrelatorLocks * locks; 

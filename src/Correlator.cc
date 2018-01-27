@@ -127,9 +127,10 @@ static void combineHists(int N, T ** hists )
 #define PHI_SECTOR_ANGLE (360. / NUM_PHI)
 
 #ifndef ANITA_BW
-#define ANITA_F_LO 0.180  //  Lower 3dB point in GHz of ANITA passband.
-#define ANITA_F_HI 1.2  //  Higher 3dB point in GHz of ANITA passband.
-#define ANITA_BW (ANITA_F_HI - ANITA_F_LO)  //  ANITA passwidth in GHz.
+#define ANITA_F_LO 0.180  //  Lower 3dB point of ANITA passband in GHz.
+#define ANITA_F_HI 1.2  //  Higher 3dB point of ANITA passband in GHz.
+#define ANITA_F_C (ANITA_F_HI + ANITA_F_LO) / 2  //  Central frequency of ANITA passband in GHz.
+#define ANITA_BW (ANITA_F_HI - ANITA_F_LO)  //  ANITA bandwidth in GHz.
 #endif
 
 
@@ -197,15 +198,13 @@ static int allowedPhisPairOfAntennas(double &lowerAngle, double &higherAngle, do
   } else {
     upperlimit=NUM_PHI-1;
     lowerlimit=0;
-//    upperlimit=phi2+2;  //  Up to 4 phi sectors on either side.
-//    lowerlimit=phi2-2;
   }
 
   if(upperlimit>NUM_PHI-1)upperlimit-=NUM_PHI;
   if(lowerlimit<0)lowerlimit+=NUM_PHI;
 
   if (upperlimit>lowerlimit){
-    if (phi1<=upperlimit && phi1>=lowerlimit){//  within 2 (or 4) phi sectors of eachother
+    if (phi1<=upperlimit && phi1>=lowerlimit){//  within 2 phi sectors of eachother
       allowedFlag=1;
     }
   }
@@ -282,7 +281,7 @@ for (int i = 0; i < NANTENNAS; i++)
 
 
 
-AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2, bool abbysMethod) 
+AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2) 
 {
 //  printf("%d %d / %d \n",ant1,ant2, NANTENNAS); 
 
@@ -331,8 +330,7 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2, b
     omp_set_lock(&locks->waveform_locks[ant2]); 
 #endif
 //    printf("Computing correlation %d %d\n", ant1, ant2);  
-correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],padded_waveforms[ant2],pad_factor, abbysMethod ? rms[ant1] * rms[ant2] : 1);
-
+correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],padded_waveforms[ant2],pad_factor, rms[ant1] * rms[ant2]);
 
 #ifdef UCORRELATOR_OPENMP
     omp_unset_lock(&locks->waveform_locks[ant2]); 
@@ -475,8 +473,7 @@ SECTION
     double val = answer->GetArray()[i]; 
     if (val == 0) continue;
     int this_norm = zoomed_norm->GetArray()[i];
-    answer->GetArray()[i] = this_norm > 0 ? val/this_norm : 0;
-//    answer->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
+    answer->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
     nonzero++; 
   }
 
@@ -505,9 +502,12 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
    const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions::instance();
    double distance = ap -> distance(ant1, ant2, pol);
-   double fC = C_LIGHT * 1e-9 / distance;  //  Central frequency in GHz corresponding to baseline between antennas.
-   double maxDelay = fmax(1 / (2 * (fC - ANITA_F_LO)), 1 / (2 * (ANITA_F_HI - fC)));  //  Maximum geometric delay in ns allowed between antennas such that inside of ANITA passband. Also throws out values outside ANITA passband.
-   if (!abbysMethod && maxDelay < 1 / ANITA_BW) return;  //  Assuring the new band is narrower than the initial ANITA passband.
+   double fC = C_LIGHT * 1e-9 / distance;  //  Central frequency corresponding to baseline between antennas in GHz.
+   double BW;  //  Bandwidth corresponding to baseline within ANITA passband in GHz.
+   if (fC < ANITA_F_LO || fC > ANITA_F_HI) return;
+   else if (fC < ANITA_F_C) BW = 2 * (fC - ANITA_F_LO);
+   else if (fC > ANITA_F_C) BW = 2 * (ANITA_F_HI - fC);
+   else BW = ANITA_BW;
    
    int allowedFlag; 
    double lowerAngleThis, higherAngleThis, centerTheta1, centerTheta2, centerPhi1, centerPhi2;
@@ -527,7 +527,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    // More stringent check if we have a center point
    if (center_point && !between(center_point[0], lowerAngleThis, higherAngleThis)) return; 
 
-   AnalysisWaveform * correlation = getCorrelation(ant1, ant2, abbysMethod); 
+   AnalysisWaveform * correlation = getCorrelation(ant1, ant2); 
    
    int nphibins = the_hist->GetNbinsX() + 2; 
 
@@ -574,8 +574,6 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
      //Check if in beam width in phi 
      if (abbysMethod && !center_point && (fabs(dphi1) > max_phi || fabs(dphi2) > max_phi)) continue; 
-//     if (!center_point && fabs(dphi1) > max_phi) continue; 
-//     if (!center_point && fabs(dphi2) > max_phi) continue; 
 
      int ny = the_hist->GetNbinsY(); 
 
@@ -588,9 +586,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        double dtheta2 = center_point ? 0 : FFTtools::wrap(theta - centerTheta2,360,0); 
 
        // check if in beam width 
-       if (abbysMethod && !center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi2 || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi2)) continue; 
-//       if (!center_point && dphi1 * dphi1 + dtheta1*dtheta1 > max_phi * max_phi) continue; 
-//       if (!center_point && dphi2 * dphi2 + dtheta2*dtheta2 > max_phi * max_phi) continue; 
+       if (abbysMethod && !center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi2 || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi2)) continue;
 
        phibins[nbins_used] = phibin; 
        thetabins[nbins_used] = thetabin; 
@@ -643,11 +639,10 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
          the_hist->GetArray()[bin] += val;
          the_norm->GetArray()[bin]++;
        }
-       else if (fabs(times_to_fill[bi]) <= maxDelay)  //  Should group delay correction be added here?
+       else if (fabs(times_to_fill[bi]) <= 1 / BW)  //  Should group delay correction be added here?
        {
          the_hist->GetArray()[bin] += val;
-         the_norm->GetArray()[bin] = 1;
-//         the_norm->GetArray()[bin]++;
+         the_norm->GetArray()[bin]++;
        }
    }
 
@@ -737,9 +732,8 @@ SECTIONS
   {
     double val = hist->GetArray()[i]; 
     if (val == 0) continue;
-    int this_norm = norm->GetArray()[i]; 
-    hist->GetArray()[i] = this_norm > 0 ? val/this_norm : 0;
-//    hist->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
+    int this_norm = norm->GetArray()[i];
+    hist->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
 
   //  printf("%d %g %d\n",  i,  val, this_norm); 
     nonzero++; 
