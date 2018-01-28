@@ -191,8 +191,8 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
   int allowedFlag = 0;
 
   int upperlimit, lowerlimit;
-  upperlimit = abbysMethod ? phi2 + 2 : NUM_PHI - 1;  //  2 phi sectors on either side
-  lowerlimit = abbysMethod ? phi2 - 2 : 0;
+  upperlimit = phi2 + 2;  //  2 phi sectors on either side
+  lowerlimit = phi2 - 2;
 
   if (upperlimit > NUM_PHI - 1) upperlimit -= NUM_PHI;
   if (lowerlimit < 0) lowerlimit += NUM_PHI;
@@ -238,8 +238,8 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
 
   if (!abbysMethod)
   {
-    lowerPhi = 0;
-    higherPhi = 360;
+
+    allowedFlag = 1;
 
     double fC = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
     if (fC < ANITA_F_LO || fC > ANITA_F_HI)
@@ -521,7 +521,14 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
 //   printf("lowerPhiThis: %g higherPhiThis: %g\n", lowerPhiThis, higherPhiThis); 
    // More stringent check if we have a center point
-   if (center_point && !between(center_point[0], lowerPhiThis, higherPhiThis)) return; 
+   if (center_point && !between(center_point[0], lowerPhiThis, higherPhiThis)) return;
+
+   //  To ensure proper coverage over the whole map when not using abbysMethod.
+   if (!abbysMethod && !center_point)
+   {
+     lowerPhiThis = 0;
+     higherPhiThis = 360;
+   } 
 
    AnalysisWaveform * correlation = getCorrelation(ant1, ant2); 
    
