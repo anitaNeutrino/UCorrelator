@@ -189,17 +189,9 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
   int phi1 = AnitaGeomTool::Instance() -> getPhiFromAnt(ant1);
   int phi2 = AnitaGeomTool::Instance() -> getPhiFromAnt(ant2);
   int allowedFlag = 0;
-  
-  const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions::instance();
-
-  if (!abbysMethod)
-  {
-    double fC = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
-    if (fC < ANITA_F_LO || fC > ANITA_F_HI) return allowedFlag;
-  }
 
   int upperlimit, lowerlimit;
-  upperlimit = abbysMethod ? phi2 + 2 : NUM_PHI - 1;  //  2 phi sectors on either side with abbysMethod
+  upperlimit = abbysMethod ? phi2 + 2 : NUM_PHI - 1;  //  2 phi sectors on either side
   lowerlimit = abbysMethod ? phi2 - 2 : 0;
 
   if (upperlimit > NUM_PHI - 1) upperlimit -= NUM_PHI;
@@ -212,6 +204,8 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
   {
     if (phi1 <= upperlimit || phi1 >= lowerlimit) allowedFlag = 1;
   }
+
+  const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions::instance();
 
   if (allowedFlag == 1)
   {
@@ -241,8 +235,20 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
 
   centerTheta1 = 10;  //  degrees down
   centerTheta2 = 10;  //  degrees down
-//  centerPhi1=centerAngle1;
-//  centerPhi2=centerAngle2;
+
+  if (!abbysMethod)
+  {
+    lowerPhi = 0;
+    higherPhi = 360;
+
+    double fC = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
+    if (fC < ANITA_F_LO || fC > ANITA_F_HI)
+    {
+      allowedFlag = 0;
+      centerPhi1 = 0;
+      centerPhi2 = 0;
+    }
+  }
   
   return allowedFlag;
 
@@ -352,10 +358,10 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
     return 0; 
   }
 
-  double phi0 = phi - dphi * nphi/2; 
-  double phi1 = phi + dphi * nphi/2; 
-  double theta0 = theta - dtheta * ntheta/2; 
-  double theta1 = theta + dtheta * ntheta/2; 
+  double phi0 = phi - dphi * nphi / 2; 
+  double phi1 = phi + dphi * nphi / 2; 
+  double theta0 = theta - dtheta * ntheta / 2; 
+  double theta1 = theta + dtheta * ntheta / 2; 
   TH2I* zoomed_norm = new TH2I(TString::Format("zoomed_norm_%d",count_the_zoomed_correlators), "Zoomed Correlation Normalization", 
                     nphi, phi0,phi1, 
                     ntheta, theta0, theta1); 
@@ -387,7 +393,7 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
     nant = ap->getClosestAntennas(phi, nant, closest, disallowed_antennas); 
   }
 
-  TrigCache cache(nphi, dphi, phi0, ntheta,dtheta,theta0, ap, true,nant, nant ? closest : 0); 
+  TrigCache cache(nphi, dphi, phi0, ntheta, dtheta, theta0, ap, true, nant, nant ? closest : 0); 
 
   int n2loop = nant ? nant : NANTENNAS;  
 
@@ -593,7 +599,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    {
        int phibin = phibins[i]; 
        int thetabin = thetabins[i]; 
-       times_to_fill[i] = getDeltaTFast(ant1, ant2, phibin-1, thetabin-1,pol,cache, groupDelayFlag); 
+       times_to_fill[i] = getDeltaTFast(ant1, ant2, phibin - 1, thetabin - 1, pol, cache, groupDelayFlag); 
    }
 
    correlation->evalEven(nbins_used, times_to_fill, vals_to_fill); 
