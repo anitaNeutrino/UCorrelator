@@ -1,44 +1,60 @@
-void plotFisher(const char * var = "F")
+void plotFisher(const char * var = "deconvImpulsivity")
 {
-  TChain caugsim("simulation"); 
-  caugsim.Add("thermalTrees/simulated*.root"); 
+  TChain chain1("anita4"); 
+  chain1.Add("thermalTrees/a4all*30001*.root");
+  TChain chain2("anita4"); 
+  chain2.Add("thermalTrees/a4all*30001*.root");
+  TChain chain3("simulation"); 
+  chain3.Add("thermalTrees/simulated*.root");
+  TChain chain4("wais"); 
+  chain4.Add("thermalTrees/wais*root"); 
+//  chain3.SetProof(1); 
 
-  TChain cdecsim("simulation"); 
-  cdecsim.Add("thermalTrees/fakenoise*root"); 
-
-  TChain cbg("anita3"); 
-  cbg.Add("thermalTrees/a3all*.root"); 
-//  cbg.SetProof(1); 
-
-  caugsim.SetLineColor(4); 
-  cbg.SetLineColor(2); 
-  cdecsim.SetLineColor(3); 
+  chain1.SetLineColor(1); 
+  chain2.SetLineColor(2); 
+  chain3.SetLineColor(3); 
+  chain4.SetLineColor(4); 
 
   TFile fisher_plots("fisher_plots.root","RECREATE");
-  TH1D * hbg = new TH1D("hbg","Upward-Pointing Thermals That Pass Quality Cuts",200,-10,10); 
-  TH1D * haugsim = new TH1D("haugsim","Weighted Aug17 MC Pass Quality Cuts",200,-10,10); 
-  TH1D * hdecsim = new TH1D("hdecsim","Weighted Dec17 MC Pass Quality Cuts",200,-10,10); 
-
-  TCanvas * dists = new TCanvas(); 
-
-  cbg.Draw("F >> hbg",
-              "isMostImpulsive *  (MaxPeak < 1000) * (theta < 0)  * (!payloadBlast) *  ((iteration < 5 && HPolTrigger) || (iteration > 4 && VPolTrigger))", 
-             ""); 
-
-  caugsim.Draw("F >> haugsim",
-             "weight * isMostImpulsive * (MaxPeak < 1000) * pointsToMC * (!payloadBlast) *  ((iteration < 5 && HPolTrigger) || (iteration > 4 && VPolTrigger))", 
-             "same"); 
-
-  cdecsim.Draw("F >> hdecsim",
-             "weight * isMostImpulsive * (MaxPeak < 1000) * pointsToMC * (!payloadBlast) *  ((iteration < 5 && HPolTrigger) || (iteration > 4 && VPolTrigger))", 
-             "same"); 
 
 
+  TH1D * h1 = new TH1D("h1","Downward-Pointing Thermals ",200,-1,2); 
+  TH1D * h2 = new TH1D("h2","Upward-Pointing Thermals",200,-1,2); 
+  TH1D * h3 = new TH1D("h3","Energy222 MC",200,-1,2); 
+  TH1D * h4 = new TH1D("h4","Wais data",200,-1,2);
+  TCanvas * dists = new TCanvas("c1","c1"); 
+  chain1.Draw("F >> h1","theta>0", ""); 
+  chain2.Draw("F >> h2","theta<0", "same"); 
+  chain3.Draw("F >> h3", "weight", "same"); 
+  chain4.Draw("F >> h4","","same"); 
+
+  // TH1D * h1 = new TH1D("h1","Vpol Downward-Pointing Thermals ",200,0,1.1); 
+  // TH1D * h2 = new TH1D("h2","Vpol Upward-Pointing Thermals",200,0,1.1); 
+  // TH1D * h3 = new TH1D("h3","Energy222 MC",200,0,1.1); 
+  // TH1D * h4 = new TH1D("h4","Vpol Wais data",200,0,1.1); 
+  // TCanvas * dists = new TCanvas("c1","c1"); 
+  // chain1.Draw("deconvImpulsivity >> h1","theta>0", ""); 
+  // chain2.Draw("deconvImpulsivity >> h2","theta<0", "same"); 
+  // chain3.Draw("deconvImpulsivity >> h3", "weight", "same"); 
+  // chain4.Draw("deconvImpulsivity >> h4","","same");
+
+  auto legend = new TLegend(0.1,0.7,0.48,0.9);
+   // legend->SetHeader("The Legend Title","C"); // option "C" allows to center the header
+   legend->AddEntry("h1","Downward-Pointing Thermals","l");
+   legend->AddEntry("h2","Upward-Pointing Thermals","l");
+   legend->AddEntry("h3","Energy222 MC","l");
+   legend->AddEntry("h4","Wais data","l");
+   legend->Draw();
+   h1->GetXaxis()->SetTitle("Fisher");
+   // h1->GetXaxis()->SetTitle("deconvFilteredImpulsivity");
 
   fisher_plots.cd(); 
-  hbg->Write(); 
-  hdecsim->Write(); 
-  haugsim->Write(); 
+  h1->Write(); 
+  h2->Write(); 
+  h3->Write(); 
+  h4->Write();
+  legend->Write();
 
+  std::cout << "finished"<<std::endl;
 
 }

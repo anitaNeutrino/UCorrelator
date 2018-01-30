@@ -5,8 +5,8 @@
 void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/sparsedAllRuns/sparsedAllRuns.root"){
   AnitaEventSummary * sum = new AnitaEventSummary; 
   Adu5Pat * pat = new Adu5Pat; 
-  TFile * sumfile = new TFile(fileName);; 
-  sumtree = (TTree*) sumfile->Get("anita4"); 
+  TFile * sumfile = new TFile(fileName); 
+  TTree * sumtree = (TTree*) sumfile->Get("anita4"); 
   sumtree->SetBranchAddress("summary",&sum); 
   sumtree->SetBranchAddress("pat",&pat); 
   int N=sumtree->GetEntries();

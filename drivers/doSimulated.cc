@@ -69,10 +69,11 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
 
     d.getEntry(i); 
     printf("----(%d)-----\n",i);
-    if(d.header()->realTime >= 1480725529 and d.header()->realTime<=1480730678){
-      printf("Skip this event which from run 46.\n");
-      continue;
-    }
+    //fixed run46 hkfile problem.
+    // if(d.header()->realTime >= 1480725529 and d.header()->realTime<=1480730678){
+    //   printf("Skip this event which from run 46.\n");
+    //   continue;
+    // }
     
     UsefulAdu5Pat pat(d.gps()); 
     const time_t ctt = time(0);

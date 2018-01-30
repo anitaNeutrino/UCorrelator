@@ -103,7 +103,7 @@ void addRuns(TChain & c, int start_run, int end_run)
     if (start_run < i + 40 && end_run >= i)
     {
       // TString adding = TString::Format("thermalTrees/a4all_%d-%d_max_30001_sinsub_10_3_ad_2.root",i,i+39);
-      TString adding = TString::Format("thermalTrees/simulated_%d-%d_max_1001_sinsub_10_3_ad_2.root",i,i+39);
+      TString adding = TString::Format("thermalTrees/simulated_%d-%d_max_1000_sinsub_10_3_ad_2.root",i,i+39);
       printf("Adding %s\n", adding.Data() ); 
       c.Add(adding.Data() ); 
     }
@@ -406,8 +406,8 @@ int evaluateSourceMap(int start_run = 50, int end_run = 367,
 
 
 
-// int makeSourceMap(int start_run = 50, int end_run = 367, const char * prefix = "source_maps/")
-int makeSourceMap(int start_run = 1, int end_run = 200, const char * prefix = "source_maps/")
+// int makeSourceMap(int start_run = 50, int end_run = 367, const char * prefix = "source_maps/test_")
+int makeSourceMap(int start_run = 1, int end_run = 200, const char * prefix = "source_maps/test_")
 {
 
   // Start getting the run / event numbers of events that pass our cut
@@ -450,14 +450,14 @@ int makeSourceMap(int start_run = 1, int end_run = 200, const char * prefix = "s
   TTree * sumtree = 0; 
   double last_integ = 0; 
   double last_integ_norm = 0; 
-  for (int i = 0; i < n; i+=1) 
+  for (int i = 0; i < 1; i+=1) 
   {
     run = c.GetV1()[i]; 
     if (run!= loaded_run)
     {
         if (sumfile) delete sumfile; 
         // sumfile = new TFile(TString::Format("/Volumes/SDCard/data/%s/%d_max_30001_sinsub_10_3_ad_2.root", "a4all",run));; 
-        sumfile = new TFile(TString::Format("/Volumes/SDCard/data/%s/%d_max_1001_sinsub_10_3_ad_2.root", "simulated",run));; 
+        sumfile = new TFile(TString::Format("/Volumes/SDCard/data/%s/%d_max_1000_sinsub_10_3_ad_2.root", "simulated",run));; 
         gROOT->cd(); 
         // sumtree = (TTree*) sumfile->Get("anita4"); 
         sumtree = (TTree*) sumfile->Get("simulation"); 

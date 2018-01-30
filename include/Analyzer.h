@@ -133,7 +133,7 @@ namespace UCorrelator
       void fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph * power, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol, double rms); 
       void fillPointingInfo(double rough_phi, double rough_theta, AnitaEventSummary::PointingHypothesis * point,
                             UsefulAdu5Pat * pat, double hwAngle, UShort_t triggered_sectors, UShort_t masked_sectors, UShort_t triggered_sectors_xpol, UShort_t masked_sectors_xpol); 
-      void fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary* summary, UsefulAdu5Pat * pat); 
+      void fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary* summary, UsefulAdu5Pat * pat, const TruthAnitaEvent * truth); 
       void fillChannelInfo(const FilteredAnitaEvent* event, AnitaEventSummary* summary);
 
       gui::Map* correlation_maps[2]; 

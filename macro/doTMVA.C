@@ -17,7 +17,7 @@ int simulation_stop = 200;
 #include "AnitaTMVA.h" 
 
 
-void makeTrees(int data_start = 50, int data_stop=367, const char * mc_dir = "simulated", const char * filter = "max_30001_sinsub_10_3_ad_2", int nworkers = 8) 
+void makeTrees(int data_start = 50, int data_stop=367, const char * mc_dir = "simulated", const char * filter = "max_30002_sinsub_10_3_ad_2", int nworkers = 8) 
 {
 
   // Step 1: load data
@@ -69,8 +69,8 @@ void makeTrees(int data_start = 50, int data_stop=367, const char * mc_dir = "si
 
   //Step 2: set cuts
 
-  TCut signal_cut= mc_dir ?  anyMC : isWaisV; //revisit this 
-  TCut bg_cut = thermal_sample && aboveHorizon; 
+  TCut signal_cut= mc_dir ?  mc_sample : wais_sample; //revisit this 
+  TCut bg_cut = thermal_sample && fromSky; 
 
   AnitaTMVA::MVAVarSet varset("tree_vars.tmva"); 
 
@@ -127,12 +127,12 @@ void doTMVA(int data_start = 50, int data_stop=367, const char * mc_dir = "simul
     dl->SetSignalWeightExpression("weight"); 
   }
    /* These are the variables to be used. They must have been generated already */ 
-  // dl->AddVariable("mapPeak"); 
-  // dl->AddVariable("mapSNR"); 
-  // dl->AddVariable("deltaHilbertPeak"); 
-  // dl->AddVariable("deconvHilbertPeak"); 
+  dl->AddVariable("mapPeak"); 
+  dl->AddVariable("mapSNR"); 
+  dl->AddVariable("deltaHilbertPeak"); 
+  dl->AddVariable("deconvHilbertPeak"); 
   dl->AddVariable("deconvImpulsivity"); 
-  // dl->AddVariable("deconvLinearPolFraction"); 
+  dl->AddVariable("deconvLinearPolFraction"); 
   // dl->AddVariable("secondPeakRatio");
   dl->AddSpectator("theta"); 
   dl->AddSpectator("run"); 

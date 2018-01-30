@@ -1,62 +1,99 @@
 #ifndef CUTS_LOADED
-#include "macro/cuts.C"
+#include "cuts.C"
 #endif 
 
-
-
-void plotThermalCuts(TChain * wais, 
-                     TChain * decimated,
-                     const char * output_file = 0, 
-                     TH2 * tmpl = new TH2I("plot","Map Peak vs. Deconvolved Peak Hilbert; Deconvolved Peak Hilbert; Map Peak", 200, 0,0.05,100,0,.5), 
-                     const char * draw= "peak.value:deconvolved.peakHilbert",
-                     TCut wais_cuts = isReal && isWais, 
-                     std::vector<TCut> thermalCuts = { isReal && !isWais ,brightestPeak, !isSun , !isNorth , aboveHorizon ,blastCut, badReconstructionCut , notTooFiltered,  triggered}, 
-                     std::vector<const char*>  cut_labels = { "goodRF","brightest","!sun","!North", "upward",  " !blast", "goodReco", "!toofiltered", "triggered" } 
-                     ) 
-
-{
-
-
-  int ncuts = thermalCuts.size(); 
-
-
-  TCut cut = "" ;
-  TString title = ""; 
-  for (int i=0; i < ncuts; i++) 
+void plotThermalCuts(TChain * chain, const char * output_file = 0, std::vector<TCut> cutsList ={}, std::vector<const char*>  cut_labels={}, bool isWais=0,bool isMC =0, bool isSequential = 0){
+  std::cout<<"############################################"<<std::endl;
+  int ncuts = cutsList.size(); 
+  TCut weight = "mc.weight";
+  TCut cut,cut0;
+  TString title;
+  if(isWais){
+    //initial cut for wais
+    cut=allWais;
+    cut0=allWais;
+    title="allWais";
+  }else{
+     // intitial cut for other events.
+    cut="1";
+    cut0="1";
+    title="1";
+  }
+  double count0 = 0;
+  double frac = 0;
+  for (int i=-1; i < ncuts; i++) 
   {
-    cut += thermalCuts[i]; 
-    TCanvas * c = new TCanvas(TString::Format("c_cut%d",i), cut,800,800); 
-    TH2 * h = (TH2*) tmpl->Clone(TString::Format("%s_%d",tmpl->GetName(),i)); 
-    TH2 * h2 = (TH2*) tmpl->Clone(TString::Format("wais_%s_%d",tmpl->GetName(),i)); 
-
-    if (i > 0) title += ","; 
-    if (cut_labels.size() > i)
-    {
-      title += cut_labels[i]; 
+    if (i != -1){
+      if(isSequential){
+        cut += cutsList[i];
+        if (i>=0) title += ","; 
+        if (cut_labels.size() > i)
+        {
+          title += cut_labels[i]; 
+        }
+        else
+        {
+          title += cutsList[i]; 
+        } 
+      }else{
+        cut = cut0 + cutsList[i];
+        title = cut_labels[i];
+      }
     }
-    else
-    {
-      title += thermalCuts[i]; 
-    }
 
+    TCanvas * canvas = new TCanvas(TString::Format("c_cut%d",i), cut,800,800); 
+    // TH2D is double typed plot then we can count the weighted event.
+    TH2 * h = new TH2D("plot","Vpol impulsivity:Hpol impulsivity; Hpol impulsivity; Vpol impulsivity;", 300, 0,1,300,0,1); 
     h->SetTitle(title); 
-    c->cd(); 
-    decimated->Draw(TString::Format("%s >> %s",draw, h->GetName()), cut, "colz"); 
-    wais->Draw(TString::Format("%s >> %s",draw, h2->GetName()), wais_cuts, ""); 
-
-    h->DrawCopy("colz"); 
-    h2->SetMarkerColor(4); 
-    h2->DrawCopy("same"); 
+    canvas->cd();
+    double count;
+    if(isMC){
+      count = chain->Draw(TString::Format("%s >> %s","deconvolved_filtered[1][0].impulsivityMeasure:deconvolved_filtered[0][0].impulsivityMeasure", h->GetName()),cut*weight, "colz");
+      count = h->Integral();
+    }else{
+      count = chain->Draw(TString::Format("%s >> %s","deconvolved_filtered[1][0].impulsivityMeasure:deconvolved_filtered[0][0].impulsivityMeasure", h->GetName()),cut, "colz");
+    } 
+    if(i == -1){
+      count0 = count;
+    } 
+    std::cout<< title<<" \t"<< count<<"("<< 100*double(count)/double(count0)<<"%)"<<std::endl;
+    // h->SetMarkerColor(4); 
+    // h->DrawCopy("colz"); 
 
     if (output_file)
     {
-      c->Print( TString::Format("%s%s", output_file, i == 0 ? "(" : i == ncuts -1 ? ")" : ""), "pdf");
+      canvas->Print( TString::Format("%s%s", output_file, i == -1 ? "(" : i == ncuts -1 ? ")" : ""), "pdf");
     }
 
     delete h; 
-    delete h2; 
   }
-
-
 }
+
+void plotCuts(){
+  // bool isSequential or if only has one cut each time
+  bool isSequential=1;
+  std::vector<TCut> cutsList;
+  std::vector<const char*>  cut_labels;
+
+  // TChain wais("wais"); wais.Add("/Volumes/SDCard/data/wais/*30001*.root");
+  // cutsList = {isReal, notGlitch, notBadReconstruction, notBlast, triggered, notMasked,goodPointingWais};
+  // cut_labels = {"isReal", "notGlitch", "notBadReconstruction", "notBlast", "triggered", "notMasked","goodPointingWais"};
+  // plotThermalCuts(&wais,"cuts_deconvolved_wais.pdf",cutsList,cut_labels,1,0,isSequential);
+
+
+  // TChain a4all("anita4"); a4all.Add("/Volumes/SDCard/data/a4all/*30001*.root");
+  // cutsList = {isReal, notGlitch, notBadReconstruction, notBlast, triggered, notMasked};
+  // cut_labels = {"isReal", "notGlitch", "notBadReconstruction", "notBlast", "triggered", "notMasked"};
+  // plotThermalCuts(&a4all,"cuts_deconvolved_a4all.pdf",cutsList,cut_labels,0,0,isSequential);
+
+  TChain mc("simulation"); mc.Add("/Volumes/SDCard/data/simulated/*1000*.root");
+  // cutsList = {isReal, notGlitch, notBadReconstruction, notBlast, triggered, notMasked};
+  // cut_labels = {"isReal", "notGlitch", "notBadReconstruction", "notBlast", "triggered", "notMasked"};
+  
+  cutsList = {isReal,goodPointingMC};
+  cut_labels = {"isReal", "goodPointingMC"};
+  plotThermalCuts(&mc,"cuts_deconvolved_simulated.pdf",cutsList,cut_labels,0,1,isSequential);
+}
+
+
 

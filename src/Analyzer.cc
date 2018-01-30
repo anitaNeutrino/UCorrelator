@@ -584,7 +584,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     }
   }
 
-  fillFlags(event, summary, pat); 
+  fillFlags(event, summary, pat, truth); 
 
 
   if (truth)
@@ -1056,7 +1056,7 @@ void UCorrelator::Analyzer::drawSummary(TPad * ch, TPad * cv, int draw_filtered)
   }
 }
 
-void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary* summary, UsefulAdu5Pat * pat) 
+void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEventSummary* summary, UsefulAdu5Pat * pat, const TruthAnitaEvent * truth) 
 {
   AnitaEventSummary::EventFlags * flags = &summary->flags;
   flags->nadirFlag = true; // we should get rid of htis I guess? 
@@ -1147,7 +1147,13 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
       flags->isStepFunction = 0; 
     }
 
-    flags->hasGlitch = fae->getUsefulAnitaEvent()->fRFSpike;
+    if(truth){
+      // mc data: since the data is fake, just set no glitch.
+      flags->hasGlitch = 0;
+    }else{
+      //normal data 
+      flags->hasGlitch = fae->getUsefulAnitaEvent()->fRFSpike;
+    }
   }
 
 }

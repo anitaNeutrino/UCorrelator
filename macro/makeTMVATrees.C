@@ -7,7 +7,7 @@
 
 
 
-void makeTMVATrees(const char * dir, const char * tree_name, int start_run, int end_run, int nworkers = 1, int runs_per_file=40, const char * filter = "max_30001_sinsub_10_3_ad_2") 
+void makeTMVATrees(const char * dir, const char * tree_name, int start_run, int end_run, int nworkers = 1, int runs_per_file=40, const char * filter = "max_30002_sinsub_10_3_ad_2") 
 {
 
   int current_run = start_run; 
@@ -32,11 +32,11 @@ void makeTMVATrees(const char * dir, const char * tree_name, int start_run, int 
     TCut cut;
     // it is interesting strcmp return 0 when two string are the same
     if (!strcmp(tree_name,"wais")){
-      cut = isWaisV;
+      cut = wais_sample;
     }else if(!strcmp(tree_name,"anita4")){
-      cut = thermal_sample && !aboveHorizon;
+      cut = thermal_sample;
     }else{
-      cut = anyMC; // need to have pointing angle cut. 
+      cut = mc_sample; // need to have pointing angle cut. 
       filter = "max_1000_sinsub_10_3_ad_2";
     }
     std::cout << cut << " "<< filter << std::endl;
@@ -44,7 +44,8 @@ void makeTMVATrees(const char * dir, const char * tree_name, int start_run, int 
     TString tmp; 
     for (int i = current_run; i <= end; i++)
     {
-      tmp.Form("/Volumes/SDCard/data/%s/%d_%s.root", dir, i, filter); 
+      tmp.Form("/Volumes/LacieShare/data/%s/%d_%s.root", dir, i, filter); 
+      // tmp.Form("/Volumes/SDCard/data/%s/%d_%s.root", dir, i, filter); 
       c[i % nworkers]->Add(tmp.Data()); 
     }
 
