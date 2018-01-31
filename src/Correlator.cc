@@ -516,6 +516,14 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    else if (fC > ANITA_F_C) BW = 2 * (ANITA_F_HI - fC);
    else BW = ANITA_BW;
 
+   double axPhi = 20;  //  Values gleaned from Figure 5.6 in Ben Strutt's dissertation.
+   double axTheta = 25;
+   double phi1 = cache -> ap -> phiAnt[pol][ant1];
+   double phi2 = cache -> ap -> phiAnt[pol][ant2];
+   double theta1 = atan(cache -> ap -> zAnt[pol][ant1] / cache -> ap -> rAnt[pol][ant1]) * RAD2DEG - 10;
+   double theta2 = atan(cache -> ap -> zAnt[pol][ant2] / cache -> ap -> rAnt[pol][ant2]) * RAD2DEG - 10;
+
+
    TH2D * the_hist  = these_hists[gettid()]; 
    TH2I * the_norm  = these_norms[gettid()]; 
 
@@ -568,16 +576,19 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
      }
      
      double phi = cache->phi[phibin-1]; 
-//     double phi4width = center_point ? center_point[0] : phi; 
+//     double phi4width = center_point ? center_point[0] : phi;
      double dphi1 = center_point ? 0 : FFTtools::wrap(phi - centerPhi1,360,0); 
      double dphi2 = center_point ? 0 : FFTtools::wrap(phi - centerPhi2,360,0); 
 
+     double dPhi1 = FFTtools::wrap(phi - phi1, 360, 0);
+     double dPhi2 = FFTtools::wrap(phi - phi2, 360, 0);
 
      //Check if in beam width in phi 
-     if (abbysMethod && !center_point && (fabs(dphi1) > max_phi || fabs(dphi2) > max_phi)) continue; 
+     if (abbysMethod && !center_point && (fabs(dphi1) > max_phi || fabs(dphi2) > max_phi)) continue;
+
+     if (!abbysMethod && fabs(dPhi1 / axPhi) > 3 || fabs(dPhi2 / axPhi) > 3) continue;
 
      int ny = the_hist->GetNbinsY(); 
-
 
      for (int thetabin = 1; thetabin <= ny; thetabin++)
      {
@@ -586,8 +597,13 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        double dtheta1 = center_point ? 0 : FFTtools::wrap(theta - centerTheta1,360,0); 
        double dtheta2 = center_point ? 0 : FFTtools::wrap(theta - centerTheta2,360,0); 
 
+       double ellipse1 = sqrt(pow(dPhi1 / axPhi, 2) + pow((theta - theta1) / axTheta, 2));
+       double ellipse2 = sqrt(pow(dPhi2 / axPhi, 2) + pow((theta - theta2) / axTheta, 2));
+
        // check if in beam width 
        if (abbysMethod && !center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi2 || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi2)) continue;
+
+       if (!abbysMethod && (ellipse1 > 3 || ellipse2 > 3)) continue;
 
        phibins[nbins_used] = phibin; 
        thetabins[nbins_used] = thetabin; 
