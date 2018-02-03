@@ -520,16 +520,10 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    double axTheta = 25;
    double phi1 = cache -> ap -> phiAnt[pol][ant1];
    double phi2 = cache -> ap -> phiAnt[pol][ant2];
-   double theta1 = atan(cache -> ap -> zAnt[pol][ant1] / cache -> ap -> rAnt[pol][ant1]) * RAD2DEG;
-   double theta2 = atan(cache -> ap -> zAnt[pol][ant2] / cache -> ap -> rAnt[pol][ant2]) * RAD2DEG;
-   int z1, z2;  //  Value relating number of standard deviations to L2 trigger. Applicable to ANITA 3 and 4 layout.
-   if (ant1 < 16) z1 = 1;
-   else if (ant1 >= 16 && ant1 < 32) z1 = 3;
-   else z1 = 4;
-   if (ant2 < 16) z2 = 1;
-   else if (ant2 >= 16 && ant2 < 32) z2 = 3;
-   else z2 = 4;
-
+   double theta1 = -atan(cache -> ap -> zAnt[pol][ant1] / cache -> ap -> rAnt[pol][ant1]) * RAD2DEG;
+   double theta2 = -atan(cache -> ap -> zAnt[pol][ant2] / cache -> ap -> rAnt[pol][ant2]) * RAD2DEG;
+   int z1 = ant1 < 16 ? 1 : 3;  // Value relating to number of standard deviations from boresight for an antenna.
+   int z2 = ant2 < 16 ? 1 : 3;
 
    TH2D * the_hist  = these_hists[gettid()]; 
    TH2I * the_norm  = these_norms[gettid()]; 
@@ -592,9 +586,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
      //Check if in beam width in phi 
      if (abbysMethod && !center_point && (fabs(dphi1) > max_phi || fabs(dphi2) > max_phi)) continue;
-
-     if (!abbysMethod && (fabs(dPhi1) > 90 || fabs(dPhi2) > 90)) continue;
-//     if (!abbysMethod && fabs(dPhi1 / axPhi) > z1 || fabs(dPhi2 / axPhi) > z2) continue;
+     if (!abbysMethod && (fabs(dPhi1 / axPhi) > z1 || fabs(dPhi2 / axPhi) > z2)) continue;
 
      int ny = the_hist->GetNbinsY(); 
 
@@ -605,17 +597,12 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        double dtheta1 = center_point ? 0 : FFTtools::wrap(theta - centerTheta1,360,0); 
        double dtheta2 = center_point ? 0 : FFTtools::wrap(theta - centerTheta2,360,0);
 
-//       double dTheta1 = FFTtools::wrap(theta - theta1, 360, 0);
-//       double dTheta2 = FFTtools::wrap(theta - theta2, 360, 0);
-
-//       double ellipse1 = pow(dPhi1 / axPhi, 2) + pow((theta - theta1) / axTheta, 2);
-//       double ellipse2 = pow(dPhi2 / axPhi, 2) + pow((theta - theta2) / axTheta, 2);
+       double ellipse1 = pow(dPhi1 / axPhi, 2) + pow((theta - theta1) / axTheta, 2);
+       double ellipse2 = pow(dPhi2 / axPhi, 2) + pow((theta - theta2) / axTheta, 2);
 
        // check if in beam width 
        if (abbysMethod && !center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi2 || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi2)) continue;
-
-//       if (!abbysMethod && (fabs(dTheta1 / axTheta) > z1 || fabs(dTheta2 / axTheta) > z2)) continue;
-//       if (!abbysMethod && (ellipse1 > z1 * z1 || ellipse2 > z2 * z2)) continue;
+       if (!abbysMethod && (ellipse1 > z1 * z1 || ellipse2 > z2 * z2)) continue;
 
        phibins[nbins_used] = phibin; 
        thetabins[nbins_used] = thetabin; 
