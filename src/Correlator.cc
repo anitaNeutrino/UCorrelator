@@ -517,13 +517,13 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    double theta1 = -atan(cache -> ap -> zAnt[pol][ant1] / cache -> ap -> rAnt[pol][ant1]) * RAD2DEG;
    double theta2 = -atan(cache -> ap -> zAnt[pol][ant2] / cache -> ap -> rAnt[pol][ant2]) * RAD2DEG;
 
-   double zMax = 3;  //  Following values relate to number z of standard deviations from boresight, proportional to L2 trigger windows.
+   double zMax = 3.5;  //  Following values relate to number z of standard deviations from boresight, proportional to L2 trigger windows.
    double z1, z2;
-   if (ant1 < 16) z1 = zMax / 4.;
-   else if (ant1 >= 16 && ant1 < 32) z1 = 3 * zMax / 4.;
+   if (ant1 < 16) z1 = 0.25 * zMax;
+   else if (ant1 >= 16 && ant1 < 32) z1 = 0.75 * zMax;
    else z1 = zMax;
-   if (ant2 < 16) z2 = zMax / 4.;
-   else if (ant2 >= 16 && ant2 < 32) z2 = 3 * zMax / 4.;
+   if (ant2 < 16) z2 = 0.25 * zMax;
+   else if (ant2 >= 16 && ant2 < 32) z2 = 0.75 * zMax;
    else z2 = zMax;
 
    TH2D * the_hist  = these_hists[gettid()]; 
