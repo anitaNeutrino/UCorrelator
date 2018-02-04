@@ -510,25 +510,21 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    assert(ant2 < 48);
    if (!allowedFlag) return;
 
-   double fC = C_LIGHT * 1e-9 / cache -> ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
-   double BW;  //  Bandwidth corresponding to baseline within ANITA passband in GHz.
-   if (fC < ANITA_F_C) BW = 2 * (fC - ANITA_F_LO);
-   else if (fC > ANITA_F_C) BW = 2 * (ANITA_F_HI - fC);
-   else BW = ANITA_BW;
-
    double axPhi = 20;  //  Values gleaned from Figure 5.6 in Ben Strutt's dissertation.
    double axTheta = 25;
    double phi1 = cache -> ap -> phiAnt[pol][ant1];
    double phi2 = cache -> ap -> phiAnt[pol][ant2];
    double theta1 = -atan(cache -> ap -> zAnt[pol][ant1] / cache -> ap -> rAnt[pol][ant1]) * RAD2DEG;
    double theta2 = -atan(cache -> ap -> zAnt[pol][ant2] / cache -> ap -> rAnt[pol][ant2]) * RAD2DEG;
-   double z1, z2;  //  Values relating to number of standard deviations from antenna boresight, proportional to L2 trigger windows.
-   if (ant1 < 16) z1 = 3. / 4;
-   else if (ant1 >= 16 && ant1 < 32) z1 = 9. / 4;
-   else z1 = 3;
-   if (ant2 < 16) z2 = 3. / 4;
-   else if (ant2 >= 16 && ant2 < 32) z2 = 9. / 4;
-   else z2 = 3;
+
+   double zMax = 3;  //  Following values relate to number z of standard deviations from boresight, proportional to L2 trigger windows.
+   double z1, z2;
+   if (ant1 < 16) z1 = zMax / 4.;
+   else if (ant1 >= 16 && ant1 < 32) z1 = 3 * zMax / 4.;
+   else z1 = zMax;
+   if (ant2 < 16) z2 = zMax / 4.;
+   else if (ant2 >= 16 && ant2 < 32) z2 = 3 * zMax / 4.;
+   else z2 = zMax;
 
    TH2D * the_hist  = these_hists[gettid()]; 
    TH2I * the_norm  = these_norms[gettid()]; 
@@ -585,7 +581,6 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 //     double phi4width = center_point ? center_point[0] : phi;
      double dphi1 = center_point ? 0 : FFTtools::wrap(phi - centerPhi1,360,0); 
      double dphi2 = center_point ? 0 : FFTtools::wrap(phi - centerPhi2,360,0); 
-
      double dPhi1 = FFTtools::wrap(phi - phi1, 360, 0);
      double dPhi2 = FFTtools::wrap(phi - phi2, 360, 0);
 
@@ -601,7 +596,6 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 //       double theta4width = center_point ? center_point[1] : theta; 
        double dtheta1 = center_point ? 0 : FFTtools::wrap(theta - centerTheta1,360,0); 
        double dtheta2 = center_point ? 0 : FFTtools::wrap(theta - centerTheta2,360,0);
-
        double ellipse1 = pow(dPhi1 / axPhi, 2) + pow((theta - theta1) / axTheta, 2);
        double ellipse2 = pow(dPhi2 / axPhi, 2) + pow((theta - theta2) / axTheta, 2);
 
@@ -655,16 +649,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    {
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi];
-       if (abbysMethod)
-       {
-         the_hist->GetArray()[bin] += val;
-         the_norm->GetArray()[bin]++;
-       }
-       else if (fabs(times_to_fill[bi]) <= 1 / BW)  //  Should group delay correction be added here?
-       {
-         the_hist->GetArray()[bin] += val;
-         the_norm->GetArray()[bin]++;
-       }
+       the_hist->GetArray()[bin] += val;
+       the_norm->GetArray()[bin]++;
    }
 
    delete [] alloc; 

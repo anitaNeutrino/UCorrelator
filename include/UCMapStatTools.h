@@ -15,19 +15,19 @@ namespace UCorrelator {
 	 *  The parameter "sphWeight" is assuming spherical geometry by default, otherwise flat.
 	 *  The parameter "antOffset" is to account for antenna offset in degrees.
 	 */
-	double getMapMean(const TH2 * interfMap, bool sphWeight = true, double antOffset = 10);
+	double getMapMean(const TH2 * interfMap, bool sphWeight = true, double antOffset = 0);
 
 	/*  Implementation of interferometric map RMS which accounts for spherical geometry by default.
 	 */
-	double getMapRMS(const TH2 * interfMap, bool sphWeight = true, double antOffset = 10);
+	double getMapRMS(const TH2 * interfMap, bool sphWeight = true, double antOffset = 0);
 
 	/*  Implementation of interferometric map SNR which accounts for spherical geometry by default.
 	 */
-	double getMapSNR(const TH2 * interfMap, bool sphWeight = true, double antOffset = 10);
+	double getMapSNR(const TH2 * interfMap, bool sphWeight = true, double antOffset = 0);
 
 	/*  Implementation of interferometric map peak Z-score which accounts for spherical geometry by default.
 	 */
-	double getMapPeakZScore(const TH2 * interfMap, bool sphWeight = true, double antOffset = 10);
+	double getMapPeakZScore(const TH2 * interfMap, bool sphWeight = true, double antOffset = 0);
 }
 
 #endif
