@@ -510,21 +510,29 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    assert(ant2 < 48);
    if (!allowedFlag) return;
 
-   double axPhi = 20;  //  Values gleaned from Figure 5.6 in Ben Strutt's dissertation.
-   double axTheta = 25;
-   double phi1 = cache -> ap -> phiAnt[pol][ant1];
-   double phi2 = cache -> ap -> phiAnt[pol][ant2];
-   double theta1 = -atan(cache -> ap -> zAnt[pol][ant1] / cache -> ap -> rAnt[pol][ant1]) * RAD2DEG;
-   double theta2 = -atan(cache -> ap -> zAnt[pol][ant2] / cache -> ap -> rAnt[pol][ant2]) * RAD2DEG;
+   double fC = C_LIGHT * 1e-9 / cache -> ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
+   double BW;  //  Bandwidth corresponding to baseline within ANITA passband in GHz.
+   if (fC < ANITA_F_C) BW = 2 * (fC - ANITA_F_LO);
+   else if (fC > ANITA_F_C) BW = 2 * (ANITA_F_HI - fC);
+   else BW = ANITA_BW;
+   double fLo = fC - 0.5 * BW;
+   double fHi = fC + 0.5 * BW;
 
-   double zMax = 3.5;  //  Following values relate to number z of standard deviations from boresight, proportional to L2 trigger windows.
-   double z1, z2;
-   if (ant1 < 16) z1 = 0.25 * zMax;
-   else if (ant1 >= 16 && ant1 < 32) z1 = 0.75 * zMax;
-   else z1 = zMax;
-   if (ant2 < 16) z2 = 0.25 * zMax;
-   else if (ant2 >= 16 && ant2 < 32) z2 = 0.75 * zMax;
-   else z2 = zMax;
+//   double axPhi = 20;  //  Values gleaned from Figure 5.6 in Ben Strutt's dissertation.
+//   double axTheta = 25;
+//   double phi1 = cache -> ap -> phiAnt[pol][ant1];
+//   double phi2 = cache -> ap -> phiAnt[pol][ant2];
+//   double theta1 = -atan(cache -> ap -> zAnt[pol][ant1] / cache -> ap -> rAnt[pol][ant1]) * RAD2DEG;
+//   double theta2 = -atan(cache -> ap -> zAnt[pol][ant2] / cache -> ap -> rAnt[pol][ant2]) * RAD2DEG;
+
+//   double zMax = 3.5;  //  Following values relate to number z of standard deviations from boresight, proportional to L2 trigger windows.
+//   double z1, z2;
+//   if (ant1 < 16) z1 = 0.25 * zMax;
+//   else if (ant1 >= 16 && ant1 < 32) z1 = 0.75 * zMax;
+//   else z1 = zMax;
+//   if (ant2 < 16) z2 = 0.25 * zMax;
+//   else if (ant2 >= 16 && ant2 < 32) z2 = 0.75 * zMax;
+//   else z2 = zMax;
 
    TH2D * the_hist  = these_hists[gettid()]; 
    TH2I * the_norm  = these_norms[gettid()]; 
@@ -581,12 +589,12 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 //     double phi4width = center_point ? center_point[0] : phi;
      double dphi1 = center_point ? 0 : FFTtools::wrap(phi - centerPhi1,360,0); 
      double dphi2 = center_point ? 0 : FFTtools::wrap(phi - centerPhi2,360,0); 
-     double dPhi1 = FFTtools::wrap(phi - phi1, 360, 0);
-     double dPhi2 = FFTtools::wrap(phi - phi2, 360, 0);
+//     double dPhi1 = FFTtools::wrap(phi - phi1, 360, 0);
+//     double dPhi2 = FFTtools::wrap(phi - phi2, 360, 0);
 
      //Check if in beam width in phi 
      if (abbysMethod && !center_point && (fabs(dphi1) > max_phi || fabs(dphi2) > max_phi)) continue;
-     if (!abbysMethod && (fabs(dPhi1 / axPhi) > z1 || fabs(dPhi2 / axPhi) > z2)) continue;
+//     if (!abbysMethod && (fabs(dPhi1 / axPhi) > z1 || fabs(dPhi2 / axPhi) > z2)) continue;
 
      int ny = the_hist->GetNbinsY(); 
 
@@ -596,12 +604,12 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 //       double theta4width = center_point ? center_point[1] : theta; 
        double dtheta1 = center_point ? 0 : FFTtools::wrap(theta - centerTheta1,360,0); 
        double dtheta2 = center_point ? 0 : FFTtools::wrap(theta - centerTheta2,360,0);
-       double ellipse1 = pow(dPhi1 / axPhi, 2) + pow((theta - theta1) / axTheta, 2);
-       double ellipse2 = pow(dPhi2 / axPhi, 2) + pow((theta - theta2) / axTheta, 2);
+//       double ellipse1 = pow(dPhi1 / axPhi, 2) + pow((theta - theta1) / axTheta, 2);
+//       double ellipse2 = pow(dPhi2 / axPhi, 2) + pow((theta - theta2) / axTheta, 2);
 
        // check if in beam width 
        if (abbysMethod && !center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi2 || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi2)) continue;
-       if (!abbysMethod && (ellipse1 > z1 * z1 || ellipse2 > z2 * z2)) continue;
+//       if (!abbysMethod && (ellipse1 > z1 * z1 || ellipse2 > z2 * z2)) continue;
 
        phibins[nbins_used] = phibin; 
        thetabins[nbins_used] = thetabin; 
@@ -649,8 +657,20 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    {
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi];
-       the_hist->GetArray()[bin] += val;
-       the_norm->GetArray()[bin]++;
+       if (abbysMethod)
+       {
+         the_hist->GetArray()[bin] += val;
+         the_norm->GetArray()[bin]++;
+       }
+       else
+       {
+         double f = 1 / sqrt(pow(fC, -2) - pow(times_to_fill[bi], 2));
+         if (f >= fHi && f <= fHi)
+         {
+           the_hist->GetArray()[bin] += val;
+           the_norm->GetArray()[bin]++;
+         }
+       }
    }
 
    delete [] alloc; 
