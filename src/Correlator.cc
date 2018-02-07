@@ -511,8 +511,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    if (!allowedFlag) return;
 
    double fC = C_LIGHT * 1e-9 / cache -> ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
-   double fLo = ANITA_F_LO;
-   double fHi = 0.25;
+//   double fLo = ANITA_F_LO;
+//   double fHi = ANITA_F_HI;
 //   double BW;  //  Bandwidth corresponding to baseline within ANITA passband in GHz.
 //   if (fC < ANITA_F_C) BW = 2 * (fC - ANITA_F_LO);
 //   else if (fC > ANITA_F_C) BW = 2 * (ANITA_F_HI - fC);
@@ -659,20 +659,13 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    {
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi];
-       if (abbysMethod)
-       {
-         the_hist->GetArray()[bin] += val;
-         the_norm->GetArray()[bin]++;
-       }
-       else
+       if (!abbysMethod)
        {
          double f = 1 / sqrt(pow(fC, -2) - pow(times_to_fill[bi], 2));
-         if (f >= fLo && f <= fHi)
-         {
-           the_hist->GetArray()[bin] += val;
-           the_norm->GetArray()[bin]++;
-         }
+         if ((f >= 0.245 && f <= 0.265) || (f >= 0.355 && f <= 0.395) || (f >= 0.445 && f <= 0.465)) continue;
        }
+       the_hist->GetArray()[bin] += val;
+       the_norm->GetArray()[bin]++;
    }
 
    delete [] alloc; 
