@@ -246,8 +246,8 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
 
   if (!abbysMethod)
   {
-
-    if (ap -> distance(ant1, ant2, pol) < C_LIGHT * 1e-9 / ANITA_F_LO)  //  No baselines fall above the upper limit of the ANITA band.
+    double fC = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
+    if (fC > ANITA_F_LO)  //  Exclude baselines incapable of covering the entire ANITA passband.
     {
       allowedFlag = 0;
       centerPhi1 = 0;
@@ -610,8 +610,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
      {
        double theta = cache->theta[thetabin-1]; 
 //       double theta4width = center_point ? center_point[1] : theta; 
-       double dtheta1 = center_point ? 0 : FFTtools::wrap(theta - centerTheta1,360,0); 
-       double dtheta2 = center_point ? 0 : FFTtools::wrap(theta - centerTheta2,360,0);
+       double dtheta1 = center_point ? 0 : theta - centerTheta1; 
+       double dtheta2 = center_point ? 0 : theta - centerTheta2;
 //       double ellipse1 = pow(dPhi1 / axPhi, 2) + pow((theta - theta1) / axTheta, 2);
 //       double ellipse2 = pow(dPhi2 / axPhi, 2) + pow((theta - theta2) / axTheta, 2);
 
