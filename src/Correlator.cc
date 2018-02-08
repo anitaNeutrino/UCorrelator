@@ -191,8 +191,16 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
   int allowedFlag = 0;
 
   int upperlimit, lowerlimit;
-  upperlimit = phi2 + 2;  //  2 phi sectors on either side
-  lowerlimit = phi2 - 2;
+  if (abbysMethod)
+  {
+    upperlimit = phi2 + 2;  //  2 phi sectors on either side
+    lowerlimit = phi2 - 2;
+  }
+  else
+  {
+    upperlimit = phi2 + 3;
+    lowerlimit = phi2 - 3;
+  }
 
   if (upperlimit > NUM_PHI - 1) upperlimit -= NUM_PHI;
   if (lowerlimit < 0) lowerlimit += NUM_PHI;
@@ -240,7 +248,6 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
   {
 
     if (ap -> distance(ant1, ant2, pol) < C_LIGHT * 1e-9 / ANITA_F_LO)  //  No baselines fall above the upper limit of the ANITA band.
-//    if ((fC >= 0.245 && fC <= 0.265) || (fC >= 0.355 && fC <= 0.445) || (fC >= 0.445 && fC <= 0.465))
     {
       allowedFlag = 0;
       centerPhi1 = 0;
@@ -509,6 +516,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    if (!allowedFlag) return;
 
 //   double fC = C_LIGHT * 1e-9 / cache -> ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
+//   double BW = ANITA_F_HI - fC;
 //   double fLo = ANITA_F_LO;
 //   double fHi = ANITA_F_HI;
 //   double BW;  //  Bandwidth corresponding to baseline within ANITA passband in GHz.
@@ -657,12 +665,6 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    {
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi];
-//       if (!abbysMethod)
-//       {
-//         double f = 1 / fabs(times_to_fill[bi]);
-//         double f = 1 / sqrt(pow(fC, -2) - pow(times_to_fill[bi], 2));
-//         if ((f >= 0.245 && f <= 0.265) || (f >= 0.355 && f <= 0.445) || (f >= 0.445 && f <= 0.465)) continue;
-//       }
        the_hist->GetArray()[bin] += val;
        the_norm->GetArray()[bin]++;
    }
