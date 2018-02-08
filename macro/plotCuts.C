@@ -71,7 +71,7 @@ void plotThermalCuts(TChain * chain, const char * output_file = 0, std::vector<T
 
 void plotCuts(){
   // bool isSequential or if only has one cut each time
-  bool isSequential=1;
+  bool isSequential=0;
   std::vector<TCut> cutsList;
   std::vector<const char*>  cut_labels;
 
@@ -86,12 +86,13 @@ void plotCuts(){
   // cut_labels = {"isReal", "notGlitch", "notBadReconstruction", "notBlast", "triggered", "notMasked"};
   // plotThermalCuts(&a4all,"cuts_deconvolved_a4all.pdf",cutsList,cut_labels,0,0,isSequential);
 
-  TChain mc("simulation"); mc.Add("/Volumes/SDCard/data/simulated/*1000*.root");
-  // cutsList = {isReal, notGlitch, notBadReconstruction, notBlast, triggered, notMasked};
-  // cut_labels = {"isReal", "notGlitch", "notBadReconstruction", "notBlast", "triggered", "notMasked"};
+  // TChain mc("simulation"); mc.Add("/Volumes/SDCard/data/simulated/*1000*.root");
+  TChain mc("simulation"); mc.Add("/Volumes/SDCard/data/simulated/*501*.root");
+  cutsList = {isReal, notGlitch, notBadReconstruction, notBlast, triggered, notMasked};
+  cut_labels = {"isReal", "notGlitch", "notBadReconstruction", "notBlast", "triggered", "notMasked"};
   
-  cutsList = {isReal,goodPointingMC};
-  cut_labels = {"isReal", "goodPointingMC"};
+  // cutsList = {isReal,goodPointingMC};
+  // cut_labels = {"isReal", "goodPointingMC"};
   plotThermalCuts(&mc,"cuts_deconvolved_simulated.pdf",cutsList,cut_labels,0,1,isSequential);
 }
 

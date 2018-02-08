@@ -308,7 +308,7 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
 
     double p_other = the_rest[seg]; 
 
-
+    //remove the current event's ps from all segments.
     if (remove_self && mode == OVERLAP_SQRT_SUMS)
     {
       p_other -= p_this; 
@@ -845,7 +845,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
   return inv_two_pi_sqrt_det; 
 }
 
-int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, std::vector<std::vector<int> > * groups, double * counts, std::vector<double>  * dist) const
+int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, std::vector<std::vector<int> > * groups, double * counts, std::vector<double>  * dist, double val_threshold) const
 {
   //vals_to_group are the wgt in first level. All the wgt from one event should clustered and sum to 1. 
   //Then 10 events if they clusterd toghether in first level would sum up to 10. 
@@ -860,7 +860,11 @@ int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, std
 
   for (int i = 0; i < p.seg->NSegments(); i++) 
   {
-     if (! vals_to_group[i]) continue; 
+    //only clustering segments when the segment's weight larger than a threshold.
+    if (vals_to_group[i]<=val_threshold){
+      consumed[i] = true;
+      continue;
+    } 
      if (consumed[i]) continue; 
 
      ngroups++; 
@@ -879,7 +883,8 @@ int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, std
        segmentationScheme()->getNeighbors(seg, &neighbors); 
        for (size_t i = 0; i < neighbors.size(); i++) 
        {
-         if (vals_to_group[neighbors[i]] && !consumed[neighbors[i]])
+        // only cluster the neighbour segment when their ps larger than threshold and not consumed before.
+         if (vals_to_group[neighbors[i]]>val_threshold && !consumed[neighbors[i]])
          {
            consumed[neighbors[i]] = true;
            group.push_back(neighbors[i]); 
@@ -907,7 +912,7 @@ int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, std
 }
 
 
-int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, bool blind, bool draw) const
+int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, double threshold, bool blind, bool draw) const
 {
 
 
@@ -947,8 +952,8 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, bool blind, bo
   // returned non_base: a list of cluster that only consider segments's p above base.
   //returned base: a lsit of cluster that take include all probabilty projected to ground.
 
-  groupAdjacent(&wgt_without_base[0], 0,draw ? &non_base_counts[0] : 0, &non_base); 
-  groupAdjacent(&wgt_with_base[0], 0,draw ? &base_counts[0] : 0, &base); 
+  groupAdjacent(&wgt_without_base[0], 0,draw ? &non_base_counts[0] : 0, &non_base, threshold); 
+  groupAdjacent(&wgt_with_base[0], 0,draw ? &base_counts[0] : 0, &base, threshold); 
 
   const int maxes[] = {1,5,10,20,50,100,(int) 100e6}; 
   const int mins[] =  {1,2,6,11,21,51,101}; 
@@ -996,7 +1001,7 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, bool blind, bo
   printf(" Clustering / base association based on Mahalanobis distance of %g\n", getLevel(level)); 
   if (blind) printf(" BLINDED TO NON-BASE SINGLES\n"); 
 
-  printf("  Non-Base   |   Base  |   Size \n");
+  printf("  Segments far from Base   |   Segments near base  |   Size \n");
   printf("-------------------------------------\n");
   for (int row = 0; row < n_rows; row++) 
   {
@@ -1024,6 +1029,131 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, bool blind, bo
     }
 
     segmentationScheme()->Draw("colz",&non_base_counts[0]); 
+  }
+
+  return 0; 
+
+}
+
+int UCorrelator::ProbabilityMap::makeMultiplicityTable2(int level, double threshold, bool blind, bool draw) const
+{
+
+
+  //non base table 
+  std::vector<double> non_base; 
+  std::vector<double> non_base_counts(draw ? segmentationScheme()->NSegments(): 0); 
+  //base table
+  std::vector<double> base; 
+  std::vector<double> base_counts(draw ? segmentationScheme()->NSegments(): 0);
+  //vector, each element is 1000*1000 segments.
+  std::vector<double> wgt_without_base(getWgtAboveLevelWithoutBases(level), getWgtAboveLevelWithoutBases(level) + segmentationScheme()->NSegments()); 
+  std::vector<double> wgt_with_base(getWgtAboveLevel(level), getWgtAboveLevel(level) + segmentationScheme()->NSegments()); 
+  //loop through all segments
+  for (int i = 0; i < segmentationScheme()->NSegments(); i++) 
+  {
+    // if a segment, with and without base both have none zeor wgt. means base is not in this segments or near.
+    // only one of the two can be non-zero.
+    if (wgt_with_base[i] && wgt_without_base[i])
+    {
+      // if they equal, base is not near.
+      if (wgt_with_base[i] == wgt_without_base[i]) 
+      {
+        //
+        ;
+        // use wgt_without_base.
+        // wgt_with_base[i] = 0; 
+      }
+      else
+      {
+        // Otherwise, base would lower wgt_with_base, wgt_withoutbase then not make sense. use wgt_with_base.
+        wgt_without_base[i] = 0; 
+      }
+    }
+  }
+
+
+  //group the non-zeor wgt_withoutbase or wgt_withbase. 
+  //input first level wgt for clustering.
+  // returned non_base: a list of cluster that only consider segments's p above base.
+  //returned base: a lsit of cluster that take include all probabilty projected to ground.
+
+  groupAdjacent(&wgt_without_base[0], 0,draw ? &non_base_counts[0] : 0, &non_base, threshold); 
+  groupAdjacent(&wgt_with_base[0], 0,draw ? &base_counts[0] : 0, &base, threshold); 
+
+  const int maxes[] = {1,5,10,20,50,100,(int) 100e6}; 
+  const int mins[] =  {1,2,6,11,21,51,101}; 
+  int n_rows = sizeof(maxes) / sizeof(*maxes); 
+
+  int n_base[n_rows]; 
+  int n_non_base[n_rows]; 
+
+  memset(n_base,0, n_rows * sizeof(int)); 
+  memset(n_non_base,0, n_rows * sizeof(int)); 
+
+  for (size_t i = 0; i < non_base.size(); i++) 
+  {
+    for (int row = 0; row < n_rows; row++)
+    {
+       int n = round(non_base[i]); 
+       if (n <= maxes[row] && n >= mins[row])
+       {
+         if (!(blind && row == 0))
+         {
+           n_non_base[row]++; 
+         }
+         break; 
+       }
+    }
+  }
+
+  for (size_t i = 0; i < base.size(); i++) 
+  {
+    for (int row = 0; row < n_rows; row++)
+    {
+       int n = round(base[i]); 
+       if (n <= maxes[row] && n >= mins[row])
+       {
+         n_base[row]++; 
+         break; 
+       }
+    }
+  }
+
+
+
+
+  printf("============================================================================\n"); 
+  printf(" Clustering / base association based on Mahalanobis distance of %g\n", getLevel(level)); 
+  if (blind) printf(" BLINDED TO NON-BASE SINGLES\n"); 
+
+  printf("  Segments far from   |   All Segments  |   Size \n");
+  printf("-------------------------------------\n");
+  for (int row = 0; row < n_rows; row++) 
+  {
+    printf("   %04d    | %04d   |  ", n_non_base[row], n_base[row]);
+
+    if (row == 0) 
+      printf ("1\n"); 
+    else if (row < n_rows-1)
+      printf ("%d - %d\n", mins[row], maxes[row]); 
+    else
+      printf("%d - \n",mins[row]); 
+  }
+  printf("-------------------------------------\n"); 
+
+
+
+
+  if (draw) 
+  {
+    // for (int i = 0; i  < segmentationScheme()->NSegments(); i++) 
+    // {
+    //   if (non_base_counts[i] && base_counts[i]) printf("OOPS!!!: %g %g\n", non_base_counts[i], base_counts[i]); 
+    //   // if (blind && non_base_counts[i] == 1)  non_base_counts[i] = 0; 
+    //   // non_base_counts[i] =  non_base_counts[i] - base_counts[i]; 
+    // }
+
+    segmentationScheme()->Draw("colz",&base_counts[0]); 
   }
 
   return 0; 

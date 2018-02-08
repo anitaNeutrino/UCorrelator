@@ -234,11 +234,12 @@ namespace UCorrelator
        *  Returns the number of groupings. 
        *
        *  */ 
-      int groupAdjacent(const double * vals_to_group, std::vector<std::vector<int> > *  groups  = 0, double* counts = 0, std::vector<double>  * distribution = 0) const; 
+      int groupAdjacent(const double * vals_to_group, std::vector<std::vector<int> > *  groups  = 0, double* counts = 0, std::vector<double>  * distribution = 0, double val_threshold = 0) const; 
 
       int dumpNonZeroBases() const; 
 
-      int makeMultiplicityTable(int level, bool blind = true, bool draw = false) const; 
+      int makeMultiplicityTable(int level,double threshold = 0, bool blind = true, bool draw = false) const; 
+      int makeMultiplicityTable2(int level,double threshold = 0, bool blind = true, bool draw = false) const; 
       
     private:
       Params p; 
