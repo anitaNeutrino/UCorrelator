@@ -220,9 +220,7 @@ int UCorrelator::ProbabilityMap::add(const AnitaEventSummary * sum, const Adu5Pa
         //number of segment for this seg larger than a level, of course it should be 1. 
         n_above_level[j][iseg]+=incr; 
         //1/number of segment above this level. A simple fraction.
-        wgt_above_level[j][iseg]+= incr/ double(this_NAboveLevel[j]);
-std::cout<<j<< " "<<max_dens_seg <<" "<< levels_p[j]<<" "<< wgt_above_level_without_base[j][iseg]<<" "<< iseg<<" " <<  incr << " "<< double(this_NAboveLevel[j])<<std::endl;
- 
+        wgt_above_level[j][iseg]+= incr/ double(this_NAboveLevel[j]); 
         if (min_base_level > j)
         {
           n_above_level_without_base[j][iseg]+=incr; 

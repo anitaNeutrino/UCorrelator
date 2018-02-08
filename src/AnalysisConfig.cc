@@ -130,7 +130,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   correlator_theta_lowest = 60; 
   correlator_theta_highest = 40; 
   enable_group_delay = true; 
-  use_offline_mask = false; //turn off for anita4
+  use_offline_mask = true; 
   zoomed_nphi = 40; 
   zoomed_ntheta = 40; 
   zoomed_dphi = 0.5; 

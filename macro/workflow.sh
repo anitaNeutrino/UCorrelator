@@ -4,3 +4,4 @@ root -q makeTMVATrees.C'("wais","wais",120,155,1,40)'
 root -q makeTMVATrees.C'("a4all","anita4",50,367,40)'
 root -q makeTMVATrees.C'("simulated","simulation",1,200,100)'
 root -q fillTMVA.C
+root -q makeSourceMap.C'("anita4")'

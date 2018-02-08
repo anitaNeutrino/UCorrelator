@@ -2,17 +2,15 @@
 #include "AnitaConventions.h" 
 #include "AnitaDataset.h" 
 
-bool isMC = 1;
-
-double cutoff = 3; 
-const char * weight = "F > 3";
+double cutoff = 1; 
+const char * weight = "F > 1";
 // const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && theta < 40 )";
 // const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && isMostImpulsive && !payloadBlast && MaxPeak < 1000 && theta < 40 && ( (HPolTrigger && iteration < 5) || (VPolTrigger && iteration > 4))  && !isPulser  )";
 
 UCorrelator::ProbabilityMap::Params * map_params()
 {
 
-  StereographicGrid * g= new StereographicGrid(2024,2024); 
+  StereographicGrid * g= new StereographicGrid(1024,1024); 
 
   TF1 * f_dtheta = new TF1("ftheta", "[0] / x^[1]", 1, 50);
   TF1 * f_dphi = new TF1("fphi", "[0] / x^[1]", 1, 50);
@@ -44,56 +42,27 @@ UCorrelator::ProbabilityMap::Params * map_params()
 
 
 
-void addRuns(TChain & c, int start_run, int end_run)
+void addRuns(TChain & c, int start_run, int end_run, const char* thermalTreeFormat)
 {
   for (int i = start_run; i <= end_run; i+=40) 
   {
     if (start_run < i + 40 && end_run >= i)
     {
-      TString adding;
-      if(isMC == 0){
-        adding = TString::Format("thermalTrees/a4all_%d-%d_max_30001_sinsub_10_3_ad_2.root",i,i+39);
-      }else{
-        adding = TString::Format("thermalTrees/simulated_%d-%d_max_1000_sinsub_10_3_ad_2.root",i,i+39);
-      }
+      TString adding = TString::Format(thermalTreeFormat,i,i+39);
       printf("Adding %s\n", adding.Data() ); 
       c.Add(adding.Data() ); 
     }
   }
 }
 
-std::set<int> * getRemovedEvents(const char * file, std::vector<int>  * runs = 0, std::vector<int> * events = 0, std::vector<int> * iters = 0) 
-{
-  FILE * f = fopen(file,"r") ; 
-  if (!f) return 0; 
-  std::set<int> * removed = new std::set<int>; 
-  char buf[1024]; 
-  while (fgets(buf,sizeof(buf),f))
-  {
-    char * comment =strchr(buf,'#'); 
-    if (comment) *comment=0; 
-
-    int run,event,iteration; 
-    sscanf(buf,"%d %d %d", &run,&event,&iteration); 
-
-    if (runs) runs->push_back(run); 
-    if (events) events->push_back(event); 
-    if (iters) iters->push_back(iteration); 
-    removed->insert(event); 
-  }
-
-  return removed; 
-}
-
-// int makeSourceMap(int start_run = 50, int end_run = 367, const char * prefix = "source_maps/test_")
-int makeSourceMap(int start_run = isMC?1:50, int end_run = isMC?200:367, const char * prefix = "source_maps/test_")
+int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run = 50, int end_run =367, const char * outputFilePrefix = "source_maps/test_")
 {
 
   // Start getting the run / event numbers of events that pass our cut
 
-  TChain c(isMC?"simulation":"anita4"); 
+  TChain c(treeName); 
 
-  addRuns(c,start_run,end_run); 
+  addRuns(c,start_run,end_run, thermalTreeFormat); 
 
   AnitaEventSummary * sum = new AnitaEventSummary; 
   Adu5Pat * gps = new Adu5Pat; 
@@ -104,7 +73,7 @@ int makeSourceMap(int start_run = isMC?1:50, int end_run = isMC?200:367, const c
 
   UCorrelator::ProbabilityMap::Params * p = map_params(); 
 
-  TFile * f  = new TFile(TString::Format("%s%d_%d.root",prefix,start_run, end_run), "RECREATE"); 
+  TFile * f  = new TFile(TString::Format("%s%d_%d.root",outputFilePrefix,start_run, end_run), "RECREATE"); 
   // UCorrelator::ProbabilityMap *map_weighted = new UCorrelator::ProbabilityMap(p); 
   UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(p); 
 
@@ -112,15 +81,15 @@ int makeSourceMap(int start_run = isMC?1:50, int end_run = isMC?200:367, const c
   int run, ev, pol, peak,  nsegs ; 
   double S, F, dinteg, dinteg_norm; 
 
-  // tr->Branch("event",&ev); 
-  // tr->Branch("run",&run); 
-  // tr->Branch("pol",&pol); 
-  // tr->Branch("peak",&peak); 
-  // tr->Branch("S",&S); 
-  // tr->Branch("F",&F); 
-  // tr->Branch("dinteg",&dinteg); 
-  // tr->Branch("dinteg_norm",&dinteg_norm); 
-  // tr->Branch("nsegs",&nsegs); 
+  tr->Branch("event",&ev); 
+  tr->Branch("run",&run); 
+  tr->Branch("pol",&pol); 
+  tr->Branch("peak",&peak); 
+  tr->Branch("S",&S); 
+  tr->Branch("F",&F); 
+  tr->Branch("dinteg",&dinteg); 
+  tr->Branch("dinteg_norm",&dinteg_norm); 
+  tr->Branch("nsegs",&nsegs); 
   
 
   int loaded_run = 0; 
@@ -128,20 +97,17 @@ int makeSourceMap(int start_run = isMC?1:50, int end_run = isMC?200:367, const c
   TTree * sumtree = 0; 
   double last_integ = 0; 
   double last_integ_norm = 0; 
-  for (int i = 0; i < total_event_n; i+=1) 
+  // for (int i = 0; i < total_event_n; i+=1) 
+  for (int i = 0; i < 100; i+=1) 
   {
     run = c.GetV1()[i]; 
     if (run!= loaded_run)
     {
       if (sumfile) delete sumfile;
-      if(isMC == 0){
-        sumfile = new TFile(TString::Format("/Volumes/SDCard/data/%s/%d_max_30001_sinsub_10_3_ad_2.root", "a4all",run));
-      }else{
-        sumfile = new TFile(TString::Format("/Volumes/SDCard/data/%s/%d_max_1000_sinsub_10_3_ad_2.root", "simulated",run));
-      } 
+      sumfile = new TFile(TString::Format(summaryFileFormat,run));
          
       gROOT->cd(); 
-      sumtree = (TTree*) sumfile->Get(isMC?"simulation":"anita4"); 
+      sumtree = (TTree*) sumfile->Get(treeName); 
       sumtree->SetBranchAddress("summary",&sum); 
       sumtree->SetBranchAddress("pat",&gps); 
       sumtree->BuildIndex("eventNumber"); 
@@ -165,22 +131,47 @@ int makeSourceMap(int start_run = isMC?1:50, int end_run = isMC?200:367, const c
     last_integ_norm = integ_norm; 
     last_integ = integ_norm; 
 
-    // tr->Fill(); 
+    tr->Fill(); 
 
     if (F > cutoff) 
     {
       map->add(sum, gps, AnitaPol::AnitaPol_t(pol), peak, 1); 
     }
-
-
   }
-
-
   f->cd(); 
   map->Write("map_unweighted"); 
   // map_weighted->Write("map_weighted"); 
   tr->Write(); 
   return 0; 
+}
+
+void makeSourceMap(const char * treeName){
+  int start_run,end_run;
+  if (!strcmp(treeName,"wais")){
+    std::cout<<"makeSourceMap: "<< treeName <<std::endl;
+    const char* summaryFileFormat = "/Volumes/SDCard/data/wais/%d_max_30001_sinsub_10_3_ad_2.root";
+    const char* thermalTreeFormat = "thermalTrees/wais_%d-%d_max_30001_sinsub_10_3_ad_2.root";
+    start_run = 120;
+    end_run = 155;
+    _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run);
+
+  }else if(!strcmp(treeName,"anita4")){
+    std::cout<<"makeSourceMap: "<< treeName <<std::endl;
+    const char* summaryFileFormat = "/Volumes/SDCard/data/a4all/%d_max_30001_sinsub_10_3_ad_2.root";
+    const char* thermalTreeFormat = "thermalTrees/a4all_%d-%d_max_30001_sinsub_10_3_ad_2.root";
+    start_run = 50;
+    end_run = 367;
+    _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run);
+  }else if(!strcmp(treeName,"simulation")){
+    std::cout<<"makeSourceMap: "<< treeName <<std::endl;
+    const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_1000_sinsub_10_3_ad_2.root";
+    const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_1000_sinsub_10_3_ad_2.root";
+    start_run = 1;
+    end_run = 200;
+    _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run);
+  }else{
+    std::cout<< "wrong input treeName"<<std::endl;
+  }
 }
 
 
