@@ -236,19 +236,17 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
   centerTheta1 = 10;  //  degrees down
   centerTheta2 = 10;  //  degrees down
 
-//  if (!abbysMethod)
-//  {
-//
-//    allowedFlag = 1;
-//
-//    double fC = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
-//    if (fC < ANITA_F_LO || fC > ANITA_F_HI)
-//    {
-//      allowedFlag = 0;
-//      centerPhi1 = 0;
-//      centerPhi2 = 0;
-//    }
-//  }
+  if (!abbysMethod)
+  {
+
+    if (ap -> distance(ant1, ant2, pol) < C_LIGHT * 1e-9 / ANITA_F_LO)  //  No baselines fall above the upper limit of the ANITA band.
+//    if ((fC >= 0.245 && fC <= 0.265) || (fC >= 0.355 && fC <= 0.445) || (fC >= 0.445 && fC <= 0.465))
+    {
+      allowedFlag = 0;
+      centerPhi1 = 0;
+      centerPhi2 = 0;
+    }
+  }
   
   return allowedFlag;
 
@@ -510,7 +508,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    assert(ant2 < 48);
    if (!allowedFlag) return;
 
-   double fC = C_LIGHT * 1e-9 / cache -> ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
+//   double fC = C_LIGHT * 1e-9 / cache -> ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
 //   double fLo = ANITA_F_LO;
 //   double fHi = ANITA_F_HI;
 //   double BW;  //  Bandwidth corresponding to baseline within ANITA passband in GHz.
@@ -659,11 +657,12 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    {
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi];
-       if (!abbysMethod)
-       {
-         double f = 1 / sqrt(pow(fC, -2) - pow(times_to_fill[bi], 2));
-         if ((f >= 0.245 && f <= 0.265) || (f >= 0.355 && f <= 0.395) || (f >= 0.445 && f <= 0.465)) continue;
-       }
+//       if (!abbysMethod)
+//       {
+//         double f = 1 / fabs(times_to_fill[bi]);
+//         double f = 1 / sqrt(pow(fC, -2) - pow(times_to_fill[bi], 2));
+//         if ((f >= 0.245 && f <= 0.265) || (f >= 0.355 && f <= 0.445) || (f >= 0.445 && f <= 0.465)) continue;
+//       }
        the_hist->GetArray()[bin] += val;
        the_norm->GetArray()[bin]++;
    }
