@@ -140,6 +140,8 @@ void doTMVA(int data_start = 50, int data_stop=367, const char * mc_dir = "simul
   dl->AddSpectator("eventNumber"); 
   dl->AddSpectator("evnum1"); 
   dl->AddSpectator("evnum2"); 
+  dl->AddSpectator("pol"); 
+  dl->AddSpectator("peak"); 
   // dl->AddSpectator("countChan"); 
   dl->AddSignalTree(sigtree,1.0); 
   dl->AddBackgroundTree(bgtree,1.0);

@@ -27,7 +27,9 @@
 #include "simpleStructs.h"
 #include "UCImageTools.h"
 #include <stdint.h>
-#include "TimeDependentAverage.h" 
+#include "TimeDependentAverage.h"
+#include "UCMapStatTools.h"
+ 
 
 #ifdef UCORRELATOR_OPENMP
 #include <omp.h>
@@ -368,7 +370,8 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
     //compute RMS of correlation map 
     //    maprms = corr.getHist()->GetRMS(3); //This doesn't work!  Probably because ROOT is dumb
-    maprms = UCorrelator::getZRMS(corr.getHist());
+    // maprms = UCorrelator::getZRMS(corr.getHist());
+    maprms = UCorrelator::getMapRMS(corr.getHist(), true, 0); // try John Russel's spherical metric
 
 
     if (cfg->max_peak_trigger_angle)

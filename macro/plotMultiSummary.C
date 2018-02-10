@@ -70,7 +70,7 @@ void plotMultiSummary()
 
 			dThetavsdPhiH->Fill(FFTtools::wrap(sum->peak[0][0].phi - sum->wais.phi, 360, 0), sum->peak[0][0].theta - sum->wais.theta);
 			dThetavsSNR->Fill(sum->peak[0][0].snr, FFTtools::wrap(sum->peak[0][0].theta - sum->wais.theta, 360, 0));
-			dPhivsSNR->Fill(sum->peak[0][0].snr, FFTtools::wrap(sum->peak[0][0].theta - sum->wais.theta, 360, 0));
+			dPhivsSNR->Fill(sum->peak[0][0].snr, FFTtools::wrap(sum->peak[0][0].phi - sum->wais.phi, 360, 0));
 		}
 		if(pulser == 5){
 			// dThetavPhiV->Fill(sum->wais.phi, sum->peak[1][0].theta - sum->wais.theta);
@@ -82,7 +82,7 @@ void plotMultiSummary()
 			// }
 			dThetavsdPhiV->Fill(FFTtools::wrap(sum->peak[1][0].phi - sum->wais.phi, 360, 0), sum->peak[1][0].theta - sum->wais.theta);
 			dThetavsSNR->Fill(sum->peak[1][0].snr, FFTtools::wrap(sum->peak[1][0].theta - sum->wais.theta, 360, 0));
-			dPhivsSNR->Fill(sum->peak[1][0].snr, FFTtools::wrap(sum->peak[1][0].theta - sum->wais.theta, 360, 0));
+			dPhivsSNR->Fill(sum->peak[1][0].snr, FFTtools::wrap(sum->peak[1][0].phi - sum->wais.phi, 360, 0));
 		}
 		// dThetavPhiAll->GetXaxis()->SetTitle("wais.phi/[degree]");
 		// dThetavPhiAll->GetYaxis()->SetTitle("deltaTheta/[degree]");

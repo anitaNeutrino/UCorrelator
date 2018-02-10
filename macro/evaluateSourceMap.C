@@ -4,8 +4,8 @@
 
 
 
-double cutoff = 1.3; 
-const char * weight = "F>1.3";
+double cutoff = 1; 
+const char * weight = "F>1";
 
 
 

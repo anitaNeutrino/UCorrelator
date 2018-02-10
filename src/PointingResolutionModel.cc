@@ -78,7 +78,7 @@ double * UCorrelator::PointingResolution::computeProbabilityDensity(int N,
 
 UCorrelator::PointingResolution * UCorrelator::PointingResolutionParSNRModel::computePointingResolution(const AnitaEventSummary * sum, AnitaPol::AnitaPol_t pol, int peak, PointingResolution *p) const 
 {
-  const AnitaEventSummary::WaveformInfo * info = deconv ? &sum->deconvolved[pol][peak] : &sum->coherent[pol][peak]; 
+  const AnitaEventSummary::WaveformInfo * info = deconv ? &sum->deconvolved_filtered[pol][peak] : &sum->coherent_filtered[pol][peak]; 
   double snr = info->snr; 
   double snr_min, snr_max; 
   f_ph.GetRange(snr_min, snr_max); 
@@ -164,7 +164,7 @@ UCorrelator::PointingResolution * UCorrelator::PointingResolutionModelPlusHeadin
   double dphi = point->getdPhi();
   if (!n) //no nearby GPS, Indiscriminately add 1 degree to dphi 
   {
-    dphi = sqrt(dphi*dphi + 1); 
+    // dphi = sqrt(dphi*dphi + 1); // peng comment this out
   }
   else
   {

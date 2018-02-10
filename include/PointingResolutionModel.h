@@ -83,8 +83,8 @@ namespace UCorrelator
   class PointingResolutionParSNRModel : public PointingResolutionModel
   {
     public: 
-     PointingResolutionParSNRModel() :  deconv(false){ ; } 
-     PointingResolutionParSNRModel(const TF1 & f_dtheta, const TF1 & f_dphi, bool use_deconvolved = false, double scale_by_cos_theta = true)
+     PointingResolutionParSNRModel() :  deconv(true){ ; } 
+     PointingResolutionParSNRModel(const TF1 & f_dtheta, const TF1 & f_dphi, bool use_deconvolved = true, double scale_by_cos_theta = true)
      : f_th(f_dtheta), f_ph(f_dphi), deconv(use_deconvolved), cos_theta_scale(scale_by_cos_theta)  {; } 
        ; 
 

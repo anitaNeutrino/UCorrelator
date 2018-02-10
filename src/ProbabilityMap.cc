@@ -462,6 +462,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
   PointingResolution pr; 
   p.point->computePointingResolution(sum,pol, peak, &pr);  
   contribution.clear(); 
+  std::cout <<"\tdphi="<< pr.getdPhi()<<" dTheta="<< pr.getdTheta()<<std::endl;
 
 
   if ( pr.getdPhi() > p.max_dphi || pr.getdTheta() > p.max_dtheta) 
@@ -731,7 +732,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
           }
           else
           {
-            printf("OOPS %d %g %g\n", seg, scale, seg_p); 
+            printf("OOPS segment(%d) scale(%g) seg_p=%g\n>1, just set it to 1.", seg, scale, seg_p); 
             seg_p = 1; 
           }
         }
@@ -1021,7 +1022,7 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, double thresho
   {
     for (int i = 0; i  < segmentationScheme()->NSegments(); i++) 
     {
-      if (non_base_counts[i] && base_counts[i]) printf("OOPS!!!: %g %g\n", non_base_counts[i], base_counts[i]); 
+      if (non_base_counts[i] && base_counts[i]) printf("DrawOOPS!!!: %g %g\n", non_base_counts[i], base_counts[i]); 
       if (blind && non_base_counts[i] == 1)  non_base_counts[i] = 0; 
       non_base_counts[i] =  non_base_counts[i] - base_counts[i]; 
     }
@@ -1146,7 +1147,7 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable2(int level, double thresh
   {
     // for (int i = 0; i  < segmentationScheme()->NSegments(); i++) 
     // {
-    //   if (non_base_counts[i] && base_counts[i]) printf("OOPS!!!: %g %g\n", non_base_counts[i], base_counts[i]); 
+    //   if (non_base_counts[i] && base_counts[i]) printf("DrawOOPS!!!: %g %g\n", non_base_counts[i], base_counts[i]); 
     //   // if (blind && non_base_counts[i] == 1)  non_base_counts[i] = 0; 
     //   // non_base_counts[i] =  non_base_counts[i] - base_counts[i]; 
     // }

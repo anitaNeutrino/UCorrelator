@@ -56,7 +56,7 @@ namespace UCorrelator
             level_thresholds(defaultLevelThresholds, defaultLevelThresholds + sizeof(defaultLevelThresholds) / sizeof(*defaultLevelThresholds)), 
             dataset(RampdemReader::rampdem), 
             refract(0), 
-            maximum_distance(5),
+            maximum_distance(3),// how many sigma to plot on prob map
             min_p_on_continent (1e-3) , 
             projection(BACKWARD), 
             collision_detection(true) , 

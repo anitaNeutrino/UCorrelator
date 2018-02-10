@@ -9,16 +9,16 @@ const char * weight = "F > 1";
 
 UCorrelator::ProbabilityMap::Params * map_params()
 {
-
-  StereographicGrid * g= new StereographicGrid(1024,1024); 
+  // pixel x, pixel y , max meter x, max meter y
+  StereographicGrid * g= new StereographicGrid(1000,1000,2000000,2000000); 
 
   TF1 * f_dtheta = new TF1("ftheta", "[0] / x^[1]", 1, 50);
   TF1 * f_dphi = new TF1("fphi", "[0] / x^[1]", 1, 50);
   //anita4 fit from wais.
   f_dtheta->SetParameter(0, 5.431); 
   f_dtheta->SetParameter(1, 1.155); 
-  f_dphi->SetParameter(0, 4.061); 
-  f_dphi->SetParameter(1, 1.038);
+  f_dphi->SetParameter(0, 28.87); 
+  f_dphi->SetParameter(1, 1.398);
   //anita3
   // f_dtheta->SetParameter(0, 0.3936); 
   // f_dtheta->SetParameter(1, 0.2102); 
@@ -31,9 +31,12 @@ UCorrelator::ProbabilityMap::Params * map_params()
 
   UCorrelator::ProbabilityMap::Params *p = new UCorrelator::ProbabilityMap::Params; 
   p->refract = ref; 
+  // p->refract = 0; 
   p->seg = g; 
   p->point = resolutionModel; 
-  p->collision_detection = false; 
+  p->collision_detection = true; 
+  p->verbosity = 0; // verbosity level for output info.
+  p->maximum_distance = 2.5;
  
 
   return p; 
@@ -67,7 +70,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   AnitaEventSummary * sum = new AnitaEventSummary; 
   Adu5Pat * gps = new Adu5Pat; 
 
-  int total_event_n = c.Draw("run:eventNumber:iteration:F",  TCut(TString::Format("(%s) && (run >= %d && run <= %d)", weight,start_run,end_run)) , "goff" ); 
+  int total_event_n = c.Draw("run:eventNumber:pol*5+peak:F",  TCut(TString::Format("(%s) && (run >= %d && run <= %d)", weight,start_run,end_run)) , "goff" ); 
   printf("%d events pass selection\n", total_event_n); 
 
 
@@ -89,7 +92,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   tr->Branch("F",&F); 
   tr->Branch("dinteg",&dinteg); 
   tr->Branch("dinteg_norm",&dinteg_norm); 
-  tr->Branch("nsegs",&nsegs); 
+  tr->Branch("nsegs",&nsegs);
   
 
   int loaded_run = 0; 
@@ -98,9 +101,13 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   double last_integ = 0; 
   double last_integ_norm = 0; 
   // for (int i = 0; i < total_event_n; i+=1) 
-  for (int i = 0; i < 100; i+=1) 
+  for (int i = 0; i < total_event_n; i+=1) 
   {
-    run = c.GetV1()[i]; 
+    run = c.GetV1()[i];
+    // skip 45 degree wais runs. 
+    // if (run<136){
+    //   continue;
+    // }
     if (run!= loaded_run)
     {
       if (sumfile) delete sumfile;
@@ -123,7 +130,8 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
     printf("index = %d \t run = %d \t eventNumber = %d \t F = %g \t S = %g \n",i,run,ev,F,S); 
 
     // nsegs = map_weighted->add(sum, gps, AnitaPol::AnitaPol_t(pol), peak, S); 
-    nsegs = map->add(sum, gps, AnitaPol::AnitaPol_t(pol), peak, S); 
+    nsegs = map->add(sum, gps, AnitaPol::AnitaPol_t(pol), peak, S);
+    std::cout<< "\tsnr = "<< sum->deconvolved_filtered[pol][peak].snr << " longitude="<<sum->peak[pol][peak].longitude<<" latitude"<<sum->peak[pol][peak].latitude<< std::endl; 
     double integ = map->getProbSumsIntegral(false); 
     double integ_norm = map->getProbSumsIntegral(true); 
     dinteg = integ-last_integ; 
@@ -133,10 +141,10 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
 
     tr->Fill(); 
 
-    if (F > cutoff) 
-    {
-      map->add(sum, gps, AnitaPol::AnitaPol_t(pol), peak, 1); 
-    }
+    // if (F > cutoff) 
+    // {
+    //   map->add(sum, gps, AnitaPol::AnitaPol_t(pol), peak, 1); 
+    // }
   }
   f->cd(); 
   map->Write("map_unweighted"); 
@@ -164,10 +172,10 @@ void makeSourceMap(const char * treeName){
     _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run);
   }else if(!strcmp(treeName,"simulation")){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
-    const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_1000_sinsub_10_3_ad_2.root";
-    const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_1000_sinsub_10_3_ad_2.root";
+    const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_501_sinsub_10_3_ad_2.root";
+    const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_501_sinsub_10_3_ad_2.root";
     start_run = 1;
-    end_run = 200;
+    end_run = 10;
     _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run);
   }else{
     std::cout<< "wrong input treeName"<<std::endl;
