@@ -14,9 +14,10 @@
 #include "AnitaDataset.h"
 #include "RawAnitaHeader.h"
 #include "BH13Filter.h"
+#include "Hical2.h"
 
 
-void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_10_3_ad_2" )
+void doAll( int run = 352, int max = 0, int start = 0, const char * filter = "sinsub_10_3_ad_2" )
 //void doWais2( int run = 352, int max = 0, int start = 0, const char * filter = "" )
 {
 
@@ -58,9 +59,11 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "s
 
   RawAnitaHeader *hdr = 0 ;
   UsefulAdu5Pat *patptr = 0;
+  double isHC = 0;
   tree->Branch("summary",&sum);
   tree->Branch("header",&hdr);
   tree->Branch("pat",&patptr);
+  tree->Branch("isHC",&isHC);
 
   int ndone = 0;
   for (int i =start ; i < d.N(); i++)
@@ -70,9 +73,8 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "s
       printf("----(%d)-----\n",i);
 
       UsefulAdu5Pat pat(d.gps());
-      // 1% data except the wais events
+      // 1% data, except the wais events
       if (TString::Hash(&d.header()->eventNumber, sizeof(d.header()->eventNumber))%100 == 0 && !UCorrelator::isWAISHPol(&pat, d.header()) && !UCorrelator::isWAISVPol(&pat, d.header()))
-      // if (UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
       {
         const time_t ctt = time(0);
         printf("Processing event %d (%d) \t|%s", d.header()->eventNumber,ndone,asctime(localtime(&ctt)));        
@@ -82,6 +84,7 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "s
         ofile.cd();
         hdr = d.header();
         patptr = &pat;
+        isHC = Hical2::isHical(sum);
         tree->Fill();
         ndone++;
       }
@@ -111,9 +114,9 @@ int main (int nargs, char ** args)
   const char * filter = nargs < 5 ? 0 :args[4];
 
   if (filter)
-    doWais(run,max,start,filter);
+    doAll(run,max,start,filter);
   else
-    doWais(run,max,start);
+    doAll(run,max,start);
 
 
 }
