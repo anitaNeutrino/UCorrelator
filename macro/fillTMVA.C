@@ -15,18 +15,18 @@ void _fillTMVA(const char * file, const char * tree="simulation", const char * w
 void fillTMVA()
 {
 
-  for (int i = 1; i <=200; i+=40)
-  {
-    TString str; 
-    str.Form("thermalTrees/simulated_%d-%d_max_501_sinsub_10_3_ad_2.root", i, i + 39); 
-    _fillTMVA(str.Data(),"simulation"); 
-  }
-  //  for (int i = 120; i <=155; i+=40) 
+  // for (int i = 1; i <=200; i+=40)
   // {
   //   TString str; 
-  //   str.Form("thermalTrees/wais_%d-%d_max_30001_sinsub_10_3_ad_2.root", i, i + 39); 
-  //   _fillTMVA(str.Data(),"wais"); 
+  //   str.Form("thermalTrees/simulated_%d-%d_max_501_sinsub_10_3_ad_2.root", i, i + 39); 
+  //   _fillTMVA(str.Data(),"simulation"); 
   // }
+   for (int i = 120; i <=155; i+=40) 
+  {
+    TString str; 
+    str.Form("thermalTrees/wais_%d-%d_max_30001_sinsub_10_3_ad_2.root", i, i + 39); 
+    _fillTMVA(str.Data(),"wais"); 
+  }
 
   // for (int i = 50; i <=367; i+=40) 
   // {

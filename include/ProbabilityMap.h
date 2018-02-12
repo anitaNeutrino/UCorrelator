@@ -144,7 +144,7 @@ namespace UCorrelator
       int combineWith(const ProbabilityMap & other); 
 
       /** Add a point to the clustering. Returns the number of segments that had a non-zero contributions */ 
-      int add(const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, double weight = 1, TFile * debugfile = 0); 
+      int add(double & p_ground, const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, double weight = 1, TFile * debugfile = 0); 
 
 
 

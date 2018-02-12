@@ -32,11 +32,11 @@ void makeTMVATrees(const char * dir, const char * tree_name, int start_run, int 
     TCut cut;
     // it is interesting strcmp return 0 when two string are the same
     if (!strcmp(tree_name,"wais")){
-      cut = wais_sample;
+      cut = wais_sample && fromGround;
     }else if(!strcmp(tree_name,"anita4")){
-      cut = thermal_sample;
+      cut = thermal_sample && fromGround;
     }else{
-      cut = mc_sample; // need to have pointing angle cut. 
+      cut = mc_sample && fromGround; // need to have pointing angle cut. 
       filter = "max_501_sinsub_10_3_ad_2";
     }
     std::cout << cut << " "<< filter << std::endl;

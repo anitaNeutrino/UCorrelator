@@ -24,13 +24,13 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
 
 //  /*AnalysisWaveform::InterpolationType*/ AnalysisWaveform::defaultInterpolationType = AnalysisWaveform::REGULARIZED_SPARSE_YEN; 
 
-  AnitaDataset d(run,false,WaveCalType::kDefault,AnitaDataset::ANITA_MC_DATA); // Monte Carlo! 
+  AnitaDataset* d=new AnitaDataset(run,false,WaveCalType::kDefault,AnitaDataset::ANITA_MC_DATA); // Monte Carlo! 
   UCorrelator::AnalysisConfig cfg; 
     cfg.nmaxima = 3;
     cfg.response_option = UCorrelator::AnalysisConfig::ResponseTUFF;
     cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution;
 
-  UCorrelator::Analyzer analyzer(&cfg); 
+  UCorrelator::Analyzer* analyzer =new UCorrelator::Analyzer(&cfg); 
 
   TString outname; 
 
@@ -45,12 +45,12 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
   AnitaEventSummary * sum = new AnitaEventSummary; 
 
   double dtheta = 1.; double dphi = 2.; bool blockout = true;
-  analyzer.setTrackSun(dtheta, dphi, blockout);
+  analyzer->setTrackSun(dtheta, dphi, blockout);
 
   FilterStrategy* forDeco = new FilterStrategy;
   forDeco->addOperation(new UCorrelator::AntiBH13Filter());
-  analyzer.setExtraFiltersDeconvolved(forDeco);
-  analyzer.setDisallowedAntennas(0, (1ul<<45));  // Vpol ant45 is bad! So disable it.
+  analyzer->setExtraFiltersDeconvolved(forDeco);
+  analyzer->setDisallowedAntennas(0, (1ul<<45));  // Vpol ant45 is bad! So disable it.
 
   FilterStrategy strategy (&ofile);
   UCorrelator::fillStrategyWithKey(&strategy, filter);
@@ -67,42 +67,37 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
   // tree->Branch("truth",               &truth    );
   int ndone = 0; 
   
-  for (int i =start ; i < d.N(); i++) {
+  for (int i =start ; i < d->N(); i++) {
   // for (int i =0 ; i < 1; i++) {
 
-    d.getEntry(i); 
+    d->getEntry(i); 
     printf("----(%d)-----\n",i);
     //fixed run46 hkfile problem.
-    // if(d.header()->realTime >= 1480725529 and d.header()->realTime<=1480730678){
+    // if(d->header()->realTime >= 1480725529 and d->header()->realTime<=1480730678){
     //   printf("Skip this event which from run 46.\n");
     //   continue;
     // }
     
-    UsefulAdu5Pat pat(d.gps()); 
+    UsefulAdu5Pat* pat =new UsefulAdu5Pat(d->gps()); 
     const time_t ctt = time(0);
-    printf("Processing event %d (%d) \t|%s", d.header()->eventNumber,ndone,asctime(localtime(&ctt)));
-    FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
+    printf("Processing event %d (%d) \t|%s", d->header()->eventNumber,ndone,asctime(localtime(&ctt)));
+    FilteredAnitaEvent ev(d->useful(), &strategy, d->gps(), d->header()); 
 
-    analyzer.analyze(&ev, sum,d.truth()); 
+    analyzer->analyze(&ev, sum,d->truth()); 
 
     ofile.cd(); 
-    hdr = d.header(); 
-    patptr = d.gps();
+    hdr = d->header(); 
+    patptr = pat;
     isHC = Hical2::isHical(sum); 
-    // truth = d.truth(); 
-
+    // truth = d->truth(); 
     tree->Fill(); 
-
     ndone++; 
-
     if (max && ndone >= max) break; 
-
   }
-
   ofile.cd(); 
   tree->Write(); 
-
   FFTtools::saveWisdom("wisdom.dat"); 
+  std::cout<<"end of the script "<<std::endl;
 }
 
 int main (int nargs, char ** args)

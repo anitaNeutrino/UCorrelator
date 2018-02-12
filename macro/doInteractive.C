@@ -1,8 +1,44 @@
 
 #include "FFTtools.h"
+
+UCorrelator::ProbabilityMap::Params * map_params()
+{
+  // pixel x, pixel y , max meter x, max meter y
+  StereographicGrid * g= new StereographicGrid(1000,1000,2000000,2000000); 
+
+  TF1 * f_dtheta = new TF1("ftheta", "[0] / x^[1]", 1, 50);
+  TF1 * f_dphi = new TF1("fphi", "[0] / x^[1]", 1, 50);
+  //anita4 fit from wais.
+  f_dtheta->SetParameter(0, 5.431); 
+  f_dtheta->SetParameter(1, 1.155); 
+  f_dphi->SetParameter(0, 28.87); 
+  f_dphi->SetParameter(1, 1.398);
+  //anita3
+  // f_dtheta->SetParameter(0, 0.3936); 
+  // f_dtheta->SetParameter(1, 0.2102); 
+  // f_dphi->SetParameter(0, 1.065); 
+  // f_dphi->SetParameter(1, 0.2479); 
+  UCorrelator::PointingResolutionParSNRModel * snrResolutionModel = new UCorrelator::PointingResolutionParSNRModel (*f_dtheta, *f_dphi, true,true);
+  UCorrelator::PointingResolutionModelPlusHeadingError * resolutionModel = new UCorrelator::PointingResolutionModelPlusHeadingError(20, snrResolutionModel); 
+
+  Refraction::SphRay * ref = new Refraction::SphRay; 
+
+  UCorrelator::ProbabilityMap::Params *p = new UCorrelator::ProbabilityMap::Params; 
+  p->refract = ref; 
+  // p->refract = 0; 
+  p->seg = g; 
+  p->point = resolutionModel; 
+  p->collision_detection = true; 
+  p->verbosity = 0; // verbosity level for output info.
+  p->maximum_distance = 2.5;
+  p->min_p_on_continent = 0;
+  return p; 
+
+}
+
 // UCorrelator::Analyzer *doInteractive(int run = 130, int event = 22896140, bool decimated = false, bool simulated = false )
-UCorrelator::Analyzer *doInteractive(int run = 140, int event = 25639095, bool decimated = false, bool simulated = false )
-// UCorrelator::Analyzer *doInteractive(int run = 130, int event = 23018629, bool decimated = false, bool simulated = false )
+// UCorrelator::Analyzer *doInteractive(int run = 140, int event = 25639095, bool decimated = false, bool simulated = false )
+UCorrelator::Analyzer *doInteractive(int run = 153, int event = 30003847, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 130, int event = 23093714, bool decimated = false, bool simulated = false )
 {
 
@@ -79,10 +115,19 @@ UCorrelator::Analyzer *doInteractive(int run = 140, int event = 25639095, bool d
   "sinsub_10_3_ad_2"->cd(1); 
   mp->getCurrentFilterPower(AnitaPol::kHorizontal,0)->Draw(); 
   "sinsub_10_3_ad_2"->cd(2); 
-  mp->getCurrentFilterTimeDomain(AnitaPol::kHorizontal,0)->Draw(); 
+  mp->getCurrentFilterTimeDo  main(AnitaPol::kHorizontal,0)->Draw(); 
   */
 
-   
+  TCanvas * psCanvas = new TCanvas();
+  psCanvas->cd();
+  double p_ground;
+  UCorrelator::ProbabilityMap::Params * p = map_params(); 
+  UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(p); 
+  map->add(p_ground, &sum, d.gps(), AnitaPol::AnitaPol_t(sum.mostImpulsivePolAsInt()), sum.mostImpulsiveInd(), 1);
+  map->segmentationScheme()->Draw("colz",map->getProbSums(false));
+
+
+
 
 //  butter->getFilter(AnitaPol::kHorizontal,0)->drawResponse(0,101,10); 
 

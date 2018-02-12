@@ -61,7 +61,7 @@ UCorrelator::ProbabilityMap::ProbabilityMap(const Params * par)
 }
 
 
-int UCorrelator::ProbabilityMap::add(const AnitaEventSummary * sum, const Adu5Pat * pat, AnitaPol::AnitaPol_t pol,
+int UCorrelator::ProbabilityMap::add(double & p_ground, const AnitaEventSummary * sum, const Adu5Pat * pat, AnitaPol::AnitaPol_t pol,
                                      int peak, double weight, TFile * debugfile) 
 {
 
@@ -104,6 +104,7 @@ int UCorrelator::ProbabilityMap::add(const AnitaEventSummary * sum, const Adu5Pa
     //add all segments' prob sum together, which is the norm factor.
     norm += segments_to_fill[i].second; 
   }
+  p_ground = norm;
   // inverse of norm. if normal is too small, let invnorm be 0.
   double invnorm = norm < p.min_p_on_continent ? 0 : 1./norm;
   if (p.verbosity > 2) printf("invnorm: %g\n", invnorm); 
@@ -269,12 +270,10 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
   std::vector<std::pair<int,double> > segs; 
 
   double inv = computeContributions(sum,pat,pol,peak,segs,bases,0,max_dens); 
+  
   int N = segs.size(); 
   double answer = 0;
-
-
   double invnorm = 1;
-
   if (normalized)
   {
     double norm = 0;
@@ -282,6 +281,7 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
     {
       norm += segs[i].second; 
     }
+    // std::cout<<" norm = " <<norm<<std::endl;
     if (!inv || norm < p.min_p_on_continent)
     {
       printf("below minimum: %g!\n", norm); 
@@ -462,7 +462,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
   PointingResolution pr; 
   p.point->computePointingResolution(sum,pol, peak, &pr);  
   contribution.clear(); 
-  std::cout <<"\tdphi="<< pr.getdPhi()<<" dTheta="<< pr.getdTheta()<<std::endl;
+  // std::cout <<"\tdphi="<< pr.getdPhi()<<" dTheta="<< pr.getdTheta()<<std::endl;
 
 
   if ( pr.getdPhi() > p.max_dphi || pr.getdTheta() > p.max_dtheta) 
@@ -732,7 +732,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
           }
           else
           {
-            printf("OOPS segment(%d) scale(%g) seg_p=%g\n>1, just set it to 1.", seg, scale, seg_p); 
+            printf("OOPS segment(%d) scale(%g) seg_p=%g>1, just set it to 1.\n", seg, scale, seg_p); 
             seg_p = 1; 
           }
         }
