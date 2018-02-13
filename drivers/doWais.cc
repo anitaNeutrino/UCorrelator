@@ -24,12 +24,12 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "s
 
 //  /*AnalysisWaveform::InterpolationType*/ AnalysisWaveform::defaultInterpolationType = AnalysisWaveform::REGULARIZED_SPARSE_YEN;
 
-  AnitaDataset* d =new AnitaDataset(run,false,WaveCalType::kDefault, AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kNoBlinding );
+  AnitaDataset d(run,false,WaveCalType::kDefault, AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kNoBlinding );
   UCorrelator::AnalysisConfig cfg;
     cfg.nmaxima = 3;
     cfg.response_option = UCorrelator::AnalysisConfig::ResponseTUFF;
     cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution;
-  UCorrelator::Analyzer* analyzer = new UCorrelator::Analyzer(&cfg);
+  UCorrelator::Analyzer analyzer(&cfg);
 
   TString outname;
   if (max && start) outname.Form("wais/%d_max_%d_start_%d_%s.root",run,max,start,filter);
@@ -38,18 +38,18 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "s
   else outname.Form("wais/%d_%s.root",run, filter);
 
   TFile ofile(outname, "RECREATE");
-  TTree * tree = new TTree("wais","WAIS");
-  tree->SetAutoFlush(1000); 
+  TTree tree("wais","WAIS");
+  tree.SetAutoFlush(1000); 
   AnitaEventSummary * sum = new AnitaEventSummary;
 
 
   double dtheta = 1.; double dphi = 2.; bool blockout = true;
-  analyzer->setTrackSun(dtheta, dphi, blockout);
+  analyzer.setTrackSun(dtheta, dphi, blockout);
 
   FilterStrategy* forDeco = new FilterStrategy;
   forDeco->addOperation(new UCorrelator::AntiBH13Filter());
-  analyzer->setExtraFiltersDeconvolved(forDeco);
-  analyzer->setDisallowedAntennas(0, (1ul<<45));  // Vpol ant45 is bad! So disable it.
+  analyzer.setExtraFiltersDeconvolved(forDeco);
+  analyzer.setDisallowedAntennas(0, (1ul<<45));  // Vpol ant45 is bad! So disable it.
 
   FilterStrategy strategy (&ofile);
   UCorrelator::fillStrategyWithKey(&strategy, filter);
@@ -59,45 +59,43 @@ void doWais( int run = 352, int max = 0, int start = 0, const char * filter = "s
   RawAnitaHeader *hdr = 0 ;
   UsefulAdu5Pat *patptr = 0;
   double isHC = 0;
-  tree->Branch("summary",&sum);
-  tree->Branch("header",&hdr);
-  tree->Branch("pat",&patptr);
-  tree->Branch("isHC",&isHC);
+  tree.Branch("summary",&sum);
+  tree.Branch("header",&hdr);
+  tree.Branch("pat",&patptr);
+  tree.Branch("isHC",&isHC);
 
   int ndone = 0;
-  for (int i =start ; i < d->N(); i++)
+  for (int i =start ; i < d.N(); i++)
   {
-    try{
-      d->getEntry(i);
-      printf("----(%d)-----\n",i);
+    d.getEntry(i);
+    printf("----(%d)-----\n",i);
 
-      UsefulAdu5Pat* pat= new UsefulAdu5Pat(d->gps());
-      if (UCorrelator::isWAISHPol(pat, d->header()) || UCorrelator::isWAISVPol(pat, d->header()))
-      // if (UCorrelator::isWAISHPol(pat, d->header()) || UCorrelator::isWAISVPol(pat, d->header()))
-      {
-        const time_t ctt = time(0);
-        printf("Processing event %d (%d) \t|%s", d->header()->eventNumber,ndone,asctime(localtime(&ctt)));
-        FilteredAnitaEvent ev(d->useful(), &strategy, d->gps(), d->header());
+    UsefulAdu5Pat pat(d.gps());
+    if (UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
+    // if (UCorrelator::isWAISHPol(&pat, d.header()) || UCorrelator::isWAISVPol(&pat, d.header()))
+    {
+      const time_t ctt = time(0);
+      printf("Processing event %d (%d) \t|%s", d.header()->eventNumber,ndone,asctime(localtime(&ctt)));
+      FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header());
 
-        analyzer->analyze(&ev, sum);
-        ofile.cd();
-        hdr = d->header();
-        patptr = pat;
-        isHC = Hical2::isHical(sum);
-        tree->Fill();
-        ndone++;
-      }
-
-      if (max && ndone >= max) break;
-
-    }catch(const char* msg){
-      std::cout<<"an error catched for this event!!!!"<< msg <<std::endl;
+      analyzer.analyze(&ev, sum);
+      ofile.cd();
+      hdr = d.header();
+      patptr = &pat;
+      isHC = Hical2::isHical(sum);
+      tree.Fill();
+      ndone++;
     }
+
+    if (max && ndone >= max) break;
+    
   }
+
   ofile.cd();
-  tree->Write();
+  tree.Write();
+
   FFTtools::saveWisdom("wisdom.dat");
-  std::cout<<"end of the script "<<std::endl;
+  std::cout << "end of script"<<std::endl;
 }
 
 int main (int nargs, char ** args)
