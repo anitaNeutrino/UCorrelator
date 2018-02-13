@@ -59,11 +59,11 @@ void doAll( int run = 352, int max = 0, int start = 0, const char * filter = "si
 
   RawAnitaHeader *hdr = 0 ;
   UsefulAdu5Pat *patptr = 0;
-  double isHC = 0;
+  // double isHC = 0;
   tree.Branch("summary",&sum);
   tree.Branch("header",&hdr);
   tree.Branch("pat",&patptr);
-  tree.Branch("isHC",&isHC);
+  // tree.Branch("isHC",&isHC);
 
   int ndone = 0;
   for (int i =start ; i < d.N(); i++)
@@ -83,7 +83,7 @@ void doAll( int run = 352, int max = 0, int start = 0, const char * filter = "si
         ofile.cd();
         hdr = d.header();
         patptr = &pat;
-        isHC = Hical2::isHical(sum);
+        // isHC = Hical2::isHical(sum);
         tree.Fill();
         ndone++;
       }
