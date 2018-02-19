@@ -246,13 +246,8 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
 
   if (!abbysMethod)
   {
-<<<<<<< HEAD
-    double DMin = C_LIGHT * 1e-9 / ANITA_F_LO;
-    if (ap -> distance(ant1, ant2, pol) < DMin)  //  Exclude baselines incapable of covering the entire ANITA passband.
-=======
     double fLo = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
     if (fLo > ANITA_F_LO)  //  Exclude baselines incapable of covering the entire ANITA passband.
->>>>>>> e401d8f72655fe1e43e273fd999de8ddc83cfdd7
     {
       allowedFlag = 0;
       centerPhi1 = 0;
