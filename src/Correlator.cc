@@ -246,8 +246,8 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
 
   if (!abbysMethod)
   {
-    double fC = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
-    if (fC > ANITA_F_LO)  //  Exclude baselines incapable of covering the entire ANITA passband.
+    double fLo = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
+    if (fLo > ANITA_F_LO)  //  Exclude baselines incapable of covering the entire ANITA passband.
     {
       allowedFlag = 0;
       centerPhi1 = 0;
@@ -515,8 +515,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    assert(ant2 < 48);
    if (!allowedFlag) return;
 
-//   double fC = C_LIGHT * 1e-9 / cache -> ap -> distance(ant1, ant2, pol);  //  Central frequency corresponding to baseline between antennas in GHz.
-//   double BW = ANITA_F_HI - fC;
+   double fLo = C_LIGHT * 1e-9 / cache -> ap -> distance(ant1, ant2, pol);  //  Corresponding to lowest frequency in GHz of antenna baseline.
+   double BW = ANITA_F_HI - fLo;
 //   double fLo = ANITA_F_LO;
 //   double fHi = ANITA_F_HI;
 //   double BW;  //  Bandwidth corresponding to baseline within ANITA passband in GHz.
@@ -526,8 +526,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 //   double fLo = fC - 0.5 * BW;
 //   double fHi = fC + 0.5 * BW;
 
-//   double axPhi = 20;  //  Values gleaned from Figure 5.6 in Ben Strutt's dissertation.
-//   double axTheta = 25;
+//   double axPhi = 20;  //  Values gleaned from Figure 5.6 in Ben Strutt's dissertation, and what was calculated at LDB in 2016.
+//   double axTheta = 26;
 //   double phi1 = cache -> ap -> phiAnt[pol][ant1];
 //   double phi2 = cache -> ap -> phiAnt[pol][ant2];
 //   double theta1 = -atan(cache -> ap -> zAnt[pol][ant1] / cache -> ap -> rAnt[pol][ant1]) * RAD2DEG;
@@ -550,11 +550,11 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    if (center_point && !between(center_point[0], lowerPhiThis, higherPhiThis)) return;
 
    //  To ensure proper coverage over the whole map when not using abbysMethod.
-//   if (!abbysMethod && !center_point)
-//   {
-//     lowerPhiThis = 0;
-//     higherPhiThis = 360;
-//   } 
+   if (!abbysMethod && !center_point)
+   {
+     lowerPhiThis = 0;
+     higherPhiThis = 360;
+   } 
 
    AnalysisWaveform * correlation = getCorrelation(ant1, ant2); 
    
@@ -601,7 +601,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 //     double dPhi2 = FFTtools::wrap(phi - phi2, 360, 0);
 
      //Check if in beam width in phi 
-     if (!center_point && (fabs(dphi1) > max_phi || fabs(dphi2) > max_phi)) continue;
+     if (abbysMethod && !center_point && (fabs(dphi1) > max_phi || fabs(dphi2) > max_phi)) continue;
 //     if (!abbysMethod && (fabs(dPhi1 / axPhi) > z1 || fabs(dPhi2 / axPhi) > z2)) continue;
 
      int ny = the_hist->GetNbinsY(); 
@@ -616,7 +616,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 //       double ellipse2 = pow(dPhi2 / axPhi, 2) + pow((theta - theta2) / axTheta, 2);
 
        // check if in beam width 
-       if (!center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi2 || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi2)) continue;
+       if (abbysMethod && !center_point && (dphi1 * dphi1 + dtheta1 * dtheta1 > max_phi2 || dphi2 * dphi2 + dtheta2 * dtheta2 > max_phi2)) continue;
 //       if (!abbysMethod && (ellipse1 > z1 * z1 || ellipse2 > z2 * z2)) continue;
 
        phibins[nbins_used] = phibin; 
@@ -665,6 +665,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    {
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi];
+       if (!abbysMethod && fabs(vals_to_fill[bi]) > 1 / BW) continue;
        the_hist->GetArray()[bin] += val;
        the_norm->GetArray()[bin]++;
    }
