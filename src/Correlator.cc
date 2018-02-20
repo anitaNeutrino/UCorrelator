@@ -191,16 +191,8 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
   int allowedFlag = 0;
 
   int upperlimit, lowerlimit;
-  if (abbysMethod)
-  {
-    upperlimit = phi2 + 2;  //  2 phi sectors on either side
-    lowerlimit = phi2 - 2;
-  }
-  else
-  {
-    upperlimit = phi2 + 3;
-    lowerlimit = phi2 - 3;
-  }
+  upperlimit = phi2 + 2;  //  2 phi sectors on either side
+  lowerlimit = phi2 - 2;
 
   if (upperlimit > NUM_PHI - 1) upperlimit -= NUM_PHI;
   if (lowerlimit < 0) lowerlimit += NUM_PHI;
@@ -246,8 +238,14 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
 
   if (!abbysMethod)
   {
-    double fLo = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
-    if (fLo > ANITA_F_LO)  //  Exclude baselines incapable of covering the entire ANITA passband.
+    allowedFlag = 1;
+    centerPhi1 = ap -> phiAnt[pol][ant1]; 
+    centerPhi2 = ap -> phiAnt[pol][ant2];
+    double centerPhiAvg = FFTtools::wrap(atan2(sin(centerPhi1 / RAD2DEG) + sin(centerPhi2 / RAD2DEG), cos(centerPhi1 / RAD2DEG) + cos(centerPhi2 / RAD2DEG)) * RAD2DEG, 360);
+    lowerPhi = FFTtools::wrap(centerPhiAvg - 90, 360);
+    higherPhi = FFTtools::wrap(centerPhiAvg + 90, 360);
+    double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
+    if (fMin > ANITA_F_LO)  //  Exclude baselines incapable of covering the entire ANITA passband.
     {
       allowedFlag = 0;
       centerPhi1 = 0;
@@ -515,8 +513,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    assert(ant2 < 48);
    if (!allowedFlag) return;
 
-   double fLo = C_LIGHT * 1e-9 / cache -> ap -> distance(ant1, ant2, pol);  //  Corresponding to lowest frequency in GHz of antenna baseline.
-   double BW = ANITA_F_HI - fLo;
+//   double fLo = C_LIGHT * 1e-9 / cache -> ap -> distance(ant1, ant2, pol);  //  Corresponding to lowest frequency in GHz of antenna baseline.
+//   double BW = ANITA_F_HI - fLo;
 //   double fLo = ANITA_F_LO;
 //   double fHi = ANITA_F_HI;
 //   double BW;  //  Bandwidth corresponding to baseline within ANITA passband in GHz.
@@ -550,11 +548,11 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    if (center_point && !between(center_point[0], lowerPhiThis, higherPhiThis)) return;
 
    //  To ensure proper coverage over the whole map when not using abbysMethod.
-   if (!abbysMethod && !center_point)
-   {
-     lowerPhiThis = 0;
-     higherPhiThis = 360;
-   } 
+//   if (!abbysMethod && !center_point)
+//   {
+//     lowerPhiThis = 0;
+//     higherPhiThis = 360;
+//   } 
 
    AnalysisWaveform * correlation = getCorrelation(ant1, ant2); 
    
@@ -665,7 +663,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    {
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi];
-       if (!abbysMethod && fabs(vals_to_fill[bi]) > 1 / BW) continue;
+       if (!abbysMethod && fabs(vals_to_fill[bi]) > 1 / ANITA_BW) continue;
        the_hist->GetArray()[bin] += val;
        the_norm->GetArray()[bin]++;
    }
