@@ -245,7 +245,9 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
     lowerPhi = FFTtools::wrap(centerPhiAvg - 90, 360);
     higherPhi = FFTtools::wrap(centerPhiAvg + 90, 360);
     double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
-    if (fMin > ANITA_F_LO)  //  Exclude baselines incapable of covering the entire ANITA passband.
+    int phiSep = abs(ant1 - ant2) % 16;
+    if (phiSep > 8) phiSep = 16 - phiSep;
+    if (fMin > ANITA_F_LO || phiSep > 3)  //  Exclude baselines incapable of covering the entire ANITA passband, and antennas greater than 3 phi sectors apart.
     {
       allowedFlag = 0;
       centerPhi1 = 0;
