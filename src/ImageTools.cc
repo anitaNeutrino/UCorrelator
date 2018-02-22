@@ -77,23 +77,37 @@ TH2* UCorrelator::rotateHistogram(const TH2* inHist, double rotate) {
 
 
 
-double UCorrelator::getZRMS(const TH2* hist) {
+double UCorrelator::getZRMS(const TH2* hist, const int * lims) {
 
   int numBinsX = hist -> GetNbinsX();
   int numBinsY = hist -> GetNbinsY();
 
+  int minBinY = lims ? lims[2] : 1; 
+  int maxBinY = lims ? lims[3] : numBinsY; 
+
   double mean = 0, sqMean = 0;
+  int numBinsUsedX = 0; 
 
   for (int binX = 1; binX <= numBinsX; ++binX) {  //  For histograms, index 0 and length + 1 represent underflow and overflow bins, respectively.
-    for (int binY = 1; binY <= numBinsY; ++binY) {
+    if (lims)//slow more complicated code for now
+    {
+      if (lims[0] < lims[1] && (binX < lims[0] || binX > lims[1])) continue;
+      if (lims[0] > lims[1] && (binX > lims[0] || binX < lims[1])) continue;
+      numBinsUsedX++; 
+    }
+    for (int binY = minBinY; binY <= maxBinY; ++binY) {
+
       double binValue = hist -> GetBinContent(binX, binY);
       mean += binValue;
       sqMean += binValue * binValue;
     }
   }
+  int numBinsUsedY = lims ? (maxBinY-minBinY + 1) : numBinsY; 
+  
+  if (!lims) numBinsUsedX = numBinsX;
 
-  mean /= numBinsX * numBinsY;
-  sqMean /= numBinsX * numBinsY;
+  mean /= numBinsUsedX * numBinsUsedY;
+  sqMean /= numBinsUsedX * numBinsUsedY;
 
   return sqrt(sqMean - mean * mean);
 }
