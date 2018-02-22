@@ -89,9 +89,10 @@ namespace UCorrelator
       double noise_estimate_t0;  ///this is used to pick parts of the waveform for calcuating the N in SNR
       double noise_estimate_t1;  ///this is used to pick parts of the waveform for calcuating the N in SNR
 
-      bool scale_by_cos_theta;  // Scale peak values by cos theta when picking max (due to different bin sizes) 
-      bool use_offline_mask; // use offline phi masking / l1 triggers (default true)  
-      double baseline_weight; //exponent for baseline weighting of correlation maps (since longer baselines give you better resolution) 
+      bool scale_by_cos_theta;  /// Scale peak values by cos theta when picking max (due to different bin sizes) 
+      bool use_offline_mask; /// use offline phi masking / l1 triggers (default true)  
+      double baseline_weight; ///exponent for baseline weighting of correlation maps (since longer baselines give you better resolution) , default 0
+      double correlation_gain_correction ; // off-boresight gain correction sigma used in making maps. Default is 0, which disables it
 
 
       //payload blast cuts (if 0, then ignored) 
