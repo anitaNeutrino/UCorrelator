@@ -525,6 +525,14 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
    int maxsize = the_hist->GetNbinsY() * the_hist->GetNbinsX(); 
 
+   double phi_diff1 = fabs(FFTtools::wrap(centerPhi1-centerPhi2,360,0)); 
+   double phi_diff2 = fabs(FFTtools::wrap(centerPhi2-centerPhi1,360,0)); 
+   double baseline_phi =  (phi_diff1 < phi_diff2) ? centerPhi2 + phi_diff1/2 : centerPhi1 + phi_diff2/2; 
+   baseline_phi = FFTtools::wrap(baseline_phi,360); 
+
+
+   double baseline_theta =  (centerTheta1+centerTheta2)/10;
+ 
 
    //This is bikeshedding, but allocate it all contiguosly 
    int * alloc = new int[3*maxsize]; 
@@ -577,10 +585,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        {
          //Matt Mottram weighted by the baseline angle difference somehow
          
-         double baseline_phi =  FFTtools::wrap((centerPhi1+centerPhi2)/2,360); 
-         double baseline_theta =  (centerTheta1+centerTheta2)/10;
-         double Dphi = FFTtools::wrap(baseline_phi - phi,360,0); 
-         double Dtheta = baseline_theta-theta;
+        double Dphi = FFTtools::wrap(baseline_phi - phi,360,0); 
+        double Dtheta = baseline_theta-theta;
 
          gain_weights[nbins_used] = TMath::Gaus(-(Dphi*Dphi + Dtheta*Dtheta ) /(2*gainSigma*gainSigma)); 
        }
