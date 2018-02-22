@@ -134,15 +134,15 @@ static void combineHists(int N, T ** hists )
 #endif
 
 
-UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, int ntheta, double theta_min, double theta_max, bool use_center, bool scale_by_cos_theta, double baseline_weight)
-  : scale_cos_theta(scale_by_cos_theta) , baselineWeight(baseline_weight)
+UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, int ntheta, double theta_min, double theta_max, bool use_center, bool scale_by_cos_theta, double baseline_weight, double gain_sigma)
+  : scale_cos_theta(scale_by_cos_theta) , baselineWeight(baseline_weight), gainSigma(gain_sigma) 
 {
   TString histname = TString::Format("ucorr_corr_%d",count_the_correlators);
   TString normname = TString::Format("ucorr_norm_%d",count_the_correlators++);
 
   hist = new TH2D(histname.Data(),"Correlator", nphi, phi_min, phi_max, ntheta, theta_min, theta_max); 
   hist->SetDirectory(0); 
-  norm = new TH2I(normname.Data(),"Normalization", nphi, phi_min, phi_max, ntheta, theta_min, theta_max);
+  norm = new TH2D(normname.Data(),"Normalization", nphi, phi_min, phi_max, ntheta, theta_min, theta_max);
   norm->SetDirectory(0); 
 
   hist->GetXaxis()->SetTitle("#phi"); 
@@ -158,7 +158,7 @@ UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, in
   {
     hists[i] = (TH2D*) hist->Clone(TString(hist->GetName()) + TString::Format("_%d",i)); 
     hists[i]->SetDirectory(0); 
-    norms[i] = (TH2I*) norm->Clone(TString(norm->GetName()) + TString::Format("_%d",i)); 
+    norms[i] = (TH2D*) norm->Clone(TString(norm->GetName()) + TString::Format("_%d",i)); 
     norms[i]->SetDirectory(0); 
 //    printf(":: %p %p\n",hists[i],norms[i]); 
   }
@@ -428,7 +428,7 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
 
   /* lock contention for the hist / norm lock is killing parallelization */ 
   std::vector<TH2D*> zoomed_hists(nthreads()); 
-  std::vector<TH2I*> zoomed_norms(nthreads()); 
+  std::vector<TH2D*> zoomed_norms(nthreads()); 
 
   zoomed_hists[0] = answer;
   zoomed_norms[0] = zoomed_norm;
@@ -438,7 +438,7 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   {
     zoomed_hists[i] = (TH2D*) answer->Clone(TString(answer->GetName()) + TString::Format("_%d",i)); 
     zoomed_hists[i]->SetDirectory(0); 
-    zoomed_norms[i] = (TH2I*) zoomed_norm->Clone(TString(norm->GetName()) + TString::Format("_%d",i)); 
+    zoomed_norms[i] = (TH2D*) zoomed_norm->Clone(TString(norm->GetName()) + TString::Format("_%d",i)); 
     norms[i]->SetDirectory(0); 
 //  zoomed_  printf(":: %p %p\n",hists[i],norms[i]); 
   }
@@ -461,7 +461,7 @@ SECTION
     combineHists<TH2D,double>(nthreads(), &zoomed_hists[0]); 
 
 SECTION
-    combineHists<TH2I,int>(nthreads(), &zoomed_norms[0]); 
+    combineHists<TH2D,double>(nthreads(), &zoomed_norms[0]); 
   }
 
   for (int i =1; i < nthreads(); i++) 
@@ -471,6 +471,7 @@ SECTION
   }
 
   int nonzero = 0;
+
   //only keep values with at least contributing antennas 
   for (int i = 0; i < (answer->GetNbinsX()+2) * (answer->GetNbinsY()+2); i++) 
   {
@@ -543,7 +544,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 //   else z2 = zMax;
 
    TH2D * the_hist  = these_hists[gettid()]; 
-   TH2I * the_norm  = these_norms[gettid()]; 
+   TH2D * the_norm  = these_norms[gettid()]; 
 
 //   printf("lowerPhiThis: %g higherPhiThis: %g\n", lowerPhiThis, higherPhiThis); 
    // More stringent check if we have a center point
@@ -575,6 +576,14 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
    int maxsize = the_hist->GetNbinsY() * the_hist->GetNbinsX(); 
 
+   double phi_diff1 = fabs(FFTtools::wrap(centerPhi1-centerPhi2,360,0)); 
+   double phi_diff2 = fabs(FFTtools::wrap(centerPhi2-centerPhi1,360,0)); 
+   double baseline_phi =  (phi_diff1 < phi_diff2) ? centerPhi2 + phi_diff1/2 : centerPhi1 + phi_diff2/2; 
+   baseline_phi = FFTtools::wrap(baseline_phi,360); 
+
+
+   double baseline_theta =  (centerTheta1+centerTheta2)/10;
+ 
 
    //This is bikeshedding, but allocate it all contiguosly 
    int * alloc = new int[3 * maxsize]; 
@@ -582,7 +591,12 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    int * thetabins = alloc + maxsize; 
    int * bins_to_fill = alloc + 2 * maxsize; 
 
+
    int nbins_used = 0; 
+
+   double * gain_weights = 0;
+   if (gainSigma && !center_point) gain_weights = new double[maxsize]; 
+
 
   
    for (int phibin = first_phi_bin; (phibin <= last_phi_bin) || must_wrap; phibin++)
@@ -622,6 +636,15 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        phibins[nbins_used] = phibin; 
        thetabins[nbins_used] = thetabin; 
        bins_to_fill[nbins_used] = phibin + thetabin * nphibins;
+       if (gainSigma && !center_point) 
+       {
+         //Matt Mottram weighted by the baseline angle difference somehow
+         
+        double Dphi = FFTtools::wrap(baseline_phi - phi,360,0); 
+        double Dtheta = baseline_theta-theta;
+
+         gain_weights[nbins_used] = TMath::Gaus(-(Dphi*Dphi + Dtheta*Dtheta ) /(2*gainSigma*gainSigma)); 
+       }
        nbins_used++; 
      }
    }
@@ -661,17 +684,20 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    }
 
 
+
    for (int bi = 0; bi < nbins_used; bi++)
    {
        double val = vals_to_fill[bi]; 
+
        int bin = bins_to_fill[bi];
-       if (!abbysMethod && fabs(vals_to_fill[bi]) > 1 / ANITA_BW) continue;
-       the_hist->GetArray()[bin] += val;
-       the_norm->GetArray()[bin]++;
+       if (!abbysMethod && fabs(vals_to_fill[bi]) > 1 / ANITA_BW) continue; 
+       the_hist->GetArray()[bin]+= gainSigma && !center_point ? val * gain_weights[bi] : val; 
+       the_norm->GetArray()[bin]+=  gainSigma && !center_point ? gain_weights[bi] : 1;
    }
 
    delete [] alloc; 
    delete [] dalloc; 
+   if (gain_weights) delete [] gain_weights; 
 }
 
 
@@ -747,7 +773,7 @@ SECTIONS
   SECTION
     combineHists<TH2D,double>(nthreads(),&hists[0]); 
   SECTION
-    combineHists<TH2I,int>(nthreads(),&norms[0]); 
+    combineHists<TH2D,double>(nthreads(),&norms[0]); 
 }
 
   int nonzero = 0;

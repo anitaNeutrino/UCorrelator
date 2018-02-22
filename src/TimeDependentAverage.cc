@@ -459,6 +459,15 @@ UCorrelator::TimeDependentAverage::TimeDependentAverage(int run, int nsecs, cons
 
         foundit = true;
       }
+      else
+      {
+        fprintf(stderr,"Could not find one or more of norms, norms_minbias or nblasts inside %s/%d_%d.root. Are your spectrum averages out of date? ", check_dir,run,nsecs); 
+
+      }
+    }
+    else
+    {
+      printf("Could not open %s/%d_%d.root", check_dir, run, nsecs); 
     }
     memset(rms,0,sizeof(rms)); 
 
