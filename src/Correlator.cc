@@ -247,7 +247,7 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
     double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
     int phiSep = abs(ant1 - ant2) % 16;
     if (phiSep > 8) phiSep = 16 - phiSep;
-    if (fMin > ANITA_F_LO || phiSep > 3)  //  Exclude baselines incapable of covering the entire ANITA passband, and antennas greater than 3 phi sectors apart.
+    if (fMin > ANITA_F_LO || phiSep > 2)  //  Exclude baselines incapable of covering the entire ANITA passband, and antennas greater than 2 phi sectors apart.
     {
       allowedFlag = 0;
       centerPhi1 = 0;
@@ -367,7 +367,7 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   double phi1 = phi + dphi * nphi / 2; 
   double theta0 = theta - dtheta * ntheta / 2; 
   double theta1 = theta + dtheta * ntheta / 2; 
-  TH2I* zoomed_norm = new TH2I(TString::Format("zoomed_norm_%d",count_the_zoomed_correlators), "Zoomed Correlation Normalization", 
+  TH2D * zoomed_norm = new TH2D(TString::Format("zoomed_norm_%d",count_the_zoomed_correlators), "Zoomed Correlation Normalization", 
                     nphi, phi0,phi1, 
                     ntheta, theta0, theta1); 
   zoomed_norm->SetDirectory(0); 
@@ -501,7 +501,7 @@ static inline bool between(double phi, double low, double high)
 
 
 inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** these_hists, 
-                                                TH2I ** these_norms, const UCorrelator::TrigCache * cache , 
+                                                TH2D ** these_norms, const UCorrelator::TrigCache * cache , 
                                                 const double * center_point, bool abbysMethod)
 {
    
@@ -576,13 +576,12 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
    int maxsize = the_hist->GetNbinsY() * the_hist->GetNbinsX(); 
 
-   double phi_diff1 = fabs(FFTtools::wrap(centerPhi1-centerPhi2,360,0)); 
-   double phi_diff2 = fabs(FFTtools::wrap(centerPhi2-centerPhi1,360,0)); 
-   double baseline_phi =  (phi_diff1 < phi_diff2) ? centerPhi2 + phi_diff1/2 : centerPhi1 + phi_diff2/2; 
-   baseline_phi = FFTtools::wrap(baseline_phi,360); 
+   double phi_diff1 = fabs(FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0)); 
+   double phi_diff2 = fabs(FFTtools::wrap(centerPhi2-centerPhi1, 360, 0)); 
+   double baseline_phi =  (phi_diff1 < phi_diff2) ? centerPhi2 + phi_diff1 / 2 : centerPhi1 + phi_diff2 / 2; 
+   baseline_phi = FFTtools::wrap(baseline_phi, 360);
 
-
-   double baseline_theta =  (centerTheta1+centerTheta2)/10;
+   double baseline_theta = (centerTheta1 + centerTheta2) / 2;
  
 
    //This is bikeshedding, but allocate it all contiguosly 
@@ -596,7 +595,6 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
    double * gain_weights = 0;
    if (gainSigma && !center_point) gain_weights = new double[maxsize]; 
-
 
   
    for (int phibin = first_phi_bin; (phibin <= last_phi_bin) || must_wrap; phibin++)
@@ -640,10 +638,10 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        {
          //Matt Mottram weighted by the baseline angle difference somehow
          
-        double Dphi = FFTtools::wrap(baseline_phi - phi,360,0); 
-        double Dtheta = baseline_theta-theta;
+        double Dphi = FFTtools::wrap(phi - baseline_phi, 360, 0); 
+        double Dtheta = theta - baseline_theta;
 
-         gain_weights[nbins_used] = TMath::Gaus(-(Dphi*Dphi + Dtheta*Dtheta ) /(2*gainSigma*gainSigma)); 
+        gain_weights[nbins_used] = abbysMethod ? TMath::Gaus(TMath::Sqrt(Dphi*Dphi + Dtheta*Dtheta), 0, gainSigma) : TMath::Gaus(Dphi, 0, gainSigma);
        }
        nbins_used++; 
      }
