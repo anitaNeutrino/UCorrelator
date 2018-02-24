@@ -241,11 +241,15 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
     allowedFlag = 1;
     centerPhi1 = ap -> phiAnt[pol][ant1]; 
     centerPhi2 = ap -> phiAnt[pol][ant2];
-    double centerPhiAvg = FFTtools::wrap(atan2(sin(centerPhi1 / RAD2DEG) + sin(centerPhi2 / RAD2DEG), cos(centerPhi1 / RAD2DEG) + cos(centerPhi2 / RAD2DEG)) * RAD2DEG, 360);
-    lowerPhi = FFTtools::wrap(centerPhiAvg - 90, 360);
-    higherPhi = FFTtools::wrap(centerPhiAvg + 90, 360);
+    double phi_diff1 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0); 
+    double phi_diff2 = FFTtools::wrap(centerPhi2 - centerPhi1, 360, 0); 
+    double baseline_phi = (fabs(phi_diff1) < fabs(phi_diff2)) ? centerPhi2 + phi_diff1 / 2 : centerPhi1 + phi_diff2 / 2; 
+    baseline_phi = FFTtools::wrap(baseline_phi, 360);
+//    double baseline_phi = FFTtools::wrap(atan2(sin(centerPhi1 / RAD2DEG) + sin(centerPhi2 / RAD2DEG), cos(centerPhi1 / RAD2DEG) + cos(centerPhi2 / RAD2DEG)) * RAD2DEG, 360);
+    lowerPhi = FFTtools::wrap(baseline_phi - 90, 360);
+    higherPhi = FFTtools::wrap(baseline_phi + 90, 360);
     double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
-    int phiSep = abs(ant1 - ant2) % 16;
+    int phiSep = abs(phi1 - phi2) % 16;
     if (phiSep > 8) phiSep = 16 - phiSep;
     if (fMin > ANITA_F_LO || phiSep > 2)  //  Exclude baselines incapable of covering the entire ANITA passband, and antennas greater than 2 phi sectors apart.
     {
@@ -576,9 +580,9 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
    int maxsize = the_hist->GetNbinsY() * the_hist->GetNbinsX(); 
 
-   double phi_diff1 = fabs(FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0)); 
-   double phi_diff2 = fabs(FFTtools::wrap(centerPhi2-centerPhi1, 360, 0)); 
-   double baseline_phi =  (phi_diff1 < phi_diff2) ? centerPhi2 + phi_diff1 / 2 : centerPhi1 + phi_diff2 / 2; 
+   double phi_diff1 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0); 
+   double phi_diff2 = FFTtools::wrap(centerPhi2 - centerPhi1, 360, 0); 
+   double baseline_phi = (fabs(phi_diff1) < fabs(phi_diff2)) ? centerPhi2 + phi_diff1 / 2 : centerPhi1 + phi_diff2 / 2; 
    baseline_phi = FFTtools::wrap(baseline_phi, 360);
 
    double baseline_theta = (centerTheta1 + centerTheta2) / 2;
