@@ -251,7 +251,7 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
     double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
     int phiSep = abs(phi1 - phi2) % 16;
     if (phiSep > 8) phiSep = 16 - phiSep;
-    if (fMin > ANITA_F_LO || phiSep > 2)  //  Exclude baselines incapable of covering the entire ANITA passband, and antennas greater than 2 phi sectors apart.
+    if (fMin >= ANITA_F_LO || phiSep > 2)  //  Exclude baselines incapable of covering the entire ANITA passband, and antennas greater than 2 phi sectors apart.
     {
       allowedFlag = 0;
       centerPhi1 = 0;
@@ -694,7 +694,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        int bin = bins_to_fill[bi];
        if (!abbysMethod && fabs(vals_to_fill[bi]) > 1 / ANITA_BW) continue; 
        the_hist->GetArray()[bin]+= gainSigma && !center_point ? val * gain_weights[bi] : val; 
-       the_norm->GetArray()[bin]+=  gainSigma && !center_point ? gain_weights[bi] : 1;
+       the_norm->GetArray()[bin]+= gainSigma && !center_point ? gain_weights[bi] : 1;
    }
 
    delete [] alloc; 
