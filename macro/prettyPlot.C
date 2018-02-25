@@ -9,8 +9,6 @@ int prettyPlot(int event = 15717147, int anitaVer = 3,
                bool simulated = false, bool filtered = true, bool true_deconvolve = true, bool freq_instead =true,
                bool blind_polarity = false, bool plot_zoomed = false) 
 {
-
-
   AnitaVersion::set(anitaVer);
   FFTtools::loadWisdom("wisdom.dat"); 
   int run = AnitaDataset::getRunContainingEventNumber(event); 
@@ -28,7 +26,7 @@ int prettyPlot(int event = 15717147, int anitaVer = 3,
   TF1 snr("snr", " 100 * ( (x < 0.18) * TMath::Exp((x-0.18)/0.002) + (x >= 0.18 && x <= 0.5) + (x > 0.5) * TMath::Exp((0.5-x)/0.01) )", 0,1.3); 
 
   if (anitaVer == 3) cfg.response_option = UCorrelator::AnalysisConfig::ResponseIndividualBRotter;
-  else if (anitaVer == 4)cfg.response_option = UCorrelator::AnalysisConfig::ResponseTUFF;
+  else if (anitaVer == 4) cfg.response_option = UCorrelator::AnalysisConfig::ResponseTUFF;
   cfg.deconvolution_method =  true_deconvolve ? (AnitaResponse::DeconvolutionMethod*) new AnitaResponse::WienerDeconvolution(&snr): (AnitaResponse::DeconvolutionMethod*) new AnitaResponse::AllPassDeconvolution; 
 
   cfg.enable_group_delay= !simulated; 
@@ -39,7 +37,7 @@ int prettyPlot(int event = 15717147, int anitaVer = 3,
   cfg.zoomed_nant = 15; 
   cfg.use_coherent_spectra = false; 
 
-  cfg.correlation_gain_correction = 30; 
+  cfg.correlation_gain_correction = 40; 
   cfg.correlator_theta_lowest = 50; 
   cfg.correlator_theta_highest = 30; 
   cfg.correlator_nphi = 360; 
