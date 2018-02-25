@@ -846,7 +846,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
 
 int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, std::vector<std::vector<int> > * groups, double * counts, std::vector<double>  * dist, double val_threshold) const
 {
-  //vals_to_group are the wgt in first level. All the wgt from one event should clustered and sum to 1. 
+  //vals_to_group are map from seg index to seg's ps. All the wgt from one event should clustered and sum to 1. 
   //Then 10 events if they clusterd toghether in first level would sum up to 10. 
   std::vector<bool> consumed (p.seg->NSegments()); 
   int ngroups = 0; 
@@ -867,10 +867,12 @@ int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, std
      if (consumed[i]) continue; 
 
      ngroups++; 
+     //group is a vector of int, put inital seg index in it at first, then add the neighbor seg index recursively.
      std::vector<int> group;
      group.push_back(i); 
      consumed[i] = true; 
      int n_in_group = 0; 
+     //i start with 0. group_sum initially will have the first segment's ps value.
      double group_sum = vals_to_group[i]; 
      while (n_in_group < (int)  group.size()) 
      {
@@ -886,19 +888,23 @@ int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, std
          if (vals_to_group[neighbors[i]]>val_threshold && !consumed[neighbors[i]])
          {
            consumed[neighbors[i]] = true;
-           group.push_back(neighbors[i]); 
+           group.push_back(neighbors[i]);
+           //group_sum added the neighbour segs' ps togother
            group_sum += vals_to_group[neighbors[i]]; 
          }
        }
      }
-     //group_sum is the number of events in this cluster. It is calculated by clustering the segments and summing the weights. 
-     //
+     //group_sum is the number of events(prob sums together = number of events) in this cluster. It is calculated by clustering the segments and summing the weights. 
+     //dist is a vector of length = how many clusters.
      if (dist) dist->push_back(group_sum); 
 
      if (counts) 
      {
+      // loop through the current cluster's segment index i.
        for (size_t i = 0; i < group.size(); i++) 
        {
+        //group[i] is one segment's index number
+        //counts is a map from segment index to a cluster's prob sums(the cluster that this segment is in.)
          counts[group[i]] = group_sum; 
        }
      }
@@ -909,7 +915,108 @@ int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, std
   return ngroups; 
 
 }
+int UCorrelator::ProbabilityMap::countBasesInThisSegment(int seg) const{
+  int countBases = 0;
+  //now loop over all the bases 
+  int nbases = BaseList::getNumBases(); 
+  for (int ibase = 0; ibase < nbases; ibase++)
+  {
 
+    const BaseList::abstract_base & base = BaseList::getBase(ibase);
+    // time is 0 and irrelavent to stationary bases. 
+    AntarcticCoord base_pos= base.getPosition(0);
+    if (segmentationScheme()->getSegmentIndex(base_pos) == seg){
+      countBases += 1;
+    }
+  }
+  return countBases;
+}
+int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClusterSizes, std::vector<double>  * clusterSizes, double threshold, double* mapOfClusterNumOfBases, std::vector<double>* clusterNumOfBases) const
+{
+  //ps are map from seg index to seg's ps. All the wgt from one event should clustered and sum to 1. 
+  //Then 10 events if they clusterd toghether in first level would sum up to 10. 
+  std::vector<bool> consumed (p.seg->NSegments()); 
+  int nClusters = 0; 
+
+
+  //clean up input 
+  if (clusterSizes) clusterSizes->clear(); 
+  if (clusterNumOfBases) clusterNumOfBases->clear(); 
+  if (mapOfClusterSizes) memset(mapOfClusterSizes, 0, sizeof(double) * p.seg->NSegments()); 
+  if (mapOfClusterNumOfBases) memset(mapOfClusterNumOfBases, 0, sizeof(double) * p.seg->NSegments()); 
+
+  for (int i = 0; i < p.seg->NSegments(); i++) 
+  {
+    double countBasesNearACluster = 0;
+    //only clustering segments when the segment's weight larger than a threshold.
+    if (ps[i]<=threshold){
+      consumed[i] = true;
+      continue;
+    } 
+     if (consumed[i]) continue; 
+     
+
+     nClusters++; 
+     //Cluster is a vector of int, put inital seg index in it at first, then add the neighbor seg index recursively.
+     std::vector<int> Cluster;
+     Cluster.push_back(i); 
+     consumed[i] = true; 
+     int n_in_Cluster = 0; 
+     //i start with 0. cluster_sum initially will have the first segment's ps value.
+     double cluster_sum = ps[i];
+
+     //check the segment hit any bases or not
+     if (countBasesInThisSegment(i) == 1){
+     // if (true){
+        countBasesNearACluster += 1;
+     }; 
+     while (n_in_Cluster < (int)  Cluster.size()) 
+     {
+       int seg = Cluster[n_in_Cluster++]; 
+
+       //see if we need to add any neighbors 
+
+       std::vector<int> neighbors; 
+       segmentationScheme()->getNeighbors(seg, &neighbors); 
+       for (size_t j = 0; j < neighbors.size(); j++) 
+       {
+        // only cluster the neighbour segment when their ps larger than threshold and not consumed before.
+         if (ps[neighbors[j]]>threshold && !consumed[neighbors[j]])
+         {
+           consumed[neighbors[j]] = true;
+           Cluster.push_back(neighbors[j]);
+           //cluster_sum added the neighbour segs' ps togother
+           cluster_sum += ps[neighbors[j]];
+           if (countBasesInThisSegment(neighbors[j]) == 1){
+           // if (true){
+              countBasesNearACluster += 1;
+           }; 
+         }
+       }
+     }
+     //finish one cluster. 
+
+     //cluster_sum is the number of events(prob sums together = number of events) in this cluster. It is calculated by clustering the segments and summing the weights. 
+     //clusterSizes is a vector of length = how many clusters.
+     if (clusterSizes) clusterSizes->push_back(cluster_sum); 
+     if (clusterSizes) clusterNumOfBases->push_back(countBasesNearACluster); 
+
+     if (mapOfClusterSizes) 
+     {
+      // loop through the current cluster's segment index i.
+       for (size_t i = 0; i < Cluster.size(); i++) 
+       {
+        //Cluster[i] is one segment's index number
+        //mapOfClusterSizes is a map from segment index to a cluster's prob sums(the cluster that this segment is in.)
+         mapOfClusterSizes[Cluster[i]] = cluster_sum; 
+         mapOfClusterNumOfBases[Cluster[i]] = countBasesNearACluster; 
+       }
+     }
+  }
+  
+  return nClusters; 
+
+}
 
 int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, double threshold, bool blind, bool draw) const
 {
@@ -954,8 +1061,8 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, double thresho
   groupAdjacent(&wgt_without_base[0], 0,draw ? &non_base_counts[0] : 0, &non_base, threshold); 
   groupAdjacent(&wgt_with_base[0], 0,draw ? &base_counts[0] : 0, &base, threshold); 
 
-  const int maxes[] = {1,5,10,20,50,100,(int) 100e6}; 
-  const int mins[] =  {1,2,6,11,21,51,101}; 
+  const int maxes[] = {1,2,3,4,5,6,7,8,9,10,20,50,100,(int) 100e6}; 
+  const int mins[] =  {1,2,3,4,5,6,7,8,9,10,11,21,51,101}; 
   int n_rows = sizeof(maxes) / sizeof(*maxes); 
 
   int n_base[n_rows]; 
@@ -1079,8 +1186,8 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable2(int level, double thresh
   groupAdjacent(&wgt_without_base[0], 0,draw ? &non_base_counts[0] : 0, &non_base, threshold); 
   groupAdjacent(&wgt_with_base[0], 0,draw ? &base_counts[0] : 0, &base, threshold); 
 
-  const int maxes[] = {1,5,10,20,50,100,(int) 100e6}; 
-  const int mins[] =  {1,2,6,11,21,51,101}; 
+  const int maxes[] = {1,2,3,4,5,6,7,8,9,10,20,50,100,(int) 100e6}; 
+  const int mins[] =  {1,2,3,4,5,6,7,8,9,10,11,21,51,101}; 
   int n_rows = sizeof(maxes) / sizeof(*maxes); 
 
   int n_base[n_rows]; 
@@ -1145,14 +1252,88 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable2(int level, double thresh
 
   if (draw) 
   {
-    // for (int i = 0; i  < segmentationScheme()->NSegments(); i++) 
-    // {
-    //   if (non_base_counts[i] && base_counts[i]) printf("DrawOOPS!!!: %g %g\n", non_base_counts[i], base_counts[i]); 
-    //   // if (blind && non_base_counts[i] == 1)  non_base_counts[i] = 0; 
-    //   // non_base_counts[i] =  non_base_counts[i] - base_counts[i]; 
-    // }
-
     segmentationScheme()->Draw("colz",&base_counts[0]); 
+  }
+
+  return 0; 
+
+}
+
+int UCorrelator::ProbabilityMap::makeMultiplicityTable3(bool draw, bool blind) const
+{
+
+
+  //base table
+  std::vector<double> clusterSizes; 
+  std::vector<double> clusterNumOfBases; 
+  std::vector<double> mapOfClusterSizes(segmentationScheme()->NSegments());
+  std::vector<double> mapOfClusterNumOfBases(segmentationScheme()->NSegments());
+
+  //returned clusterSizes: a lsit of cluster that take include all probabilty projected to ground.
+  double threshold = 0;// set threshold to 0. This affects the grouping stop criteria. 0 means if a neighbour segment have non-zero ps, it will be clustered.
+  doClustering(&ps_norm[0], &mapOfClusterSizes[0], &clusterSizes, threshold, &mapOfClusterNumOfBases[0], &clusterNumOfBases); 
+
+  const int maxes[] = {1,2,3,4,5,6,7,8,9,10,20,50,100,(int) 100e6}; 
+  const int mins[] =  {1,2,3,4,5,6,7,8,9,10,11,21,51,101}; 
+  int n_rows = sizeof(maxes) / sizeof(*maxes); 
+
+  int n_clusters[n_rows]; 
+  int n_clusters_near_base[n_rows]; 
+  int n_clusters_not_base[n_rows]; 
+  int n_bases[n_rows]; 
+  memset(n_clusters,0, n_rows * sizeof(int)); 
+  memset(n_clusters_near_base,0, n_rows * sizeof(int)); 
+  memset(n_clusters_not_base,0, n_rows * sizeof(int)); 
+  memset(n_bases,0, n_rows * sizeof(int)); 
+  for (size_t i = 0; i < clusterSizes.size(); i++) 
+  {
+    for (int row = 0; row < n_rows; row++)
+    {
+       int n = round(clusterSizes[i]); 
+       if (n <= maxes[row] && n >= mins[row])
+       {
+         n_clusters[row]++;
+         if(clusterNumOfBases[i]>0){
+          n_clusters_near_base[row]++;
+         }else{
+          n_clusters_not_base[row]++;
+         }
+         n_bases[row] +=  clusterNumOfBases[i];
+         break; 
+       }
+    }
+  }
+
+
+
+
+  printf("============================================================================\n"); 
+  printf("|Cluster Size\t|N of Clusters\t|N of Bases\t|N of Cluster near Base\t|N of Cluster not near Base\t|\n");
+  printf("-------------------------------------\n");
+  for (int row = 0; row < n_rows; row++) 
+  {
+    if (row < n_rows-1)
+      printf ("|  %d - %d   ", mins[row], maxes[row]); 
+    else
+      printf("|  %d +       ",mins[row]);
+    printf("\t|      %d     \t|    %d   \t|           %d          \t|              %d           \t|\n", n_clusters[row], n_bases[row], n_clusters_near_base[row],n_clusters_not_base[row]);
+
+     
+  }
+  printf("-------------------------------------\n"); 
+
+  if (draw){
+  // TCanvas * canvas = new TCanvas;
+  // canvas->Divide(2,2); 
+  // canvas->cd(1);
+  // segmentationScheme()->Draw("colz",&ps_norm[0]);
+  // canvas->cd(2);
+  segmentationScheme()->Draw("colz",&mapOfClusterSizes[0]);
+  // canvas->cd(3);
+  // segmentationScheme()->Draw("colz",&mapOfClusterNumOfBases[0]); 
+  // canvas->cd(4);
+  // segmentationScheme()->Draw("colz",&mapOfClusterNumOfBases[0]);
+     
   }
 
   return 0; 

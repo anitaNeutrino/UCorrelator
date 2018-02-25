@@ -19,6 +19,7 @@
 #include <vector> 
 #include "TBits.h" 
 #include "TMutex.h"
+ #include "TCanvas.h"
 
 class Adu5Pat; 
 class TFile; 
@@ -234,12 +235,16 @@ namespace UCorrelator
        *  Returns the number of groupings. 
        *
        *  */ 
+      int countBasesInThisSegment(int seg) const;
       int groupAdjacent(const double * vals_to_group, std::vector<std::vector<int> > *  groups  = 0, double* counts = 0, std::vector<double>  * distribution = 0, double val_threshold = 0) const; 
+      //peng's version of groupAdjacent. Since the parameter name are so different. I changed the function name to doClustering
+      int doClustering(const double * ps, double* mapOfClusterSizes, std::vector<double>* clusterSizes, double val_threshold, double* mapOfClusterNumOfBases, std::vector<double>* clusterNumOfBases) const; 
 
       int dumpNonZeroBases() const; 
 
       int makeMultiplicityTable(int level,double threshold = 0, bool blind = true, bool draw = false) const; 
       int makeMultiplicityTable2(int level,double threshold = 0, bool blind = true, bool draw = false) const; 
+      int makeMultiplicityTable3(bool draw = false, bool blind = true) const; 
       
     private:
       Params p; 

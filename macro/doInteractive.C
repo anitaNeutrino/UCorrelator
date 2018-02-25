@@ -38,8 +38,14 @@ UCorrelator::ProbabilityMap::Params * map_params()
 
 // UCorrelator::Analyzer *doInteractive(int run = 130, int event = 22896140, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 140, int event = 25639095, bool decimated = false, bool simulated = false )
-UCorrelator::Analyzer *doInteractive(int run = 153, int event = 30003847, bool decimated = false, bool simulated = false )
-// UCorrelator::Analyzer *doInteractive(int run = 130, int event = 23093714, bool decimated = false, bool simulated = false )
+// UCorrelator::Analyzer *doInteractive(int run = 153, int event = 30003847, bool decimated = false, bool simulated = false )
+// UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204382, bool decimated = false, bool simulated = true )
+// UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204407, bool decimated = false, bool simulated = true )
+// UCorrelator::Analyzer *doInteractive(int run = 160, int event = 32096871, bool decimated = false, bool simulated = false )
+// UCorrelator::Analyzer *doInteractive(int run = 308, int event = 80224937, bool decimated = false, bool simulated = false )
+// UCorrelator::Analyzer *doInteractive(int run = 349, int event = 92484106, bool decimated = false, bool simulated = false )
+UCorrelator::Analyzer *doInteractive(int run = 3, int event = 7579449, bool decimated = false, bool simulated = true )
+// UCorrelator::Analyzer *doInteractive(int run = 7, int event = 14305756, bool decimated = false, bool simulated = true )
 {
 
   FFTtools::loadWisdom("wisdom.dat"); 
@@ -97,6 +103,7 @@ UCorrelator::Analyzer *doInteractive(int run = 153, int event = 30003847, bool d
   AnitaEventSummary sum; 
   analyzer->analyze(ev,&sum,d.truth()); 
   analyzer->drawSummary(); 
+  std::cout<< "eventNumber "<<sum.eventNumber<<std::endl;
   /*
   TCanvas * c2 = new TCanvas; 
   c2->Divide(2,1); 

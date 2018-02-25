@@ -2,8 +2,7 @@
 #include "AnitaConventions.h" 
 #include "AnitaDataset.h" 
 
-double cutoff = 1; 
-const char * weight = "F > 1";
+TCut cutString("theta<-6 && deconvImpulsivity>0.7");
 // const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && theta < 40 )";
 // const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && isMostImpulsive && !payloadBlast && MaxPeak < 1000 && theta < 40 && ( (HPolTrigger && iteration < 5) || (VPolTrigger && iteration > 4))  && !isPulser  )";
 
@@ -24,7 +23,7 @@ UCorrelator::ProbabilityMap::Params * map_params()
   // f_dtheta->SetParameter(1, 0.2102); 
   // f_dphi->SetParameter(0, 1.065); 
   // f_dphi->SetParameter(1, 0.2479); 
-  UCorrelator::PointingResolutionParSNRModel * snrResolutionModel = new UCorrelator::PointingResolutionParSNRModel (*f_dtheta, *f_dphi, true,true);
+  // UCorrelator::PointingResolutionParSNRModel * snrResolutionModel = new UCorrelator::PointingResolutionParSNRModel (*f_dtheta, *f_dphi, true,true);
   UCorrelator::PointingResolutionModelPlusHeadingError * resolutionModel = new UCorrelator::PointingResolutionModelPlusHeadingError(20, snrResolutionModel); 
 
   Refraction::SphRay * ref = new Refraction::SphRay; 
@@ -34,13 +33,18 @@ UCorrelator::ProbabilityMap::Params * map_params()
   // p->refract = 0; 
   p->seg = g; 
   p->point = resolutionModel; 
-  p->collision_detection = false; 
+  p->collision_detection = true; 
   p->verbosity = 0; // verbosity level for output info.
-  p->maximum_distance = 2.5;
+  p->maximum_distance = 3.5;
  
 
   return p; 
 
+}
+void clearTheOject(UCorrelator::ProbabilityMap::Params * p){
+  delete p->seg; 
+  delete p->point;
+  delete p;
 }
 
 
@@ -81,10 +85,10 @@ std::set<int> * getRemovedEvents(const char * file, std::vector<int>  * runs = 0
   return removed; 
 }
 
-int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run = 50, int end_run =367, const char * outputFilePrefix = "source_maps/test")
+int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run = 50, int end_run =367, const char * filePrefix = "_3.5sigma_1pc_", int mod=1, int mod_remainder=0)
 {
 
-  // Start getting the run / event numbers of events that pass our cut
+  // Start getting the run / event numbers of events that pass our cuts
 
   TChain c(treeName); 
   addRuns(c,start_run,end_run, thermalTreeFormat); 
@@ -92,29 +96,30 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   AnitaEventSummary * sum = new AnitaEventSummary; 
   Adu5Pat * gps = new Adu5Pat; 
 
-  int total_event_n = c.Draw("run:eventNumber:pol*5+peak:F",  TCut(TString::Format("(%s) && (run >= %d && run <= %d)", weight,start_run,end_run)) , "goff" ); 
+  int total_event_n = c.Draw("run:eventNumber:pol*5+peak:deconvImpulsivity",  cutString, "goff" ); 
   printf("%d events pass selection\n", total_event_n); 
 
 
   UCorrelator::ProbabilityMap::Params * p = map_params(); 
 
-  TFile f(TString::Format("%s%d_%d.root",outputFilePrefix,start_run, end_run), "RECREATE"); 
+  TFile f(TString::Format("source_maps/%s/%s%d_%d.root",treeName,filePrefix,start_run, end_run), "RECREATE"); 
   // UCorrelator::ProbabilityMap *map_weighted = new UCorrelator::ProbabilityMap(p); 
   UCorrelator::ProbabilityMap map(p); 
 
   TTree tr("events","events"); 
   int run, ev, pol, peak,  nsegs ; 
-  double S, F, p_ground, theta; 
+  double S, deconvImpulsivity, p_ground, theta,snr; 
 
   tr.Branch("event",&ev); 
   tr.Branch("run",&run); 
   tr.Branch("pol",&pol); 
   tr.Branch("peak",&peak); 
   tr.Branch("S",&S); 
-  tr.Branch("F",&F);
+  tr.Branch("deconvImpulsivity",&deconvImpulsivity);
   tr.Branch("p_ground",&p_ground);
   tr.Branch("theta",&theta);
   tr.Branch("nsegs",&nsegs);
+  tr.Branch("snr",&snr);
   
 
   int loaded_run = 0; 
@@ -122,8 +127,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   TTree * sumtree = 0; 
   double last_integ = 0; 
   double last_integ_norm = 0; 
-  // for (int i = 0; i < total_event_n; i+=1) 
-  for (int i = 0; i < total_event_n; i+=1000) 
+  for (int i = mod_remainder; i < total_event_n; i+=mod) 
   {
     run = c.GetV1()[i];
     // skip 45 degree wais runs. 
@@ -148,39 +152,36 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
     sumtree->GetEntryWithIndex(ev); 
     pol = int(c.GetV3()[i]) / 5; 
     peak = int(c.GetV3()[i]) % 5; 
-    F = c.GetV4()[i]; 
+    deconvImpulsivity = c.GetV4()[i]; 
     // nsegs = map_weighted->add(sum, gps, AnitaPol::AnitaPol_t(pol), peak, S); 
     nsegs = map.add(p_ground, sum, gps, AnitaPol::AnitaPol_t(pol), peak, S);
     theta = -1*sum->peak[pol][peak].theta;
+    snr = sum->peak[pol][peak].snr;
     // if(p_ground< 0.001){    
-      printf("index = %d \t run = %d \t eventNumber = %d \t F = %g \t S = %g\t nsegs=%d \t p_ground = %g  theta= %g \n",i,run,ev,F,S,nsegs,p_ground, theta);
+      printf("index = %d \t run = %d \t eventNumber = %d \t deconvImpulsivity = %g \t S = %g\t nsegs=%d \t p_ground = %g  theta= %g \n",i,run,ev,deconvImpulsivity,S,nsegs,p_ground, theta);
       // std::cout<< "\tsnr = "<< sum->deconvolved_filtered[pol][peak].snr << " longitude="<<sum->peak[pol][peak].longitude<<" latitude"<<sum->peak[pol][peak].latitude<< std::endl; 
     // }
     tr.Fill(); 
-
-    // if (F > cutoff) 
-    // {
-    //   map.add(sum, gps, AnitaPol::AnitaPol_t(pol), peak, 1); 
-    // }
   }
   f.cd(); 
   map.Write("map_unweighted"); 
   // map_weighted->Write("map_weighted"); 
-  tr.Write(); 
+  tr.Write();
+  clearTheOject(p);
   return 0; 
 }
 
 
 int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run = 50, int end_run =367, 
-                       const char * sourceMapTree = "map_unweighted", const char * removed_events_file = "removed_events.txt", const char * outputFilePrefix = "source_maps_eval/",const char * sourcemapFilePrefix = "source_maps/test_") 
+                       const char * sourceMapTree = "map_unweighted", const char * removed_events_file = "removed_events.txt", const char * filePrefix = "_3.5sigma_1pc_", int mod=1, int mod_remainder=0) 
 {
   
   TChain c(treeName); 
   addRuns(c,start_run,end_run, thermalTreeFormat); 
-  TFile outputFile(TString::Format("%s%d_%d_%s.root",outputFilePrefix,start_run,end_run, treeName ),"RECREATE"); 
+  TFile outputFile(TString::Format("source_maps_eval/%s/%s%d_%d.root",treeName,filePrefix,start_run,end_run),"RECREATE"); 
   //output file and output tree named overlap
   TTree outputTree("overlap","Overlap"); 
-  double O=999,S,theta,base_sum,polangle,F,max_base_p; 
+  double O=999,S,theta,base_sum,polangle,deconvImpulsivity,max_base_p,snr; 
   int run,eventNumber,pol,peak,max_base_index;
   double wgt = 1; 
   double mcE = 0; 
@@ -191,7 +192,7 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
   outputTree.Branch("O",&O); 
   outputTree.Branch("S",&S); 
   outputTree.Branch("run",&run); 
-  outputTree.Branch("F",&F); 
+  outputTree.Branch("deconvImpulsivity",&deconvImpulsivity); 
   outputTree.Branch("eventNumber",&eventNumber); 
   outputTree.Branch("pol",&pol); 
   outputTree.Branch("theta",&theta); 
@@ -204,12 +205,13 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
   outputTree.Branch("mcE",&mcE); // simlation evetns's energy
   outputTree.Branch("peak",&peak); 
   outputTree.Branch("removed",&removed); // is this event removed or not.
+  outputTree.Branch("snr",&snr); 
 
-  TFile sourceMapFile(TString::Format("%s%d_%d.root",sourcemapFilePrefix,start_run, end_run)); 
+  TFile sourceMapFile(TString::Format("source_maps/%s/%s%d_%d.root",treeName,filePrefix,start_run, end_run)); 
   UCorrelator::ProbabilityMap * map = (UCorrelator::ProbabilityMap*) sourceMapFile.Get(sourceMapTree); 
   UCorrelator::ProbabilityMap * source_map = map; //for mc 
   UCorrelator::ProbabilityMap::Params * map_pars = map_params(); 
-  int total_event_n = c.Draw("run:eventNumber:pol*5+peak:F",  TCut(TString::Format("(%s) && (run >= %d && run <= %d)", weight,start_run,end_run)) , "goff" ); 
+  int total_event_n = c.Draw("run:eventNumber:pol*5+peak:deconvImpulsivity",  cutString, "goff" ); 
   std::cout<< "total number of events: "<< total_event_n<< std::endl;
   std::vector<std::vector<double> > counts(10, std::vector<double> (map->segmentationScheme()->NSegments())); 
 
@@ -228,7 +230,7 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
   int loaded_run = 0; 
   TFile * sumfile = 0; 
   TTree * sumtree = 0; 
-  for (int i = 0; i < total_event_n; i+=1){
+  for (int i = mod_remainder; i < total_event_n; i+=mod){
     //loop through thermal chain
     run = c.GetV1()[i]; 
     if (run!= loaded_run)
@@ -242,25 +244,23 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
         sumtree->BuildIndex("eventNumber"); 
         loaded_run =run; 
     }
-    //each eventNumber in c, get S, pol, peak, F, eventNumber
+    //each eventNumber in c, get S, pol, peak, deconvImpulsivity, eventNumber
     eventNumber = int(c.GetV2()[i]); 
     S = c.GetW()[i]; 
     pol = int(c.GetV3()[i]) / 5; 
     peak = int(c.GetV3()[i]) % 5;
-    F = c.GetV4()[i]; 
+    deconvImpulsivity = c.GetV4()[i]; 
     //get more variables from summary file
     sumtree->GetEntryWithIndex(eventNumber);  
     polangle = 90/TMath::Pi() * TMath::ATan2(sum->deconvolved_filtered[pol][peak].max_dU, sum->deconvolved_filtered[pol][peak].max_dQ); 
-    theta = sum->peak[pol][peak].theta; 
+    theta = -1*sum->peak[pol][peak].theta; 
+    snr = sum->peak[pol][peak].snr; 
 
     //this eventNumber is in the removed list.
     removed = (removed_events && removed_events->count(eventNumber));
     //fill the values for mc  
     wgt = sum->mc.weight; 
     mcE = sum->mc.energy; 
-
-
-    if (F < cutoff) continue; 
     std::vector<std::pair<int,double> > base_contribution;
     //The maximun density of each bin.
     std::vector<std::pair<int,double> > max_dens;
@@ -297,7 +297,7 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
     // if (mc) delete map; 
    
 //    if (O < 0) O = -1; 
-      printf("i=%d, run=%d, eventnumber=%d, F=%g, O=%g\n",i, run,eventNumber, F, O); 
+      printf("i=%d, run=%d, eventnumber=%d, deconvImpulsivity=%g, O=%g\n",i, run,eventNumber, deconvImpulsivity, O); 
 
     max_base_index = -1;
     base_sum = 0;
@@ -319,7 +319,8 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
   }
 
   outputFile.cd(); 
-  outputTree.Write(); 
+  outputTree.Write();
+  clearTheOject(p);
   return 0; 
 
 }
@@ -332,27 +333,38 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
     const char* summaryFileFormat = "/Volumes/SDCard/data/wais/%d_max_30001_sinsub_10_3_ad_2.root";
     const char* thermalTreeFormat = "thermalTrees/wais_%d-%d_max_30001_sinsub_10_3_ad_2.root";
+    const char * filePrefix = "_3.5sigma_30001_";
+    int mod = 1;
+    int mod_remainder = 0;
     start_run = 120;
     end_run = 155;
-    _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run);
-    // _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, sourceMapTree);
+    _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+    // _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
 
   }else if(!strcmp(treeName,"anita4")){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
     const char* summaryFileFormat = "/Volumes/SDCard/data/a4all/%d_max_30001_sinsub_10_3_ad_2.root";
     const char* thermalTreeFormat = "thermalTrees/a4all_%d-%d_max_30001_sinsub_10_3_ad_2.root";
+    const char * filePrefix = "_3.5sigma_30001_mod10_0_";
+    int mod = 10;
+    int mod_remainder = 0;
     start_run = 50;
     end_run = 367;
-    // _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run);
-    _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, sourceMapTree);
+    for (mod_remainder= 0; mod_remainder<mod; mod_remainder++){
+      _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+      // _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+    }
   }else if(!strcmp(treeName,"simulation")){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
     const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_501_sinsub_10_3_ad_2.root";
     const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_501_sinsub_10_3_ad_2.root";
+    const char * filePrefix = "_3.5sigma_30001";
+    int mod = 1;
+    int mod_remainder = 0;
     start_run = 1;
     end_run = 10;
-    // _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run);
-    _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, sourceMapTree);
+    _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+    // _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
   }else{
     std::cout<< "wrong input treeName"<<std::endl;
   }
