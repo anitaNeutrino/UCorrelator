@@ -456,12 +456,12 @@ SECTION
 
 
   int nonzero = 0;
-  //only keep values with at least 2 contributing antennas 
+  //only keep values with contributing antennas 
   for (int i = 0; i < (answer->GetNbinsX()+2) * (answer->GetNbinsY()+2); i++) 
   {
     double val = answer->GetArray()[i]; 
     if (val == 0) continue;
-    int this_norm = zoomed_norm->GetArray()[i]; 
+    double this_norm = zoomed_norm->GetArray()[i]; 
     answer->GetArray()[i] = this_norm > 0  ? val/this_norm : 0;
     nonzero++; 
   }
