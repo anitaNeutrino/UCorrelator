@@ -251,7 +251,7 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
     double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
     int phiSep = abs(phi1 - phi2) % 16;
     if (phiSep > 8) phiSep = 16 - phiSep;
-    if (fMin > ANITA_F_LO || phiSep > 2)  //  Exclude baselines incapable of covering the entire ANITA passband, and antennas greater than 2 phi sectors apart.
+    if (fMin >= ANITA_F_LO || phiSep > 2)  //  Exclude baselines incapable of covering the entire ANITA passband, and antennas greater than 2 phi sectors apart.
     {
       allowedFlag = 0;
       centerPhi1 = 0;
@@ -337,8 +337,8 @@ AnalysisWaveform * UCorrelator::Correlator::getCorrelation(int ant1, int ant2)
     omp_set_lock(&locks->waveform_locks[ant1]); 
     omp_set_lock(&locks->waveform_locks[ant2]); 
 #endif
-//    printf("Computing correlation %d %d\n", ant1, ant2);  
-correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],padded_waveforms[ant2],pad_factor, rms[ant1] * rms[ant2]);
+//    printf("Computing correlation %d %d\n", ant1, ant2);
+correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1], padded_waveforms[ant2], pad_factor, rms[ant1] * rms[ant2]);
 
 #ifdef UCORRELATOR_OPENMP
     omp_unset_lock(&locks->waveform_locks[ant2]); 
@@ -476,13 +476,16 @@ SECTION
 
   int nonzero = 0;
 
-  //only keep values with at least contributing antennas 
+  //only keep values with contributing antennas 
   for (int i = 0; i < (answer->GetNbinsX()+2) * (answer->GetNbinsY()+2); i++) 
   {
-    double val = answer->GetArray()[i]; 
-    if (val == 0) continue;
     int this_norm = zoomed_norm->GetArray()[i];
-    answer->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
+    if (!this_norm) continue;
+    double val = answer->GetArray()[i]; 
+    if (!val) continue;
+
+    answer->GetArray()[i] = val / this_norm;
+//    answer->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
     nonzero++; 
   }
 
@@ -645,7 +648,9 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
         double Dphi = FFTtools::wrap(phi - baseline_phi, 360, 0); 
         double Dtheta = theta - baseline_theta;
 
-        gain_weights[nbins_used] = abbysMethod ? TMath::Gaus(TMath::Sqrt(Dphi*Dphi + Dtheta*Dtheta), 0, gainSigma) : TMath::Gaus(Dphi, 0, gainSigma);
+        gain_weights[nbins_used] = abbysMethod ? TMath::Gaus(TMath::Sqrt(Dphi*Dphi + Dtheta*Dtheta), 0, gainSigma, true) : TMath::Gaus(Dphi, 0, gainSigma, true);
+//cos(Dphi / RAD2DEG);
+
        }
        nbins_used++; 
      }
@@ -686,15 +691,15 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    }
 
 
-
    for (int bi = 0; bi < nbins_used; bi++)
    {
        double val = vals_to_fill[bi]; 
-
        int bin = bins_to_fill[bi];
-       if (!abbysMethod && fabs(vals_to_fill[bi]) > 1 / ANITA_BW) continue; 
-       the_hist->GetArray()[bin]+= gainSigma && !center_point ? val * gain_weights[bi] : val; 
-       the_norm->GetArray()[bin]+=  gainSigma && !center_point ? gain_weights[bi] : 1;
+
+       if (!abbysMethod && fabs(vals_to_fill[bi]) > 1 / ANITA_BW) continue;
+
+       the_hist->GetArray()[bin] += gainSigma && !center_point ? val * gain_weights[bi] : val; 
+       the_norm->GetArray()[bin] += gainSigma && !center_point ? gain_weights[bi] : 1;
    }
 
    delete [] alloc; 
@@ -779,14 +784,16 @@ SECTIONS
 }
 
   int nonzero = 0;
-  //only keep values with at least 3 contributing antennas 
+  //only keep values with contributing antennas 
   for (int i = 0; i < (hist->GetNbinsX()+2) * (hist->GetNbinsY()+2); i++) 
   {
+    double this_norm = norm->GetArray()[i];
+    if (!this_norm) continue;
     double val = hist->GetArray()[i]; 
-    if (val == 0) continue;
-    int this_norm = norm->GetArray()[i];
-    hist->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
+    if (!val) continue;
 
+    hist->GetArray()[i] = val / this_norm;
+//    hist->GetArray()[i] = this_norm > 2 ? val/this_norm : 0;
   //  printf("%d %g %d\n",  i,  val, this_norm); 
     nonzero++; 
   }
