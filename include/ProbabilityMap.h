@@ -58,7 +58,7 @@ namespace UCorrelator
             dataset(RampdemReader::rampdem), 
             refract(0), 
             maximum_distance(3),// how many sigma to plot on prob map
-            min_p_on_continent (1e-3) , 
+            min_p_on_continent (1e-3) , //prob sum of an event on ground should larger than this threshold
             projection(BACKWARD), 
             collision_detection(true) , 
             max_dphi(5), 
@@ -143,6 +143,8 @@ namespace UCorrelator
 
       /** Used to combine information from various maps */ 
       int combineWith(const ProbabilityMap & other); 
+       /** Used to remove information from various maps */ 
+      int removeWith(const ProbabilityMap & other); 
 
       /** Add a point to the clustering. Returns the number of segments that had a non-zero contributions */ 
       int add(double & p_ground, const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, double weight = 1, TFile * debugfile = 0); 

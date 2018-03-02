@@ -71,29 +71,29 @@ void plotThermalCuts(TChain * chain, const char * output_file = 0, std::vector<T
 
 void plotCuts(){
   // bool isSequential or if only has one cut each time
-  bool isSequential=0;
+  bool isSequential=1;
   std::vector<TCut> cutsList;
   std::vector<const char*>  cut_labels;
 
   // TChain wais("wais"); wais.Add("/Volumes/SDCard/data/wais/*30001*.root");
-  // cutsList = {isReal, notGlitch, notBadReconstruction, notBlast, triggered, notMasked,goodPointingWais};
-  // cut_labels = {"isReal", "notGlitch", "notBadReconstruction", "notBlast", "triggered", "notMasked","goodPointingWais"};
+  // cutsList = {isReal, notGlitch, notBadReconstruction, notBlast, triggered, notMasked,notHical,goodPointingWais};
+  // cut_labels = {"isReal", "notGlitch", "notBadReconstruction", "notBlast", "triggered", "notMasked","notHical","goodPointingWais"};
   // plotThermalCuts(&wais,"cuts_deconvolved_wais.pdf",cutsList,cut_labels,1,0,isSequential);
 
 
-  // TChain a4all("anita4"); a4all.Add("/Volumes/SDCard/data/a4all/*30001*.root");
-  // cutsList = {isReal, notGlitch, notBadReconstruction, notBlast, triggered, notMasked};
-  // cut_labels = {"isReal", "notGlitch", "notBadReconstruction", "notBlast", "triggered", "notMasked"};
-  // plotThermalCuts(&a4all,"cuts_deconvolved_a4all.pdf",cutsList,cut_labels,0,0,isSequential);
+  TChain a4all("anita4"); a4all.Add("/Volumes/SDCard/data/a4all/*30002*.root");
+  cutsList = {isReal, notGlitch, notBadReconstruction, notBlast, triggered, notMasked,notHical};
+  cut_labels = {"isReal", "notGlitch", "notBadReconstruction", "notBlast", "triggered", "notMasked","notHical"};
+  plotThermalCuts(&a4all,"cuts_deconvolved_a4all.pdf",cutsList,cut_labels,0,0,isSequential);
 
-  // TChain mc("simulation"); mc.Add("/Volumes/SDCard/data/simulated/*1000*.root");
-  TChain mc("simulation"); mc.Add("/Volumes/SDCard/data/simulated/*501*.root");
-  cutsList = {isReal, notGlitch, notBadReconstruction, notBlast, triggered, notMasked};
-  cut_labels = {"isReal", "notGlitch", "notBadReconstruction", "notBlast", "triggered", "notMasked"};
+  // // TChain mc("simulation"); mc.Add("/Volumes/SDCard/data/simulated/*1000*.root"); // Energy 222
+  // TChain mc("simulation"); mc.Add("/Volumes/SDCard/data/simulated/*1001*.root"); // Min Bias Eneryg 222
+  // cutsList = {isReal, notGlitch, notBadReconstruction, notBlast, triggered, notMasked, notHical,goodPointingMC};
+  // cut_labels = {"isReal", "notGlitch", "notBadReconstruction", "notBlast", "triggered", "notMasked", "notHical","goodPointingMC"};
   
-  // cutsList = {isReal,goodPointingMC};
-  // cut_labels = {"isReal", "goodPointingMC"};
-  plotThermalCuts(&mc,"cuts_deconvolved_simulated.pdf",cutsList,cut_labels,0,1,isSequential);
+  // // cutsList = {isReal,goodPointingMC};
+  // // cut_labels = {"isReal", "goodPointingMC"};
+  // plotThermalCuts(&mc,"cuts_deconvolved_simulated.pdf",cutsList,cut_labels,0,1,isSequential);
 }
 
 

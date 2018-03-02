@@ -448,6 +448,117 @@ int UCorrelator::ProbabilityMap::combineWith(const ProbabilityMap & other)
   return 0; 
 }
 
+int UCorrelator::ProbabilityMap::removeWith(const ProbabilityMap & other) 
+{
+
+  TString our_scheme; 
+  TString their_scheme; 
+
+  segmentationScheme()->asString(&our_scheme); 
+  other.segmentationScheme()->asString(&their_scheme); 
+
+  if (our_scheme != their_scheme)
+  {
+    fprintf(stderr,"Cannot combine ProbabilityMap's with different segmentation schemes (ours: %s, theirs: %s)\n", our_scheme.Data(), their_scheme.Data()); 
+    return 1; 
+  }
+
+
+  if (NLevels() != other.NLevels())
+  {
+    fprintf(stderr,"Cannot combine ProbabilityMap's with different numbers of levels: (ours %d, theirs: %d)\n", (int) NLevels(), (int) other.NLevels()); 
+    return 1; 
+  }
+
+  int nwrong = 0; 
+  
+  for (int i = 0; i < (int) NLevels(); i++) 
+  {
+    if (getLevel(i) != other.getLevel(i))
+    {
+      fprintf(stderr,"  Mismatched level %d (ours=%g, theirs=%g)", i, getLevel(i), other.getLevel(i));
+      nwrong++;
+    }
+  }
+
+  if (nwrong > 0) 
+  {
+    fprintf(stderr,"%d Mismatched Levels. Cannot combine. Theoretically we could combine the levels that still make sense, but you'll have to implement that if you really want it.\n", nwrong); 
+    return 1; 
+  }
+
+
+  bool combine_bases = true; 
+  if (getNBases() != other.getNBases())
+  {
+    fprintf(stderr,"Cannot combine bases from ProbabilityMap's since there are different numbers of bases (ours: %d, theirs: %d)\n", (int) getNBases(),(int)  other.getNBases()); 
+
+    combine_bases = false; 
+  }
+
+
+  if (maxDistance() != other.maxDistance())
+  {
+    fprintf(stderr,"Combining ProbabilityMap's with different max mahalanobis distance (ours=%g,theirs=%g). Continuing, but may not be what you want!\n", maxDistance(), other.maxDistance());  
+  }
+  
+
+  //TODO we probably want to compare the pointing resolution models as well 
+
+  //if we made it this far, all is good (except for what hasn't been implemented yet) !
+
+  for (int i = 0; i < segmentationScheme()->NSegments(); i++) 
+  {
+    ps[i] -= other.getProbSums()[i]; 
+    ps_norm[i] -= other.getProbSums(true)[i]; 
+    sqrt_ps[i] -= other.getProbSqrtSums()[i]; 
+    sqrt_ps_norm[i] -= other.getProbSqrtSums(true)[i]; 
+
+
+    // no easy way to get Cosmin's max1_ps and max2_ps right when removing map. So they are incorrect when using this function.
+    // But I don't use max1_ps and max2_ps in my analysis so I am good. by Peng.
+    // double other_max = TMath::Min(max1_ps[i], other.getProbMaxes()[i]); 
+    // max1_ps[i] = TMath::Max(max1_ps[i], other.getProbMaxes()[i]); 
+    // double other_max_norm = TMath::Min(max1_ps[i], other.getProbMaxes(true)[i]); 
+    // max1_ps_norm[i] = TMath::Max(max1_ps_norm[i], other.getProbMaxes(true)[i]); 
+
+    // max2_ps[i] = TMath::Max(other_max, TMath::Max(max2_ps[i], other.getProbSecondMaxes()[i])); 
+    // max2_ps_norm[i] = TMath::Max(other_max_norm, TMath::Max(max2_ps_norm[i], other.getProbSecondMaxes(true)[i])); 
+
+    
+    for (int j = 0; j < (int) NLevels(); j++)
+    {
+      ps_without_base[j][i] -= other.getProbSumsWithoutBases(j)[i]; 
+      ps_norm_without_base[j][i] -= other.getProbSumsWithoutBases(j,true)[i]; 
+      sqrt_ps_without_base[j][i] -= other.getProbSqrtSumsWithoutBases(j)[i]; 
+      sqrt_ps_norm_without_base[j][i] -= other.getProbSqrtSumsWithoutBases(j,true)[i]; 
+      n_above_level[j][i] -= other.getNAboveLevel(j)[i]; 
+      wgt_above_level[j][i] -= other.getWgtAboveLevel(j)[i]; 
+      n_above_level_without_base[j][i] -= other.getNAboveLevelWithoutBases(j)[i]; 
+      wgt_above_level_without_base[j][i] -= other.getWgtAboveLevelWithoutBases(j)[i]; 
+      n_above_level_without_base_norm[j][i] -= other.getNAboveLevelWithoutBases(j,true)[i]; 
+      wgt_above_level_without_base_norm[j][i] -= other.getWgtAboveLevelWithoutBases(j,true)[i]; 
+    }
+  }
+
+  if (combine_bases) 
+  {
+    for (size_t i = 0; i < getNBases(); i++) 
+    {
+
+      base_sums[i] -= other.getBaseSums()[i]; 
+      base_sums_norm[i] -= other.getBaseSums(true)[i]; 
+      for (int j = 0; j < (int) NLevels(); j++)
+      {
+        base_n_above_level[j][i] -= other.getBaseNAboveLevel(j)[i]; 
+        base_n_above_level_norm[j][i] -= other.getBaseNAboveLevel(j,true)[i]; 
+      }
+    }
+  }
+
+  return 0; 
+}
+
 
 double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummary * sum, const Adu5Pat * gps, 
                                                        AnitaPol::AnitaPol_t pol, int peak,
@@ -1306,23 +1417,23 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable3(bool draw, bool blind) c
 
 
 
-
-  printf("============================================================================\n"); 
-  printf("|Cluster Size\t|N of Clusters\t|N of Bases\t|N of Cluster near Base\t|N of Cluster not near Base\t|\n");
-  printf("-------------------------------------\n");
-  for (int row = 0; row < n_rows; row++) 
-  {
-    if (row < n_rows-1)
-      printf ("|  %d - %d   ", mins[row], maxes[row]); 
-    else
-      printf("|  %d +       ",mins[row]);
-    printf("\t|      %d     \t|    %d   \t|           %d          \t|              %d           \t|\n", n_clusters[row], n_bases[row], n_clusters_near_base[row],n_clusters_not_base[row]);
-
-     
-  }
-  printf("-------------------------------------\n"); 
-
   if (draw){
+    printf("========================================================================================================\n"); 
+    printf("|Cluster Size\t|N of Clusters\t|N of Bases\t|N of Cluster near Base\t|N of Cluster not near Base\t|\n");
+    printf("--------------------------------------------------------------------------------------------------------\n");
+    for (int row = 0; row < n_rows; row++) 
+    {
+      if (row < n_rows-1)
+        printf ("|  %d - %d   ", mins[row], maxes[row]); 
+      else
+        printf("|  %d +       ",mins[row]);
+      printf("\t|      %d     \t|    %d   \t|           %d          \t|              %d           \t|\n", n_clusters[row], n_bases[row], n_clusters_near_base[row],n_clusters_not_base[row]);
+
+       
+    }
+    printf("--------------------------------------------------------------------------------------------------------\n"); 
+
+
   // TCanvas * canvas = new TCanvas;
   // canvas->Divide(2,2); 
   // canvas->cd(1);
@@ -1336,7 +1447,7 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable3(bool draw, bool blind) c
      
   }
 
-  return 0; 
+  return n_clusters_not_base[0]; 
 
 }
 

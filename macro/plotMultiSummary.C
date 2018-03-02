@@ -34,8 +34,8 @@ void _plotMultiSummary(TString treeName, TString pointDir, TString fEnd ,TString
 	TH2D* dThetavsdPhiH = new TH2D("dThetavsdPhiH", "dThetavsdPhiH", 100, -5, 5, 250, -5, 5);	
 	TH2D* dThetavsdPhiV = new TH2D("dThetavsdPhiV", "dThetavsdPhiV", 100, -5, 5, 250, -5, 5);	
 	TH2D* dThetavsdPhi = new TH2D("dThetavsdPhi", "dThetavsdPhi", 100, -5, 5, 250, -5, 5);	
-	TH2D* dThetavsSNR = new TH2D("dThetavsSNR", "dThetavsSNR", 20, 0, 35, 50, -2, 2);	
-	TH2D* dPhivsSNR = new TH2D("dPhivsSNR", "dPhivsSNR", 20, 0, 35, 50, -5, 5);	
+	TH2D* dThetavsSNR = new TH2D("dThetavsSNR", "dThetavsSNR", 30, 0, 100, 50, -2, 2);	
+	TH2D* dPhivsSNR = new TH2D("dPhivsSNR", "dPhivsSNR", 30, 0, 100, 50, -5, 5);	
 
 	for (int j = 0; j < nEntries; j ++)
 	{
@@ -51,6 +51,9 @@ void _plotMultiSummary(TString treeName, TString pointDir, TString fEnd ,TString
 		// double dphi = FFTtools::wrap(phi1 - waisphi, 360, 180);
 		if (treeName.EqualTo("wais")){
 			if(pulser == 1){
+				if(sum->deconvolved_filtered[0][0].snr<10 or sum->deconvolved_filtered[0][0].snr>14){
+					continue;
+				}
 			// if(fabs(dtheta) > 3 or fabs(dphi)>5 ){
 			// 	continue;
 			// }
@@ -63,10 +66,13 @@ void _plotMultiSummary(TString treeName, TString pointDir, TString fEnd ,TString
 			// }
 				dThetavsdPhiH->Fill(FFTtools::wrap(sum->peak[0][0].phi - sum->wais.phi, 360, 0), sum->peak[0][0].theta - sum->wais.theta);
 				dThetavsdPhi->Fill(FFTtools::wrap(sum->peak[0][0].phi - sum->wais.phi, 360, 0), sum->peak[0][0].theta - sum->wais.theta);
-				dThetavsSNR->Fill(sum->peak[0][0].snr, FFTtools::wrap(sum->peak[0][0].theta - sum->wais.theta, 360, 0));
-				dPhivsSNR->Fill(sum->peak[0][0].snr, FFTtools::wrap(sum->peak[0][0].phi - sum->wais.phi, 360, 0));
+				dThetavsSNR->Fill(sum->deconvolved_filtered[0][0].snr, FFTtools::wrap(sum->peak[0][0].theta - sum->wais.theta, 360, 0));
+				dPhivsSNR->Fill(sum->deconvolved_filtered[0][0].snr, FFTtools::wrap(sum->peak[0][0].phi - sum->wais.phi, 360, 0));
 			}
 			if(pulser == 5){
+				if(sum->deconvolved_filtered[1][0].snr<10 or sum->deconvolved_filtered[1][0].snr>14){
+					continue;
+				}
 				// dThetavPhiV->Fill(sum->wais.phi, sum->peak[1][0].theta - sum->wais.theta);
 				// dThetavPhiAll->Fill(sum->wais.phi, sum->peak[1][0].theta - sum->wais.theta);
 				// // dThetavPhiV->Fill(waisphi, dtheta);
@@ -76,8 +82,8 @@ void _plotMultiSummary(TString treeName, TString pointDir, TString fEnd ,TString
 				// }
 				dThetavsdPhiV->Fill(FFTtools::wrap(sum->peak[1][0].phi - sum->wais.phi, 360, 0), sum->peak[1][0].theta - sum->wais.theta);
 				dThetavsdPhi->Fill(FFTtools::wrap(sum->peak[1][0].phi - sum->wais.phi, 360, 0), sum->peak[1][0].theta - sum->wais.theta);
-				dThetavsSNR->Fill(sum->peak[1][0].snr, FFTtools::wrap(sum->peak[1][0].theta - sum->wais.theta, 360, 0));
-				dPhivsSNR->Fill(sum->peak[1][0].snr, FFTtools::wrap(sum->peak[1][0].phi - sum->wais.phi, 360, 0));				
+				dThetavsSNR->Fill(sum->deconvolved_filtered[1][0].snr, FFTtools::wrap(sum->peak[1][0].theta - sum->wais.theta, 360, 0));
+				dPhivsSNR->Fill(sum->deconvolved_filtered[1][0].snr, FFTtools::wrap(sum->peak[1][0].phi - sum->wais.phi, 360, 0));				
 			}
 
 		}else{

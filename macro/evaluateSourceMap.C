@@ -9,61 +9,7 @@ const char * weight = "F>1";
 
 
 
-int combineSourceMaps(const char * dir, const char * output)
-{
 
-  TSystemDirectory d(dir,dir); 
-  TList * files = d.GetListOfFiles(); 
-
-  TSystemFile * file;
-  TString fname; 
-  TIter next(files); 
-
-  UCorrelator::ProbabilityMap * map_w = 0;
-  UCorrelator::ProbabilityMap * map_u = 0;
-
-  TFile outf(output,"RECREATE"); 
-  while ((file=(TSystemFile*) next()))
-  {
-    fname = file->GetName(); 
-    fname = TString(dir) + TString("/") + fname; 
-    if (fname.EndsWith(".root"))
-    {
-      TFile * f = new TFile(fname); 
-      printf("Considering %s\n", fname.Data()); 
-      
-      UCorrelator::ProbabilityMap * m_w = (UCorrelator::ProbabilityMap*) f->Get("map_weighted");
-      UCorrelator::ProbabilityMap * m_u = (UCorrelator::ProbabilityMap*) f->Get("map_unweighted");
-      if (!m_w || !m_u) continue; 
-
-      if (!map_w)
-      {
-        map_w = m_w; 
-      }
-      else
-      {
-        map_w->combineWith(*m_w); 
-        delete m_w; 
-      }
-
-      if (!map_u)
-      {
-        map_u = m_u; 
-      }
-      else
-      {
-        map_u->combineWith(*m_u); 
-        delete m_u; 
-      }
-    }
-  }
-
-  outf.cd(); 
-  map_w->Write("map_weighted"); 
-  map_u->Write("map_unweighted"); 
-
-  return 0;
-}
 
 UCorrelator::ProbabilityMap::Params * map_params()
 {

@@ -7,7 +7,7 @@
 
 
 
-void makeTMVATrees(const char * dir, const char * tree_name, int start_run, int end_run, int nworkers = 1, int runs_per_file=40, const char * filter = "max_30002_sinsub_10_3_ad_2") 
+void makeTMVATrees(const char * dir, const char * tree_name, int start_run, int end_run, int nworkers = 1, int runs_per_file=40, const char * filter = "max_30001_sinsub_10_3_ad_2") 
 {
 
   int current_run = start_run; 
@@ -37,7 +37,7 @@ void makeTMVATrees(const char * dir, const char * tree_name, int start_run, int 
       cut = thermal_sample && fromGround;
     }else{
       cut = mc_sample && fromGround; // need to have pointing angle cut. 
-      filter = "max_501_sinsub_10_3_ad_2";
+      filter = "max_1001_sinsub_10_3_ad_2";
     }
     std::cout << cut << " "<< filter << std::endl;
 
