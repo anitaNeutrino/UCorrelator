@@ -101,6 +101,15 @@ int _trendOfSinglets(const char * treeName, const char* summaryFileFormat, const
   UCorrelator::ProbabilityMap * combineMap = 0;
   TFile* removeFile;
   TFile* combineFile;
+
+  TFile outputFile(TString::Format("source_maps/%s/trendOfSinglets%smod%d_%d_%d.root",treeName,filePrefix,mod,start_run,end_run),"RECREATE"); 
+  //output file and output tree named overlap
+  TTree outputTree("trend","trend"); 
+  int numOfFiles;
+  double avgNSinglets;
+  //branches in outputTree, the main purpose are to fill those branches.
+  outputTree.Branch("numOfFiles",&numOfFiles); 
+  outputTree.Branch("avgNSinglets",&avgNSinglets); 
   while(j-i<mod){
     std::cout <<"i="<< i << " j="<< j << std::endl;
     //do some function about between  i and j;
@@ -178,6 +187,9 @@ int _trendOfSinglets(const char * treeName, const char* summaryFileFormat, const
     if(j == mod-1 and increment == 1){
       //hit the right edge of file
       std::cout <<"====== avg nSinglets" << totalSinglets/float(count) << " count="<< count << std::endl;
+      numOfFiles = j - i + 1;
+      avgNSinglets = totalSinglets/float(count);
+      outputTree.Fill();
       i--;
       increment = -1;
       count = 0;
@@ -185,6 +197,9 @@ int _trendOfSinglets(const char * treeName, const char* summaryFileFormat, const
     }else if(i==0 and increment == -1){
       //hit the left edge of file
       std::cout <<"======avg nSinglets" << totalSinglets/float(count) << " count="<< count << std::endl;
+      numOfFiles = j - i + 1;
+      avgNSinglets = totalSinglets/float(count);
+      outputTree.Fill();
       j++;
       increment = 1;
       count = 0;
@@ -195,51 +210,87 @@ int _trendOfSinglets(const char * treeName, const char* summaryFileFormat, const
     }
     
   } 
+  outputFile.Write();
   return 0;
-
-  // for(int i=0; i<(totalFile-numOfFile); i++){
-  //   UCorrelator::ProbabilityMap * map_u = 0;
-  //   int fileCounts = 0;
-  //   TIter next(files); 
-  //   while ((file=(TSystemFile*) next())){
-      
-  //     fname = file->GetName(); 
-  //     fname = TString(dir) + TString("/") + fname; 
-  //     // if (fname.EndsWith(".root"))
-  //     if (fname.Contains(filePrefix)) // select the file to use.
-  //     {
-  //       fileCounts++;
-  //       if(fileCounts - i  - 1 < 0 ) {
-  //         continue;
-  //       }
-    //       TFile * inputFile = new TFile(fname); 
-    //       // printf("Considering %s\n", fname.Data());       
-  //       UCorrelator::ProbabilityMap * m_u = (UCorrelator::ProbabilityMap*) inputFile->Get("map_unweighted");
-  //       if (!map_u)
-  //       { 
-  //         map_u = m_u; 
-  //       }
-  //       else
-  //       {
-  //         map_u->combineWith(*m_u); 
-  //         delete m_u;
-  //         delete inputFile;
-  //       }
-  //       if(fileCounts- i - 1 == numOfFile){
-  //         int nSinglets = map_u->makeMultiplicityTable3(0,0);
-  //         totalSinglets+= nSinglets;
-  //         std::cout<<"numOfFile="<<numOfFile<<" i="<<i<<" totalSinglets="<<totalSinglets<< " N_singlets="<< nSinglets << " file_counts="<<fileCounts<<std::endl;
-  //         break;
-  //       }
-  //       // map_u->getProbSumsIntegral(true);
-  //     }
-  //   }
-  //       delete map_u;
-  // }
-  // return totalSinglets;
 }
 
+int _trendOfSinglets2(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run, int end_run, const char * filePrefix, int mod){
+  
+  UCorrelator::ProbabilityMap * map = 0;
+  UCorrelator::ProbabilityMap * removeMap = 0;
+  UCorrelator::ProbabilityMap * combineMap = 0;
+  std::vector<UCorrelator::ProbabilityMap *> maps;
+  for(int i = 0; i < mod; i++){
+    std::cout << "loaded all the map "<< i << std::endl;
+    TFile * tempFile = TFile::Open(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, i ,start_run, end_run)); 
+    // TFile * tempFile = new TFile(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, i ,start_run, end_run)); 
+    maps.push_back((UCorrelator::ProbabilityMap*) tempFile->Get("map_unweighted"));
+    tempFile->Close();
+    // delete tempFile;
+  }
+  std::cout << "loaded all the maps once for all!!!!!!!!!" << std::endl;
+  // return 0;
+  TFile* removeFile;
+  TFile* combineFile;
 
+  TFile outputFile(TString::Format("source_maps/%s/trendOfSinglets%smod%d_%d_%d.root",treeName,filePrefix,mod,start_run,end_run),"RECREATE"); 
+  //output file and output tree named overlap
+  TTree outputTree("trend","trend"); 
+  int numOfFiles;
+  double avgNSinglets;
+  //branches in outputTree, the main purpose are to fill those branches.
+  outputTree.Branch("numOfFiles",&numOfFiles); 
+  outputTree.Branch("avgNSinglets",&avgNSinglets); 
+      
+  for(int l =0; l<mod; l++){
+    int totalSinglets = 0;
+    for (int i = 0; i < mod; i++){
+      if(i == 0 and l == 0){
+        //start 
+        std::cout <<"add file index "<< 0 << std::endl;
+        combineFile = new TFile(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, 0 ,start_run, end_run)); 
+        map = (UCorrelator::ProbabilityMap*) combineFile->Get("map_unweighted");
+      }else{ 
+        if (i == 0){
+          std::cout <<"add file index "<< (i + l - 1)%mod << std::endl;
+          // combineFile = new TFile(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, (i + l - 1)%mod,start_run, end_run)); 
+          // combineMap = (UCorrelator::ProbabilityMap*) combineFile->Get("map_unweighted");
+          combineMap = maps[(i + l - 1)%mod];
+          map->combineWith(*combineMap);
+          // delete combineFile;
+          // delete combineMap;  
+        }
+        //otherwise, just need to remove the i-1 file and add (i+l)%mod file.
+        std::cout <<"remove file index "<< (i - 1 + mod)%mod<< std::endl;
+        // removeFile = new TFile(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, (i - 1 + mod)%mod ,start_run, end_run)); 
+        // removeMap = (UCorrelator::ProbabilityMap*) removeFile->Get("map_unweighted");
+        removeMap = maps[(i - 1 + mod)%mod];
+        map->removeWith(*removeMap);
+        // delete removeFile;
+        // delete removeMap;
+
+        std::cout <<"add file index "<< (i + l)%mod << std::endl;
+        // combineFile = new TFile(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, (i + l)%mod ,start_run, end_run)); 
+        // combineMap = (UCorrelator::ProbabilityMap*) combineFile->Get("map_unweighted");
+        combineMap = maps[(i + l)%mod];
+        map->combineWith(*combineMap);
+        // delete combineFile;
+        // delete combineMap;
+
+        int nSinglets = map->makeMultiplicityTable3(0,0);
+        totalSinglets+= nSinglets;
+      }
+      std::cout<<"l "<<l <<" i " << i<< " events "<< map->getProbSumsIntegral(true) << std::endl;
+    }
+    std::cout <<"====== avg nSinglets" << totalSinglets/float(mod) << " numOfFiles="<< l + 1 << std::endl;
+    avgNSinglets = totalSinglets/float(mod);
+    numOfFiles = l + 1;
+    outputTree.Fill();
+  }
+  outputFile.Write();
+  delete map;
+  return 0;
+}
 
 void addRuns(TChain & c, int start_run, int end_run, const char* thermalTreeFormat)
 {
@@ -284,8 +335,6 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
 
   TChain c(treeName); 
   addRuns(c,start_run,end_run, thermalTreeFormat); 
-std::cout<< "hello 0"<<std::endl;
-
   AnitaEventSummary * sum = new AnitaEventSummary; 
   Adu5Pat * gps = new Adu5Pat; 
 
@@ -302,8 +351,6 @@ std::cout<< "hello 0"<<std::endl;
   TTree tr("events","events"); 
   int run, ev, pol, peak,  nsegs ; 
   double S, deconvImpulsivity, p_ground, theta,snr; 
-std::cout<< "hello 1"<<std::endl;
-
   tr.Branch("event",&ev); 
   tr.Branch("run",&run); 
   tr.Branch("pol",&pol); 
@@ -323,7 +370,6 @@ std::cout<< "hello 1"<<std::endl;
   double last_integ_norm = 0; 
   for (int i = mod_remainder; i < total_event_n; i+=mod) 
   {
-std::cout<< "hello 2"<<std::endl;
     run = c.GetV1()[i];
     // skip 45 degree wais runs. 
     // if (run<136){
@@ -332,38 +378,28 @@ std::cout<< "hello 2"<<std::endl;
     if (run!= loaded_run)
     {
       if (sumfile) delete sumfile;
-      sumfile = new TFile(TString::Format(summaryFileFormat,run));
-std::cout<< "hello 3"<<std::endl;
-         
+      sumfile = new TFile(TString::Format(summaryFileFormat,run));         
       gROOT->cd(); 
       sumtree = (TTree*) sumfile->Get(treeName); 
       sumtree->SetBranchAddress("summary",&sum); 
       sumtree->SetBranchAddress("pat",&gps); 
       sumtree->BuildIndex("eventNumber"); 
       loaded_run = run; 
-    }
-std::cout<< "hello 4"<<std::endl;
-      
+    }      
     ev = int(c.GetV2()[i]); 
     S = c.GetW()[i]; 
-std::cout<< "hello 4.1"<<std::endl;
     sumtree->GetEntryWithIndex(ev); 
-std::cout<< "hello 4.2"<<std::endl;
     pol = int(c.GetV3()[i]) / 5; 
-std::cout<< "hello 4.3"<<std::endl;
     peak = int(c.GetV3()[i]) % 5; 
-std::cout<< "hello 4.4"<<std::endl;
     deconvImpulsivity = c.GetV4()[i]; 
     // nsegs = map_weighted->add(sum, gps, AnitaPol::AnitaPol_t(pol), peak, S); 
     nsegs = map.add(p_ground, sum, gps, AnitaPol::AnitaPol_t(pol), peak, S);
     theta = -1*sum->peak[pol][peak].theta;
-std::cout<< "hello 5"<<std::endl;
     snr = sum->peak[pol][peak].snr;
     // if(p_ground< 0.001){    
       printf("index = %d \t run = %d \t eventNumber = %d \t deconvImpulsivity = %g \t S = %g\t nsegs=%d \t p_ground = %g  theta= %g \n",i,run,ev,deconvImpulsivity,S,nsegs,p_ground, theta);
       // std::cout<< "\tsnr = "<< sum->deconvolved_filtered[pol][peak].snr << " longitude="<<sum->peak[pol][peak].longitude<<" latitude"<<sum->peak[pol][peak].latitude<< std::endl; 
     // }
-std::cout<< "hello 6"<<std::endl;
     tr.Fill(); 
   }
   f.cd(); 
@@ -554,16 +590,16 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     start_run = 50;
     end_run = 367;
     // for (mod_remainder= 0; mod_remainder<mod; mod_remainder++){
-    //   _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+    //    _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
     //   // _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
     // }
-    _trendOfSinglets(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod);
+    _trendOfSinglets2(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod);
 
   }else if(!strcmp(treeName,"simulation")){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
-    const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_501_sinsub_10_3_ad_2.root";
-    const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_501_sinsub_10_3_ad_2.root";
-    const char * filePrefix = "_3.5sigma_30001_";
+    const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_1001_sinsub_10_3_ad_2.root";
+    const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_1001_sinsub_10_3_ad_2.root";
+    const char * filePrefix = "_3.5sigma_1001_";
     int mod = 1;
     int mod_remainder = 0;
     start_run = 1;

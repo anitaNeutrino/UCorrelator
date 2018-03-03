@@ -405,7 +405,8 @@ int UCorrelator::ProbabilityMap::combineWith(const ProbabilityMap & other)
     sqrt_ps[i] += other.getProbSqrtSums()[i]; 
     sqrt_ps_norm[i] += other.getProbSqrtSums(true)[i]; 
 
-
+/*
+  // comment out these part because my analysis does not really depends on those map features.
     double other_max = TMath::Min(max1_ps[i], other.getProbMaxes()[i]); 
     max1_ps[i] = TMath::Max(max1_ps[i], other.getProbMaxes()[i]); 
     double other_max_norm = TMath::Min(max1_ps[i], other.getProbMaxes(true)[i]); 
@@ -443,6 +444,7 @@ int UCorrelator::ProbabilityMap::combineWith(const ProbabilityMap & other)
         base_n_above_level_norm[j][i] += other.getBaseNAboveLevel(j,true)[i]; 
       }
     }
+*/
   }
 
   return 0; 
@@ -513,8 +515,8 @@ int UCorrelator::ProbabilityMap::removeWith(const ProbabilityMap & other)
     ps_norm[i] -= other.getProbSums(true)[i]; 
     sqrt_ps[i] -= other.getProbSqrtSums()[i]; 
     sqrt_ps_norm[i] -= other.getProbSqrtSums(true)[i]; 
-
-
+/*
+  // comment out these part because my analysis does not really depends on those map features.
     // no easy way to get Cosmin's max1_ps and max2_ps right when removing map. So they are incorrect when using this function.
     // But I don't use max1_ps and max2_ps in my analysis so I am good. by Peng.
     // double other_max = TMath::Min(max1_ps[i], other.getProbMaxes()[i]); 
@@ -554,6 +556,7 @@ int UCorrelator::ProbabilityMap::removeWith(const ProbabilityMap & other)
         base_n_above_level_norm[j][i] -= other.getBaseNAboveLevel(j,true)[i]; 
       }
     }
+*/
   }
 
   return 0; 
