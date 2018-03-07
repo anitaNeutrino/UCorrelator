@@ -456,12 +456,12 @@ SECTION
 
 
   int nonzero = 0;
-  //only keep values with at least 2 contributing antennas 
+  //only keep values with contributing antennas 
   for (int i = 0; i < (answer->GetNbinsX()+2) * (answer->GetNbinsY()+2); i++) 
   {
     double val = answer->GetArray()[i]; 
     if (val == 0) continue;
-    int this_norm = zoomed_norm->GetArray()[i]; 
+    double this_norm = zoomed_norm->GetArray()[i]; 
     answer->GetArray()[i] = this_norm > 0  ? val/this_norm : 0;
     nonzero++; 
   }
@@ -525,13 +525,12 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
    int maxsize = the_hist->GetNbinsY() * the_hist->GetNbinsX(); 
 
-   double phi_diff1 = fabs(FFTtools::wrap(centerPhi1-centerPhi2,360,0)); 
-   double phi_diff2 = fabs(FFTtools::wrap(centerPhi2-centerPhi1,360,0)); 
-   double baseline_phi =  (phi_diff1 < phi_diff2) ? centerPhi2 + phi_diff1/2 : centerPhi1 + phi_diff2/2; 
-   baseline_phi = FFTtools::wrap(baseline_phi,360); 
+   double phi_diff1 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0); 
+   double phi_diff2 = FFTtools::wrap(centerPhi2 - centerPhi1, 360, 0); 
+   double baseline_phi = (fabs(phi_diff1) < fabs(phi_diff2)) ? centerPhi2 + phi_diff1 / 2 : centerPhi1 + phi_diff2 / 2; 
+   baseline_phi = FFTtools::wrap(baseline_phi, 360); 
 
-
-   double baseline_theta =  (centerTheta1+centerTheta2)/10;
+   double baseline_theta = (centerTheta1 + centerTheta2) / 2;
  
 
    //This is bikeshedding, but allocate it all contiguosly 
@@ -571,8 +570,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
      {
        double theta =  cache->theta[thetabin-1]; 
 //       double theta4width = center_point ? center_point[1] : theta; 
-       double dtheta1 = center_point ? 0 : FFTtools::wrap(theta- centerTheta1,360,0); 
-       double dtheta2 = center_point ? 0 : FFTtools::wrap(theta- centerTheta2,360,0); 
+       double dtheta1 = center_point ? 0 : FFTtools::wrap(theta - centerTheta1, 360, 0); 
+       double dtheta2 = center_point ? 0 : FFTtools::wrap(theta - centerTheta2, 360, 0); 
 
        // check if in beam width 
        if (!center_point && dphi1*dphi1 + dtheta1*dtheta1 > max_phi * max_phi) continue; 
@@ -585,10 +584,10 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        {
          //Matt Mottram weighted by the baseline angle difference somehow
          
-        double Dphi = FFTtools::wrap(baseline_phi - phi,360,0); 
-        double Dtheta = baseline_theta-theta;
+        double Dphi = FFTtools::wrap(phi - baseline_phi, 360, 0); 
+        double Dtheta = theta - baseline_theta;
 
-         gain_weights[nbins_used] = TMath::Gaus(-(Dphi*Dphi + Dtheta*Dtheta ) /(2*gainSigma*gainSigma)); 
+        gain_weights[nbins_used] = TMath::Gaus(TMath::Sqrt(Dphi * Dphi + Dtheta * Dtheta), 0, gainSigma);
        }
        nbins_used++; 
      }
