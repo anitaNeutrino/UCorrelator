@@ -27,7 +27,8 @@ class TFile;
 namespace UCorrelator
 {
   
-  const double defaultLevelThresholds[] = {1,2,3,4,5,6,7,8,9,10}; //these are give in in mahalanobis distance 
+  // const double defaultLevelThresholds[] = {1,2,3,4,5,6,7,8,9,10}; //these are give in in mahalanobis distance 
+  const double defaultLevelThresholds[] = {3}; //these are give in in mahalanobis distance 
   const AntarcticSegmentationScheme &  defaultSegmentationScheme(); 
   const UCorrelator::PointingResolutionModel & defaultPointingResolutionModel(); 
 
@@ -246,7 +247,7 @@ namespace UCorrelator
 
       int makeMultiplicityTable(int level,double threshold = 0, bool blind = true, bool draw = false) const; 
       int makeMultiplicityTable2(int level,double threshold = 0, bool blind = true, bool draw = false) const; 
-      int makeMultiplicityTable3(bool draw = false, bool blind = true) const; 
+      std::pair<int, int> makeMultiplicityTable3(bool draw = false, bool blind = true) const; 
       
     private:
       Params p; 

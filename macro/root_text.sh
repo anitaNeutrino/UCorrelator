@@ -983,6 +983,9 @@ tmp_copy->Integral()
 drawGroupings(map_unweighted)
 map_unweighted->makeMultiplicityTable3(1,0)
 
+trend->Draw("avgNSinglets:numOfFiles>>h(20,,,20,,)","","*")
+trend->Draw("N_singlets:percentOfData>>h(100,0,1,100,,)","","*")
+
 TestTree->Draw("LD0>>h1(300,-2,3)","classID==1","")
 TestTree->Draw("LD0>>h2(300,-2,3)","(classID==0)*(weight)","same")
 
@@ -1148,22 +1151,7 @@ a4.Add("207*")
  a4.Draw("Hical2::isHical(eventNumber,FFTtools::wrap(anitaLocation.heading - peak[0][0].phi, 360)):eventNumber>>h(1000,,,3,,)","","colz")
  a4.Draw("Hical2::isHical2(summary,header.triggerTime,header.triggerTimeNs,pat.longitude,pat.latitude):eventNumber>>h(1000,,,3,,)","","colz")
 
-
-class HiCalSourceHypothesis : public SourceHypothesis
-  {
-   public:
-    HiCalSourceHypothesis() { reset(); }
-    bool isOn;
-    void reset();
-    virtual ~HiCalSourceHypothesis() { ; } 
-    ClassDefNV(HiCalSourceHypothesis,1);
-  };
-
-  HiCalSourceHypothesis hca;
-  HiCalSourceHypothesis hcb;
-
-
-  a4.Draw("peak[0][0].theta:peak[0][0].phi","deconvolved_filtered[0][0].impulsivityMeasure > 0.75","colz")
+ a4.Draw("peak[0][0].theta:peak[0][0].phi","deconvolved_filtered[0][0].impulsivityMeasure > 0.75","colz")
 
 anita4->Draw("deconvolved_filtered[0][0].linearPolAngle():deconvolved_filtered[1][0].linearPolAngle()","","colz")
 anita4->Draw("deconvolved_filtered[0][0].I:deconvolved_filtered[1][0].I","","colz")
@@ -1196,3 +1184,23 @@ mixedFit1->SetParNames("A","sigma","k");
 mixedFit1->SetParameters(100,0.5,1);
 dThetavsdPhi_px->Fit("mixedFit1")
 dThetavsdPhi_py->Fit("mixedFit1")
+
+
+
+//trend of singlets
+TH2D * h0 = new TH2D("h0","N_singlets ",100,0,1.1,100,0,10); 
+TH2D * h1 = new TH2D("h1","N_singlets ",100,0,1.1,100,0,10); 
+TH2D * h2 = new TH2D("h2","N_singlets_nearbase",100,0,1.1,100,0,10); 
+TH2D * h3 = new TH2D("h3","N_singlets_notnearbase",100,0,1.1,100,0,10); 
+TCanvas * dists = new TCanvas("c1","c1"); 
+trend->Draw("N_singlets:percentOfData >> h0","", ""); 
+trend->Draw("N_singlets:percentOfData >> h1","", "sameC*"); 
+trend->Draw("N_singlets_nearbase:percentOfData >> h2","", "sameC*"); 
+trend->Draw("N_singlets_notnearbase:percentOfData >> h3","", "sameC*"); 
+
+auto legend = new TLegend(0.1,0.7,0.48,0.9);
+// legend->SetHeader("The Legend Title","C"); // option "C" allows to center the header
+legend->AddEntry("h1","N_singlets","C*");
+legend->AddEntry("h2","N_singlets_nearbase","C*");
+legend->AddEntry("h3","N_singlets_notnearbase","C*");
+legend->Draw();

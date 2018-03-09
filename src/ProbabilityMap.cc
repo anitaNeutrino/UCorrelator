@@ -1373,7 +1373,7 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable2(int level, double thresh
 
 }
 
-int UCorrelator::ProbabilityMap::makeMultiplicityTable3(bool draw, bool blind) const
+std::pair<int, int> UCorrelator::ProbabilityMap::makeMultiplicityTable3(bool draw, bool blind) const
 {
 
 
@@ -1449,8 +1449,8 @@ int UCorrelator::ProbabilityMap::makeMultiplicityTable3(bool draw, bool blind) c
   // segmentationScheme()->Draw("colz",&mapOfClusterNumOfBases[0]);
      
   }
-
-  return n_clusters_not_base[0]; 
+  return std::make_pair(n_clusters_near_base[0], n_clusters_not_base[0]);
+  // return n_clusters_not_base[0]; 
 
 }
 
