@@ -73,7 +73,7 @@ void doAll( int run = 352, int max = 0, int start = 0, const char * filter = "si
 
       UsefulAdu5Pat pat(d.gps());
       // 1% data, except the wais events
-      if (TString::Hash(&d.header()->eventNumber, sizeof(d.header()->eventNumber))%100 == 0 && !UCorrelator::isWAISHPol(&pat, d.header()) && !UCorrelator::isWAISVPol(&pat, d.header()))
+      if (TString::Hash(&d.header()->eventNumber, sizeof(d.header()->eventNumber))%10 == 0 && !UCorrelator::isWAISHPol(&pat, d.header()) && !UCorrelator::isWAISVPol(&pat, d.header()))
       {
         const time_t ctt = time(0);
         printf("Processing event %d (%d) \t|%s", d.header()->eventNumber,ndone,asctime(localtime(&ctt)));        

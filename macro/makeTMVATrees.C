@@ -34,7 +34,8 @@ void makeTMVATrees(const char * dir, const char * tree_name, int start_run, int 
     if (!strcmp(tree_name,"wais")){
       cut = wais_sample && fromGround;
     }else if(!strcmp(tree_name,"anita4")){
-      cut = thermal_sample && fromGround;
+      // cut = thermal_sample && fromGround;
+      cut = thermal_sample;
     }else{
       cut = mc_sample && fromGround; // need to have pointing angle cut. 
       filter = "max_1001_sinsub_10_3_ad_2";

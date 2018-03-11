@@ -28,7 +28,7 @@ UCorrelator::ProbabilityMap::Params * map_params()
   // p->refract = 0; 
   p->seg = g; 
   p->point = resolutionModel; 
-  p->collision_detection = true; 
+  p->collision_detection = false; 
   p->verbosity = 0; // verbosity level for output info.
   p->maximum_distance = 2.5;
   p->min_p_on_continent = 0;
@@ -36,7 +36,7 @@ UCorrelator::ProbabilityMap::Params * map_params()
 
 }
 
-// UCorrelator::Analyzer *doInteractive(int run = 130, int event = 22896140, bool decimated = false, bool simulated = false )
+UCorrelator::Analyzer *doInteractive(int run = 321, int event = 84042611, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 140, int event = 25639095, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 153, int event = 30003847, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204382, bool decimated = false, bool simulated = true )
@@ -44,7 +44,7 @@ UCorrelator::ProbabilityMap::Params * map_params()
 // UCorrelator::Analyzer *doInteractive(int run = 160, int event = 32096871, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 308, int event = 80224937, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 349, int event = 92484106, bool decimated = false, bool simulated = false )
-UCorrelator::Analyzer *doInteractive(int run = 3, int event = 7579449, bool decimated = false, bool simulated = true )
+// UCorrelator::Analyzer *doInteractive(int run = 3, int event = 7579449, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 7, int event = 14305756, bool decimated = false, bool simulated = true )
 {
 
@@ -102,7 +102,7 @@ UCorrelator::Analyzer *doInteractive(int run = 3, int event = 7579449, bool deci
 
   AnitaEventSummary sum; 
   analyzer->analyze(ev,&sum,d.truth()); 
-  analyzer->drawSummary(); 
+  analyzer->drawSummary(0,0,1); //third 1 is use filtered peak or csw
   std::cout<< "eventNumber "<<sum.eventNumber<<std::endl;
   /*
   TCanvas * c2 = new TCanvas; 
@@ -131,7 +131,7 @@ UCorrelator::Analyzer *doInteractive(int run = 3, int event = 7579449, bool deci
   UCorrelator::ProbabilityMap::Params * p = map_params(); 
   UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(p); 
   map->add(p_ground, &sum, d.gps(), AnitaPol::AnitaPol_t(sum.mostImpulsivePolAsInt()), sum.mostImpulsiveInd(), 1);
-  map->segmentationScheme()->Draw("colz",map->getProbSums(false));
+  map->segmentationScheme()->Draw("mapcolz",map->getProbSums(true));
 
 
 

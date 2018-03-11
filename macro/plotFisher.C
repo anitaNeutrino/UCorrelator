@@ -3,11 +3,11 @@
 void plotFisher(const char * var = "deconvImpulsivity")
 {
   TChain chain1("anita4"); 
-  chain1.Add("thermalTrees/a4all*30001*.root");
+  chain1.Add("thermalTrees/a4all*30002*.root");
   TChain chain2("anita4"); 
-  chain2.Add("thermalTrees/a4all*30001*.root");
+  chain2.Add("thermalTrees/a4all*30002*.root");
   TChain chain3("simulation"); 
-  chain3.Add("thermalTrees/simulated*501*.root");
+  chain3.Add("thermalTrees/simulated*1001*.root");
   TChain chain4("wais"); 
   chain4.Add("thermalTrees/wais*root"); 
 
@@ -29,21 +29,21 @@ void plotFisher(const char * var = "deconvImpulsivity")
   // chain3.Draw("F >> h3", "weight", "same"); 
   // chain4.Draw("F >> h4","","same"); 
 
-  TH1D * h1 = new TH1D("h1","Vpol Above Horizontal Thermals ",200,0,1.1); 
-  TH1D * h2 = new TH1D("h2","Vpol Below Horizontal Thermals",200,0,1.1); 
-  TH1D * h3 = new TH1D("h3","Energy222 MC",200,0,1.1); 
-  TH1D * h4 = new TH1D("h4","Vpol Wais data",200,0,1.1); 
+  TH1D * h1 = new TH1D("h1","Above Horizontal Events ",200,0,1.1); 
+  TH1D * h2 = new TH1D("h2","Below Horizon Events (<-6 degrees) ",200,0,1.1); 
+  TH1D * h3 = new TH1D("h3","MinBias Energy222 MC",200,0,1.1); 
+  TH1D * h4 = new TH1D("h4","Wais data",200,0,1.1); 
   TCanvas * dists = new TCanvas("c1","c1"); 
   chain1.Draw("deconvImpulsivity >> h1","theta>0", ""); 
-  chain2.Draw("deconvImpulsivity >> h2","theta<0", "same"); 
+  chain2.Draw("deconvImpulsivity >> h2","theta<-6", "same"); 
   chain3.Draw("deconvImpulsivity >> h3", "weight", "same"); 
   chain4.Draw("deconvImpulsivity >> h4","","same");
 
   auto legend = new TLegend(0.1,0.7,0.48,0.9);
    // legend->SetHeader("The Legend Title","C"); // option "C" allows to center the header
-   legend->AddEntry("h1","Above Horizontal Thermals","l");
-   legend->AddEntry("h2","Below Horizontal Thermals","l");
-   legend->AddEntry("h3","Energy222 MC","l");
+   legend->AddEntry("h1","Above Horizontal Events","l");
+   legend->AddEntry("h2","Below Horizon Events","l");
+   legend->AddEntry("h3","MinBias Energy222 MC","l");
    legend->AddEntry("h4","Wais data","l");
    legend->Draw();
    // h1->GetXaxis()->SetTitle("Fisher");

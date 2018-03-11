@@ -3,11 +3,11 @@
 void plotTrendOfSinglets(const char * var = "deconvImpulsivity")
 {
   TChain chain("trend"); 
-  chain.Add("source_maps/anita4/trendOfSinglets_3.5sigma_30002_mod10_50_367.root");
+  chain.Add("source_maps/anita4/trendOfSinglets_3.5sigma_30002_mod30_50_367.root");
   TFile plots_trendOfSinglets("plots_trendOfSinglets.root","RECREATE");
 
 
-  chain.Draw("percentOfData:N_singlets:N_singlets_nearbase:N_singlets_notnearbase");
+  chain.Draw("percentOfData:N_singlets/percentOfData:N_singlets_nearbase/percentOfData:N_singlets_notnearbase/percentOfData");
   TGraph *gr1 = new TGraph(chain.GetSelectedRows(), chain.GetV1(), chain.GetV2());
   TGraph *gr2 = new TGraph(chain.GetSelectedRows(), chain.GetV1(), chain.GetV3());
   TGraph *gr3 = new TGraph(chain.GetSelectedRows(), chain.GetV1(), chain.GetV4());
@@ -15,7 +15,7 @@ void plotTrendOfSinglets(const char * var = "deconvImpulsivity")
   gr2->SetName("gr2");
   gr3->SetName("gr3");
   gr1->GetXaxis()->SetRangeUser(0.,1.1);
-  gr1->GetYaxis()->SetRangeUser(0.,15);
+  gr1->GetYaxis()->SetRangeUser(0.,150);
   gr1->SetMarkerStyle(3);
   gr2->SetMarkerStyle(3);
   gr3->SetMarkerStyle(3);

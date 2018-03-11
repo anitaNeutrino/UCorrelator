@@ -28,7 +28,8 @@ namespace UCorrelator
 {
   
   // const double defaultLevelThresholds[] = {1,2,3,4,5,6,7,8,9,10}; //these are give in in mahalanobis distance 
-  const double defaultLevelThresholds[] = {3}; //these are give in in mahalanobis distance 
+  // const double defaultLevelThresholds[] = {3}; //these are give in in mahalanobis distance 
+  const double defaultLevelThresholds[] = {}; //these are give in in mahalanobis distance 
   const AntarcticSegmentationScheme &  defaultSegmentationScheme(); 
   const UCorrelator::PointingResolutionModel & defaultPointingResolutionModel(); 
 
