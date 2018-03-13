@@ -246,11 +246,12 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
     double baseline_phi = (fabs(phi_diff1) < fabs(phi_diff2)) ? centerPhi2 + phi_diff1 / 2 : centerPhi1 + phi_diff2 / 2; 
     baseline_phi = FFTtools::wrap(baseline_phi, 360);
 //    double baseline_phi = FFTtools::wrap(atan2(sin(centerPhi1 / RAD2DEG) + sin(centerPhi2 / RAD2DEG), cos(centerPhi1 / RAD2DEG) + cos(centerPhi2 / RAD2DEG)) * RAD2DEG, 360);
-    lowerPhi = FFTtools::wrap(baseline_phi - 90, 360);
-    higherPhi = FFTtools::wrap(baseline_phi + 90, 360);
-    double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
     int phiSep = abs(phi1 - phi2) % 16;
     if (phiSep > 8) phiSep = 16 - phiSep;
+//   double axPhi = 30;  //  Values gleaned from Figure 5.6 in Ben Strutt's dissertation, and what was calculated at LDB in 2016.
+    lowerPhi = FFTtools::wrap(baseline_phi - 45, 360);
+    higherPhi = FFTtools::wrap(baseline_phi + 45, 360);
+    double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
     if (fMin >= ANITA_F_LO || phiSep > 2)  //  Exclude baselines incapable of covering the entire ANITA passband, and antennas greater than 2 phi sectors apart.
     {
       allowedFlag = 0;
