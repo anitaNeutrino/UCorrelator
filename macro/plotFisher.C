@@ -30,19 +30,19 @@ void plotFisher(const char * var = "deconvImpulsivity")
   // chain4.Draw("F >> h4","","same"); 
 
   TH1D * h1 = new TH1D("h1","Above Horizontal Events ",200,0,1.1); 
-  TH1D * h2 = new TH1D("h2","Below Horizon Events (<-6 degrees) ",200,0,1.1); 
+  TH1D * h2 = new TH1D("h2","Below Horizontal Events  ",200,0,1.1); 
   TH1D * h3 = new TH1D("h3","MinBias Energy222 MC",200,0,1.1); 
   TH1D * h4 = new TH1D("h4","Wais data",200,0,1.1); 
   TCanvas * dists = new TCanvas("c1","c1"); 
-  chain1.Draw("deconvImpulsivity >> h1","theta>0", ""); 
-  chain2.Draw("deconvImpulsivity >> h2","theta<-6", "same"); 
+  chain1.Draw("deconvImpulsivity >> h1","theta>-3.5", ""); 
+  chain2.Draw("deconvImpulsivity >> h2","theta<=-3.5", "same"); 
   chain3.Draw("deconvImpulsivity >> h3", "weight", "same"); 
   chain4.Draw("deconvImpulsivity >> h4","","same");
 
   auto legend = new TLegend(0.1,0.7,0.48,0.9);
    // legend->SetHeader("The Legend Title","C"); // option "C" allows to center the header
    legend->AddEntry("h1","Above Horizontal Events","l");
-   legend->AddEntry("h2","Below Horizon Events","l");
+   legend->AddEntry("h2","Below Horizontal Events","l");
    legend->AddEntry("h3","MinBias Energy222 MC","l");
    legend->AddEntry("h4","Wais data","l");
    legend->Draw();

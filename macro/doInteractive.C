@@ -6,20 +6,22 @@ UCorrelator::ProbabilityMap::Params * map_params()
   // pixel x, pixel y , max meter x, max meter y
   StereographicGrid * g= new StereographicGrid(1000,1000,2000000,2000000); 
 
-  TF1 * f_dtheta = new TF1("ftheta", "[0] / x^[1]", 1, 50);
-  TF1 * f_dphi = new TF1("fphi", "[0] / x^[1]", 1, 50);
+  TF1 * f_dtheta = new TF1("ftheta", "[0]/x^[1] + [2]", 1, 100);
+  TF1 * f_dphi = new TF1("fphi", "[0]/x^[1] + [2]", 1, 100);
   //anita4 fit from wais.
-  f_dtheta->SetParameter(0, 5.431); 
-  f_dtheta->SetParameter(1, 1.155); 
-  f_dphi->SetParameter(0, 28.87); 
-  f_dphi->SetParameter(1, 1.398);
+  f_dtheta->SetParameter(0, 4.714); 
+  f_dtheta->SetParameter(1, 1.211); 
+  f_dtheta->SetParameter(2, 0.06639); 
+  f_dphi->SetParameter(0, 40.96); 
+  f_dphi->SetParameter(1, 1.61);
+  f_dphi->SetParameter(2, 0.1766);
   //anita3
   // f_dtheta->SetParameter(0, 0.3936); 
   // f_dtheta->SetParameter(1, 0.2102); 
   // f_dphi->SetParameter(0, 1.065); 
   // f_dphi->SetParameter(1, 0.2479); 
-  UCorrelator::PointingResolutionParSNRModel * snrResolutionModel = new UCorrelator::PointingResolutionParSNRModel (*f_dtheta, *f_dphi, true,true);
-  UCorrelator::PointingResolutionModelPlusHeadingError * resolutionModel = new UCorrelator::PointingResolutionModelPlusHeadingError(20, snrResolutionModel); 
+  UCorrelator::PointingResolutionParSNRModel * snrResolutionModel = new UCorrelator::PointingResolutionParSNRModel (*f_dtheta, *f_dphi, true,false);
+  // UCorrelator::PointingResolutionModelPlusHeadingError * resolutionModel = new UCorrelator::PointingResolutionModelPlusHeadingError(20, snrResolutionModel); 
 
   Refraction::SphRay * ref = new Refraction::SphRay; 
 
@@ -27,23 +29,26 @@ UCorrelator::ProbabilityMap::Params * map_params()
   p->refract = ref; 
   // p->refract = 0; 
   p->seg = g; 
-  p->point = resolutionModel; 
+  p->point = snrResolutionModel; 
   p->collision_detection = false; 
   p->verbosity = 0; // verbosity level for output info.
   p->maximum_distance = 2.5;
-  p->min_p_on_continent = 0;
+  // p->min_p_on_continent = 0;
+ 
+
   return p; 
 
 }
 
-UCorrelator::Analyzer *doInteractive(int run = 321, int event = 84042611, bool decimated = false, bool simulated = false )
+UCorrelator::Analyzer *doInteractive(int run = 316, int event = 82634352, bool decimated = false, bool simulated = false )
+// UCorrelator::Analyzer *doInteractive(int run = 51, int event = 3697122, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 140, int event = 25639095, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 153, int event = 30003847, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204382, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204407, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 160, int event = 32096871, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 308, int event = 80224937, bool decimated = false, bool simulated = false )
-// UCorrelator::Analyzer *doInteractive(int run = 349, int event = 92484106, bool decimated = false, bool simulated = false )
+// UCorrelator::Analyzer *doInteractive(int run = 268, int event = 68160718, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 3, int event = 7579449, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 7, int event = 14305756, bool decimated = false, bool simulated = true )
 {
@@ -91,6 +96,7 @@ UCorrelator::Analyzer *doInteractive(int run = 321, int event = 84042611, bool d
   analyzer->setDisallowedAntennas(0, (1ul<<45));  // Vpol ant45 is bad! So disable it.
 
   UCorrelator::fillStrategyWithKey(strategy, "sinsub_10_3_ad_2");
+  // UCorrelator::fillStrategyWithKey(strategy, "");
   strategy->addOperation(new UCorrelator::BH13Filter()); 
 
 //  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("adsinsub_3_10_3"), d.gps(), d.header()); 
@@ -130,8 +136,9 @@ UCorrelator::Analyzer *doInteractive(int run = 321, int event = 84042611, bool d
   double p_ground;
   UCorrelator::ProbabilityMap::Params * p = map_params(); 
   UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(p); 
-  map->add(p_ground, &sum, d.gps(), AnitaPol::AnitaPol_t(sum.mostImpulsivePolAsInt()), sum.mostImpulsiveInd(), 1);
-  map->segmentationScheme()->Draw("mapcolz",map->getProbSums(true));
+  int n_seg = map->add(p_ground, &sum, d.gps(), AnitaPol::AnitaPol_t(sum.mostImpulsivePolAsInt()), sum.mostImpulsiveInd(), 1);
+  std::cout<< "p_ground=" << p_ground <<" n_seg="<< n_seg <<std::endl;
+  map->segmentationScheme()->Draw("colz",map->getProbSums(true));
 
 
 

@@ -27,9 +27,6 @@ class TFile;
 namespace UCorrelator
 {
   
-  // const double defaultLevelThresholds[] = {1,2,3,4,5,6,7,8,9,10}; //these are give in in mahalanobis distance 
-  // const double defaultLevelThresholds[] = {3}; //these are give in in mahalanobis distance 
-  const double defaultLevelThresholds[] = {}; //these are give in in mahalanobis distance 
   const AntarcticSegmentationScheme &  defaultSegmentationScheme(); 
   const UCorrelator::PointingResolutionModel & defaultPointingResolutionModel(); 
 
@@ -56,11 +53,10 @@ namespace UCorrelator
         Params() 
           : seg(&defaultSegmentationScheme()), 
             point(&defaultPointingResolutionModel()), 
-            level_thresholds(defaultLevelThresholds, defaultLevelThresholds + sizeof(defaultLevelThresholds) / sizeof(*defaultLevelThresholds)), 
             dataset(RampdemReader::rampdem), 
             refract(0), 
             maximum_distance(3),// how many sigma to plot on prob map
-            min_p_on_continent (1e-3) , //prob sum of an event on ground should larger than this threshold
+            // min_p_on_continent (1e-3) , //prob sum of an event on ground should larger than this threshold
             projection(BACKWARD), 
             collision_detection(true) , 
             max_dphi(5), 
@@ -72,7 +68,6 @@ namespace UCorrelator
 
         const AntarcticSegmentationScheme * seg; 
         const PointingResolutionModel * point;  
-        std::vector<double> level_thresholds; 
         RampdemReader::dataSet dataset; 
         const Refraction::Model * refract; 
         double maximum_distance; 
@@ -175,8 +170,6 @@ namespace UCorrelator
       {
         OVERLAP_SUM_SQRTS,  //use sum of sqrts  
         OVERLAP_SQRT_SUMS,  //use sqrt of sums
-        OVERLAP_SUMS,       //use sums (doesn't really make sense) 
-        OVERLAP_MAXES       //use maxes (emulating the old clustering style) 
       }; 
 
       /** Check the overlap of a point with the probability map.
@@ -197,23 +190,18 @@ namespace UCorrelator
       /* These are probability sums */ 
       double getProbSumsIntegral(bool normalizd = false) const; 
       const double* getProbSums(bool normalized = false) const { return normalized ? &ps_norm[0] : &ps[0]; } 
-      const double* getProbSumsWithoutBases(int base_level, bool normalized = false) const { return normalized ? &ps_norm_without_base[base_level][0] : &ps_without_base[base_level][0]; } 
       const double* getProbSqrtSums(bool normalized = false) const { return normalized ? &sqrt_ps_norm[0] : &sqrt_ps[0]; } 
-      const double* getProbSqrtSumsWithoutBases(int base_level, bool normalized = false) const { return normalized ? &sqrt_ps_norm_without_base[base_level][0] : &sqrt_ps_without_base[base_level][0]; } 
-      const double* getProbMaxes(bool normalized = false) const { return normalized ? &max1_ps_norm[0] : & max1_ps[0]; } 
-      const double* getProbSecondMaxes(bool normalized = false) const { return normalized ? &max2_ps_norm[0] : & max2_ps[0]; } 
       const double* getOccludedFractionSum() const { return &fraction_occluded[0]; } 
 
-      const int* getNAboveLevel(int level, bool normalized = false) const { return normalized ? &n_above_level_norm[level][0] : &n_above_level[level][0]; } 
-      const int* getNAboveLevelWithoutBases(int level, bool normalized = false) const { return normalized ? &n_above_level_without_base_norm[level][0] : &n_above_level_without_base[level][0]; } 
+      const double* getUniformPS() const
+      { return  &uniform_ps[0] ; } 
+      const double* getBaseWeightedUniformPS() const 
+      { return  &uniform_ps_weighted_by_base[0]; }
+      const double* getUniformPSwithoutBase() const 
+      { return  &uniform_ps_without_base[0]; } 
+      const double* getUniformPSwithBase() const 
+      { return  &uniform_ps_with_base[0]; } 
 
-      const double* getWgtAboveLevel(int level, bool normalized=false) const
-      { return normalized ? &wgt_above_level_norm[level][0] : & wgt_above_level[level][0]; } 
-      const double* getWgtAboveLevelWithoutBases(int level, bool normalized=false) const 
-      { return normalized ? &wgt_above_level_without_base_norm[level][0] : &wgt_above_level_without_base[level][0]; } 
-
-      size_t NLevels() const { return p.level_thresholds.size(); } 
-      double getLevel(int level) const { return p.level_thresholds[level]; } 
 
       const AntarcticSegmentationScheme * segmentationScheme() const { return p.seg; } 
       double maxDistance() const { return p.maximum_distance; } 
@@ -223,12 +211,9 @@ namespace UCorrelator
        *
        * The bases are indexed with stationary bases first followed by paths. 
        **/ 
-      size_t getNBases() const { return base_sums.size(); } 
-
-      const double  * getBaseSums(bool normalized = false)  const 
-      { return normalized ? &base_sums_norm[0] : &base_sums[0]; } 
-      const int* getBaseNAboveLevel(int level, bool normalized = false) const
-      { return normalized ? &base_n_above_level_norm[level][0] : & base_n_above_level[level][0]; } 
+      size_t getNBases() const { return eventCountPerBase.size(); } 
+      const int* getEventCountPerBase() const
+      { return &eventCountPerBase[0]; } 
 
 
       /** This will take a set of of values (indexed by segment) 
@@ -240,61 +225,41 @@ namespace UCorrelator
        *
        *  */ 
       int countBasesInThisSegment(int seg) const;
-      int groupAdjacent(const double * vals_to_group, std::vector<std::vector<int> > *  groups  = 0, double* counts = 0, std::vector<double>  * distribution = 0, double val_threshold = 0) const; 
+      // int groupAdjacent(const double * vals_to_group, std::vector<std::vector<int> > *  groups  = 0, double* counts = 0, std::vector<double>  * distribution = 0, double val_threshold = 0) const; 
       //peng's version of groupAdjacent. Since the parameter name are so different. I changed the function name to doClustering
-      int doClustering(const double * ps, double* mapOfClusterSizes, std::vector<double>* clusterSizes, double val_threshold, double* mapOfClusterNumOfBases, std::vector<double>* clusterNumOfBases) const; 
+      int doClustering(const double * ps, double* mapOfClusterSizes, std::vector<double>* clusterSizes, double val_threshold) const; 
 
       int dumpNonZeroBases() const; 
-
-      int makeMultiplicityTable(int level,double threshold = 0, bool blind = true, bool draw = false) const; 
-      int makeMultiplicityTable2(int level,double threshold = 0, bool blind = true, bool draw = false) const; 
-      std::pair<int, int> makeMultiplicityTable3(bool draw = false, bool blind = true) const; 
+      std::pair<int, int> showClusters(int draw = 1, bool blind = true) const; 
       
     private:
       Params p; 
 
       //indexed by segment
       std::vector<double> ps; 
-      std::vector< std::vector<double> >  ps_without_base; //like ps, but require that no base above level is contained
       std::vector<double> ps_norm; //like ps, but normalized so integral is 1 
-      std::vector< std::vector<double> >ps_norm_without_base; //like ps_without_base, but normalized so integral is 1 
-
-      std::vector<double> max1_ps;  //maximum value
-      std::vector<double> max1_ps_norm; //max1_ps, but normalized so integral is 1 
-      std::vector<double> max2_ps;  //second to maximum value 
-      std::vector<double> max2_ps_norm; //max2_ps, but normalized so integral is 1 
-
-
       // these are all the sums of the square roots instead, needed for computing the overlaps properly
       std::vector<double> sqrt_ps; 
-      std::vector< std::vector<double> >  sqrt_ps_without_base; 
       std::vector<double> sqrt_ps_norm; 
-      std::vector< std::vector<double> >sqrt_ps_norm_without_base;
  
       std::vector<double> fraction_occluded; 
-      //indexed by level then segment 
-      std::vector< std::vector<int> > n_above_level; 
-      std::vector< std::vector<int> > n_above_level_norm; 
-      std::vector< std::vector<double> > wgt_above_level; // like n_above_level, but 1/N_over_level_per_event is put in each bin, so that the number of contributing events can be reliably determined 
-      std::vector< std::vector<double> > wgt_above_level_norm; // like n_above_level, but 1/N_over_level_per_event is put in each bin, so that the number of contributing events can be reliably determined 
 
+      // using a uniform distribution to put into each segment for each events
+      std::vector<double> uniform_ps; 
+      // if an event does not overlap with anybase, then the uniform distribution sum to 0.000001 instead of 1.
+      //Since it is non-zero, all events will be clustered but when we sum the uniform_ps, only the events near base will be count. 
+      std::vector<double> uniform_ps_weighted_by_base; 
+      std::vector<double> uniform_ps_with_base; 
+      std::vector<double> uniform_ps_without_base; 
 
-      std::vector< std::vector<int> > n_above_level_without_base; 
-      std::vector< std::vector<int> > n_above_level_without_base_norm; 
-      std::vector< std::vector<double> > wgt_above_level_without_base; 
-      std::vector< std::vector<double> > wgt_above_level_without_base_norm; 
-
-      //indexed by base
-      std::vector< std::vector<int> > base_n_above_level; ; 
-      std::vector< std::vector<int> > base_n_above_level_norm; ; 
-      std::vector<double> base_sums; 
-      std::vector<double> base_sums_norm; 
+      //indexed of Base, number of events near this base.
+      std::vector<int> eventCountPerBase; ; 
 
       //guards the add method (everything else doesn't touch the internals) 
       TMutex m; 
 
 
-      ClassDefNV(ProbabilityMap, 11); 
+      ClassDefNV(ProbabilityMap, 12); 
   }; 
 }
 

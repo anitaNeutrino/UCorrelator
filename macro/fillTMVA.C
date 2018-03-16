@@ -28,7 +28,7 @@ void fillTMVA()
   //   _fillTMVA(str.Data(),"wais"); 
   // }
 
-  // for (int i = 50; i <=367; i+=40) 
+  // for (int i = 40; i <=367; i+=40) 
   // {
   //   TString str; 
   //   str.Form("thermalTrees/a4all_%d-%d_max_30001_sinsub_10_3_ad_2.root", i, i + 39); 

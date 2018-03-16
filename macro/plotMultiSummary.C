@@ -51,9 +51,9 @@ void _plotMultiSummary(TString treeName, TString pointDir, TString fEnd ,TString
 		// double dphi = FFTtools::wrap(phi1 - waisphi, 360, 180);
 		if (treeName.EqualTo("wais")){
 			if(pulser == 1){
-				if(sum->deconvolved_filtered[0][0].snr<10 or sum->deconvolved_filtered[0][0].snr>14){
-					continue;
-				}
+				// if(sum->deconvolved_filtered[0][0].snr<10 or sum->deconvolved_filtered[0][0].snr>14){
+				// 	continue;
+				// }
 			// if(fabs(dtheta) > 3 or fabs(dphi)>5 ){
 			// 	continue;
 			// }
@@ -70,9 +70,9 @@ void _plotMultiSummary(TString treeName, TString pointDir, TString fEnd ,TString
 				dPhivsSNR->Fill(sum->deconvolved_filtered[0][0].snr, FFTtools::wrap(sum->peak[0][0].phi - sum->wais.phi, 360, 0));
 			}
 			if(pulser == 5){
-				if(sum->deconvolved_filtered[1][0].snr<10 or sum->deconvolved_filtered[1][0].snr>14){
-					continue;
-				}
+				// if(sum->deconvolved_filtered[1][0].snr<10 or sum->deconvolved_filtered[1][0].snr>14){
+				// 	continue;
+				// }
 				// dThetavPhiV->Fill(sum->wais.phi, sum->peak[1][0].theta - sum->wais.theta);
 				// dThetavPhiAll->Fill(sum->wais.phi, sum->peak[1][0].theta - sum->wais.theta);
 				// // dThetavPhiV->Fill(waisphi, dtheta);

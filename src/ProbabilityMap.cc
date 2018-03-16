@@ -31,33 +31,17 @@ UCorrelator::ProbabilityMap::ProbabilityMap(const Params * par)
   :  
     p( par ? *par : default_params), 
     ps(p.seg->NSegments(),0), 
-    ps_without_base(NLevels(), std::vector<double> (p.seg->NSegments(),0)), 
     ps_norm(p.seg->NSegments(),0), 
-    ps_norm_without_base(NLevels(), std::vector<double> (p.seg->NSegments(),0)), 
-    max1_ps(p.seg->NSegments(),0), 
-    max1_ps_norm(p.seg->NSegments(),0), 
-    max2_ps(p.seg->NSegments(),0), 
-    max2_ps_norm(p.seg->NSegments(),0), 
     sqrt_ps(p.seg->NSegments(),0), 
-    sqrt_ps_without_base(NLevels(), std::vector<double> (p.seg->NSegments(),0)), 
     sqrt_ps_norm(p.seg->NSegments(),0), 
-    sqrt_ps_norm_without_base(NLevels(), std::vector<double> (p.seg->NSegments(),0)), 
     fraction_occluded(p.seg->NSegments(), 0), 
-    n_above_level(NLevels(), std::vector<int>(p.seg->NSegments(),0)),
-    n_above_level_norm(NLevels(), std::vector<int>(p.seg->NSegments(),0)),
-    wgt_above_level(NLevels(), std::vector<double>(p.seg->NSegments(),0)),
-    wgt_above_level_norm(NLevels(), std::vector<double>(p.seg->NSegments(),0)),
-    n_above_level_without_base(NLevels(), std::vector<int>(p.seg->NSegments(),0)),
-    n_above_level_without_base_norm(NLevels(), std::vector<int>(p.seg->NSegments(),0)),
-    wgt_above_level_without_base(NLevels(), std::vector<double>(p.seg->NSegments(),0)),
-    wgt_above_level_without_base_norm(NLevels(), std::vector<double>(p.seg->NSegments(),0)),
-    base_n_above_level(NLevels(), std::vector<int>(BaseList::getNumBases() + BaseList::getNumPaths(), 0)), 
-    base_n_above_level_norm(NLevels(), std::vector<int>(BaseList::getNumBases() + BaseList::getNumPaths(), 0)), 
-    base_sums(BaseList::getNumBases() + BaseList::getNumPaths()) , 
-    base_sums_norm(BaseList::getNumBases() + BaseList::getNumPaths()) 
+    uniform_ps(p.seg->NSegments(),0),
+    uniform_ps_weighted_by_base(p.seg->NSegments(),0),
+    uniform_ps_with_base(p.seg->NSegments(),0),
+    uniform_ps_without_base(p.seg->NSegments(),0),
+    eventCountPerBase(BaseList::getNumBases() + BaseList::getNumPaths(), 0)
 {
-
-
+  //blank, initialization is above
 }
 
 
@@ -71,126 +55,43 @@ int UCorrelator::ProbabilityMap::add(double & p_ground, const AnitaEventSummary 
   std::vector<std::pair<int,double> > max_densities; ; 
   //returned all segments to fill depends on the direction and the max distance.
   //seg_ps_to_fill: return the probability sums for the segments.
-  //base_ps_to_fill: return the prob density for base.
+  //base_ps_to_fill: return the prob density(not ps) for base.
   //occlude to fill: return the fraction of occluded sample for the segment.
   //max_density_to_fill: return the max prob density for the segment.
   double inv_two_pi_sqrt_det = computeContributions(sum,pat,pol,peak,segments_to_fill, &base_ps_to_fill, &occluded_to_fill, &max_densities, debugfile); 
 
   if (!inv_two_pi_sqrt_det) return 0; 
-
-  std::vector<double> levels_p(NLevels()); 
-
-  // 10 levels for prob density.
-  for (int i = 0; i < int(NLevels()); i++)
-  {
-    levels_p[i] = dist2dens(p.level_thresholds[i], inv_two_pi_sqrt_det); 
-    if (p.verbosity > 2) 
-    {
-      printf("mahalanobis distance: %g, probability density: %g\n", p.level_thresholds[i], levels_p[i]); 
-    }
-  }
   
   TLockGuard lock(&m); 
 
-  int incr = weight > 0 ? 1 : weight < 0 ? -1 : 0; 
-  int Nbases = base_ps_to_fill.size(); 
-  int min_base_level = NLevels(); 
-  int min_base_level_norm = NLevels(); 
+  int NOverlapedBases = base_ps_to_fill.size(); 
 
-  int NFilled = segments_to_fill.size(); 
+  int NOfSegments = segments_to_fill.size(); 
   double norm = 0; 
-  for (int i = 0; i < NFilled; i++)
+  for (int i = 0; i < NOfSegments; i++)
   {
     //add all segments' prob sum together, which is the norm factor.
     norm += segments_to_fill[i].second; 
   }
   p_ground = norm;
   // inverse of norm. if normal is too small, let invnorm be 0.
-  double invnorm = norm < p.min_p_on_continent ? 0 : 1./norm;
+  double invnorm = norm == 0 ? 0 : 1./norm;
   if (p.verbosity > 2) printf("invnorm: %g\n", invnorm); 
 
-  for (int i = 0; i < Nbases; i++)
+  for (int i = 0; i < NOverlapedBases; i++)
   {
     int ibase = base_ps_to_fill[i].first; 
     double dens_base = base_ps_to_fill[i].second * weight; 
-    base_sums[ibase] += dens_base;
-    base_sums_norm[ibase] += dens_base * invnorm; 
-
-    //cut the prob density distribution into 10 regions from high den to low den(level from 0 to 1).
-    // number of bases above each level.
-    //min_base_level: from all bases the lowest level of prob. corresponding to the largest prob density that a base could have. 
-    for (int j = 0; j < (int) NLevels(); j++)
-    {
-      if (dens_base > levels_p[j])
-      {
-        base_n_above_level[j][ibase]+=incr; 
-        if (min_base_level > j) min_base_level = j; 
-      }
-
-      if (dens_base * invnorm > levels_p[j])
-      {
-        base_n_above_level_norm[j][ibase]+=incr; 
-        if (min_base_level_norm > j) min_base_level_norm = j; 
-      }
-    }
+    eventCountPerBase[ibase]++; 
   }
 
-
-
-
-  std::vector<int> this_NAboveLevel(NLevels()); 
-  std::vector<int> this_NAboveLevel_norm(NLevels()); 
-
-  for (int i = 0; i < NFilled; i++)
-  {
-    // similar thing for max prob density of each segment.
-    double max_dens_seg = max_densities[i].second * weight; 
-    double max_dens_seg_norm = max_densities[i].second * invnorm * weight; 
-    for (int j = 0; j < (int) NLevels(); j++) 
-    {
-      // count for each prob density region how many segments's max density are above.
-      if (max_dens_seg > levels_p[j])
-      {
-        this_NAboveLevel[j]+=incr; 
-      }
-
-      if (max_dens_seg_norm > levels_p[j])
-      {
-        this_NAboveLevel_norm[j]+=incr; 
-      }
-    }
-  }
-
-
-  for (int i = 0; i < NFilled; i++)
+  for (int i = 0; i < NOfSegments; i++)
   {
     //loop through each segments that have projection.
     int iseg = segments_to_fill[i].first; 
     double pseg = segments_to_fill[i].second * weight; 
-    double max_dens_seg = max_densities[i].second * weight; 
-    double max_dens_seg_norm = max_dens_seg * invnorm; 
-
     double pseg_norm = pseg * invnorm; 
 
-    if (pseg > max1_ps[iseg] ) 
-    {
-      max2_ps[iseg] = max1_ps[iseg];
-      max1_ps[iseg ] = pseg ; 
-    }
-    else if (pseg > max2_ps[iseg]) 
-    {
-      max2_ps[iseg] = pseg ;
-    }
-
-    if (pseg_norm > max1_ps_norm[iseg] ) 
-    {
-      max2_ps_norm[iseg] = max1_ps_norm[iseg];
-      max1_ps_norm[iseg ] = pseg_norm ; 
-    }
-    else if (pseg  > max2_ps_norm[iseg]) 
-    {
-      max2_ps_norm[iseg] = pseg_norm ;
-    }
     //get the largest and second largest prob density sum for each segment.
     //do it for normalized.
 
@@ -199,52 +100,20 @@ int UCorrelator::ProbabilityMap::add(double & p_ground, const AnitaEventSummary 
     ps_norm[iseg] += (pseg_norm); 
     sqrt_ps[iseg]  += weight < 0 ? -sqrt(-pseg) : sqrt(pseg); 
     sqrt_ps_norm[iseg] +=  weight < 0 ? -sqrt(-pseg_norm) : sqrt(pseg_norm); 
-    //only sum the prob density if the segment has stronger probability than the nearest base.
-    for (int level = 0; level < min_base_level; level++) 
-    {
-      ps_without_base[level][iseg] += (pseg);
-      sqrt_ps_without_base[level][iseg] += weight < 0 ? -sqrt(-pseg) : sqrt(pseg); 
-    }
-    for (int level = 0; level < min_base_level_norm; level++)
-    {
-      ps_norm_without_base[level][iseg] += (pseg_norm);
-      sqrt_ps_norm_without_base[level][iseg] += weight < 0 ? -sqrt(-pseg_norm): sqrt(pseg_norm);
-    }
     //fraction excluded sample. writen to file.
     fraction_occluded[iseg] += occluded_to_fill[i].second; 
-
-    for (int j = 0; j < (int) NLevels(); j++)
-    {
-      if (max_dens_seg > levels_p[j]) 
-      {
-        // printf("Segment %d above level %d (%g) \n", iseg, j, pseg); 
-        //number of segment for this seg larger than a level, of course it should be 1. 
-        n_above_level[j][iseg]+=incr; 
-        //1/number of segment above this level. A simple fraction.
-        wgt_above_level[j][iseg]+= incr/ double(this_NAboveLevel[j]); 
-        if (min_base_level > j)
-        {
-          n_above_level_without_base[j][iseg]+=incr; 
-          wgt_above_level_without_base[j][iseg]+= incr/ double(this_NAboveLevel[j]); 
-        }
-      }
-        //normalized version
-      if (max_dens_seg_norm > levels_p[j]) 
-      {
-        //printf("Segment %d above level %d (%g) \n", iseg, j, pseg); 
-        n_above_level_norm[j][iseg]+=incr; 
-        wgt_above_level_norm[j][iseg]+= incr/ double(this_NAboveLevel[j]); 
-        if (min_base_level_norm > j)
-        {
-          n_above_level_without_base_norm[j][iseg]+=incr; 
-          wgt_above_level_without_base_norm[j][iseg]+= incr/ double(this_NAboveLevel[j]); 
-        }
-      }
-    }
+    //1/number of segment. Like use uniforms distribution to replace the gaussian. The cut of angular is still using gaussian.
+    //no matter a event is near a base or not, it will be added to this map.
+    uniform_ps[iseg]+= 1/ double(NOfSegments);
+    if(NOverlapedBases!=0){ 
+      uniform_ps_weighted_by_base[iseg]+= 1/ double(NOfSegments);
+      uniform_ps_with_base[iseg]+= 1/ double(NOfSegments);
+    }else{
+      uniform_ps_weighted_by_base[iseg]+= 0.000001/ double(NOfSegments);
+      uniform_ps_without_base[iseg]+= 1/ double(NOfSegments);
+    } 
   }
-
-
-  return NFilled; 
+  return NOfSegments; 
 }
 
 int UCorrelator::ProbabilityMap::dumpNonZeroBases()  const 
@@ -252,9 +121,9 @@ int UCorrelator::ProbabilityMap::dumpNonZeroBases()  const
   int n = 0;
   for (int i = 0; i < (int) getNBases(); i++)
   {
-    if(base_sums[i] > 0) 
+    if(eventCountPerBase[i] > 0) 
     {
-      printf("%s (%d): %g\n", BaseList::getAbstractBase(i).getName(), i, base_sums[i]); 
+      std::cout <<"BaseIndex = "<< i << "\t BaseName = "<< BaseList::getAbstractBase(i).getName() << "\t eventCount"<<eventCountPerBase[i] << std::endl;; 
       n++; 
     }
   }
@@ -282,9 +151,9 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
       norm += segs[i].second; 
     }
     // std::cout<<" norm = " <<norm<<std::endl;
-    if (!inv || norm < p.min_p_on_continent)
+    if (!inv || norm == 0)
     {
-      printf("below minimum: %g!\n", norm); 
+      printf("the norm on ground is: %g!\n", norm); 
       return -1; // there can be no overlap 
     }
     invnorm = 1./norm; 
@@ -294,9 +163,7 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
 
 
   //pick the right thing to overlap with 
-  const double * the_rest = mode == OVERLAP_SUM_SQRTS ? getProbSqrtSums(normalized) : 
-                            mode == OVERLAP_SQRT_SUMS || mode == OVERLAP_SUMS ? getProbSums(normalized) : 
-                            getProbMaxes(normalized); 
+  const double * the_rest = mode == OVERLAP_SUM_SQRTS ? getProbSqrtSums(normalized) : getProbSums(normalized);
 
  for (int i =0; i< N; i++)
   {
@@ -316,18 +183,7 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
     {
       p_other -= sqrt(p_this);  //this might help with floating point precision to do first... maybe. 
     }
-
-    if (remove_self && mode == OVERLAP_MAXES &&  p_this == p_other) p_other = normalized ? max2_ps_norm[seg] : max2_ps[seg]; 
-
     double danswer = (mode == OVERLAP_SUM_SQRTS ? sqrt(p_this) : p_this) * p_other; 
-    
-    if (mode == OVERLAP_SQRT_SUMS || mode == OVERLAP_MAXES) danswer = sqrt(danswer); 
-
-    if (remove_self &&  mode == OVERLAP_SUMS)
-    {
-      danswer -= p_this; 
-    }
-
     answer += danswer; 
 
   }
@@ -353,32 +209,6 @@ int UCorrelator::ProbabilityMap::combineWith(const ProbabilityMap & other)
     fprintf(stderr,"Cannot combine ProbabilityMap's with different segmentation schemes (ours: %s, theirs: %s)\n", our_scheme.Data(), their_scheme.Data()); 
     return 1; 
   }
-
-
-  if (NLevels() != other.NLevels())
-  {
-    fprintf(stderr,"Cannot combine ProbabilityMap's with different numbers of levels: (ours %d, theirs: %d)\n", (int) NLevels(), (int) other.NLevels()); 
-    return 1; 
-  }
-
-  int nwrong = 0; 
-  
-  for (int i = 0; i < (int) NLevels(); i++) 
-  {
-    if (getLevel(i) != other.getLevel(i))
-    {
-      fprintf(stderr,"  Mismatched level %d (ours=%g, theirs=%g)", i, getLevel(i), other.getLevel(i));
-      nwrong++;
-    }
-  }
-
-  if (nwrong > 0) 
-  {
-    fprintf(stderr,"%d Mismatched Levels. Cannot combine. Theoretically we could combine the levels that still make sense, but you'll have to implement that if you really want it.\n", nwrong); 
-    return 1; 
-  }
-
-
   bool combine_bases = true; 
   if (getNBases() != other.getNBases())
   {
@@ -392,59 +222,24 @@ int UCorrelator::ProbabilityMap::combineWith(const ProbabilityMap & other)
   {
     fprintf(stderr,"Combining ProbabilityMap's with different max mahalanobis distance (ours=%g,theirs=%g). Continuing, but may not be what you want!\n", maxDistance(), other.maxDistance());  
   }
-  
-
-  //TODO we probably want to compare the pointing resolution models as well 
-
   //if we made it this far, all is good (except for what hasn't been implemented yet) !
-
   for (int i = 0; i < segmentationScheme()->NSegments(); i++) 
   {
     ps[i] += other.getProbSums()[i]; 
     ps_norm[i] += other.getProbSums(true)[i]; 
     sqrt_ps[i] += other.getProbSqrtSums()[i]; 
-    sqrt_ps_norm[i] += other.getProbSqrtSums(true)[i]; 
-
-/*
-  // comment out these part because my analysis does not really depends on those map features.
-    double other_max = TMath::Min(max1_ps[i], other.getProbMaxes()[i]); 
-    max1_ps[i] = TMath::Max(max1_ps[i], other.getProbMaxes()[i]); 
-    double other_max_norm = TMath::Min(max1_ps[i], other.getProbMaxes(true)[i]); 
-    max1_ps_norm[i] = TMath::Max(max1_ps_norm[i], other.getProbMaxes(true)[i]); 
-
-    max2_ps[i] = TMath::Max(other_max, TMath::Max(max2_ps[i], other.getProbSecondMaxes()[i])); 
-    max2_ps_norm[i] = TMath::Max(other_max_norm, TMath::Max(max2_ps_norm[i], other.getProbSecondMaxes(true)[i])); 
-
-    
-    for (int j = 0; j < (int) NLevels(); j++)
-    {
-      ps_without_base[j][i] += other.getProbSumsWithoutBases(j)[i]; 
-      ps_norm_without_base[j][i] += other.getProbSumsWithoutBases(j,true)[i]; 
-      sqrt_ps_without_base[j][i] += other.getProbSqrtSumsWithoutBases(j)[i]; 
-      sqrt_ps_norm_without_base[j][i] += other.getProbSqrtSumsWithoutBases(j,true)[i]; 
-      n_above_level[j][i] += other.getNAboveLevel(j)[i]; 
-      wgt_above_level[j][i] += other.getWgtAboveLevel(j)[i]; 
-      n_above_level_without_base[j][i] += other.getNAboveLevelWithoutBases(j)[i]; 
-      wgt_above_level_without_base[j][i] += other.getWgtAboveLevelWithoutBases(j)[i]; 
-      n_above_level_without_base_norm[j][i] += other.getNAboveLevelWithoutBases(j,true)[i]; 
-      wgt_above_level_without_base_norm[j][i] += other.getWgtAboveLevelWithoutBases(j,true)[i]; 
-    }
+    sqrt_ps_norm[i] += other.getProbSqrtSums(true)[i];
+    uniform_ps[i] += other.getUniformPS()[i]; 
+    uniform_ps_weighted_by_base[i] += other.getBaseWeightedUniformPS()[i];       
+    uniform_ps_with_base[i] += other.getUniformPSwithBase()[i];       
+    uniform_ps_without_base[i] += other.getUniformPSwithoutBase()[i];       
   }
-
   if (combine_bases) 
   {
-    for (size_t i = 0; i < getNBases(); i++) 
+    for (int i = 0; i < getNBases(); i++)
     {
-
-      base_sums[i] += other.getBaseSums()[i]; 
-      base_sums_norm[i] += other.getBaseSums(true)[i]; 
-      for (int j = 0; j < (int) NLevels(); j++)
-      {
-        base_n_above_level[j][i] += other.getBaseNAboveLevel(j)[i]; 
-        base_n_above_level_norm[j][i] += other.getBaseNAboveLevel(j,true)[i]; 
-      }
+      eventCountPerBase[i] += other.getEventCountPerBase()[i]; 
     }
-*/
   }
 
   return 0; 
@@ -465,31 +260,6 @@ int UCorrelator::ProbabilityMap::removeWith(const ProbabilityMap & other)
     return 1; 
   }
 
-
-  if (NLevels() != other.NLevels())
-  {
-    fprintf(stderr,"Cannot combine ProbabilityMap's with different numbers of levels: (ours %d, theirs: %d)\n", (int) NLevels(), (int) other.NLevels()); 
-    return 1; 
-  }
-
-  int nwrong = 0; 
-  
-  for (int i = 0; i < (int) NLevels(); i++) 
-  {
-    if (getLevel(i) != other.getLevel(i))
-    {
-      fprintf(stderr,"  Mismatched level %d (ours=%g, theirs=%g)", i, getLevel(i), other.getLevel(i));
-      nwrong++;
-    }
-  }
-
-  if (nwrong > 0) 
-  {
-    fprintf(stderr,"%d Mismatched Levels. Cannot combine. Theoretically we could combine the levels that still make sense, but you'll have to implement that if you really want it.\n", nwrong); 
-    return 1; 
-  }
-
-
   bool combine_bases = true; 
   if (getNBases() != other.getNBases())
   {
@@ -503,62 +273,25 @@ int UCorrelator::ProbabilityMap::removeWith(const ProbabilityMap & other)
   {
     fprintf(stderr,"Combining ProbabilityMap's with different max mahalanobis distance (ours=%g,theirs=%g). Continuing, but may not be what you want!\n", maxDistance(), other.maxDistance());  
   }
-  
-
-  //TODO we probably want to compare the pointing resolution models as well 
-
   //if we made it this far, all is good (except for what hasn't been implemented yet) !
-
   for (int i = 0; i < segmentationScheme()->NSegments(); i++) 
   {
     ps[i] -= other.getProbSums()[i]; 
     ps_norm[i] -= other.getProbSums(true)[i]; 
     sqrt_ps[i] -= other.getProbSqrtSums()[i]; 
     sqrt_ps_norm[i] -= other.getProbSqrtSums(true)[i]; 
-/*
-  // comment out these part because my analysis does not really depends on those map features.
-    // no easy way to get Cosmin's max1_ps and max2_ps right when removing map. So they are incorrect when using this function.
-    // But I don't use max1_ps and max2_ps in my analysis so I am good. by Peng.
-    // double other_max = TMath::Min(max1_ps[i], other.getProbMaxes()[i]); 
-    // max1_ps[i] = TMath::Max(max1_ps[i], other.getProbMaxes()[i]); 
-    // double other_max_norm = TMath::Min(max1_ps[i], other.getProbMaxes(true)[i]); 
-    // max1_ps_norm[i] = TMath::Max(max1_ps_norm[i], other.getProbMaxes(true)[i]); 
-
-    // max2_ps[i] = TMath::Max(other_max, TMath::Max(max2_ps[i], other.getProbSecondMaxes()[i])); 
-    // max2_ps_norm[i] = TMath::Max(other_max_norm, TMath::Max(max2_ps_norm[i], other.getProbSecondMaxes(true)[i])); 
-
-    
-    for (int j = 0; j < (int) NLevels(); j++)
-    {
-      ps_without_base[j][i] -= other.getProbSumsWithoutBases(j)[i]; 
-      ps_norm_without_base[j][i] -= other.getProbSumsWithoutBases(j,true)[i]; 
-      sqrt_ps_without_base[j][i] -= other.getProbSqrtSumsWithoutBases(j)[i]; 
-      sqrt_ps_norm_without_base[j][i] -= other.getProbSqrtSumsWithoutBases(j,true)[i]; 
-      n_above_level[j][i] -= other.getNAboveLevel(j)[i]; 
-      wgt_above_level[j][i] -= other.getWgtAboveLevel(j)[i]; 
-      n_above_level_without_base[j][i] -= other.getNAboveLevelWithoutBases(j)[i]; 
-      wgt_above_level_without_base[j][i] -= other.getWgtAboveLevelWithoutBases(j)[i]; 
-      n_above_level_without_base_norm[j][i] -= other.getNAboveLevelWithoutBases(j,true)[i]; 
-      wgt_above_level_without_base_norm[j][i] -= other.getWgtAboveLevelWithoutBases(j,true)[i]; 
-    }
+    uniform_ps[i] -= other.getUniformPS()[i]; 
+    uniform_ps_weighted_by_base[i] -= other.getBaseWeightedUniformPS()[i]; 
+    uniform_ps_with_base[i] -= other.getUniformPSwithBase()[i];       
+    uniform_ps_without_base[i] -= other.getUniformPSwithoutBase()[i];       
   }
-
   if (combine_bases) 
   {
     for (size_t i = 0; i < getNBases(); i++) 
     {
-
-      base_sums[i] -= other.getBaseSums()[i]; 
-      base_sums_norm[i] -= other.getBaseSums(true)[i]; 
-      for (int j = 0; j < (int) NLevels(); j++)
-      {
-        base_n_above_level[j][i] -= other.getBaseNAboveLevel(j)[i]; 
-        base_n_above_level_norm[j][i] -= other.getBaseNAboveLevel(j,true)[i]; 
-      }
+      eventCountPerBase[i] -= other.getEventCountPerBase()[i]; 
     }
-*/
   }
-
   return 0; 
 }
 
@@ -665,7 +398,6 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
 
       while(!done_with_this_segment) 
       {
-
         //ENHANCE 
         // we want to find the smallest perfect square at least twice as many nsamples
         if (enhance_factor) 
@@ -863,7 +595,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
 
       //is an vertor store the current segment and its prob density integral over the area.
       contribution.push_back(std::pair<int,double>(seg,seg_p));
-      //is an vector store the current segment number and it maximun density 
+      //is an vector store the current segment number and it maximun den sity 
       if(max_densities) max_densities->push_back(std::pair<int,double>(seg, max_dens)); 
       /* if max density is above min_p, add the neighbors of this segment */ 
       // This is done recursively so the neighbour segments(which has max_dens> min_p) will be added into the contribution vector.
@@ -950,7 +682,12 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
 
       double dens = pr.computeProbabilityDensity( base_phi, pp.source_theta); 
       //this is vector that record the base id and its prob density.
-      base_contribution->push_back(std::pair<int,double> (ibase, dens)); 
+      if(dens> min_p){
+        // only when dens larger than the min_p, it will record the base.
+        // the size of base_contribution will tell us the number of bases that this event is overlapping with.
+        //overlapping is defined the same as the p.maximum_distance(ie, how many sigma)
+        base_contribution->push_back(std::pair<int,double> (ibase, dens));
+      }
     }
 
   }
@@ -958,77 +695,76 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
   return inv_two_pi_sqrt_det; 
 }
 
-int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, std::vector<std::vector<int> > * groups, double * counts, std::vector<double>  * dist, double val_threshold) const
-{
-  //vals_to_group are map from seg index to seg's ps. All the wgt from one event should clustered and sum to 1. 
-  //Then 10 events if they clusterd toghether in first level would sum up to 10. 
-  std::vector<bool> consumed (p.seg->NSegments()); 
-  int ngroups = 0; 
+// int UCorrelator::ProbabilityMap::groupAdjacent(const double * vals_to_group, std::vector<std::vector<int> > * groups, double * counts, std::vector<double>  * dist, double val_threshold) const
+// {
+//   //vals_to_group are map from seg index to seg's ps. All the wgt from one event should clustered and sum to 1. 
+//   std::vector<bool> consumed (p.seg->NSegments()); 
+//   int ngroups = 0; 
 
 
-  //clean up input 
-  if (groups) groups->clear(); 
-  if (dist) dist->clear(); 
-  if (counts) memset(counts, 0, sizeof(double) * p.seg->NSegments()); 
+//   //clean up input 
+//   if (groups) groups->clear(); 
+//   if (dist) dist->clear(); 
+//   if (counts) memset(counts, 0, sizeof(double) * p.seg->NSegments()); 
 
-  for (int i = 0; i < p.seg->NSegments(); i++) 
-  {
-    //only clustering segments when the segment's weight larger than a threshold.
-    if (vals_to_group[i]<=val_threshold){
-      consumed[i] = true;
-      continue;
-    } 
-     if (consumed[i]) continue; 
+//   for (int i = 0; i < p.seg->NSegments(); i++) 
+//   {
+//     //only clustering segments when the segment's weight larger than a threshold.
+//     if (vals_to_group[i]<=val_threshold){
+//       consumed[i] = true;
+//       continue;
+//     } 
+//      if (consumed[i]) continue; 
 
-     ngroups++; 
-     //group is a vector of int, put inital seg index in it at first, then add the neighbor seg index recursively.
-     std::vector<int> group;
-     group.push_back(i); 
-     consumed[i] = true; 
-     int n_in_group = 0; 
-     //i start with 0. group_sum initially will have the first segment's ps value.
-     double group_sum = vals_to_group[i]; 
-     while (n_in_group < (int)  group.size()) 
-     {
-       int seg = group[n_in_group++]; 
+//      ngroups++; 
+//      //group is a vector of int, put inital seg index in it at first, then add the neighbor seg index recursively.
+//      std::vector<int> group;
+//      group.push_back(i); 
+//      consumed[i] = true; 
+//      int n_in_group = 0; 
+//      //i start with 0. group_sum initially will have the first segment's ps value.
+//      double group_sum = vals_to_group[i]; 
+//      while (n_in_group < (int)  group.size()) 
+//      {
+//        int seg = group[n_in_group++]; 
 
-       //see if we need to add any neighbors 
+//        //see if we need to add any neighbors 
 
-       std::vector<int> neighbors; 
-       segmentationScheme()->getNeighbors(seg, &neighbors); 
-       for (size_t i = 0; i < neighbors.size(); i++) 
-       {
-        // only cluster the neighbour segment when their ps larger than threshold and not consumed before.
-         if (vals_to_group[neighbors[i]]>val_threshold && !consumed[neighbors[i]])
-         {
-           consumed[neighbors[i]] = true;
-           group.push_back(neighbors[i]);
-           //group_sum added the neighbour segs' ps togother
-           group_sum += vals_to_group[neighbors[i]]; 
-         }
-       }
-     }
-     //group_sum is the number of events(prob sums together = number of events) in this cluster. It is calculated by clustering the segments and summing the weights. 
-     //dist is a vector of length = how many clusters.
-     if (dist) dist->push_back(group_sum); 
+//        std::vector<int> neighbors; 
+//        segmentationScheme()->getNeighbors(seg, &neighbors); 
+//        for (size_t i = 0; i < neighbors.size(); i++) 
+//        {
+//         // only cluster the neighbour segment when their ps larger than threshold and not consumed before.
+//          if (vals_to_group[neighbors[i]]>val_threshold && !consumed[neighbors[i]])
+//          {
+//            consumed[neighbors[i]] = true;
+//            group.push_back(neighbors[i]);
+//            //group_sum added the neighbour segs' ps togother
+//            group_sum += vals_to_group[neighbors[i]]; 
+//          }
+//        }
+//      }
+//      //group_sum is the number of events(prob sums together = number of events) in this cluster. It is calculated by clustering the segments and summing the weights. 
+//      //dist is a vector of length = how many clusters.
+//      if (dist) dist->push_back(group_sum); 
 
-     if (counts) 
-     {
-      // loop through the current cluster's segment index i.
-       for (size_t i = 0; i < group.size(); i++) 
-       {
-        //group[i] is one segment's index number
-        //counts is a map from segment index to a cluster's prob sums(the cluster that this segment is in.)
-         counts[group[i]] = group_sum; 
-       }
-     }
+//      if (counts) 
+//      {
+//       // loop through the current cluster's segment index i.
+//        for (size_t i = 0; i < group.size(); i++) 
+//        {
+//         //group[i] is one segment's index number
+//         //counts is a map from segment index to a cluster's prob sums(the cluster that this segment is in.)
+//          counts[group[i]] = group_sum; 
+//        }
+//      }
 
-     if (groups) groups->push_back(group); 
-  }
+//      if (groups) groups->push_back(group); 
+//   }
   
-  return ngroups; 
+//   return ngroups; 
 
-}
+// }
 int UCorrelator::ProbabilityMap::countBasesInThisSegment(int seg) const{
   int countBases = 0;
   //now loop over all the bases 
@@ -1045,23 +781,19 @@ int UCorrelator::ProbabilityMap::countBasesInThisSegment(int seg) const{
   }
   return countBases;
 }
-int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClusterSizes, std::vector<double>  * clusterSizes, double threshold, double* mapOfClusterNumOfBases, std::vector<double>* clusterNumOfBases) const
+int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClusterSizes, std::vector<double> * clusterSizes, double threshold) const
 {
   //ps are map from seg index to seg's ps. All the wgt from one event should clustered and sum to 1. 
-  //Then 10 events if they clusterd toghether in first level would sum up to 10. 
   std::vector<bool> consumed (p.seg->NSegments()); 
   int nClusters = 0; 
 
 
   //clean up input 
   if (clusterSizes) clusterSizes->clear(); 
-  if (clusterNumOfBases) clusterNumOfBases->clear(); 
   if (mapOfClusterSizes) memset(mapOfClusterSizes, 0, sizeof(double) * p.seg->NSegments()); 
-  if (mapOfClusterNumOfBases) memset(mapOfClusterNumOfBases, 0, sizeof(double) * p.seg->NSegments()); 
 
   for (int i = 0; i < p.seg->NSegments(); i++) 
   {
-    double countBasesNearACluster = 0;
     //only clustering segments when the segment's weight larger than a threshold.
     if (ps[i]<=threshold){
       consumed[i] = true;
@@ -1079,11 +811,6 @@ int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClus
      //i start with 0. cluster_sum initially will have the first segment's ps value.
      double cluster_sum = ps[i];
 
-     //check the segment hit any bases or not
-     if (countBasesInThisSegment(i) == 1){
-     // if (true){
-        countBasesNearACluster += 1;
-     }; 
      while (n_in_Cluster < (int)  Cluster.size()) 
      {
        int seg = Cluster[n_in_Cluster++]; 
@@ -1101,10 +828,6 @@ int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClus
            Cluster.push_back(neighbors[j]);
            //cluster_sum added the neighbour segs' ps togother
            cluster_sum += ps[neighbors[j]];
-           if (countBasesInThisSegment(neighbors[j]) == 1){
-           // if (true){
-              countBasesNearACluster += 1;
-           }; 
          }
        }
      }
@@ -1113,7 +836,6 @@ int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClus
      //cluster_sum is the number of events(prob sums together = number of events) in this cluster. It is calculated by clustering the segments and summing the weights. 
      //clusterSizes is a vector of length = how many clusters.
      if (clusterSizes) clusterSizes->push_back(cluster_sum); 
-     if (clusterSizes) clusterNumOfBases->push_back(countBasesNearACluster); 
 
      if (mapOfClusterSizes) 
      {
@@ -1123,7 +845,6 @@ int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClus
         //Cluster[i] is one segment's index number
         //mapOfClusterSizes is a map from segment index to a cluster's prob sums(the cluster that this segment is in.)
          mapOfClusterSizes[Cluster[i]] = cluster_sum; 
-         mapOfClusterNumOfBases[Cluster[i]] = countBasesNearACluster; 
        }
      }
   }
@@ -1132,260 +853,17 @@ int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClus
 
 }
 
-int UCorrelator::ProbabilityMap::makeMultiplicityTable(int level, double threshold, bool blind, bool draw) const
-{
-
-
-  //non base table 
-  std::vector<double> non_base; 
-  std::vector<double> non_base_counts(draw ? segmentationScheme()->NSegments(): 0); 
-  //base table
-  std::vector<double> base; 
-  std::vector<double> base_counts(draw ? segmentationScheme()->NSegments(): 0);
-  //vector, each element is 1000*1000 segments.
-  std::vector<double> wgt_without_base(getWgtAboveLevelWithoutBases(level), getWgtAboveLevelWithoutBases(level) + segmentationScheme()->NSegments()); 
-  std::vector<double> wgt_with_base(getWgtAboveLevel(level), getWgtAboveLevel(level) + segmentationScheme()->NSegments()); 
-  //loop through all segments
-  for (int i = 0; i < segmentationScheme()->NSegments(); i++) 
-  {
-    // if a segment, with and without base both have none zeor wgt. means base is not in this segments or near.
-    // only one of the two can be non-zero.
-    if (wgt_with_base[i] && wgt_without_base[i])
-    {
-      // if they equal, base is not near.
-      if (wgt_with_base[i] == wgt_without_base[i]) 
-      {
-        // use wgt_without_base.
-        wgt_with_base[i] = 0; 
-      }
-      else
-      {
-        // Otherwise, base would lower wgt_with_base, wgt_withoutbase then not make sense. use wgt_with_base.
-        wgt_without_base[i] = 0; 
-      }
-    }
-  }
-
-
-  //group the non-zeor wgt_withoutbase or wgt_withbase. 
-  //input first level wgt for clustering.
-  // returned non_base: a list of cluster that only consider segments's p above base.
-  //returned base: a lsit of cluster that take include all probabilty projected to ground.
-
-  groupAdjacent(&wgt_without_base[0], 0,draw ? &non_base_counts[0] : 0, &non_base, threshold); 
-  groupAdjacent(&wgt_with_base[0], 0,draw ? &base_counts[0] : 0, &base, threshold); 
-
-  const int maxes[] = {1,2,3,4,5,6,7,8,9,10,20,50,100,(int) 100e6}; 
-  const int mins[] =  {1,2,3,4,5,6,7,8,9,10,11,21,51,101}; 
-  int n_rows = sizeof(maxes) / sizeof(*maxes); 
-
-  int n_base[n_rows]; 
-  int n_non_base[n_rows]; 
-
-  memset(n_base,0, n_rows * sizeof(int)); 
-  memset(n_non_base,0, n_rows * sizeof(int)); 
-
-  for (size_t i = 0; i < non_base.size(); i++) 
-  {
-    for (int row = 0; row < n_rows; row++)
-    {
-       int n = round(non_base[i]); 
-       if (n <= maxes[row] && n >= mins[row])
-       {
-         if (!(blind && row == 0))
-         {
-           n_non_base[row]++; 
-         }
-         break; 
-       }
-    }
-  }
-
-  for (size_t i = 0; i < base.size(); i++) 
-  {
-    for (int row = 0; row < n_rows; row++)
-    {
-       int n = round(base[i]); 
-       if (n <= maxes[row] && n >= mins[row])
-       {
-         n_base[row]++; 
-         break; 
-       }
-    }
-  }
-
-
-
-
-  printf("============================================================================\n"); 
-  printf(" Clustering / base association based on Mahalanobis distance of %g\n", getLevel(level)); 
-  if (blind) printf(" BLINDED TO NON-BASE SINGLES\n"); 
-
-  printf("  Segments far from Base   |   Segments near base  |   Size \n");
-  printf("-------------------------------------\n");
-  for (int row = 0; row < n_rows; row++) 
-  {
-    printf("   %04d    | %04d   |  ", n_non_base[row], n_base[row]);
-
-    if (row == 0) 
-      printf ("1\n"); 
-    else if (row < n_rows-1)
-      printf ("%d - %d\n", mins[row], maxes[row]); 
-    else
-      printf("%d - \n",mins[row]); 
-  }
-  printf("-------------------------------------\n"); 
-
-
-
-
-  if (draw) 
-  {
-    for (int i = 0; i  < segmentationScheme()->NSegments(); i++) 
-    {
-      if (non_base_counts[i] && base_counts[i]) printf("DrawOOPS!!!: %g %g\n", non_base_counts[i], base_counts[i]); 
-      if (blind && non_base_counts[i] == 1)  non_base_counts[i] = 0; 
-      non_base_counts[i] =  non_base_counts[i] - base_counts[i]; 
-    }
-
-    segmentationScheme()->Draw("colz",&non_base_counts[0]); 
-  }
-
-  return 0; 
-
-}
-
-int UCorrelator::ProbabilityMap::makeMultiplicityTable2(int level, double threshold, bool blind, bool draw) const
-{
-
-
-  //non base table 
-  std::vector<double> non_base; 
-  std::vector<double> non_base_counts(draw ? segmentationScheme()->NSegments(): 0); 
-  //base table
-  std::vector<double> base; 
-  std::vector<double> base_counts(draw ? segmentationScheme()->NSegments(): 0);
-  //vector, each element is 1000*1000 segments.
-  std::vector<double> wgt_without_base(getWgtAboveLevelWithoutBases(level), getWgtAboveLevelWithoutBases(level) + segmentationScheme()->NSegments()); 
-  std::vector<double> wgt_with_base(getWgtAboveLevel(level), getWgtAboveLevel(level) + segmentationScheme()->NSegments()); 
-  //loop through all segments
-  for (int i = 0; i < segmentationScheme()->NSegments(); i++) 
-  {
-    // if a segment, with and without base both have none zeor wgt. means base is not in this segments or near.
-    // only one of the two can be non-zero.
-    if (wgt_with_base[i] && wgt_without_base[i])
-    {
-      // if they equal, base is not near.
-      if (wgt_with_base[i] == wgt_without_base[i]) 
-      {
-        //
-        ;
-        // use wgt_without_base.
-        // wgt_with_base[i] = 0; 
-      }
-      else
-      {
-        // Otherwise, base would lower wgt_with_base, wgt_withoutbase then not make sense. use wgt_with_base.
-        wgt_without_base[i] = 0; 
-      }
-    }
-  }
-
-
-  //group the non-zeor wgt_withoutbase or wgt_withbase. 
-  //input first level wgt for clustering.
-  // returned non_base: a list of cluster that only consider segments's p above base.
-  //returned base: a lsit of cluster that take include all probabilty projected to ground.
-
-  groupAdjacent(&wgt_without_base[0], 0,draw ? &non_base_counts[0] : 0, &non_base, threshold); 
-  groupAdjacent(&wgt_with_base[0], 0,draw ? &base_counts[0] : 0, &base, threshold); 
-
-  const int maxes[] = {1,2,3,4,5,6,7,8,9,10,20,50,100,(int) 100e6}; 
-  const int mins[] =  {1,2,3,4,5,6,7,8,9,10,11,21,51,101}; 
-  int n_rows = sizeof(maxes) / sizeof(*maxes); 
-
-  int n_base[n_rows]; 
-  int n_non_base[n_rows]; 
-
-  memset(n_base,0, n_rows * sizeof(int)); 
-  memset(n_non_base,0, n_rows * sizeof(int)); 
-
-  for (size_t i = 0; i < non_base.size(); i++) 
-  {
-    for (int row = 0; row < n_rows; row++)
-    {
-       int n = round(non_base[i]); 
-       if (n <= maxes[row] && n >= mins[row])
-       {
-         if (!(blind && row == 0))
-         {
-           n_non_base[row]++; 
-         }
-         break; 
-       }
-    }
-  }
-
-  for (size_t i = 0; i < base.size(); i++) 
-  {
-    for (int row = 0; row < n_rows; row++)
-    {
-       int n = round(base[i]); 
-       if (n <= maxes[row] && n >= mins[row])
-       {
-         n_base[row]++; 
-         break; 
-       }
-    }
-  }
-
-
-
-
-  printf("============================================================================\n"); 
-  printf(" Clustering / base association based on Mahalanobis distance of %g\n", getLevel(level)); 
-  if (blind) printf(" BLINDED TO NON-BASE SINGLES\n"); 
-
-  printf("  Segments far from   |   All Segments  |   Size \n");
-  printf("-------------------------------------\n");
-  for (int row = 0; row < n_rows; row++) 
-  {
-    printf("   %04d    | %04d   |  ", n_non_base[row], n_base[row]);
-
-    if (row == 0) 
-      printf ("1\n"); 
-    else if (row < n_rows-1)
-      printf ("%d - %d\n", mins[row], maxes[row]); 
-    else
-      printf("%d - \n",mins[row]); 
-  }
-  printf("-------------------------------------\n"); 
-
-
-
-
-  if (draw) 
-  {
-    segmentationScheme()->Draw("colz",&base_counts[0]); 
-  }
-
-  return 0; 
-
-}
-
-std::pair<int, int> UCorrelator::ProbabilityMap::makeMultiplicityTable3(bool draw, bool blind) const
+std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool blind) const
 {
 
 
   //base table
   std::vector<double> clusterSizes; 
-  std::vector<double> clusterNumOfBases; 
   std::vector<double> mapOfClusterSizes(segmentationScheme()->NSegments());
-  std::vector<double> mapOfClusterNumOfBases(segmentationScheme()->NSegments());
-
   //returned clusterSizes: a lsit of cluster that take include all probabilty projected to ground.
   double threshold = 0;// set threshold to 0. This affects the grouping stop criteria. 0 means if a neighbour segment have non-zero ps, it will be clustered.
-  doClustering(&ps_norm[0], &mapOfClusterSizes[0], &clusterSizes, threshold, &mapOfClusterNumOfBases[0], &clusterNumOfBases); 
+  doClustering(&uniform_ps_weighted_by_base[0], &mapOfClusterSizes[0], &clusterSizes, threshold); 
+
 
   const int maxes[] = {1,2,3,4,5,6,7,8,9,10,20,50,100,(int) 100e6}; 
   const int mins[] =  {1,2,3,4,5,6,7,8,9,10,11,21,51,101}; 
@@ -1394,35 +872,37 @@ std::pair<int, int> UCorrelator::ProbabilityMap::makeMultiplicityTable3(bool dra
   int n_clusters[n_rows]; 
   int n_clusters_near_base[n_rows]; 
   int n_clusters_not_base[n_rows]; 
-  int n_bases[n_rows]; 
+  float n_clusters_weighted[n_rows]; 
   memset(n_clusters,0, n_rows * sizeof(int)); 
   memset(n_clusters_near_base,0, n_rows * sizeof(int)); 
   memset(n_clusters_not_base,0, n_rows * sizeof(int)); 
-  memset(n_bases,0, n_rows * sizeof(int)); 
+  memset(n_clusters_weighted,0, n_rows * sizeof(float)); 
   for (size_t i = 0; i < clusterSizes.size(); i++) 
   {
+    int n_nearBase = round(clusterSizes[i]); 
+    int n_notnearBase =round((clusterSizes[i] - round(clusterSizes[i]))*1000000);
+    int n = n_nearBase + n_notnearBase;
+    float fractionOfEventsNearBase = n_nearBase/float(n);
+
     for (int row = 0; row < n_rows; row++)
     {
-       int n = round(clusterSizes[i]); 
        if (n <= maxes[row] && n >= mins[row])
        {
          n_clusters[row]++;
-         if(clusterNumOfBases[i]>0){
+         if(fractionOfEventsNearBase!=0){
           n_clusters_near_base[row]++;
          }else{
           n_clusters_not_base[row]++;
          }
-         n_bases[row] +=  clusterNumOfBases[i];
+         n_clusters_weighted[row] +=  fractionOfEventsNearBase;
          break; 
        }
     }
   }
 
-
-
   if (draw){
     printf("========================================================================================================\n"); 
-    printf("|Cluster Size\t|N of Clusters\t|N of Bases\t|N of Cluster near Base\t|N of Cluster not near Base\t|\n");
+    printf("|Cluster Size\t|N of Clusters\t|N of weighted Cluster\t|N of Cluster near Base\t|N of Cluster not near Base\t|\n");
     printf("--------------------------------------------------------------------------------------------------------\n");
     for (int row = 0; row < n_rows; row++) 
     {
@@ -1430,26 +910,69 @@ std::pair<int, int> UCorrelator::ProbabilityMap::makeMultiplicityTable3(bool dra
         printf ("|  %d - %d   ", mins[row], maxes[row]); 
       else
         printf("|  %d +       ",mins[row]);
-      printf("\t|      %d     \t|    %d   \t|           %d          \t|              %d           \t|\n", n_clusters[row], n_bases[row], n_clusters_near_base[row],n_clusters_not_base[row]);
+      printf("\t|      %d     \t|     %f    \t|           %d          \t|              %d           \t|\n", 
+                      n_clusters[row], n_clusters_weighted[row], n_clusters_near_base[row],n_clusters_not_base[row]);
 
        
     }
-    printf("--------------------------------------------------------------------------------------------------------\n"); 
+    printf("--------------------------------------------------------------------------------------------------------\n");  
+  }
+
+  //background estimate:
+  int A = n_clusters_near_base[0];
+  int B = n_clusters_not_base[0];
+  int C =0, D =0;
+  float C1 = 0;
+  for (int row = 1; row < 10; row++) {
+    C += n_clusters_near_base[row];
+    C1 += n_clusters_weighted[row];
+    D += n_clusters_not_base[row];
+  }
+  float B0 = float(D)*float(A)/float(C);
+  float B1 = float(D)*float(A)/float(C1);
+  std::cout<< "B0="<< B0<< " B1="<< B1 <<" of B="<< B<<std::endl;
+  std::cout<< " \t"<< A<< " \t"<< C << " \t"<< D<< " \t"<< B0 << " \t"<< B << " \t"<< C1<< " \t"<< B1 << std::endl;
+
+
+
+  if(draw == 1){
+    segmentationScheme()->Draw("colz",&ps_norm[0]);
+  }else if(draw == 2){
+    segmentationScheme()->Draw("colz",&mapOfClusterSizes[0]);
+  }else if(draw == 3){
+    segmentationScheme()->Draw("mapcolz",&ps_norm[0]);
+  }else if(draw == 4){
+    segmentationScheme()->Draw("colz",&uniform_ps_weighted_by_base[0]);
+  }   
 
 
   // TCanvas * canvas = new TCanvas;
-  // canvas->Divide(2,2); 
+  // canvas->Divide(1,1); 
   // canvas->cd(1);
-  // segmentationScheme()->Draw("colz",&ps_norm[0]);
-  // canvas->cd(2);
-  segmentationScheme()->Draw("colz",&mapOfClusterSizes[0]);
-  // canvas->cd(3);
-  // segmentationScheme()->Draw("colz",&mapOfClusterNumOfBases[0]); 
-  // canvas->cd(4);
-  // segmentationScheme()->Draw("colz",&mapOfClusterNumOfBases[0]);
-     
+  // TH1F *h1 = new TH1F("h1", "h1 title", 20, 0, 5);
+  double sumFractionOfEventsNearBase = 0;
+  int nSinglets_knownBase = 0;
+  int nSinglets_unkownBase = 0;
+  for (int i = 0; i < clusterSizes.size(); i++) 
+  {
+    int n_nearBase = round(clusterSizes[i]); 
+    int n_notnearBase =round((clusterSizes[i] - round(clusterSizes[i]))*1000000);
+    int n = n_nearBase + n_notnearBase;
+    float fractionOfEventsNearBase = n_nearBase/float(n);
+    sumFractionOfEventsNearBase +=fractionOfEventsNearBase;
+    // std::cout<< "\tcluster i="<< i << "\t #events = "<< n <<  "\t #eventNearBase = "<< n_nearBase<< "\t fractionOfEventsNearBase = "<< fractionOfEventsNearBase << std::endl;
+    if(n == 1 and n_nearBase == 1){
+      nSinglets_knownBase++;
+    }else if(n == 1 and n_notnearBase == 1){
+      nSinglets_unkownBase++;
+    }
   }
-  return std::make_pair(n_clusters_near_base[0], n_clusters_not_base[0]);
+  std::cout<< "sumFractionOfEventsNearBase="<<sumFractionOfEventsNearBase<<std::endl;
+  // std::cout<< countNofClusterWithBase<< " \t" << countNofClusterWithoutBase<< " \t"<< countNofEventsWithBase<< " \t"<< countNofEventsWithoutBase<< " \t"<< countNofBase << " \t"<< countNofUnkownBase<< std::endl;
+
+  // TGraph *gr1 = new TGraph(N, x, y);
+  // h1->Draw("colz");
+  return std::make_pair(nSinglets_knownBase, nSinglets_unkownBase);
   // return n_clusters_not_base[0]; 
 
 }

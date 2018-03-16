@@ -976,12 +976,17 @@ wais->Scan("run:eventNumber",isWaisV && "mostImpulsiveInd()>0 && run == 140","co
 wais->Draw("peak[1][0].snr>>Thermal(100,,)",thermal_sample && aboveHorizon,"colz")
 
 
-map_unweighted->segmentationScheme()->Draw("mapcolz",map_unweighted->getProbSums(true));
-map_unweighted->segmentationScheme()->Draw("mapcolz",map_unweighted->getOccludedFractionSum());
+map_unweighted->segmentationScheme()->Draw("colz",map_unweighted->getProbSums(true));
+map_unweighted->segmentationScheme()->Draw("colz",map_unweighted->getOccludedFractionSum());
+map_unweighted->segmentationScheme()->Draw("colz",map_unweighted->getUniformPS());
+map_unweighted->segmentationScheme()->Draw("colz",map_unweighted->getBaseWeightedUniformPS());
+map_unweighted->segmentationScheme()->Draw("colz",map_unweighted->getUniformPSwithBase());
+map_unweighted->segmentationScheme()->Draw("colz",map_unweighted->getUniformPSwithoutBase());
+
 map_unweighted->getProbSumsIntegral(true)
 tmp_copy->Integral()
 drawGroupings(map_unweighted)
-map_unweighted->makeMultiplicityTable3(1,0)
+map_unweighted->showClusters(1,0)
 
 trend->Draw("avgNSinglets:numOfFiles>>h(20,,,20,,)","","*")
 trend->Draw("N_singlets:percentOfData>>h(100,0,1,100,,)","","*")
@@ -1188,19 +1193,22 @@ dThetavsdPhi_py->Fit("mixedFit1")
 
 
 //trend of singlets
-TH2D * h0 = new TH2D("h0","N_singlets ",100,0,1.1,100,0,10); 
-TH2D * h1 = new TH2D("h1","N_singlets ",100,0,1.1,100,0,10); 
-TH2D * h2 = new TH2D("h2","N_singlets_nearbase",100,0,1.1,100,0,10); 
-TH2D * h3 = new TH2D("h3","N_singlets_notnearbase",100,0,1.1,100,0,10); 
 TCanvas * dists = new TCanvas("c1","c1"); 
-trend->Draw("N_singlets:percentOfData >> h0","", ""); 
-trend->Draw("N_singlets:percentOfData >> h1","", "sameC*"); 
-trend->Draw("N_singlets_nearbase:percentOfData >> h2","", "sameC*"); 
-trend->Draw("N_singlets_notnearbase:percentOfData >> h3","", "sameC*"); 
+trend->Draw("N_singlets:percentOfData >> h0(100,0,1.1,100,0,10)","", "C*"); 
+trend->Draw("N_singlets:percentOfData >> h1(100,0,1.1,100,0,10)","", "sameC*"); 
+trend->Draw("N_singlets_nearbase:percentOfData >> h2(100,0,1.1,100,0,10)","", "sameC*"); 
+trend->Draw("N_singlets_notnearbase:percentOfData >> h3(100,0,1.1,100,0,10)","", "sameC*"); 
 
 auto legend = new TLegend(0.1,0.7,0.48,0.9);
 // legend->SetHeader("The Legend Title","C"); // option "C" allows to center the header
-legend->AddEntry("h1","N_singlets","C*");
-legend->AddEntry("h2","N_singlets_nearbase","C*");
-legend->AddEntry("h3","N_singlets_notnearbase","C*");
+legend->AddEntry("h1","N_singlets","l");
+legend->AddEntry("h2","N_singlets_nearbase","l");
+legend->AddEntry("h3","N_singlets_notnearbase","l");
 legend->Draw();
+
+TChain a4("anita4");
+a4.Add("*30001*");
+#include "/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/cuts.C";
+a4.Draw("mostImpulsiveCoherent(2).snr/mostImpulsiveDeconvolved(2).snr>>h(300)",thermal_sample,"colz");
+h->GetXaxis()->SetTitle("coherent_snr/deconvolved_snr")
+
