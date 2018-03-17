@@ -673,13 +673,15 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
       //TODO: can veto most bases early probalby 
       //give the gps and base positon, easy to figure out all the geom between payload and base.
       PayloadParameters pp (gps,base_pos, p.refract);
-      // if not see this base , will continue to look for next base. 
-      if (pp.payload_el < p.backwards_params.el_cutoff || ( p.collision_detection && pp.checkForCollision(p.collision_params.dx,0,0, p.dataset, p.collision_params.grace))) continue ; 
+      // if this base can not see the payload over horizon , will continue to look for next base. 
+      // if (pp.payload_el < p.backwards_params.el_cutoff || ( p.collision_detection && pp.checkForCollision(p.collision_params.dx,0,0, p.dataset, p.collision_params.grace))) continue ; 
+      if (pp.payload_el < p.backwards_params.el_cutoff) {
+        continue;
+      }
       // when a base is in view, compute its prob density at this base point.
-      double base_phi = pp.source_phi; 
+      double base_phi = pp.source_phi ; 
       if (base_phi - phi0 > 180) base_phi-=360; 
       if (base_phi - phi0 < -180) base_phi+=360; 
-
       double dens = pr.computeProbabilityDensity( base_phi, pp.source_theta); 
       //this is vector that record the base id and its prob density.
       if(dens> min_p){
@@ -853,7 +855,7 @@ int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClus
 
 }
 
-std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool blind) const
+std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool blind, const char * option) const
 {
 
 
@@ -918,31 +920,14 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
     printf("--------------------------------------------------------------------------------------------------------\n");  
   }
 
-  //background estimate:
-  int A = n_clusters_near_base[0];
-  int B = n_clusters_not_base[0];
-  int C =0, D =0;
-  float C1 = 0;
-  for (int row = 1; row < 10; row++) {
-    C += n_clusters_near_base[row];
-    C1 += n_clusters_weighted[row];
-    D += n_clusters_not_base[row];
-  }
-  float B0 = float(D)*float(A)/float(C);
-  float B1 = float(D)*float(A)/float(C1);
-  std::cout<< "B0="<< B0<< " B1="<< B1 <<" of B="<< B<<std::endl;
-  std::cout<< " \t"<< A<< " \t"<< C << " \t"<< D<< " \t"<< B0 << " \t"<< B << " \t"<< C1<< " \t"<< B1 << std::endl;
-
-
+  
 
   if(draw == 1){
-    segmentationScheme()->Draw("colz",&ps_norm[0]);
+    segmentationScheme()->Draw(option,&ps_norm[0]);
   }else if(draw == 2){
-    segmentationScheme()->Draw("colz",&mapOfClusterSizes[0]);
+    segmentationScheme()->Draw(option,&mapOfClusterSizes[0]);
   }else if(draw == 3){
-    segmentationScheme()->Draw("mapcolz",&ps_norm[0]);
-  }else if(draw == 4){
-    segmentationScheme()->Draw("colz",&uniform_ps_weighted_by_base[0]);
+    segmentationScheme()->Draw(option,&uniform_ps_weighted_by_base[0]);
   }   
 
 
@@ -967,8 +952,25 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
       nSinglets_unkownBase++;
     }
   }
+
   std::cout<< "sumFractionOfEventsNearBase="<<sumFractionOfEventsNearBase<<std::endl;
   // std::cout<< countNofClusterWithBase<< " \t" << countNofClusterWithoutBase<< " \t"<< countNofEventsWithBase<< " \t"<< countNofEventsWithoutBase<< " \t"<< countNofBase << " \t"<< countNofUnkownBase<< std::endl;
+
+  //background estimate:
+  int A = n_clusters_near_base[0];
+  int B = n_clusters_not_base[0];
+  int C =0, D =0;
+  float C1 = 0;
+  for (int row = 1; row < 10; row++) {
+    C += n_clusters_near_base[row];
+    C1 += n_clusters_weighted[row];
+    D += n_clusters_not_base[row];
+  }
+  float B0 = float(D)*float(A)/float(C);
+  float B1 = float(D)*float(A)/float(C1);
+  std::cout<< "B0="<< B0<< " B1="<< B1 <<" of B="<< B<<std::endl;
+  std::cout<<sumFractionOfEventsNearBase<< " \t"<< A<< " \t"<< C << " \t"<< D<< " \t"<< B0 << " \t"<< B << " \t"<< C1<< " \t"<< B1 << std::endl;
+
 
   // TGraph *gr1 = new TGraph(N, x, y);
   // h1->Draw("colz");

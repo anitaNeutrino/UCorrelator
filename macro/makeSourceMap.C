@@ -1,7 +1,8 @@
 #include "FFTtools.h" 
 #include "AnitaConventions.h" 
 #include "AnitaDataset.h" 
-
+ 
+// TCut cutString("");
 TCut cutString("theta<-3.5 && deconvImpulsivity>0.71");
 // TCut cutString("theta<-3.5 && deconvImpulsivity>0.71");
 // const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && theta < 40 )";
@@ -26,7 +27,7 @@ UCorrelator::ProbabilityMap::Params * map_params()
   // f_dtheta->SetParameter(1, 0.2102); 
   // f_dphi->SetParameter(0, 1.065); 
   // f_dphi->SetParameter(1, 0.2479); 
-  UCorrelator::PointingResolutionParSNRModel * snrResolutionModel = new UCorrelator::PointingResolutionParSNRModel (*f_dtheta, *f_dphi, true, true); // the last false is not to use cos_theta_scale
+  UCorrelator::PointingResolutionParSNRModel * snrResolutionModel = new UCorrelator::PointingResolutionParSNRModel (*f_dtheta, *f_dphi, true, false); // the last false is not to use cos_theta_scale
   // UCorrelator::PointingResolutionModelPlusHeadingError * resolutionModel = new UCorrelator::PointingResolutionModelPlusHeadingError(20, snrResolutionModel); 
 
   Refraction::SphRay * ref = new Refraction::SphRay; 
@@ -38,7 +39,7 @@ UCorrelator::ProbabilityMap::Params * map_params()
   p->point = snrResolutionModel; 
   p->collision_detection = false; 
   p->verbosity = 0; // verbosity level for output info.
-  p->maximum_distance = 2.51;
+  p->maximum_distance = 1.8;
   // p->min_p_on_continent = 0;
  
 
@@ -99,7 +100,7 @@ int _trendOfSinglets(const char * treeName, const char* summaryFileFormat, const
   std::vector<UCorrelator::ProbabilityMap *> maps;
   for(int i = 0; i < mod; i++){
     std::cout << "loaded all the map "<< i << std::endl;
-    TFile * tempFile = TFile::Open(TString::Format("source_maps_withSNRcut/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, i ,start_run, end_run)); 
+    TFile * tempFile = TFile::Open(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, i ,start_run, end_run)); 
     maps.push_back((UCorrelator::ProbabilityMap*) tempFile->Get("map_unweighted"));
     tempFile->Close();
     // delete tempFile;
@@ -109,7 +110,7 @@ int _trendOfSinglets(const char * treeName, const char* summaryFileFormat, const
   TFile* removeFile;
   TFile* combineFile;
 
-  TFile outputFile(TString::Format("source_maps_withSNRcut/%s/trendOfSinglets%smod%d_%d_%d.root",treeName,filePrefix,mod,start_run,end_run),"RECREATE"); 
+  TFile outputFile(TString::Format("source_maps/%s/trendOfSinglets%smod%d_%d_%d.root",treeName,filePrefix,mod,start_run,end_run),"RECREATE"); 
   //output file and output tree named Overlap
   TTree outputTree("trend","trend"); 
   double percentOfData;
@@ -130,7 +131,7 @@ int _trendOfSinglets(const char * treeName, const char* summaryFileFormat, const
       if(i == 0 and l == 0){
         //start 
         std::cout <<"add file index "<< 0 << std::endl;
-        combineFile = new TFile(TString::Format("source_maps_withSNRcut/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, 0 ,start_run, end_run)); 
+        combineFile = new TFile(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, 0 ,start_run, end_run)); 
         map = (UCorrelator::ProbabilityMap*) combineFile->Get("map_unweighted");
       }else{ 
         if (i == 0){
@@ -203,7 +204,7 @@ std::set<int> * getRemovedEvents(const char * file, std::vector<int>  * runs = 0
   return removed; 
 }
 
-int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run = 50, int end_run =367, const char * filePrefix = "_2.51sigma_1pc_", int mod=1, int mod_remainder=0)
+int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run = 50, int end_run =367, const char * filePrefix = "_1.8sigma_1pc_", int mod=1, int mod_remainder=0)
 {
 
   // Start getting the run / event numbers of events that pass our cuts
@@ -219,7 +220,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
 
   UCorrelator::ProbabilityMap::Params * p = map_params(); 
 
-  TFile f(TString::Format("source_maps_withSNRcut/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, mod_remainder,start_run, end_run), "RECREATE"); 
+  TFile f(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, mod_remainder,start_run, end_run), "RECREATE"); 
   // UCorrelator::ProbabilityMap *map_weighted = new UCorrelator::ProbabilityMap(p); 
   UCorrelator::ProbabilityMap map(p); 
 
@@ -278,7 +279,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
     theta = -1*sum->peak[pol][peak].theta;
     snr = sum->peak[pol][peak].snr;
     // if(p_ground< 0.1){    
-      printf("index = %d \t run = %d \t eventNumber = %d \t deconvImpulsivity = %g \t S = %g\t nsegs=%d \t p_ground = %g  theta= %g \n",i,run,ev,deconvImpulsivity,S,nsegs,p_ground, theta);
+      printf("index= %d \trun = %d \tevn= %d \timpulsivity= %g \tS= %g\t nsegs= %d \tp_ground= %g \ttheta= %g \tsnr=%g \n",i,run,ev,deconvImpulsivity,S,nsegs,p_ground, theta, snr);
       // std::cout<< "\tsnr = "<< sum->deconvolved_filtered[pol][peak].snr << " longitude="<<sum->peak[pol][peak].longitude<<" latitude"<<sum->peak[pol][peak].latitude<< std::endl; 
     // }
     tr.Fill(); 
@@ -328,7 +329,7 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
   outputTree.Branch("longitude",&longitude); 
   outputTree.Branch("latitude",&latitude); 
   
-  TFile sourceMapFile(TString::Format("source_maps_withSNRcut/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, mod_remainder,start_run, end_run)); 
+  TFile sourceMapFile(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, mod_remainder,start_run, end_run)); 
   UCorrelator::ProbabilityMap * map = (UCorrelator::ProbabilityMap*) sourceMapFile.Get(sourceMapTree); 
   UCorrelator::ProbabilityMap * source_map = map; //for mc 
   UCorrelator::ProbabilityMap::Params * map_pars = map_params(); 
@@ -389,7 +390,7 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
     // if (mc) delete map; 
    
 //    if (O < 0) O = -1; 
-      printf("i=%d, run=%d, eventnumber=%d, deconvImpulsivity=%g, O=%g\n",i, run,eventNumber, deconvImpulsivity, O); 
+      printf("i=%d, run=%d, evn=%d, impulsivity=%g, O=%g\n",i, run,eventNumber, deconvImpulsivity, O); 
 
     max_base_index = -1;
     base_sum = 0;
@@ -425,7 +426,7 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
     const char* summaryFileFormat = "/Volumes/SDCard/data/wais/%d_max_30001_sinsub_10_3_ad_2.root";
     const char* thermalTreeFormat = "thermalTrees/wais_%d-%d_max_30001_sinsub_10_3_ad_2.root";
-    const char * filePrefix = "_2.51sigma_30001_";
+    const char * filePrefix = "_1.8sigma_30001_";
     int mod = 1;
     int mod_remainder = 0;
     start_run = 120;
@@ -437,10 +438,10 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
     const char* summaryFileFormat = "/Volumes/SDCard/data/a4all/%d_max_30002_sinsub_10_3_ad_2.root";
     const char* thermalTreeFormat = "thermalTrees/a4all_%d-%d_max_30002_sinsub_10_3_ad_2.root";
-    const char * filePrefix = "_2.51sigma_30002_";
+    const char * filePrefix = "_1.8sigma_30002_";
     int mod = 1;
     int mod_remainder = 0;
-    start_run = 40;
+    start_run = 41;
     end_run = 367;
     for (mod_remainder= 0; mod_remainder<mod; mod_remainder++){
     // for (mod_remainder= 1; mod_remainder<2; mod_remainder++){
@@ -453,7 +454,7 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
     const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_1001_sinsub_10_3_ad_2.root";
     const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_1001_sinsub_10_3_ad_2.root";
-    const char * filePrefix = "_2.51sigma_1001_";
+    const char * filePrefix = "_1.8sigma_1001_";
     int mod = 1;
     int mod_remainder = 0;
     start_run = 1;

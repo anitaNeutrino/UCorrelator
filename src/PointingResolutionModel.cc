@@ -63,8 +63,8 @@ double * UCorrelator::PointingResolution::computeProbabilityDensity(int N,
 #pragma omp simd 
   for (int i = start; i < N; i++) 
   {
-    double phidiff = vphi[i]-phi; 
-    double thetadiff = vtheta[i]-theta; 
+    double phidiff = FFTtools::wrap(vphi[i]-phi,360,0); 
+    double thetadiff = FFTtools::wrap(vtheta[i]-theta,360,0); 
     double z=  ( phidiff * phidiff * inv_dphi2) - 
                (phidiff * thetadiff * inv_dphidtheta) + 
                (thetadiff*thetadiff * inv_dtheta2); 

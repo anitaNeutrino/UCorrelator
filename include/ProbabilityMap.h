@@ -58,7 +58,7 @@ namespace UCorrelator
             maximum_distance(3),// how many sigma to plot on prob map
             // min_p_on_continent (1e-3) , //prob sum of an event on ground should larger than this threshold
             projection(BACKWARD), 
-            collision_detection(true) , 
+            collision_detection(false) , 
             max_dphi(5), 
             max_dtheta(5),
             verbosity(0) 
@@ -230,7 +230,7 @@ namespace UCorrelator
       int doClustering(const double * ps, double* mapOfClusterSizes, std::vector<double>* clusterSizes, double val_threshold) const; 
 
       int dumpNonZeroBases() const; 
-      std::pair<int, int> showClusters(int draw = 1, bool blind = true) const; 
+      std::pair<int, int> showClusters(int draw = 1, bool blind = true, const char * option = "colz") const; 
       
     private:
       Params p; 

@@ -1,4 +1,8 @@
-// #include "BaseList.h"
+#include "TFile.h"
+#include "TTree.h"
+#include "AnitaEventSummary.h" 
+#include "FFTtools.h"
+#include "BaseList.h"
 // #include "UsefulAdu5Pat.h"
 // .x drawPathsCloseToAnita.C
 //copy the top headers in the root console and run .x drawPathsCloseToAnita.C

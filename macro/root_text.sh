@@ -976,7 +976,7 @@ wais->Scan("run:eventNumber",isWaisV && "mostImpulsiveInd()>0 && run == 140","co
 wais->Draw("peak[1][0].snr>>Thermal(100,,)",thermal_sample && aboveHorizon,"colz")
 
 
-map_unweighted->segmentationScheme()->Draw("colz",map_unweighted->getProbSums(true));
+map_unweighted->segmentationScheme()->Draw("colz",map_unweighted->getProbSums(false));
 map_unweighted->segmentationScheme()->Draw("colz",map_unweighted->getOccludedFractionSum());
 map_unweighted->segmentationScheme()->Draw("colz",map_unweighted->getUniformPS());
 map_unweighted->segmentationScheme()->Draw("colz",map_unweighted->getBaseWeightedUniformPS());
@@ -986,7 +986,7 @@ map_unweighted->segmentationScheme()->Draw("colz",map_unweighted->getUniformPSwi
 map_unweighted->getProbSumsIntegral(true)
 tmp_copy->Integral()
 drawGroupings(map_unweighted)
-map_unweighted->showClusters(1,0)
+map_unweighted->showClusters(1,0,"mapcolz")
 
 trend->Draw("avgNSinglets:numOfFiles>>h(20,,,20,,)","","*")
 trend->Draw("N_singlets:percentOfData>>h(100,0,1,100,,)","","*")
@@ -1211,4 +1211,23 @@ a4.Add("*30001*");
 #include "/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/cuts.C";
 a4.Draw("mostImpulsiveCoherent(2).snr/mostImpulsiveDeconvolved(2).snr>>h(300)",thermal_sample,"colz");
 h->GetXaxis()->SetTitle("coherent_snr/deconvolved_snr")
+
+
+
+///check hical is on or not:
+double a 
+double b
+Hical2::angleToHical(68160718, &a, &b)
+if a or b not = -999, means hical a or b is on.
+And the peak phi - heading should be very close to this a or b.
+anita4->Scan("FFTtools::wrap(anitaLocation.heading - peak[0][0].phi,360)","eventNumber == 68160718")
+
+
+
+
+TChain a4("anita4")
+a4.Add("*30002*")
+a4.Draw("theta:deconvImpulsivity>>h(300,,,300,,)","pol==1 && deconvImpulsivity<0.7","colz")
+h->FitSlicesX()
+h_2->Draw("colz")
 

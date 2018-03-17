@@ -3,6 +3,7 @@
 
 #include "AnitaEventSummary.h"
 #include "TF1.h" 
+#include "FFTtools.h"
 class TRandom; 
 class TProfile; 
 
@@ -84,7 +85,7 @@ namespace UCorrelator
   {
     public: 
      PointingResolutionParSNRModel() :  deconv(true){ ; } 
-     PointingResolutionParSNRModel(const TF1 & f_dtheta, const TF1 & f_dphi, bool use_deconvolved = true, double scale_by_cos_theta = true)
+     PointingResolutionParSNRModel(const TF1 & f_dtheta, const TF1 & f_dphi, bool use_deconvolved = true, double scale_by_cos_theta = false)
      : f_th(f_dtheta), f_ph(f_dphi), deconv(use_deconvolved), cos_theta_scale(scale_by_cos_theta)  {; } 
        ; 
 
