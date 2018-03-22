@@ -23,7 +23,7 @@ namespace UCorrelator
   {
     public:
       /** Create a correlator with the following options for the rough map */ 
-      Correlator(int nphi, double phimin, double phimax, int ntheta, double theta_lowest, double theta_highest, bool use_bin_center = false, bool scale_by_cos_theta = false, double baseline_weight = 0); 
+      Correlator(int nphi, double phimin, double phimax, int ntheta, double theta_lowest, double theta_highest, bool use_bin_center = false, bool scale_by_cos_theta = false, double baseline_weight = 0, double gain_sigma = 0); 
 
       /** Compute the rough correlation map for the event and pol */ 
       void compute(const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol); 
@@ -32,7 +32,7 @@ namespace UCorrelator
       const TH2D * getHist() const { return hist; } 
  
       /** Get the rough correlation map normalization */ 
-      const TH2I * getNorm() const { return norm; } 
+      const TH2D * getNorm() const { return norm; } 
       
 
       /** Compute a zoomed in map around phi and theta. nphi,dphi,ntheta,dtheta. If nant is non-zero, only the nearest nant antennas are used. You can use useme to avoid allocating a new TH2.  */ 
@@ -66,10 +66,10 @@ namespace UCorrelator
       AnalysisWaveform* correlations[NANTENNAS][NANTENNAS]; 
 
       TH2D *hist; 
-      TH2I *norm; 
+      TH2D *norm; 
 
       std::vector<TH2D*> hists; 
-      std::vector<TH2I*> norms; 
+      std::vector<TH2D*> norms; 
 
 #ifndef NUM_ANITAS
 #define NUM_ANITAS 4
@@ -86,9 +86,10 @@ namespace UCorrelator
       bool use_bin_center; 
       bool scale_cos_theta; 
       double baselineWeight;
+      double gainSigma; 
 
       AnalysisWaveform * getCorrelation(int ant1, int ant2); 
-      void doAntennas(int ant1, int ant2, TH2D ** hist, TH2I ** norm, const UCorrelator::TrigCache * tc, const double * center_point  = 0); 
+      void doAntennas(int ant1, int ant2, TH2D ** hist, TH2D ** norm, const UCorrelator::TrigCache * tc, const double * center_point  = 0); 
       void reset(); 
 
       CorrelatorLocks * locks; 

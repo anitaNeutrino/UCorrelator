@@ -18,8 +18,9 @@ namespace UCorrelator
 
   /*=====
     TH1::GetRMS(3) stopped working so here is a function to just calculate it by hand
+    If lims is passed, the rms will only be computed within bins  [ x0, x1, y0, y1] 
    */
-  double getZRMS(const TH2*);
+  double getZRMS(const TH2*, const int * lims = 0);
 
   /*====
     Need a way to easily rotate the maps to account for heading.  Makes a new map since the input is probably const
