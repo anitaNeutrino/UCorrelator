@@ -903,12 +903,15 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
   }
 
   if (draw){
-    printf("========================================================================================================\n"); 
-    printf("|Cluster Size\t|N of Clusters\t|N of weighted Cluster\t|N of Cluster near Base\t|N of Cluster not near Base\t|\n");
-    printf("--------------------------------------------------------------------------------------------------------\n");
+    printf("================================================================================================================\n"); 
+    printf("|Cluster Size\t|N of Clusters\t|N of weighted Clusters\t|N of Clusters nearBase\t|N of Clusters not near Base\t|\n");
+    printf("----------------------------------------------------------------------------------------------------------------\n");
     for (int row = 0; row < n_rows; row++) 
     {
-      if (row < n_rows-1)
+      if(mins[row] == maxes[row]){
+        printf ("|     %d      ", mins[row]);
+      }
+      else if(row < n_rows-1)
         printf ("|  %d - %d   ", mins[row], maxes[row]); 
       else
         printf("|  %d +       ",mins[row]);
@@ -917,7 +920,7 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
 
        
     }
-    printf("--------------------------------------------------------------------------------------------------------\n");  
+    printf("----------------------------------------------------------------------------------------------------------------\n");  
   }
 
   
@@ -928,7 +931,14 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
     segmentationScheme()->Draw(option,&mapOfClusterSizes[0]);
   }else if(draw == 3){
     segmentationScheme()->Draw(option,&uniform_ps_weighted_by_base[0]);
-  }   
+  }  
+
+  // calculate the total number of clusters near base
+  double sumNumOfClusterNearBase = 0;
+  for (int row =0; row < n_rows; row++){
+    sumNumOfClusterNearBase+= n_clusters_near_base[row];
+  }
+
 
 
   // TCanvas * canvas = new TCanvas;
@@ -953,7 +963,6 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
     }
   }
 
-  std::cout<< "sumFractionOfEventsNearBase="<<sumFractionOfEventsNearBase<<std::endl;
   // std::cout<< countNofClusterWithBase<< " \t" << countNofClusterWithoutBase<< " \t"<< countNofEventsWithBase<< " \t"<< countNofEventsWithoutBase<< " \t"<< countNofBase << " \t"<< countNofUnkownBase<< std::endl;
 
   //background estimate:
@@ -968,8 +977,12 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
   }
   float B0 = float(D)*float(A)/float(C);
   float B1 = float(D)*float(A)/float(C1);
+  std::cout<<"NumOfClusters = "<< clusterSizes.size() << " \tweightedNumOfClusters = "<<sumFractionOfEventsNearBase<< "\t NumOfClusterNearBase="<< sumNumOfClusterNearBase << std::endl;
+  std::cout<< "Anthropogenic Singlets(ABCD mehtod)="<< B0<< "\t Anthropogenic Singlets(Weighted ABCD mehtod)="<< B1<< std::endl;
+
+  std::cout<<"\n\n" <<std::endl;
   std::cout<< "B0="<< B0<< " B1="<< B1 <<" of B="<< B<<std::endl;
-  std::cout<<sumFractionOfEventsNearBase<< " \t"<< A<< " \t"<< C << " \t"<< D<< " \t"<< B0 << " \t"<< B << " \t"<< C1<< " \t"<< B1 << std::endl;
+  std::cout<<sumNumOfClusterNearBase<< " \t"<<sumFractionOfEventsNearBase<< " \t"<< A<< " \t"<< C << " \t"<< D<< " \t"<< B0 << " \t"<< B << " \t"<< C1<< " \t"<< B1 << std::endl;
 
 
   // TGraph *gr1 = new TGraph(N, x, y);

@@ -41,13 +41,13 @@ void plotFisher(const char * var = "deconvImpulsivity")
 
   auto legend = new TLegend(0.1,0.7,0.48,0.9);
    // legend->SetHeader("The Legend Title","C"); // option "C" allows to center the header
-   legend->AddEntry("h1","Above Horizontal Events","l");
-   legend->AddEntry("h2","Below Horizontal Events","l");
+   legend->AddEntry("h1","theta>-3.5 Events","l");
+   legend->AddEntry("h2","theta<-3.5 Events","l");
    legend->AddEntry("h3","MinBias Energy222 MC","l");
    legend->AddEntry("h4","Wais data","l");
    legend->Draw();
    // h1->GetXaxis()->SetTitle("Fisher");
-   h1->GetXaxis()->SetTitle("deconvFilteredImpulsivity");
+   h1->GetXaxis()->SetTitle("impulsivity");
 
   fisher_plots.cd(); 
   h1->Write(); 
