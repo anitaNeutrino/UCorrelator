@@ -39,13 +39,15 @@ UCorrelator::ProbabilityMap::ProbabilityMap(const Params * par)
     uniform_ps_weighted_by_base(p.seg->NSegments(),0),
     uniform_ps_with_base(p.seg->NSegments(),0),
     uniform_ps_without_base(p.seg->NSegments(),0),
+    mapOfClusterSizes(p.seg->NSegments(),0),
+    mapOfClusterIndexs(p.seg->NSegments(),0),
     eventCountPerBase(BaseList::getNumBases() + BaseList::getNumPaths(), 0)
 {
   //blank, initialization is above
 }
 
 
-int UCorrelator::ProbabilityMap::add(double & p_ground, const AnitaEventSummary * sum, const Adu5Pat * pat, AnitaPol::AnitaPol_t pol,
+int UCorrelator::ProbabilityMap::add(int& NOverlapedBases, double & p_ground, const AnitaEventSummary * sum, const Adu5Pat * pat, AnitaPol::AnitaPol_t pol,
                                      int peak, double weight, TFile * debugfile) 
 {
 
@@ -64,7 +66,7 @@ int UCorrelator::ProbabilityMap::add(double & p_ground, const AnitaEventSummary 
   
   TLockGuard lock(&m); 
 
-  int NOverlapedBases = base_ps_to_fill.size(); 
+  NOverlapedBases = base_ps_to_fill.size(); 
 
   int NOfSegments = segments_to_fill.size(); 
   double norm = 0; 
@@ -783,21 +785,16 @@ int UCorrelator::ProbabilityMap::countBasesInThisSegment(int seg) const{
   }
   return countBases;
 }
-int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClusterSizes, std::vector<double> * clusterSizes, double threshold) const
+int UCorrelator::ProbabilityMap::doClustering(double threshold)
 {
   //ps are map from seg index to seg's ps. All the wgt from one event should clustered and sum to 1. 
   std::vector<bool> consumed (p.seg->NSegments()); 
   int nClusters = 0; 
 
-
-  //clean up input 
-  if (clusterSizes) clusterSizes->clear(); 
-  if (mapOfClusterSizes) memset(mapOfClusterSizes, 0, sizeof(double) * p.seg->NSegments()); 
-
   for (int i = 0; i < p.seg->NSegments(); i++) 
   {
     //only clustering segments when the segment's weight larger than a threshold.
-    if (ps[i]<=threshold){
+    if (uniform_ps[i]<=threshold){
       consumed[i] = true;
       continue;
     } 
@@ -810,8 +807,10 @@ int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClus
      Cluster.push_back(i); 
      consumed[i] = true; 
      int n_in_Cluster = 0; 
-     //i start with 0. cluster_sum initially will have the first segment's ps value.
-     double cluster_sum = ps[i];
+     //i start with 0. cluster_sum initially will have the first segment's uniform_ps value.
+     double cluster_sum = uniform_ps[i];
+     double cluster_sum_with_base = uniform_ps_with_base[i];
+     double cluster_sum_without_base = uniform_ps_without_base[i];
 
      while (n_in_Cluster < (int)  Cluster.size()) 
      {
@@ -823,13 +822,15 @@ int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClus
        segmentationScheme()->getNeighbors(seg, &neighbors); 
        for (size_t j = 0; j < neighbors.size(); j++) 
        {
-        // only cluster the neighbour segment when their ps larger than threshold and not consumed before.
-         if (ps[neighbors[j]]>threshold && !consumed[neighbors[j]])
+        // only cluster the neighbour segment when their uniform_ps larger than threshold and not consumed before.
+         if (uniform_ps[neighbors[j]]>threshold && !consumed[neighbors[j]])
          {
            consumed[neighbors[j]] = true;
            Cluster.push_back(neighbors[j]);
-           //cluster_sum added the neighbour segs' ps togother
-           cluster_sum += ps[neighbors[j]];
+           //cluster_sum added the neighbour segs' uniform_ps togother
+           cluster_sum += uniform_ps[neighbors[j]];
+           cluster_sum_with_base += uniform_ps_with_base[neighbors[j]];
+           cluster_sum_without_base += uniform_ps_without_base[neighbors[j]];
          }
        }
      }
@@ -837,17 +838,17 @@ int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClus
 
      //cluster_sum is the number of events(prob sums together = number of events) in this cluster. It is calculated by clustering the segments and summing the weights. 
      //clusterSizes is a vector of length = how many clusters.
-     if (clusterSizes) clusterSizes->push_back(cluster_sum); 
+     clusterSizes.push_back(cluster_sum); 
+     clusterSizes_with_base.push_back(cluster_sum_with_base); 
+     clusterSizes_without_base.push_back(cluster_sum_without_base); 
 
-     if (mapOfClusterSizes) 
+    // loop through the current cluster's segment index i.
+     for (size_t i = 0; i < Cluster.size(); i++) 
      {
-      // loop through the current cluster's segment index i.
-       for (size_t i = 0; i < Cluster.size(); i++) 
-       {
-        //Cluster[i] is one segment's index number
-        //mapOfClusterSizes is a map from segment index to a cluster's prob sums(the cluster that this segment is in.)
-         mapOfClusterSizes[Cluster[i]] = cluster_sum; 
-       }
+      //Cluster[i] is one segment's index number
+      //mapOfClusterSizes is a map from segment index to a cluster's prob sums(the cluster that this segment is in.)
+       mapOfClusterSizes[Cluster[i]] = cluster_sum; 
+       mapOfClusterIndexs[Cluster[i]] = nClusters; 
      }
   }
   
@@ -855,17 +856,20 @@ int UCorrelator::ProbabilityMap::doClustering(const double* ps,double* mapOfClus
 
 }
 
+double  UCorrelator::ProbabilityMap::evaluateEvent(double theta,double phi,const Adu5Pat * gps){
+  PayloadParameters guess;  
+  int status =  PayloadParameters::findSourceOnContinent(theta,phi,gps, &guess, p.refract, p.collision_detection ? p.collision_params.dx : 0);
+  // if (status == 0){
+  //   // over horizon
+  //   return -1;
+  // }else{
+    guess.source.to(AntarcticCoord::STEREOGRAPHIC); 
+    return mapOfClusterIndexs[segmentationScheme()->getSegmentIndex(guess.source)];
+  // } 
+}
+
 std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool blind, const char * option) const
 {
-
-
-  //base table
-  std::vector<double> clusterSizes; 
-  std::vector<double> mapOfClusterSizes(segmentationScheme()->NSegments());
-  //returned clusterSizes: a lsit of cluster that take include all probabilty projected to ground.
-  double threshold = 0;// set threshold to 0. This affects the grouping stop criteria. 0 means if a neighbour segment have non-zero ps, it will be clustered.
-  doClustering(&uniform_ps_weighted_by_base[0], &mapOfClusterSizes[0], &clusterSizes, threshold); 
-
 
   const int maxes[] = {1,2,3,4,5,6,7,8,9,10,20,50,100,(int) 100e6}; 
   const int mins[] =  {1,2,3,4,5,6,7,8,9,10,11,21,51,101}; 
@@ -881,9 +885,11 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
   memset(n_clusters_weighted,0, n_rows * sizeof(float)); 
   for (size_t i = 0; i < clusterSizes.size(); i++) 
   {
-    int n_nearBase = round(clusterSizes[i]); 
-    int n_notnearBase =round((clusterSizes[i] - round(clusterSizes[i]))*1000000);
-    int n = n_nearBase + n_notnearBase;
+    int n = round(clusterSizes[i]); 
+    int n_nearBase =round(clusterSizes_with_base[i]);
+    int n_notnearBase = round(clusterSizes_without_base[i]); 
+    std::cout<< clusterSizes[i] <<" \t"<<n << " \t"<< n_nearBase<< " \t" <<n_notnearBase <<  std::endl;
+
     float fractionOfEventsNearBase = n_nearBase/float(n);
 
     for (int row = 0; row < n_rows; row++)
@@ -930,6 +936,8 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
   }else if(draw == 2){
     segmentationScheme()->Draw(option,&mapOfClusterSizes[0]);
   }else if(draw == 3){
+    segmentationScheme()->Draw(option,&mapOfClusterIndexs[0]);
+  }else if(draw == 4){
     segmentationScheme()->Draw(option,&uniform_ps_weighted_by_base[0]);
   }  
 
@@ -950,9 +958,9 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
   int nSinglets_unkownBase = 0;
   for (int i = 0; i < clusterSizes.size(); i++) 
   {
-    int n_nearBase = round(clusterSizes[i]); 
-    int n_notnearBase =round((clusterSizes[i] - round(clusterSizes[i]))*1000000);
-    int n = n_nearBase + n_notnearBase;
+    int n = round(clusterSizes[i]); 
+    int n_nearBase =round(clusterSizes_with_base[i]);
+    int n_notnearBase = round(clusterSizes_without_base[i]); 
     float fractionOfEventsNearBase = n_nearBase/float(n);
     sumFractionOfEventsNearBase +=fractionOfEventsNearBase;
     // std::cout<< "\tcluster i="<< i << "\t #events = "<< n <<  "\t #eventNearBase = "<< n_nearBase<< "\t fractionOfEventsNearBase = "<< fractionOfEventsNearBase << std::endl;

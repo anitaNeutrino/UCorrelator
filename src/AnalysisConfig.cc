@@ -5,7 +5,7 @@
 #include "AnitaVersion.h"
 
 static const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25", "Histogram" }; 
-static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","HarmSignalOnly", "TUFFs", "notches_260_375_0"}; 
+static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","HarmSignalOnly", "TUFFs", "A4ImpulseTUFFs"}; 
 
 
 

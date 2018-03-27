@@ -130,9 +130,15 @@ void doTMVA(int data_start = 50, int data_stop=367, const char * mc_dir = "simul
   dl->AddVariable("mapPeak"); 
   dl->AddVariable("mapSNR"); 
   dl->AddVariable("deltaHilbertPeak"); 
-  dl->AddVariable("deconvHilbertPeak"); 
-  dl->AddVariable("deconvImpulsivity"); 
-  dl->AddVariable("deconvLinearPolFraction"); 
+  dl->AddVariable("hilbertPeak"); 
+  dl->AddVariable("impulsivity"); 
+  dl->AddVariable("impulsivityXpol"); 
+  dl->AddVariable("impulsivityH"); 
+  dl->AddVariable("impulsivityV"); 
+  dl->AddVariable("linearPolFraction"); 
+  dl->AddVariable("linearPolAngle"); 
+  dl->AddVariable("circPolFraction"); 
+  dl->AddVariable("totalPolFraction"); 
   // dl->AddVariable("secondPeakRatio");
   dl->AddSpectator("theta"); 
   dl->AddSpectator("run"); 

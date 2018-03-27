@@ -4,19 +4,20 @@
 //copy the top headers in the root console and run .x drawPathsCloseToAnita.C
 void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/sparsedAllRuns/sparsedAllRuns.root"){
   gStyle->SetPalette(54);
-  TCanvas * canvas = new TCanvas("Clusters and Bases","Clusters and Bases",800,800); 
-  TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_2.0sigma_30002_mod1_remainder0_41_367.root");; 
+  TCanvas * canvas = new TCanvas("Clusters","Clusters",200,200);
+  canvas->SetCanvasSize(5000,5000); 
+  TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_3.5sigma_30002_mod1_remainder0_41_367.root");; 
   // UCorrelator::ProbabilityMap * map_weighted = (UCorrelator::ProbabilityMap*) probabilityMap->Get("map_weighted");
-  UCorrelator::ProbabilityMap * map_unweighted = (UCorrelator::ProbabilityMap*) probabilityMap->Get("map_unweighted");
+  UCorrelator::ProbabilityMap * maps = (UCorrelator::ProbabilityMap*) probabilityMap->Get("maps");
   TTree * events = (TTree *) probabilityMap->Get("events");
-  // map_unweighted->segmentationScheme()->Draw("colz",map_unweighted->getBaseWeightedUniformPS());
-  map_unweighted->segmentationScheme()->Draw("mapcolz",map_unweighted->getProbSums(true));
+  // maps->segmentationScheme()->Draw("colz",maps->getBaseWeightedUniformPS());
+  maps->segmentationScheme()->Draw("mapcolz",maps->getProbSums(true));
 
 
   TGraphAntarctica* grEvents = new TGraphAntarctica();
   grEvents->SetName("grEvents");
   grEvents->SetMarkerColor(3);
-  grEvents->SetMarkerStyle(7);
+  grEvents->SetMarkerStyle(1);
   grEvents->SetMarkerSize(1);
   double event_longitude, event_latitude;
   events->SetBranchAddress("longitude",&event_longitude);
@@ -41,7 +42,7 @@ void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrin
   TGraphAntarctica* grFlightPath = new TGraphAntarctica();
   grFlightPath->SetName("grFlightPath");
   grFlightPath->SetMarkerColor(2);
-  grFlightPath->SetMarkerStyle(6);
+  grFlightPath->SetMarkerStyle(1);
   grFlightPath->SetMarkerSize(1);
   // for(int i=0; i <  BaseList::getNumAbstractBases(); i++){auto gr = new TGraphAntarctica(BaseList::getAbstractBase(i), 600); gr->SetLineColor((i%10)+1);  gr->SetMarkerColor((i%10)+1); cout << gr->GetN() << endl; gr->Draw("lp");
 
@@ -62,11 +63,11 @@ void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrin
       	    grs[i]->SetTitle(BaseList::getAbstractBase(i).getName());
             if(i< BaseList::getNumBases()){
               grs[i]->SetMarkerColor(7);
-              grs[i]->SetMarkerStyle(7);
+              grs[i]->SetMarkerStyle(1);
               grs[i]->SetMarkerSize(1);
             }else{
               grs[i]->SetMarkerColor(6);
-              grs[i]->SetMarkerStyle(6);
+              grs[i]->SetMarkerStyle(1);
               grs[i]->SetMarkerSize(1);
             }
       	    
@@ -99,6 +100,14 @@ void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrin
    legend->AddEntry(BaseList::getAbstractBase(100).getName(),"Bases","p");
    legend->AddEntry(BaseList::getAbstractBase(550).getName(),"Plane Paths or transient","p");
    legend->Draw();
+
+  canvas->Print("Clusters.eps","eps");
+
+  // TImage *img = TImage::Create();
+  // img->FromPad(canvas);
+  // img->WriteImage("Clusters.eps");
+  // delete img;
+
 
  
 }

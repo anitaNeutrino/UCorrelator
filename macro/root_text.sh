@@ -1014,7 +1014,6 @@ TGraphAntarctica::makeGpsGraph(140,140)->Draw()
 
 #include "BaseList.h"
 #include "UsefulAdu5Pat.h"
-#include "ProbabilityMap.h" 
 .x drawPathsCloseToAnita.C
 
 
@@ -1053,6 +1052,12 @@ anita4->Draw("deconvolved_filtered[1][0].impulsivityMeasure:deconvolved_filtered
 anita4->Draw("deconvolved_filtered[1][0].impulsivityMeasure:deconvolved_filtered[0][0].impulsivityMeasure>>h2v1(300,0,1,300,0,1)",thermal_sample && h2 && v1,"colz")
 anita4->Draw("deconvolved_filtered[1][0].impulsivityMeasure:deconvolved_filtered[0][0].impulsivityMeasure>>h2v2(300,0,1,300,0,1)",thermal_sample && h2 && v2,"colz")
 
+#include "macro/cuts.C"
+TChain anita4("anita4");
+anita4.Add("*30001*.root");
+anita4.Draw("deconvolved_filtered[1][0].impulsivityMeasure:deconvolved_filtered[0][0].impulsivityMeasure>>belowHorizon(300,0,1,300,0,1)",thermal_sample && belowHorizon,"colz")
+anita4.Draw("deconvolved_filtered[1][0].impulsivityMeasure:deconvolved_filtered[0][0].impulsivityMeasure>>aboveHorizontal(300,0,1,300,0,1)",thermal_sample && aboveHorizontal,"colz")
+anita4.Draw("deconvolved_filtered[1][0].impulsivityMeasure:deconvolved_filtered[0][0].impulsivityMeasure>>betweenHorizonAndHorizontal(300,0,1,300,0,1)",thermal_sample && betweenHorizonAndHorizontal,"colz")
 
 
 
@@ -1231,3 +1236,8 @@ a4.Draw("theta:deconvImpulsivity>>h(300,,,300,,)","pol==1 && deconvImpulsivity<0
 h->FitSlicesX()
 h_2->Draw("colz")
 
+
+cluster->Scan("index:n:base:noBase:H:Mix:V:avgLinearPolFrac:avgLinearPolAngle:longitude:latitude","","colsize=7 precision=7 col=:::::::20.3:20.3:10.10:10.10")
+
+
+convert -density 2000 Clusters.eps -flatten Clusters.png;

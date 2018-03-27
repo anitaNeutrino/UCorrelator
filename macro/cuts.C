@@ -14,7 +14,7 @@ TCut triggered(" abs(mostImpulsivePeak(2).hwAngle) < 60");
 TCut notMasked ("!mostImpulsivePeak(2).masked"); 
 TCut aboveHorizontal("mostImpulsivePeak(2).theta<0");
 TCut belowHorizon("mostImpulsivePeak(2).theta>6");
-TCut betweenHorizonAndHorizontal("mostImpulsivePeak(2).theta>0 && mostImpulsivePeak(2)<6");
+TCut betweenHorizonAndHorizontal("mostImpulsivePeak(2).theta>0 && mostImpulsivePeak(2).theta<5");
 // TCut isntSidelobe (" peak[1][0].phi_separation > 10");
 TCut notGlitch("flags.hasGlitch == 0"); 
 TCut isGlitch("flags.hasGlitch == 1");

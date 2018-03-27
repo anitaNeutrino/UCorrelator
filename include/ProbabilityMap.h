@@ -144,7 +144,7 @@ namespace UCorrelator
       int removeWith(const ProbabilityMap & other); 
 
       /** Add a point to the clustering. Returns the number of segments that had a non-zero contributions */ 
-      int add(double & p_ground, const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, double weight = 1, TFile * debugfile = 0); 
+      int add(int & NOverlapedBases, double & p_ground, const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, double weight = 1, TFile * debugfile = 0); 
 
 
 
@@ -226,10 +226,15 @@ namespace UCorrelator
        *  */ 
       int countBasesInThisSegment(int seg) const;
       // int groupAdjacent(const double * vals_to_group, std::vector<std::vector<int> > *  groups  = 0, double* counts = 0, std::vector<double>  * distribution = 0, double val_threshold = 0) const; 
-      //peng's version of groupAdjacent. Since the parameter name are so different. I changed the function name to doClustering
-      int doClustering(const double * ps, double* mapOfClusterSizes, std::vector<double>* clusterSizes, double val_threshold) const; 
+      //return the clusters results to clusterSizes and mapOfClusterSizes
+      //threshold is the min p on a bin to do clustering. Set to 0 so it is trival.
+      int doClustering(double threshold = 0);
+      // given event's longitude and latitude, return the cluster id that this event belongs to.
+      //must call after the doClustering
+      double evaluateEvent(double theta,double phi,const Adu5Pat * gps);
 
       int dumpNonZeroBases() const; 
+      // use the results form doClustering
       std::pair<int, int> showClusters(int draw = 1, bool blind = true, const char * option = "colz") const; 
       
     private:
@@ -253,7 +258,13 @@ namespace UCorrelator
       std::vector<double> uniform_ps_without_base; 
 
       //indexed of Base, number of events near this base.
-      std::vector<int> eventCountPerBase; ; 
+      std::vector<int> eventCountPerBase;
+
+      std::vector<double> mapOfClusterSizes;
+      std::vector<double> mapOfClusterIndexs;
+      std::vector<double> clusterSizes;
+      std::vector<double> clusterSizes_with_base;
+      std::vector<double> clusterSizes_without_base;
 
       //guards the add method (everything else doesn't touch the internals) 
       TMutex m; 

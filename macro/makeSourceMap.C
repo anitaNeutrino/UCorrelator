@@ -3,8 +3,8 @@
 #include "AnitaDataset.h" 
  
 // TCut cutString("");
-TCut cutString("theta<-3.5 && deconvImpulsivity>0.71");
-// TCut cutString("theta<-3.5 && deconvImpulsivity>0.71");
+TCut cutString("theta<-3.5 && impulsivity>0.71");
+// TCut cutString("theta<-3.5 && impulsivity>0.71");
 // const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && theta < 40 )";
 // const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && isMostImpulsive && !payloadBlast && MaxPeak < 1000 && theta < 40 && ( (HPolTrigger && iteration < 5) || (VPolTrigger && iteration > 4))  && !isPulser  )";
 
@@ -39,7 +39,7 @@ UCorrelator::ProbabilityMap::Params * map_params()
   p->point = snrResolutionModel; 
   p->collision_detection = false; 
   p->verbosity = 0; // verbosity level for output info.
-  p->maximum_distance = 6.5;
+  p->maximum_distance = 3.5;
   // p->min_p_on_continent = 0;
  
 
@@ -63,7 +63,7 @@ int combineSourceMaps(const char * dir, const char * output)
   TString fname; 
   TIter next(files); 
 
-  UCorrelator::ProbabilityMap * map_u = 0;
+  UCorrelator::ProbabilityMap * map = 0;
   TFile outf(output,"RECREATE");
   //loop through the files in the dir, add map together and put a new map in output folder. 
   while ((file=(TSystemFile*) next()))
@@ -74,21 +74,21 @@ int combineSourceMaps(const char * dir, const char * output)
     {
       TFile * f = new TFile(fname); 
       printf("Considering %s\n", fname.Data());       
-      UCorrelator::ProbabilityMap * m_u = (UCorrelator::ProbabilityMap*) f->Get("map_unweighted");
-      if (!map_u)
+      UCorrelator::ProbabilityMap * m_u = (UCorrelator::ProbabilityMap*) f->Get("maps");
+      if (!map)
       {
-        map_u = m_u; 
+        map = m_u; 
       }
       else
       {
-        map_u->combineWith(*m_u); 
+        map->combineWith(*m_u); 
         delete m_u; 
       }
     }
   }
 
   outf.cd(); 
-  map_u->Write("map_unweighted"); 
+  map->Write("maps"); 
 
   return 0;
 }
@@ -101,7 +101,7 @@ int _trendOfSinglets(const char * treeName, const char* summaryFileFormat, const
   for(int i = 0; i < mod; i++){
     std::cout << "loaded the map "<< i << std::endl;
     TFile * tempFile = TFile::Open(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, i ,start_run, end_run)); 
-    maps.push_back((UCorrelator::ProbabilityMap*) tempFile->Get("map_unweighted"));
+    maps.push_back((UCorrelator::ProbabilityMap*) tempFile->Get("maps"));
     tempFile->Close();
     // delete tempFile;
   }
@@ -132,7 +132,7 @@ int _trendOfSinglets(const char * treeName, const char* summaryFileFormat, const
         //start 
         std::cout <<"add file index "<< 0 << std::endl;
         combineFile = new TFile(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, 0 ,start_run, end_run)); 
-        map = (UCorrelator::ProbabilityMap*) combineFile->Get("map_unweighted");
+        map = (UCorrelator::ProbabilityMap*) combineFile->Get("maps");
       }else{ 
         if (i == 0){
           std::cout <<"add file index "<< (i + l - 1)%mod << std::endl;
@@ -204,7 +204,7 @@ std::set<int> * getRemovedEvents(const char * file, std::vector<int>  * runs = 0
   return removed; 
 }
 
-int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run = 50, int end_run =367, const char * filePrefix = "_6.5sigma_1pc_", int mod=1, int mod_remainder=0)
+int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run = 50, int end_run =367, const char * filePrefix = "_3.5sigma_1pc_", int mod=1, int mod_remainder=0)
 {
 
   // Start getting the run / event numbers of events that pass our cuts
@@ -214,7 +214,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   AnitaEventSummary * sum = new AnitaEventSummary; 
   Adu5Pat * gps = new Adu5Pat; 
 
-  int total_event_n = c.Draw("run:eventNumber:pol*5+peak:deconvImpulsivity",  cutString, "goff" ); 
+  int total_event_n = c.Draw("run:eventNumber:pol*5+peak:impulsivity:linearPolFrac:linearPolAngle",  cutString, "goff" ); 
   printf("%d events pass selection\n", total_event_n); 
 
 
@@ -225,20 +225,27 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   UCorrelator::ProbabilityMap map(p); 
 
   TTree tr("events","events"); 
-  int run, ev, pol, peak,  nsegs ; 
-  double S, deconvImpulsivity, p_ground, theta,snr,longitude,latitude; 
+  int run, ev, pol, peak,  nsegs, NOverlapedBases; 
+  double S, impulsivity,impulsivityH,impulsivityV,linearPolFrac,linearPolAngle, p_ground, theta,phi,snr,longitude,latitude; 
   tr.Branch("event",&ev); 
   tr.Branch("run",&run); 
   tr.Branch("pol",&pol); 
   tr.Branch("peak",&peak); 
   tr.Branch("S",&S); 
-  tr.Branch("deconvImpulsivity",&deconvImpulsivity);
+  tr.Branch("impulsivity",&impulsivity);
+  tr.Branch("impulsivityH",&impulsivityH);
+  tr.Branch("impulsivityV",&impulsivityV);
+  tr.Branch("linearPolFrac",&linearPolFrac);
+  tr.Branch("linearPolAngle",&linearPolAngle);
+  tr.Branch("NOverlapedBases",&NOverlapedBases);
   tr.Branch("p_ground",&p_ground);
   tr.Branch("theta",&theta);
+  tr.Branch("phi",&phi);
   tr.Branch("nsegs",&nsegs);
   tr.Branch("snr",&snr);
   tr.Branch("longitude",&longitude); 
   tr.Branch("latitude",&latitude); 
+  tr.Branch("gps",&gps); 
   
 
   int loaded_run = 0; 
@@ -246,7 +253,6 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   TTree * sumtree = 0; 
   double last_integ = 0; 
   double last_integ_norm = 0; 
-  // for (int i = mod_remainder; i < total_event_n; i+=mod) 
   for(int i =0; i< total_event_n; i++){
     if (TString::Hash(&i, sizeof(i))%mod != mod_remainder){
       continue;
@@ -275,24 +281,52 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
     //   continue;
     // } 
     peak = int(c.GetV3()[i]) % 5; 
-    deconvImpulsivity = c.GetV4()[i]; 
+    impulsivity = c.GetV4()[i]; 
     // nsegs = map_weighted->add(sum, gps, AnitaPol::AnitaPol_t(pol), peak, S); 
-    nsegs = map.add(p_ground, sum, gps, AnitaPol::AnitaPol_t(pol), peak, S);
+    nsegs = map.add(NOverlapedBases, p_ground, sum, gps, AnitaPol::AnitaPol_t(pol), peak, S);
+    if(pol == 0){
+      impulsivityH = sum->deconvolved_filtered[0][peak].impulsivityMeasure;
+      impulsivityV = sum->deconvolved_filtered[1][0].impulsivityMeasure;
+    }else{
+      impulsivityH = sum->deconvolved_filtered[0][0].impulsivityMeasure;
+      impulsivityV = sum->deconvolved_filtered[1][peak].impulsivityMeasure;
+    }
+    linearPolFrac = c.GetVal(4)[i];
+    linearPolAngle = c.GetVal(5)[i];
     theta = -1*sum->peak[pol][peak].theta;
+    phi = sum->peak[pol][peak].phi;
     snr = sum->peak[pol][peak].snr;
     longitude = sum->peak[pol][peak].longitude;
     latitude = sum->peak[pol][peak].latitude;
     // if(p_ground< 0.1){    
-      printf("index= %d \trun = %d \tevn= %d \timpulsivity= %g \tS= %g\t nsegs= %d \tp_ground= %g \ttheta= %g \tsnr=%g \n",i,run,ev,deconvImpulsivity,S,nsegs,p_ground, theta, snr);
+      printf("index= %d \trun = %d \tevn= %d \timpulsivity= %g \tS= %g\t nsegs= %d \tp_ground= %g \ttheta= %g \tsnr=%g \n",i,run,ev,impulsivity,S,nsegs,p_ground, theta, snr);
       // std::cout<< "\tsnr = "<< sum->deconvolved_filtered[pol][peak].snr << " longitude="<<sum->peak[pol][peak].longitude<<" latitude"<<sum->peak[pol][peak].latitude<< std::endl; 
     // }
     tr.Fill(); 
   }
   //doClustering
+  map.doClustering(); 
   //each event find it belongs to which cluster.
+
+  double indexOfCluster;
+  TBranch *branchIndexOfCluster = tr.Branch("indexOfCluster",&indexOfCluster);
+  tr.SetBranchAddress("theta",&theta);
+  tr.SetBranchAddress("phi",&phi);
+  tr.SetBranchAddress("gps",&gps);
+  tr.SetBranchAddress("nsegs",&nsegs);
+  for(int i =0; i< tr.GetEntries(); i++){
+    tr.GetEntry(i);
+    if(nsegs!=0){
+      indexOfCluster = map.evaluateEvent(-1*theta,phi, gps);
+    }else{
+      indexOfCluster = -1;
+    }
+    printf("%g ",indexOfCluster);
+    // indexOfCluster = -1 :  the event does not project to ground with certern sigma, or nsegs == 0  
+    branchIndexOfCluster->Fill();
+  }
   f.cd(); 
-  map.Write("map_unweighted"); 
-  // map_weighted->Write("map_weighted"); 
+  map.Write("maps"); 
   tr.Write();
   clearTheObject(p);
   return 0; 
@@ -300,126 +334,130 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
 
 
 int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run, int end_run, const char * filePrefix, int mod, int mod_remainder) 
-{
-  const char * sourceMapTree = "map_unweighted";
-  TChain c(treeName); 
-  addRuns(c,start_run,end_run, thermalTreeFormat); 
-  TFile outputFile(TString::Format("source_maps_eval/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod,mod_remainder,start_run,end_run),"RECREATE"); 
-  //output file and output tree named overlap
-  TTree outputTree("overlap","Overlap"); 
-  double O=999,S,theta,base_sum,polangle,deconvImpulsivity,max_base_p,snr,longitude,latitude; 
-  int run,eventNumber,pol,peak,max_base_index;
-  double wgt = 1; 
-  double mcE = 0; 
-  int nclustered[10]; 
-  int removed = 0; 
-
-  //branches in outputTree, the main purpose are to fill those branches.
-  outputTree.Branch("O",&O); 
-  outputTree.Branch("S",&S); 
-  outputTree.Branch("run",&run); 
-  outputTree.Branch("deconvImpulsivity",&deconvImpulsivity); 
-  outputTree.Branch("eventNumber",&eventNumber); 
-  outputTree.Branch("pol",&pol); 
-  outputTree.Branch("theta",&theta); 
-  outputTree.Branch("nclustered",&nclustered,"nclustered[10]/I"); 
-  outputTree.Branch("polangle",&polangle); 
-  outputTree.Branch("base_sum",&base_sum); //ps sum from all bases.
-  outputTree.Branch("max_base_index",&max_base_index); // max ps base's id
-  outputTree.Branch("max_base_p",&max_base_p); //max ps base's ps
-  outputTree.Branch("weight",&wgt); // simulation event's weight 
-  outputTree.Branch("mcE",&mcE); // simlation evetns's energy
-  outputTree.Branch("peak",&peak); 
-  outputTree.Branch("removed",&removed); // is this event removed or not.
-  outputTree.Branch("snr",&snr); 
-  outputTree.Branch("longitude",&longitude); 
-  outputTree.Branch("latitude",&latitude); 
-  
+{  
   TFile sourceMapFile(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, mod_remainder,start_run, end_run)); 
-  UCorrelator::ProbabilityMap * map = (UCorrelator::ProbabilityMap*) sourceMapFile.Get(sourceMapTree); 
-  UCorrelator::ProbabilityMap * source_map = map; //for mc 
-  UCorrelator::ProbabilityMap::Params * map_pars = map_params(); 
-  int total_event_n = c.Draw("run:eventNumber:pol*5+peak:deconvImpulsivity",  cutString, "goff" ); 
+  TTree * events =(TTree *) sourceMapFile.Get("events"); 
+  int total_event_n = events->GetEntries();
   std::cout<< "total number of events: "<< total_event_n<< std::endl;
-  std::vector<std::vector<double> > counts(10, std::vector<double> (map->segmentationScheme()->NSegments())); 
+  int run, event, nsegs, pol, NOverlapedBases;
+  double impulsivity, impulsivityV, impulsivityH, linearPolFrac, linearPolAngle, indexOfCluster, longitude, latitude;
+  events->SetBranchAddress("run",&run);
+  events->SetBranchAddress("event",&event);
+  events->SetBranchAddress("nsegs",&nsegs);
+  events->SetBranchAddress("indexOfCluster",&indexOfCluster);
+  events->SetBranchAddress("pol",&pol);
+  events->SetBranchAddress("NOverlapedBases",&NOverlapedBases);
+  events->SetBranchAddress("impulsivity",&impulsivity);
+  events->SetBranchAddress("impulsivityV",&impulsivityV);
+  events->SetBranchAddress("impulsivityH",&impulsivityH);
+  events->SetBranchAddress("linearPolFrac",&linearPolFrac);
+  events->SetBranchAddress("linearPolAngle",&linearPolAngle);
+  events->SetBranchAddress("longitude",&longitude);
+  events->SetBranchAddress("latitude",&latitude);
+  int count_n[100]={0}, count_base[100]={0}, count_noBase[100]={0}, count_H[100]={0}, count_Mix[100]={0}, count_V[100]={0};
+  int count_baseH[100]={0}, count_baseMix[100]={0}, count_baseV[100]={0}, count_noBaseH[100]={0}, count_noBaseMix[100]={0}, count_noBaseV[100]={0};
+  double sum_linearPolFrac[100] = {0};
+  double sum_linearPolAngle[100] = {0};
+  double first_longitude[100] = {0};
+  double first_latitude[100] = {0};
 
-  AnitaEventSummary * sum = new AnitaEventSummary; 
-  Adu5Pat * gps = new Adu5Pat; 
-  int loaded_run = 0; 
-  TFile * sumfile = 0; 
-  TTree * sumtree = 0; 
-  // for (int i = mod_remainder; i < total_event_n; i+=mod){
   for(int i =0; i< total_event_n; i++){
-    //loop through thermal chain
-    if (TString::Hash(&i, sizeof(i))%mod != mod_remainder){
+    events->GetEntry(i);
+    int j = round(indexOfCluster);
+    if (nsegs == 0 or j <= 0){
       continue;
     }
-    run = c.GetV1()[i]; 
-    if (run!= loaded_run)
-    {
-        if (sumfile) delete sumfile; 
-        sumfile = new TFile(TString::Format(summaryFileFormat,run));        
-        gROOT->cd(); 
-        sumtree = (TTree*) sumfile->Get(treeName); 
-        sumtree->SetBranchAddress("summary",&sum); 
-        sumtree->SetBranchAddress("pat",&gps); 
-        sumtree->BuildIndex("eventNumber"); 
-        loaded_run =run; 
+    count_n[j]++ ;
+    sum_linearPolFrac[j] += linearPolFrac;
+    sum_linearPolAngle[j] += linearPolAngle;
+    if(first_longitude[j] == 0){
+      first_longitude[j] = longitude;
     }
-    //each eventNumber in c, get S, pol, peak, deconvImpulsivity, eventNumber
-    eventNumber = int(c.GetV2()[i]); 
-    S = c.GetW()[i]; 
-    pol = int(c.GetV3()[i]) / 5; 
-    // if(pol == 0){
-    //   continue;
-    // } 
-    peak = int(c.GetV3()[i]) % 5;
-    deconvImpulsivity = c.GetV4()[i]; 
-    //get more variables from summary file
-    sumtree->GetEntryWithIndex(eventNumber);  
-    polangle = 90/TMath::Pi() * TMath::ATan2(sum->deconvolved_filtered[pol][peak].max_dU, sum->deconvolved_filtered[pol][peak].max_dQ); 
-    theta = -1*sum->peak[pol][peak].theta; 
-    snr = sum->peak[pol][peak].snr; 
-    longitude = sum->peak[pol][peak].longitude;
-    latitude = sum->peak[pol][peak].latitude;
-    //fill the values for mc  
-    wgt = sum->mc.weight; 
-    mcE = sum->mc.energy; 
-    std::vector<std::pair<int,double> > base_contribution;
-    //The maximun density of each bin.
-    std::vector<std::pair<int,double> > max_dens;
-    double inv_two_pi_sqrt_det; 
-
-    //calculate the overlap between this current event with the prob map.
-    //got returned density and base_contribution
-    O = map->overlap(sum,gps,AnitaPol::AnitaPol_t(pol),peak,true,S, &base_contribution, UCorrelator::ProbabilityMap::OVERLAP_SUM_SQRTS, !removed,0,&max_dens,&inv_two_pi_sqrt_det) / sqrt(S); 
-    // if (mc) delete map; 
-   
-//    if (O < 0) O = -1; 
-      printf("i=%d, run=%d, evn=%d, impulsivity=%g, O=%g\n",i, run,eventNumber, deconvImpulsivity, O); 
-
-    max_base_index = -1;
-    base_sum = 0;
-    max_base_p = 0;
-    for (unsigned i = 0; i < base_contribution.size();i++){
-      //for each base in base_contribution of this event
-      // find the maximum prob density sum contribtion base. return that to max_base_index which is the base number.
-      if (base_contribution[i].second > max_base_p){
-        max_base_index = base_contribution[i].first;
-        max_base_p = base_contribution[i].second; 
+    if(first_latitude[j] == 0){
+      first_latitude[j] = latitude;
+    }
+    // this event overlap with some base
+    if(NOverlapedBases != 0){
+      count_base[j] ++;
+      if(impulsivityV - impulsivityH > 0.2){
+        count_V[j]++;
+        count_baseV[j]++;
+      }else if(impulsivityV - impulsivityH < -0.2){
+        count_H[j]++;
+        count_baseH[j]++;
+      }else{
+        count_Mix[j]++;
+        count_baseMix[j]++;
       }
-      // base sum if suming of all ps from all bases for this events.
-      base_sum += base_contribution[i].second; 
+    }else{
+      // this event overlap with no base
+      count_noBase[j] ++;
+      if(impulsivityV - impulsivityH > 0.2){
+        count_V[j]++;
+        count_noBaseV[j]++;
+      }else if(impulsivityV - impulsivityH < -0.2){
+        count_H[j]++;
+        count_noBaseH[j]++;
+      }else{
+        count_Mix[j]++;
+        count_noBaseMix[j]++;
+      }
     }
-
-    outputFile.cd(); 
-    //all the branch variable are defined, so fill this event in output tree.
-    outputTree.Fill(); 
   }
 
+  // prepare the output file
+  TFile outputFile(TString::Format("cluster/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod,mod_remainder,start_run,end_run),"RECREATE"); 
+  //output file and output tree named cluster
+  TTree outputTree("cluster","cluster"); 
+  int index, n, base, noBase, H, Mix, V, baseH, baseMix, baseV, noBaseH, noBaseMix, noBaseV;
+  double avgLinearPolFrac, avgLinearPolAngle, _longitude, _latitude;
+  //branches in outputTree, the main purpose are to fill those branches.
+  outputTree.Branch("index",&index); 
+  outputTree.Branch("n",&n); 
+  outputTree.Branch("base",&base); 
+  outputTree.Branch("noBase",&noBase); 
+  outputTree.Branch("H",&H); 
+  outputTree.Branch("Mix",&Mix); 
+  outputTree.Branch("V",&V); 
+  outputTree.Branch("baseH",&baseH); 
+  outputTree.Branch("baseMix",&baseMix); 
+  outputTree.Branch("baseV",&baseV); 
+  outputTree.Branch("noBaseH",&noBaseH); 
+  outputTree.Branch("noBaseMix",&noBaseMix); 
+  outputTree.Branch("noBaseV",&noBaseV); 
+  outputTree.Branch("avgLinearPolFrac",&avgLinearPolFrac); 
+  outputTree.Branch("avgLinearPolAngle",&avgLinearPolAngle); 
+  outputTree.Branch("longitude",&_longitude); 
+  outputTree.Branch("latitude",&_latitude); 
+
+  outputFile.cd(); 
+  for(int j = 0; j< 100; j++){
+  // std::cout<<j<<" "<< count_n[j]<<std::endl;
+    if(count_n[j]==0){
+      continue;
+    }
+    index=j;
+    n=count_n[j];
+    base=count_base[j];
+    noBase=count_noBase[j];
+    H=count_H[j];
+    Mix=count_Mix[j];
+    V=count_V[j];
+    baseH=count_baseH[j];
+    baseMix=count_baseMix[j];
+    baseV=count_baseV[j];
+    noBaseH=count_noBaseH[j];
+    noBaseMix=count_noBaseMix[j];
+    noBaseV=count_noBaseV[j];
+    avgLinearPolFrac=sum_linearPolFrac[j]/double(n);
+    avgLinearPolAngle=sum_linearPolAngle[j]/double(n);
+    _longitude=first_longitude[j];
+    _latitude=first_latitude[j];
+    outputTree.Fill(); 
+  }
+    //all the branch variable are defined, so fill this event in output tree.
   outputFile.cd(); 
   outputTree.Write();
-  clearTheObject(map_pars);
   return 0; 
 
 }
@@ -427,12 +465,12 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
 
 void makeSourceMap(const char * treeName, bool evaluate = 1){
   int start_run,end_run;
-  const char * sourceMapTree = "map_unweighted";
+  const char * sourceMapTree = "maps";
   if (!strcmp(treeName,"wais")){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
     const char* summaryFileFormat = "/Volumes/SDCard/data/wais/%d_max_30001_sinsub_10_3_ad_2.root";
     const char* thermalTreeFormat = "thermalTrees/wais_%d-%d_max_30001_sinsub_10_3_ad_2.root";
-    const char * filePrefix = "_6.5sigma_30001_";
+    const char * filePrefix = "_3.5sigma_30001_";
     int mod = 1;
     int mod_remainder = 0;
     start_run = 120;
@@ -444,15 +482,15 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
     const char* summaryFileFormat = "/Volumes/SDCard/data/a4all/%d_max_30002_sinsub_10_3_ad_2.root";
     const char* thermalTreeFormat = "thermalTrees/a4all_%d-%d_max_30002_sinsub_10_3_ad_2.root";
-    const char * filePrefix = "_6.5sigma_30002_";
+    const char * filePrefix = "_3.5sigma_30002_";
     int mod = 1;
     int mod_remainder = 0;
     start_run = 41;
     end_run = 367;
     for (mod_remainder= 0; mod_remainder<mod; mod_remainder++){
     // for (mod_remainder= 1; mod_remainder<2; mod_remainder++){
-       _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
-       // _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+       // _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+       _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
     }
     // _trendOfSinglets(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod);
 
@@ -460,7 +498,7 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
     const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_1001_sinsub_10_3_ad_2.root";
     const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_1001_sinsub_10_3_ad_2.root";
-    const char * filePrefix = "_6.5sigma_1001_";
+    const char * filePrefix = "_3.5sigma_1001_";
     int mod = 1;
     int mod_remainder = 0;
     start_run = 1;

@@ -27,7 +27,7 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
   AnitaDataset d(run,false,WaveCalType::kDefault,AnitaDataset::ANITA_MC_DATA); // Monte Carlo! 
   UCorrelator::AnalysisConfig cfg; 
     cfg.nmaxima = 3;
-    cfg.response_option = UCorrelator::AnalysisConfig::ResponseTUFF;
+    cfg.response_option = UCorrelator::AnalysisConfig::ResponseA4;
     cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution;
 
   UCorrelator::Analyzer analyzer(&cfg); 

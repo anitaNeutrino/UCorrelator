@@ -42,12 +42,12 @@ UCorrelator::ProbabilityMap::Params * map_params()
 
 // UCorrelator::Analyzer *doInteractive(int run = 316, int event = 82634352, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 51, int event = 3697122, bool decimated = false, bool simulated = false )
-// UCorrelator::Analyzer *doInteractive(int run = 140, int event = 25639095, bool decimated = false, bool simulated = false )
+UCorrelator::Analyzer *doInteractive(int run = 140, int event = 25639095, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 153, int event = 30003847, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204382, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204407, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 160, int event = 32096871, bool decimated = false, bool simulated = false )
-UCorrelator::Analyzer *doInteractive(int run = 133, int event = 23755768, bool decimated = false, bool simulated = false )
+// UCorrelator::Analyzer *doInteractive(int run = 133, int event = 23755768, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 268, int event = 68160718, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 3, int event = 7579449, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 7, int event = 14305756, bool decimated = false, bool simulated = true )
@@ -86,7 +86,7 @@ UCorrelator::Analyzer *doInteractive(int run = 133, int event = 23755768, bool d
 
  UCorrelator::AnalysisConfig cfg;
     cfg.nmaxima = 3;
-    cfg.response_option = UCorrelator::AnalysisConfig::ResponseTUFF;
+    cfg.response_option = UCorrelator::AnalysisConfig::ResponseA4;
     cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution;
   UCorrelator::Analyzer * analyzer = new UCorrelator::Analyzer(&cfg,true); 
 
@@ -134,9 +134,10 @@ UCorrelator::Analyzer *doInteractive(int run = 133, int event = 23755768, bool d
   TCanvas * psCanvas = new TCanvas();
   psCanvas->cd();
   double p_ground;
+  int NOverlapedBases;
   UCorrelator::ProbabilityMap::Params * p = map_params(); 
   UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(p); 
-  int n_seg = map->add(p_ground, &sum, d.gps(), AnitaPol::AnitaPol_t(sum.mostImpulsivePolAsInt(2)), sum.mostImpulsiveInd(2), 1);
+  int n_seg = map->add(NOverlapedBases, p_ground, &sum, d.gps(), AnitaPol::AnitaPol_t(sum.mostImpulsivePolAsInt(2)), sum.mostImpulsiveInd(2), 1);
   std::cout<< "p_ground=" << p_ground <<" n_seg="<< n_seg<< " theta="<< sum.mostImpulsivePeak(2).theta << " snr="<< sum.mostImpulsiveDeconvolvedFiltered(2).snr<< std::endl;
   map->segmentationScheme()->Draw("colz",map->getProbSums(true));
 
