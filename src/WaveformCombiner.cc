@@ -30,6 +30,7 @@
   enable_r_time_shift = true;
   enable_simulation_time_shift = false;
   max_vpp = 0;
+  check_vpp = 0;
 }
 
 
