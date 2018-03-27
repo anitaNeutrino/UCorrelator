@@ -447,6 +447,13 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     {
       rough_peaks[pol].push_back(std::pair<double,double>(maxima[i].x, maxima[i].y)); 
       //now make the combined waveforms 
+      if(cfg->use_best_antenna_snr)
+      {
+        wfcomb.setCheckVpp(true);
+        wfcomb_xpol.setCheckVpp(true);
+        wfcomb_filtered.setCheckVpp(true);
+        wfcomb_xpol_filtered.setCheckVpp(true);
+      }
 
 
       SECTIONS
@@ -599,6 +606,12 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     //    SECTIONS
     {
       //      SECTION
+      if(cfg->use_best_antenna_snr)
+      {
+        wfcomb.setCheckVpp(true);
+        wfcomb_xpol.setCheckVpp(true);
+      }
+
       wfcomb.combine(summary->mc.phi, summary->mc.theta, event, AnitaPol::kHorizontal, 0, cfg->combine_t0, cfg->combine_t1); 
       //      SECTION 
       wfcomb_xpol.combine(summary->mc.phi, summary->mc.theta, event, AnitaPol::kVertical, 0, cfg->combine_t0, cfg->combine_t1); 

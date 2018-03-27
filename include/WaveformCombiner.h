@@ -73,12 +73,13 @@ namespace UCorrelator
       void setDelayToCenter(bool opt) {delay_to_center = opt; }
 
       /** Static helper used to combine arbitrary waveforms */
-      static double combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0, double t0 = 0, double t1 = 100); 
+      static double combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0, double t0 = 0, double t1 = 100, bool checkvpp = 0); 
 
       /** function allowing extra filters to be applied to just the coherently summed waveforms */
       void setExtraFilters(FilterStrategy* extra);
       /** function allowing extra filters to be applied to just the coherently summed deconvolved waveforms. these functions are useful for applying different filters to waveform combining and map making. mostly I think it should be used to add BH13filter in map making and not in deconvolved wf combining */
       void setExtraFiltersDeconvolved(FilterStrategy* extra);
+      void setCheckVpp(bool opt) { check_vpp = opt; }
 
       double getMaxAntennaVpp() { return max_vpp; }
 
@@ -103,6 +104,7 @@ namespace UCorrelator
       bool delay_to_center;
       bool enable_r_time_shift; 
       bool enable_simulation_time_shift; 
+      bool check_vpp; 
       std::vector<int> antennas; 
       FilterStrategy* extra_filters;
       FilterStrategy* extra_filters_deconvolved;
