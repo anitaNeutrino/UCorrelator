@@ -139,6 +139,8 @@ void doTMVA(int data_start = 50, int data_stop=367, const char * mc_dir = "simul
   dl->AddVariable("linearPolAngle"); 
   dl->AddVariable("circPolFraction"); 
   dl->AddVariable("totalPolFraction"); 
+  dl->AddVariable("powerH"); 
+  dl->AddVariable("powerV"); 
   // dl->AddVariable("secondPeakRatio");
   dl->AddSpectator("theta"); 
   dl->AddSpectator("run"); 

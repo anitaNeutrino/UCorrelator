@@ -214,7 +214,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   AnitaEventSummary * sum = new AnitaEventSummary; 
   Adu5Pat * gps = new Adu5Pat; 
 
-  int total_event_n = c.Draw("run:eventNumber:pol*5+peak:impulsivity:linearPolFrac:linearPolAngle",  cutString, "goff" ); 
+  int total_event_n = c.Draw("run:eventNumber:pol*5+peak:impulsivity:linearPolFrac:linearPolAngle:powerH:powerV",  cutString, "goff" ); 
   printf("%d events pass selection\n", total_event_n); 
 
 
@@ -225,8 +225,8 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   UCorrelator::ProbabilityMap map(p); 
 
   TTree tr("events","events"); 
-  int run, ev, pol, peak,  nsegs, NOverlapedBases; 
-  double S, impulsivity,impulsivityH,impulsivityV,linearPolFrac,linearPolAngle, p_ground, theta,phi,snr,longitude,latitude; 
+  int run, ev, pol, peak,  nsegs,  NOverlapedBases ; 
+  double S, impulsivity,impulsivityH,impulsivityV,powerH,powerV,linearPolFrac,linearPolAngle, p_ground, theta,phi,snr,longitude,latitude; 
   tr.Branch("event",&ev); 
   tr.Branch("run",&run); 
   tr.Branch("pol",&pol); 
@@ -235,6 +235,8 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   tr.Branch("impulsivity",&impulsivity);
   tr.Branch("impulsivityH",&impulsivityH);
   tr.Branch("impulsivityV",&impulsivityV);
+  tr.Branch("powerH",&powerH);
+  tr.Branch("powerV",&powerV);
   tr.Branch("linearPolFrac",&linearPolFrac);
   tr.Branch("linearPolAngle",&linearPolAngle);
   tr.Branch("NOverlapedBases",&NOverlapedBases);
@@ -293,6 +295,8 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
     }
     linearPolFrac = c.GetVal(4)[i];
     linearPolAngle = c.GetVal(5)[i];
+    powerH = c.GetVal(6)[i];
+    powerV = c.GetVal(7)[i];
     theta = -1*sum->peak[pol][peak].theta;
     phi = sum->peak[pol][peak].phi;
     snr = sum->peak[pol][peak].snr;
@@ -339,25 +343,30 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
   TTree * events =(TTree *) sourceMapFile.Get("events"); 
   int total_event_n = events->GetEntries();
   std::cout<< "total number of events: "<< total_event_n<< std::endl;
-  int run, event, nsegs, pol, NOverlapedBases;
-  double impulsivity, impulsivityV, impulsivityH, linearPolFrac, linearPolAngle, indexOfCluster, longitude, latitude;
+  int run, event, pol, nsegs, NOverlapedBases;
+  double impulsivity, impulsivityV, impulsivityH, powerV, powerH, linearPolFrac, linearPolAngle, indexOfCluster, longitude, latitude;
   events->SetBranchAddress("run",&run);
   events->SetBranchAddress("event",&event);
+  events->SetBranchAddress("pol",&pol);
   events->SetBranchAddress("nsegs",&nsegs);
   events->SetBranchAddress("indexOfCluster",&indexOfCluster);
-  events->SetBranchAddress("pol",&pol);
   events->SetBranchAddress("NOverlapedBases",&NOverlapedBases);
   events->SetBranchAddress("impulsivity",&impulsivity);
   events->SetBranchAddress("impulsivityV",&impulsivityV);
   events->SetBranchAddress("impulsivityH",&impulsivityH);
+  events->SetBranchAddress("powerV",&powerV);
+  events->SetBranchAddress("powerH",&powerH);
   events->SetBranchAddress("linearPolFrac",&linearPolFrac);
   events->SetBranchAddress("linearPolAngle",&linearPolAngle);
   events->SetBranchAddress("longitude",&longitude);
   events->SetBranchAddress("latitude",&latitude);
   int count_n[100]={0}, count_base[100]={0}, count_noBase[100]={0}, count_H[100]={0}, count_Mix[100]={0}, count_V[100]={0};
   int count_baseH[100]={0}, count_baseMix[100]={0}, count_baseV[100]={0}, count_noBaseH[100]={0}, count_noBaseMix[100]={0}, count_noBaseV[100]={0};
+  int first_pol[100] = {0};
   double sum_linearPolFrac[100] = {0};
   double sum_linearPolAngle[100] = {0};
+  double sum_powerH[100] = {0};
+  double sum_powerV[100] = {0};
   double first_longitude[100] = {0};
   double first_latitude[100] = {0};
 
@@ -370,11 +379,17 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
     count_n[j]++ ;
     sum_linearPolFrac[j] += linearPolFrac;
     sum_linearPolAngle[j] += linearPolAngle;
+    sum_powerH[j] += powerH;
+    sum_powerV[j] += powerV;
+
     if(first_longitude[j] == 0){
       first_longitude[j] = longitude;
     }
     if(first_latitude[j] == 0){
       first_latitude[j] = latitude;
+    }
+    if(first_pol[j] == 0){
+      first_pol[j] = pol;
     }
     // this event overlap with some base
     if(NOverlapedBases != 0){
@@ -409,10 +424,11 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
   TFile outputFile(TString::Format("cluster/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod,mod_remainder,start_run,end_run),"RECREATE"); 
   //output file and output tree named cluster
   TTree outputTree("cluster","cluster"); 
-  int index, n, base, noBase, H, Mix, V, baseH, baseMix, baseV, noBaseH, noBaseMix, noBaseV;
-  double avgLinearPolFrac, avgLinearPolAngle, _longitude, _latitude;
+  int index, n, base, noBase, H, Mix, V, baseH, baseMix, baseV, noBaseH, noBaseMix, noBaseV, _pol;
+  double avgLinearPolFrac, avgLinearPolAngle,_powerH, _powerV, _longitude, _latitude;
   //branches in outputTree, the main purpose are to fill those branches.
   outputTree.Branch("index",&index); 
+  outputTree.Branch("pol",&_pol); 
   outputTree.Branch("n",&n); 
   outputTree.Branch("base",&base); 
   outputTree.Branch("noBase",&noBase); 
@@ -426,7 +442,9 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
   outputTree.Branch("noBaseMix",&noBaseMix); 
   outputTree.Branch("noBaseV",&noBaseV); 
   outputTree.Branch("avgLinearPolFrac",&avgLinearPolFrac); 
-  outputTree.Branch("avgLinearPolAngle",&avgLinearPolAngle); 
+  outputTree.Branch("avgLinearPolAngle",&avgLinearPolAngle);
+  outputTree.Branch("powerH",&_powerH); 
+  outputTree.Branch("powerV",&_powerV);  
   outputTree.Branch("longitude",&_longitude); 
   outputTree.Branch("latitude",&_latitude); 
 
@@ -438,6 +456,7 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
     }
     index=j;
     n=count_n[j];
+    _pol=first_pol[j];
     base=count_base[j];
     noBase=count_noBase[j];
     H=count_H[j];
@@ -451,6 +470,8 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
     noBaseV=count_noBaseV[j];
     avgLinearPolFrac=sum_linearPolFrac[j]/double(n);
     avgLinearPolAngle=sum_linearPolAngle[j]/double(n);
+    _powerH=sum_powerH[j]/double(n);
+    _powerV=sum_powerV[j]/double(n);
     _longitude=first_longitude[j];
     _latitude=first_latitude[j];
     outputTree.Fill(); 
@@ -489,7 +510,7 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     end_run = 367;
     for (mod_remainder= 0; mod_remainder<mod; mod_remainder++){
     // for (mod_remainder= 1; mod_remainder<2; mod_remainder++){
-       // _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+       _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
        _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
     }
     // _trendOfSinglets(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod);
