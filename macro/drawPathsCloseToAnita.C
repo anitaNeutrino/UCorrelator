@@ -4,16 +4,19 @@
 //copy the top headers in the root console and run .x drawPathsCloseToAnita.C
 void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/sparsedAllRuns/sparsedAllRuns.root"){
   gStyle->SetPalette(54);
-  TCanvas * canvas = new TCanvas("Clusters","Clusters",200,200);
-  canvas->SetCanvasSize(5000,5000); 
-  TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_3.5sigma_30002_mod1_remainder0_41_367.root");; 
-  // UCorrelator::ProbabilityMap * map_weighted = (UCorrelator::ProbabilityMap*) probabilityMap->Get("map_weighted");
-  UCorrelator::ProbabilityMap * maps = (UCorrelator::ProbabilityMap*) probabilityMap->Get("maps");
-  TTree * events = (TTree *) probabilityMap->Get("events");
+  TCanvas * canvas = new TCanvas("Clusters","Clusters",800,800);
+  canvas->SetCanvasSize(4000,4000); 
+  TFile * thermalMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_0.0001sigma_30002_mod1_remainder0_41_367.root");; 
+  UCorrelator::ProbabilityMap * thermal_maps = (UCorrelator::ProbabilityMap*) thermalMap->Get("maps");
   // maps->segmentationScheme()->Draw("colz",maps->getBaseWeightedUniformPS());
-  maps->segmentationScheme()->Draw("mapcolz",maps->getProbSums(true));
+  thermal_maps->segmentationScheme()->Draw("colz",thermal_maps->getProbSums(true));
 
+  TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_3.5sigma_30002_mod1_remainder0_41_367.root");; 
+  // UCorrelator::ProbabilityMap * maps = (UCorrelator::ProbabilityMap*) probabilityMap->Get("maps");
+  // maps->segmentationScheme()->Draw("colz",maps->getBaseWeightedUniformPS());
+  // maps->segmentationScheme()->Draw("mapcolz",maps->getProbSums(true));
 
+  TTree * events = (TTree *) probabilityMap->Get("events");
   TGraphAntarctica* grEvents = new TGraphAntarctica();
   grEvents->SetName("grEvents");
   grEvents->SetMarkerColor(3);

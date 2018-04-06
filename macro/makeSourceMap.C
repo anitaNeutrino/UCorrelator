@@ -4,6 +4,7 @@
  
 // TCut cutString("");
 TCut cutString("theta<-3.5 && impulsivity>0.71");
+// TCut cutString("theta<-5.8 && impulsivity<0.60"); // select for thermal events
 // TCut cutString("theta<-3.5 && impulsivity>0.71");
 // const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && theta < 40 )";
 // const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && isMostImpulsive && !payloadBlast && MaxPeak < 1000 && theta < 40 && ( (HPolTrigger && iteration < 5) || (VPolTrigger && iteration > 4))  && !isPulser  )";
@@ -39,7 +40,9 @@ UCorrelator::ProbabilityMap::Params * map_params()
   p->point = snrResolutionModel; 
   p->collision_detection = false; 
   p->verbosity = 0; // verbosity level for output info.
-  p->maximum_distance = 3.5;
+  p->maximum_distance = 2.0;
+  p->max_dphi = 5;
+  p->max_dtheta = 5;
   // p->min_p_on_continent = 0;
  
 
@@ -204,7 +207,7 @@ std::set<int> * getRemovedEvents(const char * file, std::vector<int>  * runs = 0
   return removed; 
 }
 
-int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run = 50, int end_run =367, const char * filePrefix = "_3.5sigma_1pc_", int mod=1, int mod_remainder=0)
+int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run = 50, int end_run =367, const char * filePrefix = "_2.0sigma_1pc_", int mod=1, int mod_remainder=0)
 {
 
   // Start getting the run / event numbers of events that pass our cuts
@@ -338,7 +341,9 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
 
 
 int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run, int end_run, const char * filePrefix, int mod, int mod_remainder) 
-{  
+{
+std::cout<<"hello 0"<<std::endl;
+
   TFile sourceMapFile(TString::Format("source_maps/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod, mod_remainder,start_run, end_run)); 
   TTree * events =(TTree *) sourceMapFile.Get("events"); 
   int total_event_n = events->GetEntries();
@@ -360,16 +365,16 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
   events->SetBranchAddress("linearPolAngle",&linearPolAngle);
   events->SetBranchAddress("longitude",&longitude);
   events->SetBranchAddress("latitude",&latitude);
-  int count_n[100]={0}, count_base[100]={0}, count_noBase[100]={0}, count_H[100]={0}, count_Mix[100]={0}, count_V[100]={0};
-  int count_baseH[100]={0}, count_baseMix[100]={0}, count_baseV[100]={0}, count_noBaseH[100]={0}, count_noBaseMix[100]={0}, count_noBaseV[100]={0};
-  int first_pol[100] = {0};
-  double sum_linearPolFrac[100] = {0};
-  double sum_linearPolAngle[100] = {0};
-  double sum_powerH[100] = {0};
-  double sum_powerV[100] = {0};
-  double first_longitude[100] = {0};
-  double first_latitude[100] = {0};
-
+  int count_n[39000]={0}, count_base[39000]={0}, count_noBase[39000]={0}, count_H[39000]={0}, count_Mix[39000]={0}, count_V[39000]={0};
+  int count_baseH[39000]={0}, count_baseMix[39000]={0}, count_baseV[39000]={0}, count_noBaseH[39000]={0}, count_noBaseMix[39000]={0}, count_noBaseV[39000]={0};
+  int first_pol[39000] = {0};
+  double sum_linearPolFrac[39000] = {0};
+  double sum_linearPolAngle[39000] = {0};
+  double sum_powerH[39000] = {0};
+  double sum_powerV[39000] = {0};
+  double first_longitude[39000] = {0};
+  double first_latitude[39000] = {0};
+std::cout<<"hello 0"<<std::endl;
   for(int i =0; i< total_event_n; i++){
     events->GetEntry(i);
     int j = round(indexOfCluster);
@@ -394,32 +399,46 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
     // this event overlap with some base
     if(NOverlapedBases != 0){
       count_base[j] ++;
-      if(impulsivityV - impulsivityH > 0.2){
-        count_V[j]++;
-        count_baseV[j]++;
-      }else if(impulsivityV - impulsivityH < -0.2){
+      if(pol==0){
         count_H[j]++;
         count_baseH[j]++;
       }else{
-        count_Mix[j]++;
-        count_baseMix[j]++;
+        count_V[j]++;
+        count_baseV[j]++;
       }
+      // if(impulsivityV - impulsivityH > 0.2){
+      //   count_V[j]++;
+      //   count_baseV[j]++;
+      // }else if(impulsivityV - impulsivityH < -0.2){
+      //   count_H[j]++;
+      //   count_baseH[j]++;
+      // }else{
+      //   count_Mix[j]++;
+      //   count_baseMix[j]++;
+      // }
     }else{
       // this event overlap with no base
       count_noBase[j] ++;
-      if(impulsivityV - impulsivityH > 0.2){
-        count_V[j]++;
-        count_noBaseV[j]++;
-      }else if(impulsivityV - impulsivityH < -0.2){
+      if(pol==0){
         count_H[j]++;
         count_noBaseH[j]++;
       }else{
-        count_Mix[j]++;
-        count_noBaseMix[j]++;
+        count_V[j]++;
+        count_noBaseV[j]++;
       }
+      // if(impulsivityV - impulsivityH > 0.2){
+      //   count_V[j]++;
+      //   count_noBaseV[j]++;
+      // }else if(impulsivityV - impulsivityH < -0.2){
+      //   count_H[j]++;
+      //   count_noBaseH[j]++;
+      // }else{
+      //   count_Mix[j]++;
+      //   count_noBaseMix[j]++;
+      // }
     }
   }
-
+std::cout<<"hello 0"<<std::endl;
   // prepare the output file
   TFile outputFile(TString::Format("cluster/%s/%smod%d_remainder%d_%d_%d.root",treeName,filePrefix,mod,mod_remainder,start_run,end_run),"RECREATE"); 
   //output file and output tree named cluster
@@ -449,7 +468,7 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
   outputTree.Branch("latitude",&_latitude); 
 
   outputFile.cd(); 
-  for(int j = 0; j< 100; j++){
+  for(int j = 0; j< 39000; j++){
   // std::cout<<j<<" "<< count_n[j]<<std::endl;
     if(count_n[j]==0){
       continue;
@@ -476,11 +495,27 @@ int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, con
     _latitude=first_latitude[j];
     outputTree.Fill(); 
   }
+  std::cout<<"hello 1"<<std::endl;
+
     //all the branch variable are defined, so fill this event in output tree.
   outputFile.cd(); 
   outputTree.Write();
   return 0; 
 
+}
+
+
+void _makeMCmapAndEvaluateEfficiency(){
+//load source map file of true anita events
+//remove the unknown base singlets from the map
+//for loop of x from 1 to 500:
+  //for loop of 1000 times:
+    //each loop, is a for loop of adding x MC events to the previous map
+    //map.doClustering()
+    //evaluate the clustering for added MC events
+    //out put the efficiency for MC events
+    //remove the added events;
+  //record the average efficiency for x MC events.
 }
 
 
@@ -491,7 +526,7 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
     const char* summaryFileFormat = "/Volumes/SDCard/data/wais/%d_max_30001_sinsub_10_3_ad_2.root";
     const char* thermalTreeFormat = "thermalTrees/wais_%d-%d_max_30001_sinsub_10_3_ad_2.root";
-    const char * filePrefix = "_3.5sigma_30001_";
+    const char * filePrefix = "_2.0sigma_30001_";
     int mod = 1;
     int mod_remainder = 0;
     start_run = 120;
@@ -503,7 +538,7 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
     const char* summaryFileFormat = "/Volumes/SDCard/data/a4all/%d_max_30002_sinsub_10_3_ad_2.root";
     const char* thermalTreeFormat = "thermalTrees/a4all_%d-%d_max_30002_sinsub_10_3_ad_2.root";
-    const char * filePrefix = "_3.5sigma_30002_";
+    const char * filePrefix = "_2.0sigma_30002_";
     int mod = 1;
     int mod_remainder = 0;
     start_run = 41;
@@ -512,20 +547,24 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     // for (mod_remainder= 1; mod_remainder<2; mod_remainder++){
        _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
        _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+       // _makeMCmapAndEvaluateEfficiency(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
     }
     // _trendOfSinglets(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod);
 
   }else if(!strcmp(treeName,"simulation")){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
-    const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_1001_sinsub_10_3_ad_2.root";
-    const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_1001_sinsub_10_3_ad_2.root";
-    const char * filePrefix = "_3.5sigma_1001_";
-    int mod = 1;
+    const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_1000_sinsub_10_3_ad_2.root";
+    const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_1000_sinsub_10_3_ad_2.root";
+    const char * filePrefix = "_2.0sigma_1000_";
+    int mod = 170;
     int mod_remainder = 0;
     start_run = 1;
-    end_run = 10;
-    _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
-    // _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+    end_run = 1;
+    for (mod_remainder= 0; mod_remainder<mod; mod_remainder+=2){
+    // for (mod_remainder= 0; mod_remainder<1; mod_remainder++){
+      _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+      _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+    }
   }else{
     std::cout<< "wrong input treeName"<<std::endl;
   }

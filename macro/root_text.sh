@@ -1235,9 +1235,113 @@ a4.Add("*30002*")
 a4.Draw("theta:deconvImpulsivity>>h(300,,,300,,)","pol==1 && deconvImpulsivity<0.7","colz")
 h->FitSlicesX()
 h_2->Draw("colz")
+a4.Draw("powerV - powerH:impulsivityV- impulsivityH>>h(300,,,300,,)","theta < -6 && impulsivity>0.7","colz")
 
 
-cluster->Scan("index:n:base:noBase:H:Mix:V:avgLinearPolFrac:avgLinearPolAngle:longitude:latitude","","colsize=7 precision=7 col=:::::::20.3:20.3:10.10:10.10")
+cluster->Scan("pol:n:base:noBase:H:V:avgLinearPolFrac:avgLinearPolAngle:longitude:latitude:powerH:powerV","","colsize=7 precision=7 col=::::::20.3:20.3:10.10:10.10:7.3:7.3")
+cluster->Scan("pol:n:base:noBase:H:V:avgLinearPolFrac:avgLinearPolAngle:longitude:latitude:powerH:powerV","n==1","colsize=7 precision=7 col=::::::20.3:20.3:10.10:10.10:7.3:7.3")
 
-
+events->Scan("run:event:pol:nsegs:NOverlapedBases:impulsivityV:impulsivityH:powerV:powerH:linearPolFrac:linearPolAngle:longitude:latitude","indexOfCluster==6")
+ 
 convert -density 2000 Clusters.eps -flatten Clusters.png;
+
+
+auto legend = new TLegend(0.1,0.7,0.48,0.9);
+   legend->AddEntry("h1","x=0.001","l");
+   legend->AddEntry("h2","x=1","l");
+   legend->AddEntry("h3","MinBias Energy222 MC","l");
+   legend->AddEntry("h4","Wais data","l");
+   legend->Draw();
+
+
+
+auto legend = new TLegend(0.1,0.7,0.48,0.9);
+   legend->AddEntry("h1","x=2, noBase","l");
+   legend->AddEntry("h2","x=2, nearBase","l");
+   legend->AddEntry("h3","x=3.5, noBase","l");
+   legend->AddEntry("h4","x=3.5, nearBase","l");
+   legend->AddEntry("h5","x=6.5, noBase","l");
+   legend->AddEntry("h6","x=6.5, nearBase","l");
+   legend->Draw();
+
+
+
+
+auto legend = new TLegend(0.1,0.7,0.48,0.9);
+   legend->AddEntry("h6","x=0.0001, minbias MC Kotera Max","l");
+   legend->AddEntry("h7","x=0.0001, below horizon thermal events passing quality cuts","l");
+   legend->Draw();
+
+  h1->GetXaxis()->SetTitle("clusterSize")fit
+
+
+gStyle->SetOptFit();
+Double_t poissonf(Double_t*x,Double_t*par)                                         
+{                                                                              
+  return par[0];
+}
+
+
+cluster->Draw("n>>clusterSize","n<100 && base!=0")
+gStyle->SetOptFit();
+TF1 *fitPoisson = new TF1("fitPoisson","[0]*TMath::Power([1],x)/TMath::Gamma(x+1)/TMath::Exp([1])", 0, 100)
+fitPoisson->SetParName(0,"p3");
+fitPoisson->SetParName(1,"p4");
+fitPoisson->SetParameter(0, 5);
+fitPoisson->SetParameter(1, 3);
+clusterSize->Fit("fitPoisson");
+clusterSize->GetXaxis()->SetTitle("clusterSize")
+
+
+
+
+cluster->Draw("n>>clusterSize2","n<10 && base!=0")
+gStyle->SetOptFit();
+TF1 *fitMaxwell2 = new TF1("fitMaxwell","[0]*(x-0.5)^2*TMath::Exp(-1*[1]*(x-0.5)^2)", 0, 10)
+fitMaxwell2->SetParName(0,"c2");
+fitMaxwell2->SetParName(1,"a2");
+fitMaxwell2->SetParameter(0, 5);
+fitMaxwell2->SetParameter(1, 3);
+clusterSize2->Fit("fitMaxwell");
+clusterSize2->GetXaxis()->SetTitle("clusterSize2")
+
+
+
+
+
+cluster->Draw("n>>clusterSize","n<100 ")
+gStyle->SetOptFit();
+TF1 *fitPow = new TF1("fitPow","[0]*TMath::Power(x,[1])", 0, 100)
+fitPow->SetParName(0,"c1");
+fitPow->SetParName(1,"a1");
+fitPow->SetParameter(0, 5);
+fitPow->SetParameter(1, -1);
+clusterSize->Fit("fitPow");
+clusterSize->GetXaxis()->SetTitle("clusterSize")
+
+
+
+
+
+cluster->Draw("n>>noBaseClusterSize","n<6 && base==0")
+gStyle->SetOptFit();
+TF1 *fitCombined3 = new TF1("fitCombined","[0]*TMath::Power(x,-2.3) + [1]*x^2*TMath::Exp(-0.14*x^2)", 0, 6)
+fitCombined3->SetParName(0,"c1");
+fitCombined3->SetParName(1,"c2");
+fitCombined3->SetParameter(0, 1);
+fitCombined3->SetParameter(1, 1);
+noBaseClusterSize->Fit("fitCombined");
+noBaseClusterSize->GetXaxis()->SetTitle("noBaseClusterSize")
+
+
+
+
+cluster->Draw("n>>ClusterSize","n<10")
+gStyle->SetOptFit();
+TF1 *fitCombined = new TF1("fitCombined","[0]*TMath::Power(x,-2.3) + [1]*x^2*TMath::Exp(-0.18*x^2)", 0, 10)
+fitCombined->SetParName(0,"c1");
+fitCombined->SetParName(1,"c2");
+fitCombined->SetParameter(0, 1);
+fitCombined->SetParameter(1, 1);
+ClusterSize->Fit("fitCombined");
+ClusterSize->GetXaxis()->SetTitle("ClusterSize")
