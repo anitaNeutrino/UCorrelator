@@ -92,7 +92,7 @@ int UCorrelator::ProbabilityMap::add(int& NOverlapedBases, double & p_ground, co
     //loop through each segments that have projection.
     int iseg = segments_to_fill[i].first; 
     double pseg = segments_to_fill[i].second * weight; 
-    double pseg_norm = pseg * invnorm; 
+    double pseg_norm = pseg * invnorm * weight; 
 
     //get the largest and second largest prob density sum for each segment.
     //do it for normalized.
@@ -106,13 +106,13 @@ int UCorrelator::ProbabilityMap::add(int& NOverlapedBases, double & p_ground, co
     fraction_occluded[iseg] += occluded_to_fill[i].second; 
     //1/number of segment. Like use uniforms distribution to replace the gaussian. The cut of angular is still using gaussian.
     //no matter a event is near a base or not, it will be added to this map.
-    uniform_ps[iseg]+= 1/ double(NOfSegments);
+    uniform_ps[iseg]+= 1/ double(NOfSegments)* weight;
     if(NOverlapedBases!=0){ 
-      uniform_ps_weighted_by_base[iseg]+= 1/ double(NOfSegments);
-      uniform_ps_with_base[iseg]+= 1/ double(NOfSegments);
+      uniform_ps_weighted_by_base[iseg]+= 1/ double(NOfSegments)* weight;
+      uniform_ps_with_base[iseg]+= 1/ double(NOfSegments)* weight;
     }else{
-      uniform_ps_weighted_by_base[iseg]+= 0.000001/ double(NOfSegments);
-      uniform_ps_without_base[iseg]+= 1/ double(NOfSegments);
+      uniform_ps_weighted_by_base[iseg]+= 0.000001/ double(NOfSegments)* weight;
+      uniform_ps_without_base[iseg]+= 1/ double(NOfSegments)* weight;
     } 
   }
   return NOfSegments; 
@@ -295,6 +295,32 @@ int UCorrelator::ProbabilityMap::removeWith(const ProbabilityMap & other)
     }
   }
   return 0; 
+}
+void UCorrelator::ProbabilityMap::maskingWithMap(double & nMasked, double & nNotMasked, const ProbabilityMap & other){
+  //if we made it this far, all is good (except for what hasn't been implemented yet) !
+  for (int i = 0; i < segmentationScheme()->NSegments(); i++) 
+  {
+    int hit = 0;
+    if(other.getUniformPS()[i]!=0){
+      hit = 1;
+    }else{
+      std::vector<int> new_neighbors;
+      segmentationScheme()->getNeighbors(i, &new_neighbors); // find the 8 neighbor seg around this seg. The return vector is in new_neighbors.
+      for (size_t j = 0; j < new_neighbors.size(); j++){
+        if(other.getUniformPS()[new_neighbors[j]]!=0){ 
+          hit = 1;
+          break;
+        }
+      }
+    }
+    if(hit == 1){
+      nMasked += uniform_ps[i];
+    }else{
+      nNotMasked += uniform_ps[i];
+    }
+  }
+
+  return ;
 }
 
 
@@ -856,7 +882,7 @@ int UCorrelator::ProbabilityMap::doClustering(double threshold)
 
 }
 
-double  UCorrelator::ProbabilityMap::evaluateEvent(double theta,double phi,const Adu5Pat * gps){
+void  UCorrelator::ProbabilityMap::evaluateEvent(double & indexOfCluster, double & sizeOfCluster, double theta,double phi,const Adu5Pat * gps){
   PayloadParameters guess;  
   int status =  PayloadParameters::findSourceOnContinent(theta,phi,gps, &guess, p.refract, p.collision_detection ? p.collision_params.dx : 0);
   // if (status == 0){
@@ -864,7 +890,10 @@ double  UCorrelator::ProbabilityMap::evaluateEvent(double theta,double phi,const
   //   return -1;
   // }else{
     guess.source.to(AntarcticCoord::STEREOGRAPHIC); 
-    return mapOfClusterIndexs[segmentationScheme()->getSegmentIndex(guess.source)];
+    int seg = segmentationScheme()->getSegmentIndex(guess.source);
+    indexOfCluster = mapOfClusterIndexs[seg];
+    sizeOfCluster = mapOfClusterSizes[seg];
+    return;
   // } 
 }
 
@@ -978,7 +1007,7 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
   int B = n_clusters_not_base[0];
   int C =0, D =0;
   float C1 = 0;
-  for (int row = 1; row < 10; row++) {
+  for (int row = 1; row < 5; row++) {
     C += n_clusters_near_base[row];
     C1 += n_clusters_weighted[row];
     D += n_clusters_not_base[row];

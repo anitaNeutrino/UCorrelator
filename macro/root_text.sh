@@ -1253,15 +1253,37 @@ auto legend = new TLegend(0.1,0.7,0.48,0.9);
    legend->AddEntry("h4","Wais data","l");
    legend->Draw();
 
-
+near Base
+x=2
+cluster->Draw("n>>h1","n<10 && base==0")
+x=3.5
+cluster->Draw("n>>h2","n<10 && base==0","same")
+x=4.5
+cluster->Draw("n>>h3","n<10 && base==0","same")
+h1->GetXaxis()->SetTitle("clusterSize")
 
 auto legend = new TLegend(0.1,0.7,0.48,0.9);
    legend->AddEntry("h1","x=2, noBase","l");
-   legend->AddEntry("h2","x=2, nearBase","l");
-   legend->AddEntry("h3","x=3.5, noBase","l");
-   legend->AddEntry("h4","x=3.5, nearBase","l");
-   legend->AddEntry("h5","x=6.5, noBase","l");
-   legend->AddEntry("h6","x=6.5, nearBase","l");
+   legend->AddEntry("h2","x=3.5, noBase","l");
+   legend->AddEntry("h3","x=4.5, noBase","l");
+legend->Draw();
+
+
+x=2
+cluster->Draw("n>>h4","n<10 && base!=0")
+x=3.5
+cluster->Draw("n>>h5","n<10 && base!=0")
+x=4.5
+cluster->Draw("n>>h6","n<10 && base!=0")
+h4->GetXaxis()->SetTitle("clusterSize")
+
+h4->Draw()
+h5->Draw("same")
+h6->Draw("same")
+auto legend = new TLegend(0.1,0.7,0.48,0.9);
+   legend->AddEntry("h4","x=2, nearBase","l");
+   legend->AddEntry("h5","x=3.5, nearBase","l");
+   legend->AddEntry("h6","x=4.5, nearBase","l");
    legend->Draw();
 
 
@@ -1272,7 +1294,8 @@ auto legend = new TLegend(0.1,0.7,0.48,0.9);
    legend->AddEntry("h7","x=0.0001, below horizon thermal events passing quality cuts","l");
    legend->Draw();
 
-  h1->GetXaxis()->SetTitle("clusterSize")fit
+  h1->GetXaxis()->SetTitle("clusterSize")
+  fit
 
 
 gStyle->SetOptFit();
@@ -1295,15 +1318,15 @@ clusterSize->GetXaxis()->SetTitle("clusterSize")
 
 
 
-cluster->Draw("n>>clusterSize2","n<10 && base!=0")
+cluster->Draw("n>>clusterSize(9,0,9)","n<6 && base!=0")
 gStyle->SetOptFit();
-TF1 *fitMaxwell2 = new TF1("fitMaxwell","[0]*(x-0.5)^2*TMath::Exp(-1*[1]*(x-0.5)^2)", 0, 10)
-fitMaxwell2->SetParName(0,"c2");
-fitMaxwell2->SetParName(1,"a2");
-fitMaxwell2->SetParameter(0, 5);
-fitMaxwell2->SetParameter(1, 3);
-clusterSize2->Fit("fitMaxwell");
-clusterSize2->GetXaxis()->SetTitle("clusterSize2")
+TF1 *fitMaxwell3 = new TF1("fitMaxwell","[0]*(x-0.5)^2*TMath::Exp(-1*[1]*(x-0.5)^2)", 0, 6)
+fitMaxwell3->SetParName(0,"c2");
+fitMaxwell3->SetParName(1,"a2");
+fitMaxwell3->SetParameter(0, 5);
+fitMaxwell3->SetParameter(1, 3);
+clusterSize->Fit("fitMaxwell");
+clusterSize->GetXaxis()->SetTitle("clusterSize")
 
 
 
@@ -1323,22 +1346,22 @@ clusterSize->GetXaxis()->SetTitle("clusterSize")
 
 
 
-cluster->Draw("n>>noBaseClusterSize","n<6 && base==0")
+cluster->Draw("n>>noBaseClusterSize(9,0,9)","n<6 && base==0")
 gStyle->SetOptFit();
-TF1 *fitCombined3 = new TF1("fitCombined","[0]*TMath::Power(x,-2.3) + [1]*x^2*TMath::Exp(-0.14*x^2)", 0, 6)
-fitCombined3->SetParName(0,"c1");
-fitCombined3->SetParName(1,"c2");
-fitCombined3->SetParameter(0, 1);
-fitCombined3->SetParameter(1, 1);
+TF1 *fitCombined = new TF1("fitCombined","[0]*TMath::Power(x,-2.3) + [1]*(x-0.5)^2*TMath::Exp(-0.21*(x-0.5)^2)", 0, 6)
+fitCombined->SetParName(0,"c1");
+fitCombined->SetParName(1,"c2");
+fitCombined->SetParameter(0, 1);
+fitCombined->SetParameter(1, 1);
 noBaseClusterSize->Fit("fitCombined");
 noBaseClusterSize->GetXaxis()->SetTitle("noBaseClusterSize")
 
 
 
 
-cluster->Draw("n>>ClusterSize","n<10")
+cluster->Draw("n>>ClusterSize(9,0,9)","n>1 && n<6")
 gStyle->SetOptFit();
-TF1 *fitCombined = new TF1("fitCombined","[0]*TMath::Power(x,-2.3) + [1]*x^2*TMath::Exp(-0.18*x^2)", 0, 10)
+TF1 *fitCombined = new TF1("fitCombined","[1]*x^2*TMath::Exp(-0.32*x^2)", 0, 10)
 fitCombined->SetParName(0,"c1");
 fitCombined->SetParName(1,"c2");
 fitCombined->SetParameter(0, 1);

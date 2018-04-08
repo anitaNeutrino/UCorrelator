@@ -142,6 +142,7 @@ namespace UCorrelator
       int combineWith(const ProbabilityMap & other); 
        /** Used to remove information from various maps */ 
       int removeWith(const ProbabilityMap & other); 
+      void maskingWithMap(double & nMasked, double & nNotMasked, const ProbabilityMap & other);
 
       /** Add a point to the clustering. Returns the number of segments that had a non-zero contributions */ 
       int add(int & NOverlapedBases, double & p_ground, const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, double weight = 1, TFile * debugfile = 0); 
@@ -231,7 +232,7 @@ namespace UCorrelator
       int doClustering(double threshold = 0);
       // given event's longitude and latitude, return the cluster id that this event belongs to.
       //must call after the doClustering
-      double evaluateEvent(double theta,double phi,const Adu5Pat * gps);
+      void evaluateEvent(double & indexOfCluster, double & sizeOfCluster, double theta,double phi,const Adu5Pat * gps);
 
       int dumpNonZeroBases() const; 
       // use the results form doClustering
