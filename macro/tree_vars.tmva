@@ -1,0 +1,24 @@
+mapPeak @ mostImpulsivePeak(2).value 
+mapSNR @ mostImpulsivePeak(2).snr 
+deltaHilbertPeak @ mostImpulsiveDeconvolvedFiltered(2).peakHilbert-mostImpulsiveCoherentFiltered(2).peakHilbert
+hilbertPeak @ mostImpulsiveDeconvolvedFiltered(2).peakHilbert 
+impulsivity @ mostImpulsiveDeconvolvedFiltered(2).impulsivityMeasure 
+impulsivityXpol @ deconvolved_filtered[1-mostImpulsivePolAsInt()][0].impulsivityMeasure
+impulsivityH @ deconvolved_filtered[0][0].impulsivityMeasure 
+impulsivityV @ deconvolved_filtered[1][0].impulsivityMeasure  
+linearPolFrac @ mostImpulsiveDeconvolvedFiltered(2).instantaneousLinearPolFrac()
+linearPolAngle @ (TMath::ATan2(mostImpulsiveDeconvolvedFiltered(2).max_dU, mostImpulsiveDeconvolvedFiltered(2).max_dQ)/2)*TMath::RadToDeg()
+circPolFrac @ mostImpulsiveDeconvolvedFiltered(2).instantaneousCircPolFrac()
+totalPolFrac @ mostImpulsiveDeconvolvedFiltered(2).instantaneousTotalPolFrac()
+powerH @ deconvolved_filtered[0][0].power_50_50
+powerV @ deconvolved_filtered[1][0].power_50_50
+snr @ mostImpulsiveDeconvolvedFiltered(2).snr
+theta @ -1*mostImpulsivePeak(2).theta @ F @ 1
+run @ run @ I @ 1 
+weight @ mc.weight @ F @ 1 
+#energy @ mc.energy @ F @ 1 
+eventNumber @ eventNumber @ I @ 1 
+evnum1 @ eventNumber/10000 @ I @ 1 
+evnum2 @ eventNumber%10000 @ I @ 1 
+pol @ mostImpulsivePolAsInt() @ I @ 1 
+peak @ mostImpulsiveInd() @ I @ 1 
