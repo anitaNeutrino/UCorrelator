@@ -27,7 +27,7 @@ TCut snrCut("mostImpulsiveDeconvolvedFiltered(2).snr>9.5");
 // TCut isMC = "mc.wf[1].peakHilbert > mc.wf[0].peakHilbert"; 
 TCut goodPointingMC("abs(FFTtools::wrap(peak[1][0].phi-mc.phi,360,0) < 5 && abs(FFTtools::wrap(peak[1][0].theta-mc.theta,360,0)) < 2)");
 TCut notHical("Hical2::isHical(eventNumber, header->triggerTime, FFTtools::wrap(anitaLocation.heading - peak[0][0].phi, 360))!=1");
-TCut qualityCut = isReal && notGlitch && notBadReconstruction && notBlast && triggered && notMasked && notStrongCW && notHical;
+TCut qualityCut = isReal && notGlitch && notBadReconstruction && notBlast && triggered && notMasked && notStrongCW && notHical && snrCut;
 TCut goodPointingWais = (isWaisH || isWaisV);
 TCut thermal_sample = qualityCut;
 TCut wais_sample =  qualityCut && goodPointingWais;

@@ -15,7 +15,7 @@ void makeTMVATrees(const char * dir, const char * tree_name, int start_run, int 
   while (current_run <= end_run) 
   {
 
-    int end = current_run + runs_per_file-1; 
+    int end = std::min(current_run + runs_per_file-1, end_run); 
 
     std::vector<TChain *> c(nworkers); 
 
