@@ -138,6 +138,8 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
                                             OverlapMode mode,  bool remove_self, std::vector<std::pair<int, double > > * segments, 
                                             std::vector<std::pair<int,double> > * max_dens, double * inv_two_pi_sqrt_det ) const
 {
+  weight = 1;
+  //so no weight
   std::vector<std::pair<int,double> > segs; 
 
   double inv = computeContributions(sum,pat,pol,peak,segs,bases,0,max_dens); 
@@ -166,7 +168,6 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
 
   //pick the right thing to overlap with 
   const double * the_rest = mode == OVERLAP_SUM_SQRTS ? getProbSqrtSums(normalized) : getProbSums(normalized);
-
  for (int i =0; i< N; i++)
   {
     int seg = segs[i].first; 
@@ -899,6 +900,8 @@ void  UCorrelator::ProbabilityMap::evaluateEvent(double & indexOfCluster, double
 
 std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool blind, const char * option) const
 {
+  //hard coded to blind, comment out to unblind
+  blind = true;
 
   const int maxes[] = {1,2,3,4,5,6,7,8,9,10,20,50,100,(int) 100e6}; 
   const int mins[] =  {1,2,3,4,5,6,7,8,9,10,11,21,51,101}; 
@@ -917,7 +920,12 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
     int n = round(clusterSizes[i]); 
     int n_nearBase =round(clusterSizes_with_base[i]);
     int n_notnearBase = round(clusterSizes_without_base[i]); 
-    std::cout<< clusterSizes[i] <<" \t"<<n << " \t"<< n_nearBase<< " \t" <<n_notnearBase <<  std::endl;
+    if(blind and n==1 and n_notnearBase==1){
+      // if the case is what we should be blind, then skip the output.
+      ;
+    }else{
+      std::cout <<n << " \t"<< n_nearBase<< " \t" <<n_notnearBase <<  std::endl;
+    }
 
     float fractionOfEventsNearBase = n_nearBase/float(n);
 
@@ -935,6 +943,11 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
          break; 
        }
     }
+  }
+  // if we need to be blind to Signal box, just set this element to 0.
+  if(blind){
+    n_clusters[0] -= n_clusters_not_base[0];
+    n_clusters_not_base[0] = 0;
   }
 
   if (draw){
@@ -959,16 +972,31 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
   }
 
   
+  std::vector <double> temp_map(p.seg->NSegments(),0);
 
   if(draw == 1){
-    segmentationScheme()->Draw(option,&ps_norm[0]);
+    temp_map = ps_norm;
   }else if(draw == 2){
-    segmentationScheme()->Draw(option,&mapOfClusterSizes[0]);
+    temp_map = mapOfClusterSizes;
   }else if(draw == 3){
-    segmentationScheme()->Draw(option,&mapOfClusterIndexs[0]);
+    temp_map = mapOfClusterIndexs;
   }else if(draw == 4){
-    segmentationScheme()->Draw(option,&uniform_ps_weighted_by_base[0]);
-  }  
+    temp_map = uniform_ps_weighted_by_base;
+  }else if(draw == 5){
+    temp_map = uniform_ps_with_base;
+  }else if(draw == 6){
+    temp_map = uniform_ps_without_base;
+  }
+  // blinded to the map unknown singlets
+  if(blind){
+    for (int i =0; i< p.seg->NSegments(); i++){
+      if(round(mapOfClusterSizes[i]) == 1 and uniform_ps_without_base[i] != 0){
+        temp_map[i] = 0;
+      }
+    }
+  }
+  segmentationScheme()->Draw(option,&temp_map[0]);
+
 
   // calculate the total number of clusters near base
   double sumNumOfClusterNearBase = 0;
@@ -999,29 +1027,27 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
       nSinglets_unkownBase++;
     }
   }
+  if (blind){
+    nSinglets_unkownBase = 0;
+  }
 
   // std::cout<< countNofClusterWithBase<< " \t" << countNofClusterWithoutBase<< " \t"<< countNofEventsWithBase<< " \t"<< countNofEventsWithoutBase<< " \t"<< countNofBase << " \t"<< countNofUnkownBase<< std::endl;
 
   //background estimate:
-  int A = n_clusters_near_base[0];
-  int B = n_clusters_not_base[0];
-  int C =0, D =0;
-  float C1 = 0;
-  for (int row = 1; row < 5; row++) {
-    C += n_clusters_near_base[row];
-    C1 += n_clusters_weighted[row];
-    D += n_clusters_not_base[row];
+  int A=0, B =0;
+  int C = n_clusters_not_base[0];
+  int D = n_clusters_near_base[0];
+  float B1 = 0;
+  for (int row = 1; row < 5; row++){
+    A += n_clusters_not_base[row];
+    B += n_clusters_near_base[row];
+    B1 += n_clusters_weighted[row];
   }
-  float B0 = float(D)*float(A)/float(C);
-  float B1 = float(D)*float(A)/float(C1);
-  std::cout<<"NumOfClusters = "<< clusterSizes.size() << " \tweightedNumOfClusters = "<<sumFractionOfEventsNearBase<< "\t NumOfClusterNearBase="<< sumNumOfClusterNearBase << std::endl;
-  std::cout<< "Anthropogenic Singlets(ABCD mehtod)="<< B0<< "\t Anthropogenic Singlets(Weighted ABCD mehtod)="<< B1<< std::endl;
-
+  float C0 = float(D)*float(A)/float(B);
+  float C1 = float(D)*float(A)/float(B1);
+  std::cout<< "Anthropogenic background(ABCD mehtod)="<< C0<< "\t Anthropogenic background(Weighted ABCD mehtod)="<< C1<< std::endl;
   std::cout<<"\n\n" <<std::endl;
-  std::cout<< "B0="<< B0<< " B1="<< B1 <<" of B="<< B<<std::endl;
-  std::cout<<sumNumOfClusterNearBase<< " \t"<<sumFractionOfEventsNearBase<< " \t"<< A<< " \t"<< C << " \t"<< D<< " \t"<< B0 << " \t"<< B << " \t"<< C1<< " \t"<< B1 << std::endl;
-
-
+  std::cout<<sumNumOfClusterNearBase<< " \t"<<sumFractionOfEventsNearBase<< " \t"<< A<< " \t"<< B << " \t"<< C<<" \t"<< D<< " \t"<< C0 << " \t"<< C1 << std::endl;
   // TGraph *gr1 = new TGraph(N, x, y);
   // h1->Draw("colz");
   return std::make_pair(nSinglets_knownBase, nSinglets_unkownBase);

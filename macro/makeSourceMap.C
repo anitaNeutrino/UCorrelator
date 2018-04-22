@@ -3,9 +3,10 @@
 #include "AnitaDataset.h" 
  
 // TCut cutString("");
-TCut cutString("theta<-3.5 && impulsivity>0.71");
-double xSigma = 5;
-const char * xString = "5";
+TCut cutString("theta<-5.8 && impulsivity>0.71");
+double xSigma = 7;
+const char * xString = "7";
+int blind = 1; // hard coded to blind
 // TCut cutString("theta<-5.8 && impulsivity<0.60"); // select for thermal events
 // TCut cutString("theta<-3.5 && impulsivity>0.71");
 // const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && theta < 40 )";
@@ -43,8 +44,11 @@ UCorrelator::ProbabilityMap::Params * map_params()
   p->collision_detection = false; 
   p->verbosity = 0; // verbosity level for output info.
   p->maximum_distance = xSigma;
-  p->max_dphi = 5;
-  p->max_dtheta = 5;
+  // p->max_dphi = 5;
+  // p->max_dtheta = 5;
+  // already have snr cut, so no angular upper limit
+  p->max_dphi = 9999;
+  p->max_dtheta = 9999;
   // p->min_p_on_continent = 0;
  
 
@@ -220,7 +224,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   Adu5Pat * gps = new Adu5Pat; 
 
   int total_event_n = c.Draw("run:eventNumber:pol*5+peak:impulsivity:linearPolFrac:linearPolAngle:powerH:powerV",  cutString, "goff" ); 
-  printf("%d events pass selection\n", total_event_n); 
+  printf("%d thousands events pass selection\n", total_event_n/int(1000)); 
 
 
   UCorrelator::ProbabilityMap::Params * p = map_params(); 
@@ -351,12 +355,11 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
 
 int _evaluateSourceMap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run, int end_run, const char * filePrefix, int mod, int mod_remainder) 
 {
-std::cout<<"hello 0"<<std::endl;
 
   TFile sourceMapFile(TString::Format("source_maps/%s/_%s%smod%d_remainder%d_%d_%d.root",treeName,xString,filePrefix,mod, mod_remainder,start_run, end_run)); 
   TTree * events =(TTree *) sourceMapFile.Get("events"); 
   int total_event_n = events->GetEntries();
-  std::cout<< "total number of events: "<< total_event_n<< std::endl;
+  std::cout<< "total number of events: "<< total_event_n/int(1000) << " thousands"<< std::endl;
   int run, event, pol, nsegs, NOverlapedBases;
   double impulsivity, impulsivityV, impulsivityH, powerV, powerH, linearPolFrac, linearPolAngle, indexOfCluster, longitude, latitude;
   events->SetBranchAddress("run",&run);
@@ -480,6 +483,9 @@ std::cout<<"hello 0"<<std::endl;
     if(count_n[j]==0){
       continue;
     }
+    if(blind and count_n[j] == 1 and count_noBase[j]==1){
+      continue;
+    }
     index=j;
     n=count_n[j];
     _pol=first_pol[j];
@@ -512,13 +518,13 @@ std::cout<<"hello 0"<<std::endl;
 
 
 void _makeMCmapAndEvaluateEfficiency(){
-  char const * filePrefixs[15] = {"0.0002","1.0","1.8","2.0","2.2","2.5","3.5","4.5","5.5","6","6.5","7","7.5","8","10.5"};
+  char const * filePrefixs[8] = {"0.0002","1","2","3","4","5","6","7"};
   TFile * sourceMapFile;
   TFile mcMapFile(TString::Format("source_maps/weightedMC/weightedMCmod1_remainder0_1_500.root")); 
   UCorrelator::ProbabilityMap * mcMaps = (UCorrelator::ProbabilityMap*) mcMapFile.Get("maps");
   
   UCorrelator::ProbabilityMap * sourceMaps;
-  for (int i=0; i<15; i++){
+  for (int i=0; i<8; i++){
     sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%ssigma_30002_mod1_remainder0_41_367.root",filePrefixs[i])); 
     sourceMaps = (UCorrelator::ProbabilityMap*) sourceMapFile->Get("maps");
     double nMasked=0, nNotMasked=0;
@@ -527,6 +533,206 @@ void _makeMCmapAndEvaluateEfficiency(){
     delete sourceMapFile;
   }
   
+}
+
+
+void _evaluateMCEfficiency(){
+  char const * xStrings[8] = {"0.0002","1","2","3","4","5","6","7"};
+  double const xSigmas[8] = {0.0002,1,2,3,4,5,6,7};  
+  TChain overlap("overlap");
+  overlap.Add("overlap/*_1_10_*.root");
+  for (int i=0; i<8; i++){
+    // double nOverlaped = overlap.Draw("x","","goff");
+    // double nNotOverlaped = overlap.Draw("x","","goff");
+    TH1 * h1 = new TH1D(TString::Format("plot1_%d",i),"x", 300, 0,20);
+    TH1 * h2 = new TH1D(TString::Format("plot2_%d",i),"x", 300, 0,20);
+    overlap.Draw(TString::Format("x>>%s",h1->GetName()),TString::Format("(x==%s && O>0)*S",xStrings[i]),"goff");
+    overlap.Draw(TString::Format("x>>%s",h2->GetName()),TString::Format("(x==%s && O==0)*S",xStrings[i]),"goff");
+    double nOverlaped = h1->Integral();
+    double nNotOverlaped = h2->Integral();
+    delete h1;
+    delete h2;
+    std::cout<< "i="<<i<<"\t nOverlaped = "<<nOverlaped<< " \tnNotOverlaped = "<<nNotOverlaped<<"\t "<<xStrings[i]<< " \t"<< nNotOverlaped/(nOverlaped+nNotOverlaped)<<std::endl;
+  }
+  
+}
+
+
+//quickly fill the sizeOfCluster in events tree. 
+//Just for a temp use.
+void _fillSizeOfCluster(){
+  char const * filePrefixs[8] = {"0.0002","1","2","3","4","5","6","7"};
+  TFile * sourceMapFile;
+  TTree * events;
+  UCorrelator::ProbabilityMap * map;
+  Adu5Pat * gps = new Adu5Pat; 
+  for (int i=0; i<8; i++){
+    sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%ssigma_30002_mod1_remainder0_41_367.root",filePrefixs[i]),"update"); 
+    events = (TTree*) sourceMapFile->Get("events");
+    map = (UCorrelator::ProbabilityMap*) sourceMapFile->Get("maps");
+
+    //doClustering
+    map->doClustering(); 
+    //each event find it belongs to which cluster.
+
+    double indexOfCluster,sizeOfCluster;
+    double theta, phi;
+    int nsegs;
+    TBranch *branchSizeOfCluster = events->Branch("sizeOfCluster",&sizeOfCluster);
+    events->SetBranchAddress("theta",&theta);
+    events->SetBranchAddress("phi",&phi);
+    events->SetBranchAddress("gps",&gps);
+    events->SetBranchAddress("nsegs",&nsegs);
+    for(int i =0; i< events->GetEntries(); i++){
+      events->GetEntry(i);
+      if(nsegs!=0){
+         map->evaluateEvent(indexOfCluster, sizeOfCluster, -1*theta,phi, gps);
+      }else{
+        indexOfCluster = -1;
+        sizeOfCluster = -1;
+      }
+      printf("%g ",indexOfCluster);
+      // indexOfCluster = -1 :  the event does not project to ground with certern sigma, or nsegs == 0  
+      branchSizeOfCluster->Fill();
+    }
+    sourceMapFile->cd(); 
+    events->Write();
+  }
+}
+
+
+void _evaluateBackground(){
+  char const * filePrefixs[8] = {"0.0002","1","2","3","4","5","6","7"};
+  TFile * sourceMapFile;
+  TTree * events;
+  int A, B, C, D;
+  for (int i=0; i<8; i++){
+    sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%ssigma_30002_mod1_remainder0_41_367.root",filePrefixs[i])); 
+    events = (TTree*) sourceMapFile->Get("events");
+    A = events->Draw("run","abs(FFTtools::wrap(linearPolAngle,90,0))<30 && round(sizeOfCluster)<6 && round(sizeOfCluster)>1","goff");
+    B = events->Draw("run","abs(FFTtools::wrap(linearPolAngle,90,0))>=30 && round(sizeOfCluster)<6 && round(sizeOfCluster)>1","goff");
+    C = events->Draw("run","abs(FFTtools::wrap(linearPolAngle,90,0))<30 && round(sizeOfCluster) == 1","goff");
+    D = events->Draw("run","abs(FFTtools::wrap(linearPolAngle,90,0))>=30 && round(sizeOfCluster) == 1","goff");
+    if (blind){
+        C = 0;
+    }
+    std::cout<< "i="<<i<<"\t"<<A<< "\t"<<B<<"\t"<< C << " \t"<<D<<"\t "<<filePrefixs[i]<< " \t"<< float(A)*float(D)/float(B)<<std::endl;
+    delete sourceMapFile;
+  }
+  
+}
+
+
+// insert mc event by event and see the overlap 
+int _evaluateMCOverlap(const char * treeName, const char* summaryFileFormat, const char* thermalTreeFormat, int start_run = 50, int end_run =367, const char * _xString = "2.0", const double _xSigma = 2,
+                        const char * removed_events_file = "removed_events.txt", const char * outputFilePrefix = "overlap/",const char * sourcemapFilePrefix = "source_maps/") 
+{
+  
+  TChain c(treeName); 
+  addRuns(c,start_run,end_run, thermalTreeFormat); 
+  TFile outputFile(TString::Format("%s%s_%d_%d_%s.root",outputFilePrefix,_xString,start_run,end_run, treeName ),"RECREATE"); 
+  //output file and output tree named overlap
+  TTree * outputTree = new TTree("overlap","overlap"); 
+  double O=999,S,theta,polangle, impulsivity,powerH,powerV, linearPolFrac, linearPolAngle, longitude, latitude, x; 
+  int run,eventNumber,pol,peak;
+  double wgt = 1; 
+  double mcE = 0; 
+  int removed = 0; 
+
+  //branches in outputTree, the main purpose are to fill those branches.
+  outputTree->Branch("O",&O); 
+  outputTree->Branch("S",&S); 
+  outputTree->Branch("x",&x); 
+  outputTree->Branch("impulsivity",&impulsivity); 
+  outputTree->Branch("run",&run); 
+  outputTree->Branch("eventNumber",&eventNumber); 
+  outputTree->Branch("pol",&pol); 
+  outputTree->Branch("theta",&theta); 
+  outputTree->Branch("polangle",&polangle); 
+  outputTree->Branch("weight",&wgt); // simulation event's weight 
+  outputTree->Branch("mcE",&mcE); // simlation evetns's energy
+  outputTree->Branch("peak",&peak); 
+  outputTree->Branch("removed",&removed); // is this event removed or not.
+  outputTree->Branch("powerH",&powerH);
+  outputTree->Branch("powerV",&powerV);
+  outputTree->Branch("linearPolFrac",&linearPolFrac);
+  outputTree->Branch("linearPolAngle",&linearPolAngle);
+  outputTree->Branch("longitude",&longitude); 
+  outputTree->Branch("latitude",&latitude); 
+
+  TFile * sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%ssigma_30002_mod1_remainder0_41_367.root",_xString)); 
+  UCorrelator::ProbabilityMap * map = (UCorrelator::ProbabilityMap*) sourceMapFile->Get("maps");
+  int total_event_n = c.Draw("run:eventNumber:pol*5+peak:impulsivity:linearPolFrac:linearPolAngle:powerH:powerV",  cutString, "goff" ); 
+  std::cout<< "total number of events: "<< total_event_n<< std::endl;
+
+  AnitaEventSummary * sum = new AnitaEventSummary; 
+  Adu5Pat * gps = new Adu5Pat; 
+  //if removed_events_file exsit. otherwise removed_events be 0
+  std::set<int> * removed_events = removed_events_file ? getRemovedEvents(removed_events_file) : 0; 
+
+  int loaded_run = 0; 
+  TFile * sumfile = 0; 
+  TTree * sumtree = 0; 
+  for (int i = 0; i < total_event_n; i+=1){
+    //loop through thermal chain
+    run = c.GetV1()[i]; 
+    if (run!= loaded_run)
+    {
+        if (sumfile) delete sumfile; 
+        sumfile = new TFile(TString::Format(summaryFileFormat,run));        
+        gROOT->cd(); 
+        sumtree = (TTree*) sumfile->Get(treeName); 
+        sumtree->SetBranchAddress("summary",&sum); 
+        sumtree->SetBranchAddress("pat",&gps); 
+        sumtree->BuildIndex("eventNumber"); 
+        loaded_run =run; 
+    }
+    //each eventNumber in c, get S, pol, peak, F, eventNumber
+    x = _xSigma;
+    eventNumber = int(c.GetV2()[i]);   
+    pol = int(c.GetV3()[i]) / 5; 
+    peak = int(c.GetV3()[i]) % 5;
+    impulsivity = c.GetV4()[i];
+    linearPolFrac = c.GetVal(4)[i];
+    linearPolAngle = c.GetVal(5)[i];
+    powerH = c.GetVal(6)[i];
+    powerV = c.GetVal(7)[i]; 
+    //get more variables from summary file
+    sumtree->GetEntryWithIndex(eventNumber);
+    longitude = sum->peak[pol][peak].longitude;
+    latitude = sum->peak[pol][peak].latitude;
+    polangle = 90/TMath::Pi() * TMath::ATan2(sum->deconvolved_filtered[pol][peak].max_dU, sum->deconvolved_filtered[pol][peak].max_dQ); 
+    theta = sum->peak[pol][peak].theta;
+    S = sum->mc.weight; 
+
+    //this eventNumber is in the removed list.
+    removed = (removed_events && removed_events->count(eventNumber));
+    //fill the values for mc  
+    wgt = sum->mc.weight; 
+    mcE = sum->mc.energy; 
+
+
+    double inv_two_pi_sqrt_det; 
+    std::vector<std::pair<int,double> > base_contribution;
+    std::vector<std::pair<int,double> > max_dens;
+    //calculate the overlap between this current event with the prob map.
+    //got returned density and base_contribution
+    // the overlap calculation is based on the map's x.
+    O = map->overlap(sum,gps,AnitaPol::AnitaPol_t(pol),peak,true,S, &base_contribution, UCorrelator::ProbabilityMap::OVERLAP_SUM_SQRTS, 0,0,&max_dens,&inv_two_pi_sqrt_det); 
+    
+    // O=1;
+
+//    if (O < 0) O = -1; 
+    printf("x=%g \ti=%d \trun=%d \teventnumber=%d \timpulsivity=%g \tS=%g \tO=%g\n",_xSigma,i, run,eventNumber, impulsivity,S, O); 
+    outputFile.cd(); 
+    //all the branch variable are defined, so fill this event in output tree.
+    outputTree->Fill(); 
+  }
+
+  outputFile.cd(); 
+  outputTree->Write(); 
+  return 0; 
+
 }
 
 
@@ -556,7 +762,7 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     end_run = 367;
     for (mod_remainder= 0; mod_remainder<mod; mod_remainder++){
     // for (mod_remainder= 1; mod_remainder<2; mod_remainder++){
-       _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+       // _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
        _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
        // _makeMCmapAndEvaluateEfficiency(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
     }
@@ -567,15 +773,17 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_1000_sinsub_10_3_ad_2.root";
     const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_1000_sinsub_10_3_ad_2.root";
     const char * filePrefix = "sigma_1000_";
-    int mod = 170;
+    int mod = 3;
     int mod_remainder = 0;
     start_run = 1;
     end_run = 1;
-    for (mod_remainder= 0; mod_remainder<mod; mod_remainder+=2){
-    // for (mod_remainder= 0; mod_remainder<1; mod_remainder++){
+    // for (mod_remainder= 0; mod_remainder<mod; mod_remainder+=2){
+    for (mod_remainder= 0; mod_remainder<1; mod_remainder++){
       _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
-      _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+      // _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
     }
+    
+
   }else if(!strcmp(treeName,"weightedMC")){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
     const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_1000_sinsub_10_3_ad_2.root";
@@ -584,13 +792,20 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     int mod = 1;
     int mod_remainder = 0;
     start_run = 1;
-    end_run = 500;
+    end_run = 10;
     // for (mod_remainder= 0; mod_remainder<mod; mod_remainder+=2){
     for (mod_remainder= 0; mod_remainder<1; mod_remainder++){
       // _makeSourceMap("simulation", summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder,1);
       // _evaluateSourceMap("simulation", summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
     }
-    _makeMCmapAndEvaluateEfficiency();
+    // char const * xStrings[8] = {"0.0002","1","2","3","4","5","6","7"};
+    // double const xSigmas[8] = {0.0002,1,2,3,4,5,6,7};
+    // for(int i=0; i<8; i++){
+    //   _evaluateMCOverlap("simulation", summaryFileFormat, thermalTreeFormat, start_run, end_run,xStrings[i],xSigmas[i]);
+    // }
+    // _fillSizeOfCluster();
+    // _evaluateMCEfficiency();
+    _evaluateBackground();
 
   }else{
     std::cout<< "wrong input treeName"<<std::endl;
