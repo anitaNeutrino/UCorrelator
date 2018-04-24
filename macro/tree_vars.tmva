@@ -10,12 +10,13 @@ linearPolFrac @ mostImpulsiveDeconvolvedFiltered(2).instantaneousLinearPolFrac()
 linearPolAngle @ (TMath::ATan2(mostImpulsiveDeconvolvedFiltered(2).max_dU, mostImpulsiveDeconvolvedFiltered(2).max_dQ)/2)*TMath::RadToDeg()
 circPolFrac @ mostImpulsiveDeconvolvedFiltered(2).instantaneousCircPolFrac()
 totalPolFrac @ mostImpulsiveDeconvolvedFiltered(2).instantaneousTotalPolFrac()
-iRatio @ mostImpulsiveCoherentFiltered(2).I/mostImpulsiveCoherent(2).I 
 peakDiffRatio @ abs(peak[mostImpulsivePolAsInt(2)][0].value - peak[mostImpulsivePolAsInt(2)][1].value)/max(peak[mostImpulsivePolAsInt(2)][0].value, peak[mostImpulsivePolAsInt(2)][1].value)
+iRatio @ mostImpulsiveCoherentFiltered(2).I/mostImpulsiveCoherent(2).I 
 powerH @ deconvolved_filtered[0][0].power_50_50
 powerV @ deconvolved_filtered[1][0].power_50_50
 snr @ mostImpulsiveDeconvolvedFiltered(2).snr
 theta @ -1*mostImpulsivePeak(2).theta @ F @ 1
+phi @ -1*mostImpulsivePeak(2).phi @ F @ 1
 run @ run @ I @ 1 
 weight @ mc.weight @ F @ 1 
 #energy @ mc.energy @ F @ 1 
