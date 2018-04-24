@@ -7,7 +7,7 @@ void plotFisher(const char * var = "deconvImpulsivity")
   TChain chain2("anita4"); 
   chain2.Add("thermalTrees/a4all*30002*.root");
   TChain chain3("simulation"); 
-  chain3.Add("thermalTrees/simulated*1001*.root");
+  chain3.Add("thermalTrees/simulated*1000*.root");
   TChain chain4("wais"); 
   chain4.Add("thermalTrees/wais*root"); 
 
@@ -29,20 +29,30 @@ void plotFisher(const char * var = "deconvImpulsivity")
   // chain3.Draw("F >> h3", "weight", "same"); 
   // chain4.Draw("F >> h4","","same"); 
 
-  TH1D * h1 = new TH1D("h1","Above Horizontal Events ",200,0,1.1); 
-  TH1D * h2 = new TH1D("h2","Below Horizontal Events  ",200,0,1.1); 
-  TH1D * h3 = new TH1D("h3","MinBias Energy222 MC",200,0,1.1); 
-  TH1D * h4 = new TH1D("h4","Wais data",200,0,1.1); 
+  // TH1D * h1 = new TH1D("h1","Above Horizontal Events ",200,0,1.1); 
+  // TH1D * h2 = new TH1D("h2","Below Horizontal Events  ",200,0,1.1); 
+  // TH1D * h3 = new TH1D("h3","MinBias Energy222 MC",200,0,1.1); 
+  // TH1D * h4 = new TH1D("h4","Wais data",200,0,1.1); 
+  // TCanvas * dists = new TCanvas("c1","c1"); 
+  // chain1.Draw("impulsivity >> h1","theta>0", ""); 
+  // chain2.Draw("impulsivity >> h2","theta<=-5.8", "same"); 
+  // chain3.Draw("impulsivity >> h3", "weight", "same"); 
+  // chain4.Draw("impulsivity >> h4","","same");
+
+  TH1D * h1 = new TH1D("h1","Above Horizontal Events ",200,0,60); 
+  TH1D * h2 = new TH1D("h2","Below Horizontal Events  ",200,0,60); 
+  TH1D * h3 = new TH1D("h3","MinBias Energy222 MC",200,0,60); 
+  TH1D * h4 = new TH1D("h4","Wais data",200,0,60); 
   TCanvas * dists = new TCanvas("c1","c1"); 
-  chain1.Draw("deconvImpulsivity >> h1","theta>-3.5", ""); 
-  chain2.Draw("deconvImpulsivity >> h2","theta<=-3.5", "same"); 
-  chain3.Draw("deconvImpulsivity >> h3", "weight", "same"); 
-  chain4.Draw("deconvImpulsivity >> h4","","same");
+  chain1.Draw("snr >> h1","theta>0", ""); 
+  chain2.Draw("snr >> h2","theta<=-5.8", "same"); 
+  chain3.Draw("snr >> h3", "weight", "same"); 
+  chain4.Draw("snr >> h4","","same");
 
   auto legend = new TLegend(0.1,0.7,0.48,0.9);
    // legend->SetHeader("The Legend Title","C"); // option "C" allows to center the header
-   legend->AddEntry("h1","theta>-3.5 Events","l");
-   legend->AddEntry("h2","theta<-3.5 Events","l");
+   legend->AddEntry("h1","Above Horizontal Events","l");
+   legend->AddEntry("h2","Below horizon Events","l");
    legend->AddEntry("h3","MinBias Energy222 MC","l");
    legend->AddEntry("h4","Wais data","l");
    legend->Draw();

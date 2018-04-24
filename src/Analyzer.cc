@@ -1145,10 +1145,6 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
     { 
       flags->isStepFunction |= (1<<4);
     }
-    else
-    {
-      flags->isStepFunction = 0; 
-    }
 
     if(truth){
       // mc data: since the data is fake, just set no glitch.
@@ -1157,6 +1153,9 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
       //normal data 
       flags->hasGlitch = fae->getUsefulAnitaEvent()->fRFSpike;
     }
+  }else
+  {
+    flags->isStepFunction = 0; 
   }
 
 }

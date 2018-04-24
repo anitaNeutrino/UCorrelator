@@ -183,6 +183,7 @@ void addRuns(TChain & c, int start_run, int end_run, const char* thermalTreeForm
   {
     if (start_run < i + 40 && end_run >= i)
     {
+      // int end = std::min(end_run,i+39);
       TString adding = TString::Format(thermalTreeFormat,i,i+39);
       printf("Adding %s\n", adding.Data() ); 
       c.Add(adding.Data() ); 
