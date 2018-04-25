@@ -1,6 +1,5 @@
 
 #include "FFTtools.h"
-
 UCorrelator::ProbabilityMap::Params * map_params()
 {
   // pixel x, pixel y , max meter x, max meter y
@@ -43,8 +42,8 @@ UCorrelator::ProbabilityMap::Params * map_params()
 // UCorrelator::Analyzer *doInteractive(int run = 316, int event = 82634352, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 51, int event = 3697122, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 173, int event = 36506330, bool decimated = false, bool simulated = false )
-UCorrelator::Analyzer *doInteractive(int run = 43, int event = 1757432, bool decimated = false, bool simulated = false )
-// UCorrelator::Analyzer *doInteractive(int run = 153, int event = 30003847, bool decimated = false, bool simulated = false )
+// UCorrelator::Analyzer *doInteractive(int run = 43, int event = 1757432, bool decimated = false, bool simulated = false )
+UCorrelator::Analyzer *doInteractive(int run = 233, int event = 56956274, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204382, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204407, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 160, int event = 32096871, bool decimated = false, bool simulated = false )
@@ -109,7 +108,7 @@ UCorrelator::Analyzer *doInteractive(int run = 43, int event = 1757432, bool dec
 
   AnitaEventSummary sum; 
   analyzer->analyze(ev,&sum,d.truth()); 
-  analyzer->drawSummary(0,0,1); //third 1 is use filtered peak or csw
+  // analyzer->drawSummary(0,0,1); //third 1 is use filtered peak or csw
   std::cout<< "eventNumber "<<sum.eventNumber<< " glitch="<< sum.flags.hasGlitch <<" flags->isStepFunction= "<<sum.flags.isStepFunction<< std::endl;
   /*
   TCanvas * c2 = new TCanvas; 
@@ -140,6 +139,9 @@ UCorrelator::Analyzer *doInteractive(int run = 43, int event = 1757432, bool dec
   UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(p); 
   int n_seg = map->add(NOverlapedBases, p_ground, &sum, d.gps(), AnitaPol::AnitaPol_t(sum.mostImpulsivePolAsInt(2)), sum.mostImpulsiveInd(2), 1);
   std::cout<< "p_ground=" << p_ground <<" n_seg="<< n_seg<< " theta="<< sum.mostImpulsivePeak(2).theta << " snr="<< sum.mostImpulsiveDeconvolvedFiltered(2).snr<< std::endl;
+  
+  std::cout<< "###is hical = "<< Hical2::isHical(sum.eventNumber, d.header()->triggerTime, FFTtools::wrap(sum.anitaLocation.heading - sum.peak[0][0].phi, 360)) << std::endl;
+  std::cout<< "###evenummber =  "<< sum.eventNumber <<"\t triggerTime ="<< d.header()->triggerTime<< "\t heading = "<< sum.anitaLocation.heading  << "\t peak phi"<<  sum.peak[0][0].phi << std::endl;
   // map->showClusters(1,0);
 
 

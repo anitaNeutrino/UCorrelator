@@ -282,8 +282,6 @@ anita4->Draw("summary->channels[0][].rms:summary->channels[0][].channelNumber>>h
 
 anita4->Draw("-1*summary->peak[0][0].theta:FFTtools::wrap(summary->peak[0][0].phi-pat.heading)","","");
 
-root doTMVA_A4.C'(140,140,0,"max_300000_sinsub_10_3_ad_2",1)'
-
 
 TestTree->Draw("Fisher>>h(300,-90,67)","classID==1","")
 TestTree->Draw("Fisher","classID==0","same")
@@ -619,8 +617,6 @@ wais->Draw("FFTtools::wrap(peak[1][0].theta - wais.theta, 360, 0):FFTtools::wrap
 wais->Draw("FFTtools::wrap(wais.theta, 360, 0):realTime>>h1(1000,,,10000,,)","flags.pulser == 1","colz")
 
 testAllPair->Draw("thetaWave*180/3.14:phiWave*180/3.14:expectedDeltaT - MLP>>t1()","ant1 == 0 && ant2 == 32 && pol == 0","colz")
-testAllPair->Draw("thetaWave*180/3.14:phiWave*180/3.14:expectedDeltaT>>t2()","ant1 == 0 && ant2 == 32 && pol == 0","colz")
-testAllPair->Draw("thetaWave*180/3.14:phiWave*180/3.14:MLP>>t2()","ant1 == 0 && ant2 == 32 && pol == 0","colz")
 
 
 
@@ -816,13 +812,6 @@ wais->Draw("summary->peak[1][0].value:summary->coherent_filtered[1][0].impulsivi
 
 
 
-wais->Draw("coherent_filtered[0][0].linearPolFrac():realTime>>h1(1000,,,300,-5,5)","flags.pulser == 1 && abs(FFTtools::wrap(peak[0][0].phi - wais.phi, 360, 0))<5","colz")
-wais->Draw("mostImpulsiveCoherentFiltered().linearPolFrac():realTime>>h1(1000,,,300,-5,5)","flags.pulser == 1 && abs(FFTtools::wrap(peak[0][0].phi - wais.phi, 360, 0))<5","colz")
-wais->Draw("mostImpulsivePol(2):realTime>>h1(1000,,,300,-5,5)","flags.pulser == 1 && abs(FFTtools::wrap(peak[0][0].phi - wais.phi, 360, 0))<5","colz")
-wais->Draw("mostImpulsiveInd():realTime>>h1(1000,,,300,-5,5)","flags.pulser == 1 && abs(FFTtools::wrap(peak[0][0].phi - wais.phi, 360, 0))<5","colz")
-wais->Draw("altitude:run>>h1(1000,,,300,-5,5)","flags.pulser == 1 && abs(FFTtools::wrap(peak[0][0].phi - wais.phi, 360, 0))<5","colz")
-
-
 
 wais->Draw("deconvolved_filtered[0][0].peakTime - deconvolved_filtered[1][0].peakTime","flags.pulser == 1 && abs(FFTtools::wrap(peak[0][0].phi - wais.phi, 360, 0))<5","colz")
 
@@ -831,8 +820,6 @@ TestTree->Draw("Fisher","classID==1","")
 TestTree->Draw("Fisher","classID==0","same")
 
 
-wais->Draw("coherent_filtered[0][0].linearPolFrac()","flags.pulser == 1 && abs(FFTtools::wrap(peak[0][0].phi - wais.phi, 360, 0))<5 && (run<129 || run>132)","colz")
-wais->Draw("-1*mostImpulsivePeak().theta","flags.pulser == 1 && abs(FFTtools::wrap(peak[0][0].phi - wais.phi, 360, 0))<5 && (run<129 || run>132)","colz")
 
 
 #include "macro/cuts.C"
@@ -867,7 +854,8 @@ wais->Scan("eventNumber:Iteration$",flags.meanPower[3]/flags.meanPower[1] && "fl
 blastCut original:
 wais->Scan("eventNumber:Iteration$","flags.meanPowerFiltered[0]>1000000 || flags.medianPowerFiltered[0]>1000000 || flags.maxBottomToTopRatio[0]>5|| flags.maxBottomToTopRatio[1]>5|| flags.maxBottomToTopRatio>2.7|| flags.maxBottomToTopRatio<1 ","")
 
-peng's blast cut:
+pengs blast cut:
+
 wais->Scan("eventNumber:Iteration$","flags.meanPowerFiltered[0]>1000000 || flags.medianPowerFiltered[0]>1000000 || flags.maxBottomToTopRatio>2.7|| flags.maxBottomToTopRatio<0.9 ","")
 
 wais->Scan("eventNumber:run:flags.meanPower[3]/flags.meanPower[1]:flags.maxBottomToTopRatio[0]:flags.maxBottomToTopRatio[1]",isWais &&"flags.meanPower[3]/flags.meanPower[1]>1.5 ","")
@@ -1163,12 +1151,6 @@ a4.Add("207*")
 
  a4.Draw("peak[0][0].theta:peak[0][0].phi","deconvolved_filtered[0][0].impulsivityMeasure > 0.75","colz")
 
-anita4->Draw("deconvolved_filtered[0][0].linearPolAngle():deconvolved_filtered[1][0].linearPolAngle()","","colz")
-anita4->Draw("deconvolved_filtered[0][0].I:deconvolved_filtered[1][0].I","","colz")
-anita4->Draw("deconvolved_filtered[0][0].linearPolFrac():deconvolved_filtered[1][0].linearPolFrac()","","colz")
-anita4->Draw("deconvolved_filtered[0][0].impulsivityMeasure:deconvolved_filtered[1][0].impulsivityMeasure","","colz")
-anita4->Draw("deconvolved_filtered[0][0].V:deconvolved_filtered[1][0].V","","colz")
-
 
 //gaussian fit
 gStyle->SetOptFit();
@@ -1262,29 +1244,26 @@ x=4.5
 cluster->Draw("n>>h3","n<10 && base==0","same")
 h1->GetXaxis()->SetTitle("clusterSize")
 
-auto legend = new TLegend(0.1,0.7,0.48,0.9);
-   legend->AddEntry("h1","x=2, noBase","l");
-   legend->AddEntry("h2","x=3.5, noBase","l");
-   legend->AddEntry("h3","x=4.5, noBase","l");
-legend->Draw();
+auto legend1 = new TLegend(0.1,0.7,0.48,0.9);
+   legend1->AddEntry("h1","x=2, noBase","l");
+   legend1->AddEntry("h2","x=3.5, noBase","l");
+   legend1->AddEntry("h3","x=4.5, noBase","l");
+legend1->Draw();
 
 
 x=2
 cluster->Draw("n>>h4","n<10 && base!=0")
 x=3.5
-cluster->Draw("n>>h5","n<10 && base!=0")
+cluster->Draw("n>>h5","n<10 && base!=0","same")
 x=4.5
-cluster->Draw("n>>h6","n<10 && base!=0")
+cluster->Draw("n>>h6","n<10 && base!=0","same")
 h4->GetXaxis()->SetTitle("clusterSize")
 
-h4->Draw()
-h5->Draw("same")
-h6->Draw("same")
-auto legend = new TLegend(0.1,0.7,0.48,0.9);
-   legend->AddEntry("h4","x=2, nearBase","l");
-   legend->AddEntry("h5","x=3.5, nearBase","l");
-   legend->AddEntry("h6","x=4.5, nearBase","l");
-   legend->Draw();
+auto legend2 = new TLegend(0.1,0.7,0.48,0.9);
+   legend2->AddEntry("h4","x=2, nearBase","l");
+   legend2->AddEntry("h5","x=3.5, nearBase","l");
+   legend2->AddEntry("h6","x=4.5, nearBase","l");
+   legend2->Draw();
 
 
 
@@ -1368,3 +1347,40 @@ fitCombined->SetParameter(0, 1);
 fitCombined->SetParameter(1, 1);
 ClusterSize->Fit("fitCombined");
 ClusterSize->GetXaxis()->SetTitle("ClusterSize")
+
+
+
+anita4->Draw("mostImpulsiveCoherentFiltered(2).I /mostImpulsiveCoherent(2).I: abs(peak[mostImpulsivePolAsInt(2)][0].value - peak[mostImpulsivePolAsInt(2)][1].value)/max(peak[mostImpulsivePolAsInt(2)][0].value, peak[mostImpulsivePolAsInt(2)][1].value)>>h(300,,,300,,)","","colz")
+anita4->Draw("channels[][].rms:channels[][].peakHilbert>>h(300,,,300,,)","","colz")
+
+,
+c.Scan("run:eventNumber:triggerTime:phi:heading","impulsivity>0.7 && theta > -3.5 && theta < 0","colsize=20")
+
+# check the eventlist for hical2
+
+int events[19] = {37447117, 41293600, 41330771, 41331299, 42626421, 43144091, 44659206, 46272140, 48899924, 48923673, 55977914, 56907822, 56956274, 56969081, 59365335, 59370878, 64532506,  1411355,  3795250};
+double phi[19] = {-25.07038,-270.7028,-50.54462,-50.46783,-157.1023,-257.5177,-128.6679,-224.1614,-77.58296,-311.4005,-293.5151,-26.69358,-312.8226,-69.62993,-252.0296,-251.0558,-23.55881,-63.66668,-300.4347};
+int triggerTime[19] = {1481624217,1481705279,1481706056,1481706069,1481732975,1481744099,1481776537,1481811297,1481866910,1481867405,1482013921,1482041651,1482042711,1482042999,1482095544,1482095669,1482213952,1480708080,1480743758};
+double heading[19] = {40.236564,189.83554,70.485435,69.961486,126.14969,232.75256,163.00051,232.68185,30.938180,265.26080,359.58087,78.881629,5.2468500,26.003187,311.48910,310.15457,358.72329,164.44584,194.56904};
+double angleToA[19];
+double angleToB[19];
+double AisON[19];
+double BisON[19];
+for (int i = 0; i< 19; i++){
+    Hical2::angleToHical(events[i],&angleToA[i],&angleToB[i]);
+    AisON[i] = Hical2::hc2aOn(triggerTime[i]);
+    BisON[i] = Hical2::hc2bOn(triggerTime[i]);
+}
+TH1F *histA = new TH1F("angleToA", "angleToA", 100, -180, 180);
+TH1F *histB = new TH1F("angleToB", "angleToB", 100, -180, 180);
+for (int i = 0; i< 19; i++){
+	histA->Fill(FFTtools::wrap(angleToA[i]-heading[i]-phi[i], 360, 0));
+	histB->Fill(FFTtools::wrap(angleToB[i]-heading[i]-phi[i], 360, 0));
+    std::cout<< events[i]<< " \t "<< FFTtools::wrap(angleToA[i]-heading[i]+phi[i], 360, 0)<< " \t "<< FFTtools::wrap(angleToB[i]-heading[i]+phi[i], 360, 0) <<" \t "<< AisON[i] << " \t "<< BisON[i] << std::endl;
+}
+
+histA->Draw();
+histB->Draw();
+
+Hical2::isHical(56956274, 1482042711, 5.2468500 + 312.8226)
+
