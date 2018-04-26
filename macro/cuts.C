@@ -29,7 +29,8 @@ TCut goodPointingMC("abs(FFTtools::wrap(peak[1][0].phi-mc.phi,360,0) < 5 && abs(
 TCut notHical0("Hical2::isHical(eventNumber, header->triggerTime, FFTtools::wrap(anitaLocation.heading - peak[0][0].phi, 360))!=1");
 TCut notHical1("Hical2::isHical(eventNumber, header->triggerTime, FFTtools::wrap(anitaLocation.heading - peak[0][1].phi, 360))!=1");
 TCut notHical2("Hical2::isHical(eventNumber, header->triggerTime, FFTtools::wrap(anitaLocation.heading - peak[0][2].phi, 360))!=1");
-TCut notHical = notHical0 && notHical1 && notHical2;
+TCut notHicalMostImp("Hical2::isHical(eventNumber, header->triggerTime, FFTtools::wrap(anitaLocation.heading - mostImpulsivePeak(2).phi, 360))!=1");
+TCut notHical = notHical0 && notHical1 && notHical2 && notHicalMostImp;
 TCut qualityCut = isReal && notGlitch && notBadReconstruction && notBlast && triggered && notMasked && notStrongCW && notHical;
 TCut goodPointingWais = (isWaisH || isWaisV);
 TCut thermal_sample = qualityCut;
