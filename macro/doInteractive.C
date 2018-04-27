@@ -43,7 +43,7 @@ UCorrelator::ProbabilityMap::Params * map_params()
 // UCorrelator::Analyzer *doInteractive(int run = 51, int event = 3697122, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 173, int event = 36506330, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 43, int event = 1757432, bool decimated = false, bool simulated = false )
-UCorrelator::Analyzer *doInteractive(int run = 233, int event = 56956274, bool decimated = false, bool simulated = false )
+UCorrelator::Analyzer *doInteractive(int run = 233, int event = 37504800, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204382, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204407, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 160, int event = 32096871, bool decimated = false, bool simulated = false )
@@ -141,7 +141,7 @@ UCorrelator::Analyzer *doInteractive(int run = 233, int event = 56956274, bool d
   std::cout<< "p_ground=" << p_ground <<" n_seg="<< n_seg<< " theta="<< sum.mostImpulsivePeak(2).theta << " snr="<< sum.mostImpulsiveDeconvolvedFiltered(2).snr<< std::endl;
   
   std::cout<< "###is hical = "<< Hical2::isHical(sum.eventNumber, d.header()->triggerTime, FFTtools::wrap(sum.anitaLocation.heading - sum.peak[0][0].phi, 360)) << std::endl;
-  std::cout<< "###evenummber =  "<< sum.eventNumber <<"\t triggerTime ="<< d.header()->triggerTime<< "\t heading = "<< sum.anitaLocation.heading  << "\t peak phi"<<  sum.peak[0][0].phi << std::endl;
+  std::cout<< "###evenummber =  "<< sum.eventNumber <<"\t triggerTime ="<< d.header()->triggerTime-1480000000<< "\t heading = "<< sum.anitaLocation.heading  << "\t peak phi = "<<  sum.peak[0][0].phi << std::endl;
   // map->showClusters(1,0);
 
 
