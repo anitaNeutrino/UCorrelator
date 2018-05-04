@@ -43,7 +43,7 @@ UCorrelator::ProbabilityMap::Params * map_params()
 // UCorrelator::Analyzer *doInteractive(int run = 51, int event = 3697122, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 173, int event = 36506330, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 43, int event = 1757432, bool decimated = false, bool simulated = false )
-UCorrelator::Analyzer *doInteractive(int run = 233, int event = 37504800, bool decimated = false, bool simulated = false )
+UCorrelator::Analyzer *doInteractive(int run = 233, int event = 35337225, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204382, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204407, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 160, int event = 32096871, bool decimated = false, bool simulated = false )
@@ -140,8 +140,10 @@ UCorrelator::Analyzer *doInteractive(int run = 233, int event = 37504800, bool d
   int n_seg = map->add(NOverlapedBases, p_ground, &sum, d.gps(), AnitaPol::AnitaPol_t(sum.mostImpulsivePolAsInt(2)), sum.mostImpulsiveInd(2), 1);
   std::cout<< "p_ground=" << p_ground <<" n_seg="<< n_seg<< " theta="<< sum.mostImpulsivePeak(2).theta << " snr="<< sum.mostImpulsiveDeconvolvedFiltered(2).snr<< std::endl;
   
-  std::cout<< "###is hical = "<< Hical2::isHical(sum.eventNumber, d.header()->triggerTime, FFTtools::wrap(sum.anitaLocation.heading - sum.peak[0][0].phi, 360)) << std::endl;
-  std::cout<< "###evenummber =  "<< sum.eventNumber <<"\t triggerTime ="<< d.header()->triggerTime-1480000000<< "\t heading = "<< sum.anitaLocation.heading  << "\t peak phi = "<<  sum.peak[0][0].phi << std::endl;
+  std::cout<< "###is hical = "<< Hical2::isHical(sum.eventNumber, d.header()->triggerTime, FFTtools::wrap(sum.anitaLocation.heading - sum.peak[0][0].phi, 360), sum.deconvolved_filtered[0][0].snr) << std::endl;
+  std::cout<< "###evenummber =  "<< sum.eventNumber <<"\t triggerTime ="<< d.header()->triggerTime-1480000000<< "\t heading = "<< sum.anitaLocation.heading  << "\t mostImpPeak - [0][0] peak phi = "<< sum.mostImpulsivePeak(2).phi - sum.peak[0][0].phi<<"\t snr = "<< sum.mostImpulsiveDeconvolvedFiltered(2).snr<< std::endl;
+  std::cout<< "### impulsivity "<< sum.mostImpulsiveDeconvolvedFiltered(2).impulsivityMeasure<< std::endl;
+
   // map->showClusters(1,0);
 
 

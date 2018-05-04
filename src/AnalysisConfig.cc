@@ -162,7 +162,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   noise_estimate_t0 = 70; 
   noise_estimate_t1 = 100; 
 
-  response_option = ResponseNone; 
+  response_option = UCorrelator::AnalysisConfig::ResponseA4; 
   response_npad = 50; 
 
   max_mean_power_filtered = 1e6; 
