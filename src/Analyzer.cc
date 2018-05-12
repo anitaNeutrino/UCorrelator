@@ -29,7 +29,6 @@
 #include <stdint.h>
 #include "TimeDependentAverage.h"
 #include "UCMapStatTools.h"
-#include "Hical2.h"
  
 
 #ifdef UCORRELATOR_OPENMP
@@ -1101,9 +1100,6 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   }
   else if( isWAISVPol (pat, fae->getHeader(), cfg)){
     flags->pulser = AnitaEventSummary::EventFlags::WAIS_V;
-  }else if( Hical2::isHical(summary, 0)){
-    // 
-    flags->pulser = AnitaEventSummary::EventFlags::HICAL;
   }
   else
   {
