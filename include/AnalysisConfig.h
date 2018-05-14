@@ -72,7 +72,8 @@ namespace UCorrelator
         ResponseSingleBRotter, /// Ben's unified respone 
         ResponseIndividualBRotter, ///Ben's individual responses 
         ResponseHarmSignalOnly, ///Harm's signal chain only thing (currently used in icemc) 
-        ResponseTUFF /// response with TUFFs convolved in
+        ResponseTUFF, /// A3 response with TUFFs convolved in
+        ResponseA4 /// A4 response with TUFFs convolved in
       } response_option;  
 
       static const char * getResponseString(ResponseOption_t opt); 
@@ -149,6 +150,10 @@ namespace UCorrelator
       
       /** option to turn off using antennas marked as not usable by anita flight info. default is OFF (use all antennas) */
       bool only_use_usable;
+      
+      /** option to replace coherent waveform snr with the vpp/2 of the antenna with the largest vpp, divided by the average rms of all antennas that go into the coherent sum (currently only works correctly with use_forced_trigger_rms set to ON) 
+       * Default is OFF */
+      bool use_best_antenna_snr;
 
       double stokes_fracI; 
       

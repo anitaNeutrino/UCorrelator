@@ -28,21 +28,21 @@ namespace UCorrelator
 
     public: 
 
-    WaveformCombiner(int nantennas = 15, int npad = 3, bool useUnfiltered = true, bool deconvolve = false, const AnitaResponse::ResponseManager * response = 0, bool enableALFAHack=true); 
+      WaveformCombiner(int nantennas = 15, int npad = 3, bool useUnfiltered = true, bool deconvolve = false, const AnitaResponse::ResponseManager * response = 0, bool enableALFAHack=true); 
 
       /** Sets the responses used when deconvolving. 
        * If a response is 0, nothing is done. 
        * Responses may be set globally, globally for polarizations or per antenna 
        */ 
 
-    void setResponseManager(const AnitaResponse::ResponseManager * rm)  { responses = rm;} 
+      void setResponseManager(const AnitaResponse::ResponseManager * rm)  { responses = rm;} 
 
       virtual ~WaveformCombiner(); 
 
       /** Combines the waveforms from the given event */ 
       void combine(double phi, double theta, const FilteredAnitaEvent * event, AnitaPol::AnitaPol_t pol, 
-                  ULong64_t disallowed = 0, double t0 = 0, double t1 = 100, 
-                    double * avg_of_peaks =0, bool use_hilbert = true); 
+          ULong64_t disallowed = 0, double t0 = 0, double t1 = 100, 
+          double * avg_of_peaks =0, bool use_hilbert = true); 
 
       const AnalysisWaveform * getCoherent() const { return &coherent; }
       const AnalysisWaveform * getDeconvolved() const; 
@@ -61,28 +61,31 @@ namespace UCorrelator
       const int * getUsedAntennas() const { return &antennas[0]; } 
 
       /* setBottomFirst():
-       getClosestAntennas() returns the closest antenna in phi, which could be on any ring.
-    	 this will force the bottom antenna (largest ant#) to be the seed waveform so things don't jump as much
-   	   default is false (like it was before)
-      */
+         getClosestAntennas() returns the closest antenna in phi, which could be on any ring.
+         this will force the bottom antenna (largest ant#) to be the seed waveform so things don't jump as much
+         default is false (like it was before)
+         */
       void setBottomFirst(bool opt) { bottom_first = opt; }
 
       /* setDelayToCenter();
-	    changes the delays in combining from being to the first antenna in the array, to being towards the centerpoint
-	    of the instrument (0,0,0) */
-    	void setDelayToCenter(bool opt) {delay_to_center = opt; }
+         changes the delays in combining from being to the first antenna in the array, to being towards the centerpoint
+         of the instrument (0,0,0) */
+      void setDelayToCenter(bool opt) {delay_to_center = opt; }
 
       /** Static helper used to combine arbitrary waveforms */
-      static AnalysisWaveform *  combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0, double t0 = 0, double t1 = 100); 
+      static double combineWaveforms(int nwf, const AnalysisWaveform * wfs, const double * delays, const double * scales = 0, AnalysisWaveform * output = 0, double t0 = 0, double t1 = 100, bool checkvpp = 0); 
 
-	/** function allowing extra filters to be applied to just the coherently summed waveforms */
-	void setExtraFilters(FilterStrategy* extra);
-	/** function allowing extra filters to be applied to just the coherently summed deconvolved waveforms. these functions are useful for applying different filters to waveform combining and map making. mostly I think it should be used to add BH13filter in map making and not in deconvolved wf combining */
-	void setExtraFiltersDeconvolved(FilterStrategy* extra);
+      /** function allowing extra filters to be applied to just the coherently summed waveforms */
+      void setExtraFilters(FilterStrategy* extra);
+      /** function allowing extra filters to be applied to just the coherently summed deconvolved waveforms. these functions are useful for applying different filters to waveform combining and map making. mostly I think it should be used to add BH13filter in map making and not in deconvolved wf combining */
+      void setExtraFiltersDeconvolved(FilterStrategy* extra);
+      void setCheckVpp(bool opt) { check_vpp = opt; }
+
+      double getMaxAntennaVpp() { return max_vpp; }
 
     private: 
 
-     
+
       AnalysisWaveform coherent; 
       AnalysisWaveform deconvolved; 
       TGraphAligned coherent_avg_spectrum; 
@@ -101,9 +104,11 @@ namespace UCorrelator
       bool delay_to_center;
       bool enable_r_time_shift; 
       bool enable_simulation_time_shift; 
+      bool check_vpp; 
       std::vector<int> antennas; 
-			FilterStrategy* extra_filters;
-			FilterStrategy* extra_filters_deconvolved;
+      FilterStrategy* extra_filters;
+      FilterStrategy* extra_filters_deconvolved;
+      double max_vpp;
   };
 
 }

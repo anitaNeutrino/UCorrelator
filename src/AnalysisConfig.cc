@@ -5,7 +5,7 @@
 #include "AnitaVersion.h"
 
 static const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25", "Histogram" }; 
-static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","HarmSignalOnly", "TUFFs", "notches_260_375_0"}; 
+static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","HarmSignalOnly", "TUFFs", "A4ImpulseTUFFs"}; 
 
 
 
@@ -88,6 +88,7 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   LOOKUP(set_bottom_first);
   LOOKUP(delay_to_center);
   LOOKUP(only_use_usable);
+  LOOKUP(use_best_antenna_snr);
   LOOKUP(stokes_fracI); 
   LOOKUP(use_forced_trigger_rms); 
   LOOKUP(use_coherent_spectra); 
@@ -197,6 +198,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   use_forced_trigger_rms = true; 
   
   only_use_usable = false;
+  use_best_antenna_snr = false;
 
   use_coherent_spectra = false; 
   combine_t0 = -25; 
