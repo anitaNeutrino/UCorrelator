@@ -7,7 +7,7 @@ void fillEfficeincy(TH1D * h, TH1D *eff,double scale, const char * cut = "", con
     eff->SetBinContent(i, h->Integral(ordering[0] == '>' ? i : 0, ordering[0] == '>' ? h->GetNbinsX()+1 : i) / scale ); 
   }
 
-  eff->GetXaxis()->SetTitle("impulsivity");  d
+  eff->GetXaxis()->SetTitle("impulsivity");
   eff->GetYaxis()->SetTitle("efficiency"); 
   eff->Write();
   return;
@@ -68,7 +68,6 @@ void plotFisher(const char * var = "deconvImpulsivity")
   h2->Write(); 
   h3->Write(); 
   h4->Write();
-  legend->Write();
 
   std::cout << "finished"<<std::endl;
 
@@ -86,13 +85,13 @@ void backup(){
 
 
   // legend
-  auto legend = new TLegend(0.1,0.7,0.48,0.9);
-  // legend->SetHeader("The Legend Title","C"); // option "C" allows to center the header
-  legend->AddEntry("eff1","Above Horizontal Events","l");
-  legend->AddEntry("eff2","Below horizon Events","l");
-  legend->AddEntry("eff3","MinBias Energy222 MC","l");
-  legend->AddEntry("eff4","Wais data","l");
-  legend->Draw();
+  auto legend2 = new TLegend(0.1,0.7,0.48,0.9);
+  // legend2->SetHeader("The Legend Title","C"); // option "C" allows to center the header
+  legend2->AddEntry("eff1","Above Horizontal Events","l");
+  legend2->AddEntry("eff2","Below horizon Events","l");
+  legend2->AddEntry("eff3","MinBias Energy222 MC","l");
+  legend2->AddEntry("eff4","Wais data","l");
+  legend2->Draw();
 
 }
 
