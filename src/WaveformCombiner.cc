@@ -12,8 +12,8 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool useUnfiltered, bool deconvolve, const AnitaResponse::ResponseManager * response, bool alfa_hack)
-  : coherent(260), deconvolved(260), alfa_hack(alfa_hack)
+  UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool useUnfiltered, bool deconvolve, const AnitaResponse::ResponseManager * response, bool alfa_hack)
+: coherent(260), deconvolved(260), alfa_hack(alfa_hack)
 {
   setNAntennas(nantennas); 
   setNPad(npad); 
@@ -25,15 +25,17 @@ UCorrelator::WaveformCombiner::WaveformCombiner(int nantennas, int npad, bool us
   setResponseManager(response); 
   setBottomFirst(false);
   setDelayToCenter(false);
-	extra_filters = 0;
-	extra_filters_deconvolved = 0;
+  extra_filters = 0;
+  extra_filters_deconvolved = 0;
   enable_r_time_shift = true;
   enable_simulation_time_shift = false;
+  max_vpp = 0;
+  check_vpp = 0;
 }
 
 
 
- 
+
 
 UCorrelator::WaveformCombiner::~WaveformCombiner()
 {
@@ -44,7 +46,7 @@ const AnalysisWaveform * UCorrelator::WaveformCombiner::getDeconvolved() const
 
   if (!do_deconvolution)
   {
-//    fprintf(stderr,"WARNING! Deconvolution has not been enabled!\n"); 
+    //    fprintf(stderr,"WARNING! Deconvolution has not been enabled!\n"); 
     return 0; 
   }
 
@@ -100,11 +102,11 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
     if (antennas[0] < 32) {
       int toMove = antennas[0];
       if (antennas[1] > 32) {
-       antennas[0] = antennas[1];
-       antennas[1] = toMove; }
+        antennas[0] = antennas[1];
+        antennas[1] = toMove; }
       else {
-       antennas[0] = antennas[2];
-       antennas[2] = toMove; }
+        antennas[0] = antennas[2];
+        antennas[2] = toMove; }
     }
   }
 
@@ -113,19 +115,19 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
   {
     //ensure transform already calculated so we don't have to repeat when deconvolving
     (void) wf(event,antennas[i],pol)->freq(); 
-		int ipol = (pol == AnitaPol::kVertical) ? 1 : 0;
+    int ipol = (pol == AnitaPol::kVertical) ? 1 : 0;
 
     padded[i].~AnalysisWaveform(); 
     new (&padded[i]) AnalysisWaveform(*wf(event,antennas[i],pol));
-		if(extra_filters)
-		{
-			for(int j = 0; j < (int) extra_filters->nOperations(); j++)
-			{
-				FilterOperation * filterOp = (FilterOperation*) extra_filters->getOperation(j);
-				filterOp->processOne(&padded[i], event->getHeader(), antennas[i], ipol);
-				//delete filterOp;
-			}
-		}
+    if(extra_filters)
+    {
+      for(int j = 0; j < (int) extra_filters->nOperations(); j++)
+      {
+        FilterOperation * filterOp = (FilterOperation*) extra_filters->getOperation(j);
+        filterOp->processOne(&padded[i], event->getHeader(), antennas[i], ipol);
+        //delete filterOp;
+      }
+    }
 
     if (i == 0)
     {
@@ -153,17 +155,17 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
 
     if (do_deconvolution)
     {
-			deconv[i].~AnalysisWaveform(); 
+      deconv[i].~AnalysisWaveform(); 
       new (&deconv[i]) AnalysisWaveform(*wf(event,antennas[i],pol));
-			if(extra_filters_deconvolved)
-			{
-				for(int j = 0; j < (int) extra_filters_deconvolved->nOperations(); j++)
-				{
-					FilterOperation * filterOp = (FilterOperation*) extra_filters_deconvolved->getOperation(j);
-					filterOp->processOne(&deconv[i], event->getHeader(), antennas[i], ipol);
-					//delete filterOp;
-				}
-			}
+      if(extra_filters_deconvolved)
+      {
+        for(int j = 0; j < (int) extra_filters_deconvolved->nOperations(); j++)
+        {
+          FilterOperation * filterOp = (FilterOperation*) extra_filters_deconvolved->getOperation(j);
+          filterOp->processOne(&deconv[i], event->getHeader(), antennas[i], ipol);
+          //delete filterOp;
+        }
+      }
       responses->response(pol,antennas[i])->deconvolveInPlace(&deconv[i], responses->getDeconvolutionMethod(), theta ); //TODO add angle  
       if (i == 0)
       {
@@ -182,11 +184,11 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
 
   }
 
-  combineWaveforms(nant, &padded[0], delays,0, &coherent, t0, t1); 
+  max_vpp = combineWaveforms(nant, &padded[0], delays, 0, &coherent, t0, t1, check_vpp); 
   scaleGraph(&coherent_avg_spectrum, 1./nant); 
   if (do_deconvolution)
   {
-    combineWaveforms(nant, &deconv[0], delays,0, &deconvolved, t0, t1); 
+    combineWaveforms(nant, &deconv[0], delays, 0, &deconvolved, t0, t1, check_vpp); 
     scaleGraph(&deconvolved_avg_spectrum, 1./nant); 
   }
 
@@ -197,13 +199,14 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
 }
 
 
-AnalysisWaveform * UCorrelator::WaveformCombiner::combineWaveforms(int nwf, const AnalysisWaveform * wf, const double * delays, const double * scales, AnalysisWaveform * out, double min, double max)
+double UCorrelator::WaveformCombiner::combineWaveforms(int nwf, const AnalysisWaveform * wf, const double * delays, const double * scales, AnalysisWaveform * out, double min, double max, bool checkvpp)
 {
   // we want to make the waveform as big as the entire span of all the waveforms to combine 
 
   double dt = wf[0].deltaT(); 
 
   int N = ceil((max-min)/dt); 
+  double maxvpp = 0;
 
   if (!out) out = new AnalysisWaveform(N); 
   TGraph * gupdate = out->updateEven(); 
@@ -217,25 +220,28 @@ AnalysisWaveform * UCorrelator::WaveformCombiner::combineWaveforms(int nwf, cons
     for (int j = 0; j < nwf; j++) 
     {
       double scale = scales ? scales[j] : 1; 
+      double tempvpp = 0;
       val += wf[j].evalEven(gupdate->GetX()[i] + delays[j])/nwf*scale; 
+      if(checkvpp) tempvpp = wf[j].even()->pk2pk();
+      if(checkvpp && maxvpp < tempvpp) maxvpp = tempvpp;
     }
 
-//    printf("%f %f\n", gupdate->GetX()[i], val); 
+    //    printf("%f %f\n", gupdate->GetX()[i], val); 
     gupdate->GetY()[i] = val; 
   }
 
-  return out; 
+  return maxvpp; 
 }
 
 void UCorrelator::WaveformCombiner::setExtraFilters(FilterStrategy* extra)
 {
-	if(extra_filters) delete extra_filters;
-	extra_filters = extra;
+  if(extra_filters) delete extra_filters;
+  extra_filters = extra;
 }
 
 void UCorrelator::WaveformCombiner::setExtraFiltersDeconvolved(FilterStrategy* extra)
 {
-	if(extra_filters_deconvolved) delete extra_filters_deconvolved;
-	extra_filters_deconvolved = extra;
+  if(extra_filters_deconvolved) delete extra_filters_deconvolved;
+  extra_filters_deconvolved = extra;
 }
 

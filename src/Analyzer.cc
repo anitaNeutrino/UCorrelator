@@ -155,17 +155,19 @@ static int instance_counter = 0;
 
 
 
-static double computeCombinedRMS(double t, AnitaPol::AnitaPol_t pol, const UCorrelator::WaveformCombiner * wfcomb) 
+static double computeCombinedRMS(double t, AnitaPol::AnitaPol_t pol, const UCorrelator::WaveformCombiner * wfcomb, bool use_best_antenna_snr) 
 {
   double rms = 0 ;
 
   for (int ant =0; ant < wfcomb->getNAntennas(); ant++) 
   {
     double ant_rms = UCorrelator::TimeDependentAverageLoader::getRMS(t, pol, wfcomb->getUsedAntennas()[ant]); 
-    rms += ant_rms * ant_rms; 
+    if(use_best_antenna_snr) rms += ant_rms; 
+    else rms += ant_rms * ant_rms; 
   }
 
-  rms = sqrt(rms) / wfcomb->getNAntennas(); 
+  if(use_best_antenna_snr) rms = rms / wfcomb->getNAntennas(); 
+  else rms = sqrt(rms) / wfcomb->getNAntennas(); 
 
   return rms; 
 }
@@ -445,6 +447,13 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     {
       rough_peaks[pol].push_back(std::pair<double,double>(maxima[i].x, maxima[i].y)); 
       //now make the combined waveforms 
+      if(cfg->use_best_antenna_snr)
+      {
+        wfcomb.setCheckVpp(true);
+        wfcomb_xpol.setCheckVpp(true);
+        wfcomb_filtered.setCheckVpp(true);
+        wfcomb_xpol_filtered.setCheckVpp(true);
+      }
 
 
       SECTIONS
@@ -460,16 +469,16 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
           wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol], cfg->combine_t0, cfg->combine_t1); 
       }
 
-      double rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, (AnitaPol::AnitaPol_t) pol, &wfcomb) : 0 ; 
+      double rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, (AnitaPol::AnitaPol_t) pol, &wfcomb, cfg->use_best_antenna_snr) : 0 ; 
 
       SECTIONS 
       {
         SECTION
-          fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol, rms); 
+          fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &summary->coherent[pol][i], (AnitaPol::AnitaPol_t) pol, rms, wfcomb.getMaxAntennaVpp()); 
         SECTION
           fillWaveformInfo(wfcomb.getDeconvolved(), wfcomb_xpol.getDeconvolved(), wfcomb.getDeconvolvedAvgSpectrum(), &summary->deconvolved[pol][i],  (AnitaPol::AnitaPol_t)pol, 0); 
         SECTION
-          fillWaveformInfo(wfcomb_filtered.getCoherent(), wfcomb_xpol_filtered.getCoherent(), wfcomb_filtered.getCoherentAvgSpectrum(), &summary->coherent_filtered[pol][i], (AnitaPol::AnitaPol_t) pol, rms); 
+          fillWaveformInfo(wfcomb_filtered.getCoherent(), wfcomb_xpol_filtered.getCoherent(), wfcomb_filtered.getCoherentAvgSpectrum(), &summary->coherent_filtered[pol][i], (AnitaPol::AnitaPol_t) pol, rms, wfcomb_filtered.getMaxAntennaVpp()); 
         SECTION
           fillWaveformInfo(wfcomb_filtered.getDeconvolved(), wfcomb_xpol_filtered.getDeconvolved(), wfcomb_filtered.getDeconvolvedAvgSpectrum(), &summary->deconvolved_filtered[pol][i],  (AnitaPol::AnitaPol_t)pol, 0); 
       }
@@ -597,20 +606,26 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     //    SECTIONS
     {
       //      SECTION
+      if(cfg->use_best_antenna_snr)
+      {
+        wfcomb.setCheckVpp(true);
+        wfcomb_xpol.setCheckVpp(true);
+      }
+
       wfcomb.combine(summary->mc.phi, summary->mc.theta, event, AnitaPol::kHorizontal, 0, cfg->combine_t0, cfg->combine_t1); 
       //      SECTION 
       wfcomb_xpol.combine(summary->mc.phi, summary->mc.theta, event, AnitaPol::kVertical, 0, cfg->combine_t0, cfg->combine_t1); 
     }
 
-    double hpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kHorizontal, &wfcomb) : 0 ; 
-    double vpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kVertical, &wfcomb_xpol) : 0 ; 
+    double hpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kHorizontal, &wfcomb, cfg->use_best_antenna_snr) : 0 ; 
+    double vpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kVertical, &wfcomb_xpol, cfg->use_best_antenna_snr) : 0 ; 
 
     //    SECTIONS
     {
       //      SECTION
-      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kHorizontal]), AnitaPol::kHorizontal, hpol_rms); 
+      fillWaveformInfo(wfcomb.getCoherent(), wfcomb_xpol.getCoherent(), wfcomb.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kHorizontal]), AnitaPol::kHorizontal, hpol_rms, wfcomb.getMaxAntennaVpp()); 
       //      SECTION
-      fillWaveformInfo(wfcomb_xpol.getCoherent(), wfcomb.getCoherent(), wfcomb_xpol.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kVertical]), AnitaPol::kVertical, vpol_rms); 
+      fillWaveformInfo(wfcomb_xpol.getCoherent(), wfcomb.getCoherent(), wfcomb_xpol.getCoherentAvgSpectrum(), &(summary->mc.wf[AnitaPol::kVertical]), AnitaPol::kVertical, vpol_rms, wfcomb_xpol.getMaxAntennaVpp()); 
     }
   }
 
@@ -698,8 +713,8 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
   {
     //Compute intersection with continent, or set values to -9999 if no intersection
     if (!pat->traceBackToContinent(point->phi * DEG2RAD, point->theta * DEG2RAD, 
-                                  &point->longitude, &point->latitude, &point->altitude, 
-                                  &point->theta_adjustment_needed, cfg->max_theta_adjustment * DEG2RAD)) 
+          &point->longitude, &point->latitude, &point->altitude, 
+          &point->theta_adjustment_needed, cfg->max_theta_adjustment * DEG2RAD)) 
     {
       point->latitude = -9999; 
       point->longitude = -9999;  
@@ -724,7 +739,7 @@ void UCorrelator::Analyzer::fillPointingInfo(double rough_phi, double rough_thet
 }
 
 
-void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph* pwr, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol, double rms)
+void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const AnalysisWaveform * xpol_wf, const TGraph* pwr, AnitaEventSummary::WaveformInfo * info, AnitaPol::AnitaPol_t pol, double rms, double vpp)
 {
   if (!wf || wf->Neven() == 0)
   {
@@ -813,6 +828,8 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   }
 
   info->snr = info->peakHilbert / rms;
+  if(vpp > 0 && cfg->use_best_antenna_snr) info->snr = vpp/(2*rms);
+
   if(cfg->use_coherent_spectra) pwr = wf->powerdB(); 
 
   TGraphAligned power(pwr->GetN(),pwr->GetX(),pwr->GetY()); 
@@ -1125,7 +1142,7 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
       (cfg->max_bottom_to_top_ratio && flags->maxBottomToTopRatio[0] > cfg->max_bottom_to_top_ratio) || 
       (cfg->max_bottom_to_top_ratio && flags->maxBottomToTopRatio[1] > cfg->max_bottom_to_top_ratio); 
   }
-  
+
   flags->isVarner = false; 
   flags->isVarner2 = false; 
 
@@ -1150,6 +1167,78 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   }
   else flags->isStepFunction = 0; 
 
+  //might as well use the power flags that Ben Strutt added
+  const double bandsLowGHz[AnitaEventSummary::numBlastPowerBands] = {0.15-1e-10, 0};
+  const double bandsHighGHz[AnitaEventSummary::numBlastPowerBands] = {0.25-1e-10, 999};
+
+  //reset values
+  for(int band = 0; band < AnitaEventSummary::numBlastPowerBands; band++)
+  {
+    flags->middleOrBottomPower[band] = 0;
+    flags->middleOrBottomAnt[band] = -1;
+    flags->middleOrBottomPol[band] = 2;
+    flags->topPower[band] = 0;
+  }
+
+  for(Int_t polInd = 0; polInd < AnitaPol::kNotAPol; polInd++)
+  {
+    AnitaPol::AnitaPol_t pol = (AnitaPol::AnitaPol_t) polInd;
+    for(UInt_t phi = 0; phi < NUM_PHI; phi++)
+    {
+      for(UInt_t ring = AnitaRing::kMiddleRing; ring < AnitaRing::kNotARing; ring++)
+      {
+        Int_t ant = ring*NUM_PHI + phi;
+
+        const AnalysisWaveform* wf = fae->getRawGraph(ant,pol);
+        const TGraphAligned* grPow = wf->power();
+        const double df_GHz = grPow->GetX()[1] - grPow->GetX()[0];
+
+        Double_t powThisAnt[AnitaEventSummary::numBlastPowerBands] = {0};
+        for(int i = 0; i < grPow->GetN(); i++)
+        {
+          const double f_GHz = grPow->GetX()[i];
+          for(int band = 0; band < AnitaEventSummary::numBlastPowerBands; band++)
+          {
+            if(f_GHz >= bandsLowGHz[band] && f_GHz < bandsHighGHz[band])
+            {
+              powThisAnt[band] += grPow->GetY()[i]*df_GHz;
+            }
+          }
+        }
+
+        for(int band = 0; band < AnitaEventSummary::numBlastPowerBands; band++)
+        {
+          if(powThisAnt[band] > flags->middleOrBottomPower[band])
+          {
+            flags->middleOrBottomPower[band] = powThisAnt[band];
+            flags->middleOrBottomAnt[band] = ant;
+            flags->middleOrBottomPol[band] = polInd;
+          }
+        }
+      }
+    }
+  }
+
+  for(int band = 0; band < AnitaEventSummary::numBlastPowerBands; band++)
+  {
+    int ant = flags->middleOrBottomAnt[band] % NUM_PHI;
+    AnitaPol::AnitaPol_t pol = (AnitaPol::AnitaPol_t) flags->middleOrBottomPol[band];
+    const AnalysisWaveform* wf = fae->getRawGraph(ant, pol);
+    const TGraphAligned* grPow = wf->power();
+    const double df_GHz = grPow->GetX()[1] - grPow->GetX()[0];
+
+    for(int i = 0; i < grPow->GetN(); i++)
+    {
+      const double f_GHz = grPow->GetX()[i];
+      for(int band = 0; band < AnitaEventSummary::numBlastPowerBands; band++)
+      {
+        if(f_GHz >= bandsLowGHz[band] && f_GHz < bandsHighGHz[band])
+        {
+          flags->topPower[band] += grPow->GetY()[i]*df_GHz;
+        }
+      }
+    }
+  }
 }
 
 void UCorrelator::Analyzer::setExtraFilters(FilterStrategy* extra)

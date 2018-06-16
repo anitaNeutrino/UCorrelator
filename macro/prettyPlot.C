@@ -9,7 +9,9 @@ int prettyPlot(int event = 15717147, int anitaVer = 3,
                bool simulated = false, bool filtered = true, bool true_deconvolve = true, bool freq_instead =true,
                bool blind_polarity = false, bool plot_zoomed = false) 
 {
+
   AnitaVersion::set(anitaVer);
+
   FFTtools::loadWisdom("wisdom.dat"); 
   int run = AnitaDataset::getRunContainingEventNumber(event); 
  
@@ -65,7 +67,6 @@ int prettyPlot(int event = 15717147, int anitaVer = 3,
 
 
 //  FFTtools::TukeyWindow tukey(0.98); 
-//
 //
 //  tukey.apply(deconv->Neven(), deconv->updateEven()->GetY());
 //  tukey.apply(deconv_xpol->Neven(), deconv_xpol->updateEven()->GetY());
