@@ -67,6 +67,27 @@ namespace UCorrelator
      
   }; 
 
+  /** Filter to attempt to convert A3 events to A4 events by convolving in the TUFF response for ~direct comparison between the two flights. Config argument is based on the config letter from Oindree's elog 711.  Default is the most common config. **/
+
+  class A3toA4ConversionFilter : public FilterOperation
+  {
+    public:
+      A3toA4ConversionFilter(char config='B');
+      ~A3toA4ConversionFilter();
+
+      virtual const char * tag() const { return "A3toA4ConversionFilter"; }
+      virtual const char * description() const { return "A3toA4ConversionFilter"; }
+
+      virtual void process(FilteredAnitaEvent * ev);
+      virtual void processOne(AnalysisWaveform * awf, const RawAnitaHeader * header=0, int whichAnt=0, int whichPol=0);
+
+    private:
+      TGraph* gReal;
+      TGraph* gImag;
+      double phaseShift;
+  };
+
+
  
 }
 
