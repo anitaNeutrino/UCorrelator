@@ -14,6 +14,8 @@
 #include "RawAnitaHeader.h"
 #include <math.h>// for isnan
 #include "AntennaPositions.h"
+#include <ctype.h>
+#include <stdio.h>
 
 UCorrelator::BH13Filter::BH13Filter()
 {
@@ -107,9 +109,49 @@ void UCorrelator::timePadFilter::process(FilteredAnitaEvent* ev)
 	}
 }
 
+UCorrelator::A3toA4ConversionFilter::A3toA4ConversionFilter(char config)
+{
+  config = toupper(config);
+  TFile f(Form("%s/share/AnitaAnalysisFramework/tuffModels/config%c.root", getenv("ANITA_UTIL_INSTALL_DIR"), config));
+  gReal = (TGraph*) f.Get("gReal");
+  gImag = (TGraph*) f.Get("gImag");
+  phaseShift = TMath::ATan2(gImag->Eval(0), gReal->Eval(0));
+  f.Close(); 
+}
 
+UCorrelator::A3toA4ConversionFilter::~A3toA4ConversionFilter()
+{
+  delete gReal;
+  delete gImag;
+}
 
+void UCorrelator::A3toA4ConversionFilter::process(FilteredAnitaEvent* ev)
+{
+	for(int i = 0; i < 48; i++)
+	{
+		processOne(getWf(ev, i, AnitaPol::kHorizontal));
+		processOne(getWf(ev, i, AnitaPol::kVertical));
+	}
+}
 
+void UCorrelator::A3toA4ConversionFilter::processOne(AnalysisWaveform* awf, const RawAnitaHeader* header, int whichAnt, int whichPol)
+{
+	int old_size = awf->Neven();
+	int nf = awf->Nfreq();
+	double df = awf->deltaF();
+  FFTWComplex* freq = awf->updateFreq();
+
+	for( int i =0; i < nf; i++)
+	{
+    if(df*i > 1.5) continue;
+    double reTemp = gReal->Eval(df*i);
+    double imTemp = gImag->Eval(df*i);
+    FFTWComplex temp(reTemp, imTemp);
+    temp.setMagPhase(temp.getAbs(), temp.getPhase() - phaseShift);
+    freq[i] *= temp;
+	}
+	awf->updateEven()->Set(old_size);
+}
 
 
 
