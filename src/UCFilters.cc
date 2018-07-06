@@ -12,6 +12,7 @@
 #include "TRandom.h"
 #include "TaperFilter.h" 
 #include "Adu5Pat.h"
+#include "DiodeFilter.h" 
 #include "DigitalFilter.h"
 #include <math.h>// for isnan
 #include "AntennaPositions.h"
@@ -52,8 +53,9 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
   TString tok; 
   Ssiz_t from = 0; 
 
-  desc = ""; 
   bool need_description = key_descs.count(key); 
+
+  bool dont_alfa = false; 
 
   while (tokens.Tokenize(tok, from,"+"))
   {
@@ -405,11 +407,47 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
           desc += TString::Format("(Simple Notch %lg-%lg MHz)",lower,upper); 
       }
     }
+    else if (strcasestr(tok.Data(),"alfa") && AnitaVersion::get()==3)
+    {
+      dont_alfa = true; 
+      if (fillme) 
+      {
+        fillme->addOperation(new ALFAFilter); 
+      }
+      if (need_description) 
+      {
+        desc += "(ALFA Filter) "; 
+      }
+    }
+    else if (strcasestr(tok.Data(),"diode"))
+    {
+      if (fillme) 
+      {
+        if (AnitaVersion::get() ==3 && !dont_alfa)
+        {
+           dont_alfa = true; 
+           if (fillme) 
+           {
+              fillme->addOperation(new ALFAFilter); 
+           }
+           if (need_description) 
+           {
+              desc += "(ALFA Filter) "; 
+           }
+
+        }
+        fillme->addOperation(new DiodeFilter); 
+      }
+      if (need_description) 
+      {
+        desc += "(Diode Response) "; 
+      }
+    }
   }
   
 
 
-  if (AnitaVersion::get()==3) 
+  if (AnitaVersion::get()==3 && !dont_alfa) 
   {
     //TODO: make this more configurable
     if (fillme) 
@@ -435,7 +473,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
 
 
 
-void UCorrelator::ComplicatedNotchFilter::processOne(AnalysisWaveform* g, const RawAnitaHeader * header, int ant, int pol) 
+void UCorrelator::ComplicatedNotchFilter::processOne(AnalysisWaveform* g, const RawAnitaHeader * , int , int ) 
 {
 //  printf("ComplicatedNotchFilter::processOne!\n"); 
   int nfreq = g->Nfreq(); 
@@ -802,7 +840,7 @@ void UCorrelator::AdaptiveFilterAbby::process(FilteredAnitaEvent * event)
   
 }
 
-void UCorrelator::AdaptiveFilterAbby::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol) 
+void UCorrelator::AdaptiveFilterAbby::processOne(AnalysisWaveform * , const RawAnitaHeader * , int , int ) 
 {
 	printf("processOne not implemented yet, sorry!\n");
 }
@@ -1283,7 +1321,7 @@ void UCorrelator::CombinedSineSubtractFilter::process(FilteredAnitaEvent * ev)
    }
 }
 
-void UCorrelator::CombinedSineSubtractFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol)
+void UCorrelator::CombinedSineSubtractFilter::processOne(AnalysisWaveform * , const RawAnitaHeader * , int , int )
 {
 	printf("processOne not implemented yet, sorry!\n");
 }
@@ -1393,7 +1431,7 @@ void UCorrelator::AdaptiveMinimumPhaseFilter::process(FilteredAnitaEvent * ev)
 
 }
 
-void UCorrelator::AdaptiveMinimumPhaseFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol)
+void UCorrelator::AdaptiveMinimumPhaseFilter::processOne(AnalysisWaveform * , const RawAnitaHeader * , int , int )
 {
 	printf("processOne not implemented yet, sorry!\n");
 }
@@ -1529,7 +1567,7 @@ void UCorrelator::AdaptiveBrickWallFilter::process(FilteredAnitaEvent *ev)
 
 }
 
-void UCorrelator::AdaptiveBrickWallFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol)
+void UCorrelator::AdaptiveBrickWallFilter::processOne(AnalysisWaveform * , const RawAnitaHeader * , int , int )
 {
 	printf("processOne not implemented yet, sorry!\n");
 }
@@ -1598,7 +1636,7 @@ void UCorrelator::AdaptiveButterworthFilter::process(FilteredAnitaEvent * ev)
 
 }
 
-void UCorrelator::AdaptiveButterworthFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int ant, int pol) 
+void UCorrelator::AdaptiveButterworthFilter::processOne(AnalysisWaveform * , const RawAnitaHeader * , int , int ) 
 {
 	printf("processOne not implemented yet, sorry!\n");
 }
