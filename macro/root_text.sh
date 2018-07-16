@@ -1121,14 +1121,15 @@ icemc data:
 eventTree->Draw("fVolts[][]>>mcEvents(300,,)","","colz")
 
 
-gStyle->SetOptFit();
-TF1 *snrFit = new TF1("snrFit","[0]/x^[1]+[2]",1,35);
-snrFit->SetParNames("c1","c2","c3");
-snrFit->SetParameters(0.5,0.2,0.1);
+gStyle->SetOptFit(1111);
+TF1 *snrfit1 = new TF1("snrfit1","[0]/x^[1]+[2]",7,100);
+snrfit1->SetParNames("c1","c2","c3");
+snrfit1->SetParameters(0.5,0.2,0.1);
 
-dPhivsSNR_2->Fit("snrFit")
-
-dThetavsSNR_2->Fit("snrFit")
+dPhivsSNR_2->Fit("snrfit1","RL")
+dPhivsSNR_2->GetYaxis()->SetTitle("dPhi")
+dThetavsSNR_2->Fit("snrfit1","RL")
+dThetavsSNR_2->GetYaxis()->SetTitle("dPhi")
 
 
 anita4.Draw("deconvolved_filtered[0][0].impulsivityMeasure:coherent_filtered[0][0].impulsivityMeasure>>hpol(300,0,1,300,0,1)","(-1*summary->peak[0][0].theta + summary->sun.theta>-2)&&(-1*summary->peak[0][0].theta + summary->sun.theta<2)&&(FFTtools::wrap(summary->peak[0][0].phi-summary->sun.phi,360,0)>-6)&&(FFTtools::wrap(summary->peak[0][0].phi-summary->sun.phi,360,0)<6)&&(summary->flags.isPayloadBlast != 1)","colz")
@@ -1222,6 +1223,7 @@ a4.Draw("powerV - powerH:impulsivityV- impulsivityH>>h(300,,,300,,)","theta < -6
 
 cluster->Scan("pol:n:base:noBase:H:V:avgLinearPolFrac:avgLinearPolAngle:longitude:latitude:powerH:powerV","","colsize=7 precision=7 col=::::::20.3:20.3:10.10:10.10:7.3:7.3")
 cluster->Scan("pol:n:base:noBase:H:V:avgLinearPolFrac:avgLinearPolAngle:longitude:latitude:powerH:powerV","n==1","colsize=7 precision=7 col=::::::20.3:20.3:10.10:10.10:7.3:7.3")
+cluster->Scan("pol:n:base:noBase:H:V:avgLinearPolFrac:avgLinearPolAngle:longitude:latitude:powerH:powerV","n!=1 || noBase != 1","colsize=7 precision=7 col=::::::20.3:20.3:10.10:10.10:7.3:7.3")
 
 events->Scan("run:event:pol:nsegs:NOverlapedBases:impulsivityV:impulsivityH:powerV:powerH:linearPolFrac:linearPolAngle:longitude:latitude","indexOfCluster==6")
  
@@ -1274,7 +1276,6 @@ auto legend = new TLegend(0.1,0.7,0.48,0.9);
    legend->Draw();
 
   h1->GetXaxis()->SetTitle("clusterSize")
-  fit
 
 
 gStyle->SetOptFit();
@@ -1297,56 +1298,6 @@ clusterSize->GetXaxis()->SetTitle("clusterSize")
 
 
 
-cluster->Draw("n>>clusterSize(9,0,9)","n<6 && base!=0")
-gStyle->SetOptFit();
-TF1 *fitMaxwell3 = new TF1("fitMaxwell","[0]*(x-0.5)^2*TMath::Exp(-1*[1]*(x-0.5)^2)", 0, 6)
-fitMaxwell3->SetParName(0,"c2");
-fitMaxwell3->SetParName(1,"a2");
-fitMaxwell3->SetParameter(0, 5);
-fitMaxwell3->SetParameter(1, 3);
-clusterSize->Fit("fitMaxwell");
-clusterSize->GetXaxis()->SetTitle("clusterSize")
-
-
-
-
-
-cluster->Draw("n>>clusterSize","n<100 ")
-gStyle->SetOptFit();
-TF1 *fitPow = new TF1("fitPow","[0]*TMath::Power(x,[1])", 0, 100)
-fitPow->SetParName(0,"c1");
-fitPow->SetParName(1,"a1");
-fitPow->SetParameter(0, 5);
-fitPow->SetParameter(1, -1);
-clusterSize->Fit("fitPow");
-clusterSize->GetXaxis()->SetTitle("clusterSize")
-
-
-
-
-
-cluster->Draw("n>>noBaseClusterSize(9,0,9)","n<6 && base==0")
-gStyle->SetOptFit();
-TF1 *fitCombined = new TF1("fitCombined","[0]*TMath::Power(x,-2.3) + [1]*(x-0.5)^2*TMath::Exp(-0.21*(x-0.5)^2)", 0, 6)
-fitCombined->SetParName(0,"c1");
-fitCombined->SetParName(1,"c2");
-fitCombined->SetParameter(0, 1);
-fitCombined->SetParameter(1, 1);
-noBaseClusterSize->Fit("fitCombined");
-noBaseClusterSize->GetXaxis()->SetTitle("noBaseClusterSize")
-
-
-
-
-cluster->Draw("n>>ClusterSize(9,0,9)","n>1 && n<6")
-gStyle->SetOptFit();
-TF1 *fitCombined = new TF1("fitCombined","[1]*x^2*TMath::Exp(-0.32*x^2)", 0, 10)
-fitCombined->SetParName(0,"c1");
-fitCombined->SetParName(1,"c2");
-fitCombined->SetParameter(0, 1);
-fitCombined->SetParameter(1, 1);
-ClusterSize->Fit("fitCombined");
-ClusterSize->GetXaxis()->SetTitle("ClusterSize")
 
 
 
@@ -1354,28 +1305,32 @@ anita4->Draw("mostImpulsiveCoherentFiltered(2).I /mostImpulsiveCoherent(2).I: ab
 anita4->Draw("channels[][].rms:channels[][].peakHilbert>>h(300,,,300,,)","","colz")
 
 ,
-c.Scan("run:eventNumber:triggerTime:phi:heading","impulsivity>0.7 && theta > -3.5 && theta < 0","colsize=20")
+TChain c("anita4")
+c.Add("*10000003*")
+c.Draw("theta:impulsivity>>h(300,,,300,,)", "", "colz")
+c.Scan("run:eventNumber:triggerTime:phi:heading:theta:impulsivity","impulsivity>0.72 && theta > -3","colsize=20")
 
 # check the eventlist for hical2
-
-int events[19] = {37447117, 41293600, 41330771, 41331299, 42626421, 43144091, 44659206, 46272140, 48899924, 48923673, 55977914, 56907822, 56956274, 56969081, 59365335, 59370878, 64532506,  1411355,  3795250};
-double phi[19] = {-25.07038,-270.7028,-50.54462,-50.46783,-157.1023,-257.5177,-128.6679,-224.1614,-77.58296,-311.4005,-293.5151,-26.69358,-312.8226,-69.62993,-252.0296,-251.0558,-23.55881,-63.66668,-300.4347};
-int triggerTime[19] = {1481624217,1481705279,1481706056,1481706069,1481732975,1481744099,1481776537,1481811297,1481866910,1481867405,1482013921,1482041651,1482042711,1482042999,1482095544,1482095669,1482213952,1480708080,1480743758};
-double heading[19] = {40.236564,189.83554,70.485435,69.961486,126.14969,232.75256,163.00051,232.68185,30.938180,265.26080,359.58087,78.881629,5.2468500,26.003187,311.48910,310.15457,358.72329,164.44584,194.56904};
-double angleToA[19];
-double angleToB[19];
-double AisON[19];
-double BisON[19];
-for (int i = 0; i< 19; i++){
+ ,
+  ,
+int events[9] = {37504800,40358046,42626421,43144091,51293223,63953927,76278077,1411355,3795250};
+int triggerTime[9] = {1481625256,1481686279,1481732975,1481744099,1481915288,1482200076,1482484081,1480708080,1480743758};
+double phi[9] = {201.394927978515625, 84.8769073486328125, 157.102325439453125,  257.51776123046875, 198.009933471679688, 200.828964233398438, 261.212554931640625,   63.66668701171875,  300.43475341796875};
+double heading[9] = {212.0626220703125,36.9091377258300781,126.149696350097656,  232.7525634765625, 144.41217041015625,71.3988723754882812,64.4733657836914062,164.445846557617188,194.569046020507812};
+double angleToA[9];
+double angleToB[9];
+double AisON[9];
+double BisON[9];
+for (int i = 0; i< 9; i++){
     Hical2::angleToHical(events[i],&angleToA[i],&angleToB[i]);
     AisON[i] = Hical2::hc2aOn(triggerTime[i]);
     BisON[i] = Hical2::hc2bOn(triggerTime[i]);
 }
 TH1F *histA = new TH1F("angleToA", "angleToA", 100, -180, 180);
 TH1F *histB = new TH1F("angleToB", "angleToB", 100, -180, 180);
-for (int i = 0; i< 19; i++){
-	histA->Fill(FFTtools::wrap(angleToA[i]-heading[i]-phi[i], 360, 0));
-	histB->Fill(FFTtools::wrap(angleToB[i]-heading[i]-phi[i], 360, 0));
+for (int i = 0; i< 9; i++){
+	histA->Fill(FFTtools::wrap(angleToA[i]-heading[i]+phi[i], 360, 0));
+	histB->Fill(FFTtools::wrap(angleToB[i]-heading[i]+phi[i], 360, 0));
     std::cout<< events[i]<< " \t "<< FFTtools::wrap(angleToA[i]-heading[i]+phi[i], 360, 0)<< " \t "<< FFTtools::wrap(angleToB[i]-heading[i]+phi[i], 360, 0) <<" \t "<< AisON[i] << " \t "<< BisON[i] << std::endl;
 }
 
@@ -1384,3 +1339,88 @@ histB->Draw();
 
 Hical2::isHical(56956274, 1482042711, 5.2468500 + 312.8226)
 
+
+//exponential fit to impulsivity
+gStyle->SetOptFit();
+TF1 *expo2 = new TF1("expo2","[0]*exp(-[1]*x)",0.4,0.72);
+expo2->SetParNames("A","sigma");
+expo2->SetParameters(1,0.5);
+eff1->Fit("expo2","","",0.3, 0.8)
+
+
+events->Draw("linearPolAngle>>h()", "sizeOfCluster<1.5 && sizeOfCluster > 0.5","colz")
+events->Draw("linearPolAngle>>h()", "sizeOfCluster<5.5 && sizeOfCluster > 1.5","colz")
+
+// python code for calculate limit
+x = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6,7,8,9,10,11,12,13,14,15]
+y = [2.44, 2.86, 3.28, 3.62, 3.94, 4.2, 4.42, 4.63, 4.83, 5.18, 5.53, 5.9, 6.18, 6.49, 6.76, 7.02, 7.28, 7.51, 7.75, 7.99]
+
+def f(bg):
+    i = len(x) - 1
+    while i >= 0:
+        if bg == x[i]:
+            return y[i]
+        if x[i] < bg:
+                break
+        i -= 1
+    # interpolate between i and i + 1
+    return y[i] + (bg - x[i])*(y[i+1] - y[i])/(x[i+1] - x[i])
+
+inputs =[1.42857,2.33333,1.66667,1.5,0.857143,0.571429,0.333333,0.25,0.25,0.25,0.25,0.333333,0,]
+
+inputs2 =[4.87805,3.24324,2.51046,1.96364,1.02857,0.685714,0.413793,0.272727,0.272727,0.25,0.25,0.333333,0]
+for e in inputs2:
+    print f(e)
+"
+TChain a4("anita4")
+a4.Add("a4all*10000003*")
+#include "FFTtools.h"
+
+a4.Draw("theta:FFTtools::wrap(phi, 360, 0)>>payload_all(300,-200,200,300,-70,50)","","colz")
+payload_all->GetXaxis()->SetTitle("phi")
+payload_all->GetYaxis()->SetTitle("theta")
+a4.Draw("theta:FFTtools::wrap(phi, 360, 0)>>payload_impulsive(300,-200,200,300,-70,50)","impulsivity > 0.72","colz")
+payload_impulsive->GetXaxis()->SetTitle("phi")
+payload_impulsive->GetYaxis()->SetTitle("theta")
+
+a4.Draw("theta:FFTtools::wrap(phi - heading, 360, 0)>>local_earth_all(300,-200,200,300,-70,50)","","colz")
+local_earth_all->GetXaxis()->SetTitle("phi - heading")
+local_earth_all->GetYaxis()->SetTitle("theta")
+a4.Draw("theta:FFTtools::wrap(phi - heading, 360, 0)>>local_earth_impulsive(300,-200,200,300,-70,50)","impulsivity > 0.72","colz")
+local_earth_impulsive->GetXaxis()->SetTitle("phi - heading")
+local_earth_impulsive->GetYaxis()->SetTitle("theta")
+
+a4.Draw("theta:FFTtools::wrap(phi - heading - longitude, 360, 0)>>earth_all(300,-200,200,300,-70,50)","","colz")
+earth_all->GetXaxis()->SetTitle("phi - heading - longitude")
+earth_all->GetYaxis()->SetTitle("theta")
+a4.Draw("theta:FFTtools::wrap(phi - heading - longitude, 360, 0)>>earth_impulsive(300,-200,200,300,-70,50)","impulsivity > 0.72","colz")
+earth_impulsive->GetXaxis()->SetTitle("phi - heading - longitude")
+earth_impulsive->GetYaxis()->SetTitle("theta")
+
+
+a4.Draw("FFTtools::wrap(phi - heading -longitude,360,0):(triggerTime - 1480695161)/3600/24>>satelliteStripe_all(600,-1,30,600,-200,200)","","colz")
+satelliteStripe_all->GetYaxis()->SetTitle("phi - heading - longitude")
+satelliteStripe_all->GetXaxis()->SetTitle("day")
+a4.Draw("FFTtools::wrap(phi - heading -longitude,360,0):(triggerTime - 1480695161)/3600/24>>satelliteStripe_impulsive(600,-1,30,600,-200,200)","impulsivity > 0.72","colz")
+satelliteStripe_impulsive->GetYaxis()->SetTitle("phi - heading - longitude")
+satelliteStripe_impulsive->GetXaxis()->SetTitle("day")
+
+
+
+//log normal fit to impulsivity
+gStyle->SetOptFit();
+TF1 *normal4 = new TF1("normal4","([0]*exp(-[1]*(x - 0.46)^2))/x",0.45, 0.56);
+normal4->SetParNames("A","B");
+normal4->SetParameters(500000,100);
+h2->Fit("normal4","","",0.45, 0.56)
+
+
+TF2 *f2t = new TF2(“f2t”,"[0]*TMath::Gaus(x,[1],[2])*TMath::Gaus(y,[3],[4])",-10,10,-10,10);
+f2t->SetParameters(0.9,3,.22,4,.03);
+
+TChain a4("anita4")
+a4.Add("*10000003*")
+a4.Draw("impulsivityV:impulsivityH>>h1(300,-1,1,300,-1,1)","theta <-5.8&& peak == 0 && impulsivityV > impulsivityH","colz")
+a4.Draw("(impulsivityV- impulsivityH):1.73-(impulsivityV +  impulsivityH)>>h2(300,-1,1,300,-1,1)","theta <-5.8&& peak == 0 && impulsivityV- impulsivityH <= 0","colzsame")
+
+anita4->Draw("mostImpulsiveDeconvolvedFiltered(2).peakTime:mostImpulsiveDeconvolvedFiltered(2).impulsivityMeasure","theta < 0", "colz")

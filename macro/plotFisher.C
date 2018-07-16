@@ -15,9 +15,9 @@ void fillEfficeincy(TH1D * h, TH1D *eff,double scale, const char * cut = "", con
 void plotFisher(const char * var = "deconvImpulsivity")
 {
   TChain chain1("anita4"); 
-  chain1.Add("thermalTrees/a4all*30002*.root");
+  chain1.Add("thermalTrees/a4all*10000003*.root");
   TChain chain2("anita4"); 
-  chain2.Add("thermalTrees/a4all*30002*.root");
+  chain2.Add("thermalTrees/a4all*10000003*.root");
   TChain chain3("simulation"); 
   chain3.Add("thermalTrees/simulated*1000*.root");
   TChain chain4("wais"); 
@@ -35,7 +35,7 @@ void plotFisher(const char * var = "deconvImpulsivity")
   TH1D * h3 = new TH1D("h3","MinBias Energy222 MC",200,0,1.1); 
   TH1D * h4 = new TH1D("h4","Wais data",200,0,1.1); 
   TCanvas * dists = new TCanvas("c1","c1"); 
-  chain1.Draw("impulsivity >> h1","theta>0", ""); 
+  chain1.Draw("impulsivity >> h1","theta>0 && peak == 0", ""); 
   chain2.Draw("impulsivity >> h2","theta<=-5.8", "same"); 
   chain3.Draw("impulsivity >> h3", "weight", "same"); 
   chain4.Draw("impulsivity >> h4","","same");
@@ -47,6 +47,24 @@ void plotFisher(const char * var = "deconvImpulsivity")
   h2->GetYaxis()->SetTitle("count");
   h3->GetYaxis()->SetTitle("count");
   h4->GetYaxis()->SetTitle("count");
+
+  // 2d histogram plot
+  TH2D * hist2Dh1 = new TH2D("hist2Dh1","Above Horizontal Events ",200,0,1.1,200,0,1.1); 
+  TH2D * hist2Dh2 = new TH2D("hist2Dh2","Below Horizon Events  ",200,0,1.1,200,0,1.1); 
+  TH2D * hist2Dh3 = new TH2D("hist2Dh3","MinBias Energy222 MC",200,0,1.1,200,0,1.1); 
+  TH2D * hist2Dh4 = new TH2D("hist2Dh4","Wais data",200,0,1.1,200,0,1.1); 
+  chain1.Draw("impulsivityV:impulsivityH >> hist2Dh1","theta>0 && peak == 0", "colz"); 
+  chain2.Draw("impulsivityV:impulsivityH >> hist2Dh2","theta<=-5.8", "colz"); 
+  chain3.Draw("impulsivityV:impulsivityH >> hist2Dh3", "weight", "colz"); 
+  chain4.Draw("impulsivityV:impulsivityH >> hist2Dh4","","colz");
+  hist2Dh1->GetXaxis()->SetTitle("impulsivityH");
+  hist2Dh2->GetXaxis()->SetTitle("impulsivityH");
+  hist2Dh3->GetXaxis()->SetTitle("impulsivityH");
+  hist2Dh4->GetXaxis()->SetTitle("impulsivityH");
+  hist2Dh1->GetYaxis()->SetTitle("impulsivityV");
+  hist2Dh2->GetYaxis()->SetTitle("impulsivityV");
+  hist2Dh3->GetYaxis()->SetTitle("impulsivityV");
+  hist2Dh4->GetYaxis()->SetTitle("impulsivityV");
 
 // efficiency plot
   TH1D * eff1 = new TH1D("eff1","Above Horizontal Events ",200,0,1.1); 
@@ -68,6 +86,11 @@ void plotFisher(const char * var = "deconvImpulsivity")
   h2->Write(); 
   h3->Write(); 
   h4->Write();
+
+  hist2Dh1->Write(); 
+  hist2Dh2->Write(); 
+  hist2Dh3->Write(); 
+  hist2Dh4->Write();
 
   std::cout << "finished"<<std::endl;
 
@@ -92,6 +115,16 @@ void backup(){
   legend2->AddEntry("eff3","MinBias Energy222 MC","l");
   legend2->AddEntry("eff4","Wais data","l");
   legend2->Draw();
+
+
+  // fit exponetial line
+
+//exponential fit to impulsivity
+// gStyle->SetOptFit(0101);
+// TF1 *expo2 = new TF1("expo2","[0]*exp(-[1]*x)",0.5,0.68);
+// expo2->SetParNames("A","sigma");
+// expo2->SetParameters(1,0.5);
+// eff1->Fit("expo2","","",0.65, 0.8)
 
 }
 

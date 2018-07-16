@@ -190,7 +190,18 @@ namespace UCorrelator
 
       /* These are probability sums */ 
       double getProbSumsIntegral(bool normalizd = false) const; 
-      const double* getProbSums(bool normalized = false) const { return normalized ? &ps_norm[0] : &ps[0]; } 
+      const double* getProbSums(bool normalized = false) const { 
+          std::vector <double> temp_map(p.seg->NSegments(),0);
+          temp_map = normalized ? ps_norm : ps; 
+          if(blind){
+            for (int i =0; i< p.seg->NSegments(); i++){
+              if(round(mapOfClusterSizes[i]) == 1 and uniform_ps_without_base[i] != 0){
+                temp_map[i] = 0;
+              }
+            }
+            return &temp_map[0];
+          }
+      } 
       const double* getProbSqrtSums(bool normalized = false) const { return normalized ? &sqrt_ps_norm[0] : &sqrt_ps[0]; } 
       const double* getOccludedFractionSum() const { return &fraction_occluded[0]; } 
 
@@ -202,6 +213,27 @@ namespace UCorrelator
       { return  &uniform_ps_without_base[0]; } 
       const double* getUniformPSwithBase() const 
       { return  &uniform_ps_with_base[0]; } 
+      const double* getClusterSizes() const { 
+          std::vector <double> temp_map(p.seg->NSegments(),0);
+          temp_map = mapOfClusterSizes; 
+          if(blind){
+            for (int i =0; i< p.seg->NSegments(); i++){
+              // temp_map[i] = 4.0;
+              if(round(mapOfClusterSizes[i]) == 1 and uniform_ps_without_base[i] != 0){
+                temp_map[i] = 0;
+              }else if(round(mapOfClusterSizes[i]) == 1 ){
+                temp_map[i] = 1;
+              }else if(round(mapOfClusterSizes[i]) > 1 and round(mapOfClusterSizes[i]) < 6){
+                temp_map[i] = 2;
+              }else if(round(mapOfClusterSizes[i]) >= 6 ){
+                temp_map[i] = 3;
+              }else{
+                temp_map[i] = 0;
+              }
+            }
+            return &temp_map[0];
+          }
+      }
 
 
       const AntarcticSegmentationScheme * segmentationScheme() const { return p.seg; } 
@@ -266,6 +298,7 @@ namespace UCorrelator
       std::vector<double> clusterSizes;
       std::vector<double> clusterSizes_with_base;
       std::vector<double> clusterSizes_without_base;
+      bool blind = true;
 
       //guards the add method (everything else doesn't touch the internals) 
       TMutex m; 

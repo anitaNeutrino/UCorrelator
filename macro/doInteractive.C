@@ -43,7 +43,7 @@ UCorrelator::ProbabilityMap::Params * map_params()
 // UCorrelator::Analyzer *doInteractive(int run = 51, int event = 3697122, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 173, int event = 36506330, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 43, int event = 1757432, bool decimated = false, bool simulated = false )
-UCorrelator::Analyzer *doInteractive(int run = 233, int event = 35337225, bool decimated = false, bool simulated = false )
+UCorrelator::Analyzer *doInteractive(int run = 64, int event = 64614028, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204382, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204407, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 160, int event = 32096871, bool decimated = false, bool simulated = false )
@@ -95,7 +95,8 @@ UCorrelator::Analyzer *doInteractive(int run = 233, int event = 35337225, bool d
   analyzer->setExtraFiltersDeconvolved(forDeco);
   analyzer->setDisallowedAntennas(0, (1ul<<45));  // Vpol ant45 is bad! So disable it.
 
-  UCorrelator::fillStrategyWithKey(strategy, "sinsub_10_3_ad_2");
+  // UCorrelator::fillStrategyWithKey(strategy, "sinsub_10_3_ad_2");
+  UCorrelator::fillStrategyWithKey(strategy, "sinsub_7_3_ad_2");
   // UCorrelator::fillStrategyWithKey(strategy, "");
   strategy->addOperation(new UCorrelator::BH13Filter()); 
 
@@ -108,7 +109,7 @@ UCorrelator::Analyzer *doInteractive(int run = 233, int event = 35337225, bool d
 
   AnitaEventSummary sum; 
   analyzer->analyze(ev,&sum,d.truth()); 
-  // analyzer->drawSummary(0,0,1); //third 1 is use filtered peak or csw
+  analyzer->drawSummary(0,0,1); //third 1 is use filtered peak or csw
   std::cout<< "eventNumber "<<sum.eventNumber<< " glitch="<< sum.flags.hasGlitch <<" flags->isStepFunction= "<<sum.flags.isStepFunction<< std::endl;
   /*
   TCanvas * c2 = new TCanvas; 

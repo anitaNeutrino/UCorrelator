@@ -2,19 +2,23 @@
 // #include "UsefulAdu5Pat.h"
 // .x drawPathsCloseToAnita.C
 //copy the top headers in the root console and run .x drawPathsCloseToAnita.C
+bool blind = true;
 void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/sparsedAllRuns/sparsedAllRuns.root"){
   gStyle->SetPalette(54);
   TCanvas * canvas = new TCanvas("Clusters","Clusters",800,800);
   canvas->SetCanvasSize(4000,4000); 
-  TFile * thermalMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_0.0001sigma_30002_mod1_remainder0_41_367.root");; 
-  UCorrelator::ProbabilityMap * thermal_maps = (UCorrelator::ProbabilityMap*) thermalMap->Get("maps");
-  // maps->segmentationScheme()->Draw("colz",maps->getBaseWeightedUniformPS());
-  thermal_maps->segmentationScheme()->Draw("colz",thermal_maps->getProbSums(true));
+  // TFile * thermalMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_3sigma_30002_mod1_remainder0_41_367.root");; 
+  // UCorrelator::ProbabilityMap * thermal_maps = (UCorrelator::ProbabilityMap*) thermalMap->Get("maps");
+  // // maps->segmentationScheme()->Draw("colz",maps->getBaseWeightedUniformPS());
+  // thermal_maps->segmentationScheme()->Draw("colz",thermal_maps->getProbSums(true));
 
-  TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_3.5sigma_30002_mod1_remainder0_41_367.root");; 
-  // UCorrelator::ProbabilityMap * maps = (UCorrelator::ProbabilityMap*) probabilityMap->Get("maps");
+  // TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_3sigma_30002_mod1_remainder0_41_367.root");; 
+  TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_2sigma_10000003_mod1_remainder0_41_367.root");; 
+  UCorrelator::ProbabilityMap * maps = (UCorrelator::ProbabilityMap*) probabilityMap->Get("maps");
   // maps->segmentationScheme()->Draw("colz",maps->getBaseWeightedUniformPS());
   // maps->segmentationScheme()->Draw("mapcolz",maps->getProbSums(true));
+  maps->segmentationScheme()->Draw("colz",maps->getClusterSizes());
+  // maps->segmentationScheme()->Draw("mapcolz");
 
   TTree * events = (TTree *) probabilityMap->Get("events");
   TGraphAntarctica* grEvents = new TGraphAntarctica();
@@ -23,10 +27,17 @@ void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrin
   grEvents->SetMarkerStyle(1);
   grEvents->SetMarkerSize(1);
   double event_longitude, event_latitude;
+  double event_sizeOfCluster;
+  int event_NOverlapedBases;
   events->SetBranchAddress("longitude",&event_longitude);
   events->SetBranchAddress("latitude",&event_latitude);
+  events->SetBranchAddress("sizeOfCluster",&event_sizeOfCluster);
+  events->SetBranchAddress("NOverlapedBases",&event_NOverlapedBases);
   for(int i =0 ; i<  events->GetEntries(); i++){
     events->GetEntry(i);
+    if (round(event_sizeOfCluster) == 1 and event_NOverlapedBases == 0){
+      continue;
+    }
     grEvents->SetPoint(grEvents->GetN(), event_longitude, event_latitude);
   }
   grEvents->Draw("psame");
@@ -96,7 +107,7 @@ void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrin
   }
   grFlightPath->Draw("psame");
 
-  auto legend = new TLegend(0.1,0.7,0.48,0.9);
+  auto legend = new TLegend(0.1,0.85,0.25,0.9);
    // legend->SetHeader("The Legend Title","C"); // option "C" allows to center the header
    legend->AddEntry("grEvents","Event reconstructed position","p");
    legend->AddEntry("grFlightPath","Payload flight path","p");

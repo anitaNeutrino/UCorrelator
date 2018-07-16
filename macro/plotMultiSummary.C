@@ -35,7 +35,9 @@ void _plotMultiSummary(TString treeName, TString pointDir, TString fEnd ,TString
 	TH2D* dThetavsdPhiV = new TH2D("dThetavsdPhiV", "dThetavsdPhiV", 100, -5, 5, 250, -5, 5);	
 	TH2D* dThetavsdPhi = new TH2D("dThetavsdPhi", "dThetavsdPhi", 100, -5, 5, 250, -5, 5);	
 	TH2D* dThetavsSNR = new TH2D("dThetavsSNR", "dThetavsSNR", 30, 0, 100, 50, -2, 2);	
-	TH2D* dPhivsSNR = new TH2D("dPhivsSNR", "dPhivsSNR", 30, 0, 100, 50, -5, 5);	
+	TH2D* dPhivsSNR = new TH2D("dPhivsSNR", "dPhivsSNR", 30, 0, 100, 50, -5, 5);
+	TH2D* dThetavsTheta = new TH2D("dThetavsTheta", "dThetavsTheta", 60, -60, 60, 50, -2, 2);	
+	TH2D* dPhivsTheta = new TH2D("dPhivsTheta", "dPhivsTheta", 60, -60, 60, 50, -5, 5);	
 
 	for (int j = 0; j < nEntries; j ++)
 	{
@@ -68,6 +70,8 @@ void _plotMultiSummary(TString treeName, TString pointDir, TString fEnd ,TString
 				dThetavsdPhi->Fill(FFTtools::wrap(sum->peak[0][0].phi - sum->wais.phi, 360, 0), sum->peak[0][0].theta - sum->wais.theta);
 				dThetavsSNR->Fill(sum->deconvolved_filtered[0][0].snr, FFTtools::wrap(sum->peak[0][0].theta - sum->wais.theta, 360, 0));
 				dPhivsSNR->Fill(sum->deconvolved_filtered[0][0].snr, FFTtools::wrap(sum->peak[0][0].phi - sum->wais.phi, 360, 0));
+				dThetavsTheta->Fill(-1*sum->peak[0][0].theta, FFTtools::wrap(sum->peak[0][0].theta - sum->wais.theta, 360, 0));
+				dPhivsTheta->Fill(-1*sum->peak[0][0].theta, FFTtools::wrap(sum->peak[0][0].phi - sum->wais.phi, 360, 0));
 			}
 			if(pulser == 5){
 				// if(sum->deconvolved_filtered[1][0].snr<10 or sum->deconvolved_filtered[1][0].snr>14){
@@ -84,6 +88,8 @@ void _plotMultiSummary(TString treeName, TString pointDir, TString fEnd ,TString
 				dThetavsdPhi->Fill(FFTtools::wrap(sum->peak[1][0].phi - sum->wais.phi, 360, 0), sum->peak[1][0].theta - sum->wais.theta);
 				dThetavsSNR->Fill(sum->deconvolved_filtered[1][0].snr, FFTtools::wrap(sum->peak[1][0].theta - sum->wais.theta, 360, 0));
 				dPhivsSNR->Fill(sum->deconvolved_filtered[1][0].snr, FFTtools::wrap(sum->peak[1][0].phi - sum->wais.phi, 360, 0));				
+				dThetavsTheta->Fill(-1*sum->peak[1][0].theta, FFTtools::wrap(sum->peak[1][0].theta - sum->wais.theta, 360, 0));
+				dPhivsTheta->Fill(-1*sum->peak[1][0].theta, FFTtools::wrap(sum->peak[1][0].phi - sum->wais.phi, 360, 0));
 			}
 
 		}else{
@@ -91,6 +97,9 @@ void _plotMultiSummary(TString treeName, TString pointDir, TString fEnd ,TString
 			dThetavsdPhi->Fill(FFTtools::wrap(peak.phi - sum->mc.phi, 360, 0), peak.theta - sum->mc.theta, sum->mc.weight);
 			dThetavsSNR->Fill(peak.snr, FFTtools::wrap(peak.theta - sum->mc.theta, 360, 0), sum->mc.weight);
 			dPhivsSNR->Fill(peak.snr, FFTtools::wrap(peak.phi - sum->mc.phi, 360, 0), sum->mc.weight);
+			dThetavsTheta->Fill(-1*peak.theta, FFTtools::wrap(peak.theta - sum->wais.theta, 360, 0));
+			dPhivsTheta->Fill(-1*peak.theta, FFTtools::wrap(peak.phi - sum->wais.phi, 360, 0));
+			
 		}
 
 		// dThetavPhiAll->GetXaxis()->SetTitle("wais.phi/[degree]");
@@ -106,6 +115,10 @@ void _plotMultiSummary(TString treeName, TString pointDir, TString fEnd ,TString
 		dThetavsSNR->GetYaxis()->SetTitle("dTheta/[degree]");
 		dPhivsSNR->GetXaxis()->SetTitle("snr");
 		dPhivsSNR->GetYaxis()->SetTitle("dPhi/[degree]");
+		dThetavsTheta->GetXaxis()->SetTitle("theta");
+		dThetavsTheta->GetYaxis()->SetTitle("dTheta/[degree]");
+		dPhivsTheta->GetXaxis()->SetTitle("theta");
+		dPhivsTheta->GetYaxis()->SetTitle("dPhi/[degree]");
 
 		
 	}
@@ -123,6 +136,8 @@ void _plotMultiSummary(TString treeName, TString pointDir, TString fEnd ,TString
 	dThetavsdPhi->Write();
 	dThetavsSNR->Write();
 	dPhivsSNR->Write();
+	dThetavsTheta->Write();
+	dPhivsTheta->Write();
 
 //project 
 	dThetavsdPhi->ProjectionX()->DrawNormalized()->Write();
@@ -151,21 +166,21 @@ void _plotMultiSummary(TString treeName, TString pointDir, TString fEnd ,TString
 }
 
 void plotMultiSummary(){
-	TString pointDir = "/Volumes/SDCard/data/wais/";
-	TString fEnd = "_max_30001_sinsub_10_3_ad_2.root";	
-	TString outf ="pointingSNR_Wais.root";
-	int start_run = 120;
-	int end_run = 155;
-	TString treeName = "wais";
-	_plotMultiSummary(treeName, pointDir, fEnd, outf, start_run, end_run);
-
-
-	// TString pointDir = "/Volumes/SDCard/data/simulated/";
-	// TString fEnd = "_max_501_sinsub_10_3_ad_2.root";	
-	// TString outf ="pointingSNR_MC.root";
-	// int start_run = 1;
-	// int end_run = 10;
-	// TString treeName = "simulation";
+	// TString pointDir = "/Volumes/SDCard/data/wais/";
+	// TString fEnd = "_max_30001_sinsub_10_3_ad_2.root";	
+	// TString outf ="pointingSNR_Wais.root";
+	// int start_run = 120;
+	// int end_run = 155;
+	// TString treeName = "wais";
 	// _plotMultiSummary(treeName, pointDir, fEnd, outf, start_run, end_run);
+
+
+	TString pointDir = "/Volumes/SDCard/data/simulated/";
+	TString fEnd = "_max_1001_sinsub_10_3_ad_2.root";	
+	TString outf ="pointingSNR_MC.root";
+	int start_run = 1;
+	int end_run = 100;
+	TString treeName = "simulation";
+	_plotMultiSummary(treeName, pointDir, fEnd, outf, start_run, end_run);
 
 }

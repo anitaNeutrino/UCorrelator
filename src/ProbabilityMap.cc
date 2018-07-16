@@ -175,6 +175,10 @@ double UCorrelator::ProbabilityMap::overlap(const AnitaEventSummary * sum , cons
     double p_this  =  weight*segs[i].second * invnorm; 
 
     double p_other = the_rest[seg]; 
+    // blild to unknown base singlets to calculate mc overlaping
+    if(blind and round(mapOfClusterSizes[i]) == 1 and uniform_ps_without_base[i] != 0){
+      p_other = 0; 
+    }
 
     //remove the current event's ps from all segments.
     if (remove_self && mode == OVERLAP_SQRT_SUMS)

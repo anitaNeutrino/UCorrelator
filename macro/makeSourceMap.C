@@ -15,7 +15,7 @@ int blind = 1; // hard coded to blind
 UCorrelator::ProbabilityMap::Params * map_params()
 {
   // pixel x, pixel y , max meter x, max meter y
-  StereographicGrid * g= new StereographicGrid(1000,1000,2000000,2000000); 
+  StereographicGrid * g= new StereographicGrid(1500,1500,3000000,3000000); 
 
   TF1 * f_dtheta = new TF1("ftheta", "[0]/x^[1] + [2]", 1, 100);
   TF1 * f_dphi = new TF1("fphi", "[0]/x^[1] + [2]", 1, 100);
@@ -538,17 +538,22 @@ void _makeMCmapAndEvaluateEfficiency(){
 
 
 void _evaluateMCEfficiency(){
-  char const * xStrings[8] = {"0.0002","1","2","3","4","5","6","7"};
-  double const xSigmas[8] = {0.0002,1,2,3,4,5,6,7};  
+  // char const * xStrings[8] = {"0.0002","1","2","3","4","5","6","7"};
+  // double const xSigmas[8] = {0.0002,1,2,3,4,5,6,7};  
+  const char * xStrings[20] = {"0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10"};
+  double const xSigmas[20] = {0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10};
+
   TChain overlap("overlap");
   overlap.Add("overlap/*_1_10_*.root");
-  for (int i=0; i<8; i++){
+  for (int i=0; i<20; i++){
     // double nOverlaped = overlap.Draw("x","","goff");
     // double nNotOverlaped = overlap.Draw("x","","goff");
     TH1 * h1 = new TH1D(TString::Format("plot1_%d",i),"x", 300, 0,20);
     TH1 * h2 = new TH1D(TString::Format("plot2_%d",i),"x", 300, 0,20);
-    overlap.Draw(TString::Format("x>>%s",h1->GetName()),TString::Format("(x==%s && O>0)*S",xStrings[i]),"goff");
-    overlap.Draw(TString::Format("x>>%s",h2->GetName()),TString::Format("(x==%s && O==0)*S",xStrings[i]),"goff");
+    // overlap.Draw(TString::Format("x>>%s",h1->GetName()),TString::Format("(x==%s && (O>0 || NOverlapedBases > 0))*S",xStrings[i]),"goff");
+    // overlap.Draw(TString::Format("x>>%s",h2->GetName()),TString::Format("(x==%s && O==0 && NOverlapedBases == 0)*S",xStrings[i]),"goff");
+    overlap.Draw(TString::Format("x>>%s",h1->GetName()),TString::Format("(x==%s && O == 0 && (NOverlapedBases > 0))*S",xStrings[i]),"goff");
+    overlap.Draw(TString::Format("x>>%s",h2->GetName()),TString::Format("(x==%s && O == 0 && NOverlapedBases == 0)*S",xStrings[i]),"goff");
     double nOverlaped = h1->Integral();
     double nNotOverlaped = h2->Integral();
     delete h1;
@@ -562,13 +567,17 @@ void _evaluateMCEfficiency(){
 //quickly fill the sizeOfCluster in events tree. 
 //Just for a temp use.
 void _fillSizeOfCluster(){
-  char const * filePrefixs[8] = {"0.0002","1","2","3","4","5","6","7"};
+  // char const * filePrefixs[8] = {"0.0002","1","2","3","4","5","6","7"};
+  char const * filePrefixs[20] = {"0.5","1","1.5","2","2.5","3","3.5","4","4.5","5","5.5","6","6.5","7","7.5","8","8.5","9","9.5","10"};
+
   TFile * sourceMapFile;
   TTree * events;
   UCorrelator::ProbabilityMap * map;
   Adu5Pat * gps = new Adu5Pat; 
-  for (int i=0; i<8; i++){
-    sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%ssigma_30002_mod1_remainder0_41_367.root",filePrefixs[i]),"update"); 
+  // for (int i=0; i<8; i++){
+  for (int i=0; i<20; i++){
+    // sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%ssigma_30002_mod1_remainder0_41_367.root",filePrefixs[i]),"update"); 
+    sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%ssigma_10000003_mod1_remainder0_41_367.root",filePrefixs[i]),"update"); 
     events = (TTree*) sourceMapFile->Get("events");
     map = (UCorrelator::ProbabilityMap*) sourceMapFile->Get("maps");
 
@@ -603,12 +612,14 @@ void _fillSizeOfCluster(){
 
 
 void _evaluateBackground(){
-  char const * filePrefixs[8] = {"0.0002","1","2","3","4","5","6","7"};
+  // char const * filePrefixs[8] = {"0.0002","1","2","3","4","5","6","7"};
+  char const * filePrefixs[20] = {"0.5","1","1.5","2","2.5","3","3.5","4","4.5","5","5.5","6","6.5","7","7.5","8","8.5","9","9.5","10"};
   TFile * sourceMapFile;
   TTree * events;
   int A, B, C, D;
-  for (int i=0; i<8; i++){
-    sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%ssigma_30002_mod1_remainder0_41_367.root",filePrefixs[i])); 
+  for (int i=0; i<20; i++){
+    // sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%ssigma_30002_mod1_remainder0_41_367.root",filePrefixs[i])); 
+    sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%ssigma_10000003_mod1_remainder0_41_367.root",filePrefixs[i])); 
     events = (TTree*) sourceMapFile->Get("events");
     A = events->Draw("run","abs(FFTtools::wrap(linearPolAngle,90,0))<30 && round(sizeOfCluster)<6 && round(sizeOfCluster)>1","goff");
     B = events->Draw("run","abs(FFTtools::wrap(linearPolAngle,90,0))>=30 && round(sizeOfCluster)<6 && round(sizeOfCluster)>1","goff");
@@ -635,7 +646,7 @@ int _evaluateMCOverlap(const char * treeName, const char* summaryFileFormat, con
   //output file and output tree named overlap
   TTree * outputTree = new TTree("overlap","overlap"); 
   double O=999,S,theta,polangle, impulsivity,powerH,powerV, linearPolFrac, linearPolAngle, longitude, latitude, x; 
-  int run,eventNumber,pol,peak;
+  int run,eventNumber,pol,peak,NOverlapedBases;
   double wgt = 1; 
   double mcE = 0; 
   int removed = 0; 
@@ -659,9 +670,11 @@ int _evaluateMCOverlap(const char * treeName, const char* summaryFileFormat, con
   outputTree->Branch("linearPolFrac",&linearPolFrac);
   outputTree->Branch("linearPolAngle",&linearPolAngle);
   outputTree->Branch("longitude",&longitude); 
-  outputTree->Branch("latitude",&latitude); 
+  outputTree->Branch("latitude",&latitude);
+  outputTree->Branch("NOverlapedBases",&NOverlapedBases);
 
-  TFile * sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%ssigma_30002_mod1_remainder0_41_367.root",_xString)); 
+  // TFile * sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%ssigma_30002_mod1_remainder0_41_367.root",_xString)); 
+  TFile * sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%ssigma_10000003_mod1_remainder0_41_367.root",_xString)); 
   UCorrelator::ProbabilityMap * map = (UCorrelator::ProbabilityMap*) sourceMapFile->Get("maps");
   int total_event_n = c.Draw("run:eventNumber:pol*5+peak:impulsivity:linearPolFrac:linearPolAngle:powerH:powerV",  cutString, "goff" ); 
   std::cout<< "total number of events: "<< total_event_n<< std::endl;
@@ -720,11 +733,11 @@ int _evaluateMCOverlap(const char * treeName, const char* summaryFileFormat, con
     //got returned density and base_contribution
     // the overlap calculation is based on the map's x.
     O = map->overlap(sum,gps,AnitaPol::AnitaPol_t(pol),peak,true,S, &base_contribution, UCorrelator::ProbabilityMap::OVERLAP_SUM_SQRTS, 0,0,&max_dens,&inv_two_pi_sqrt_det); 
-    
+    NOverlapedBases = base_contribution.size();
     // O=1;
 
 //    if (O < 0) O = -1; 
-    printf("x=%g \ti=%d \trun=%d \teventnumber=%d \timpulsivity=%g \tS=%g \tO=%g\n",_xSigma,i, run,eventNumber, impulsivity,S, O); 
+    printf("x=%g \ti=%d \trun=%d \teventnumber=%d \timpulsivity=%g \tS=%g \tO=%g\t nBase=%d\n",_xSigma,i, run,eventNumber, impulsivity,S, O, NOverlapedBases); 
     outputFile.cd(); 
     //all the branch variable are defined, so fill this event in output tree.
     outputTree->Fill(); 
@@ -737,7 +750,7 @@ int _evaluateMCOverlap(const char * treeName, const char* summaryFileFormat, con
 }
 
 
-void makeSourceMap(const char * treeName, bool evaluate = 1){
+void process(const char * treeName, bool evaluate = 1){
   int start_run,end_run;
   const char * sourceMapTree = "maps";
   if (!strcmp(treeName,"wais")){
@@ -754,9 +767,12 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
 
   }else if(!strcmp(treeName,"anita4")){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
-    const char* summaryFileFormat = "/Volumes/SDCard/data/a4all/%d_max_30002_sinsub_10_3_ad_2.root";
-    const char* thermalTreeFormat = "thermalTrees/a4all_%d-%d_max_30002_sinsub_10_3_ad_2.root";
-    const char * filePrefix = "sigma_30002_";
+    // const char* summaryFileFormat = "/Volumes/SDCard/data/a4all/%d_max_30002_sinsub_10_3_ad_2.root";
+    // const char* thermalTreeFormat = "thermalTrees/a4all_%d-%d_max_30002_sinsub_10_3_ad_2.root";
+    // const char * filePrefix = "sigma_30002_";
+    const char* summaryFileFormat = "/Volumes/SDCard/data/a4all/%d_max_10000003_sinsub_10_3_ad_2.root";
+    const char* thermalTreeFormat = "thermalTrees/a4all_%d-%d_max_10000003_sinsub_10_3_ad_2.root";
+    const char * filePrefix = "sigma_10000003_";
     int mod = 1;
     int mod_remainder = 0;
     start_run = 41;
@@ -787,9 +803,9 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
 
   }else if(!strcmp(treeName,"weightedMC")){
     std::cout<<"makeSourceMap: "<< treeName <<std::endl;
-    const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_1000_sinsub_10_3_ad_2.root";
-    const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_1000_sinsub_10_3_ad_2.root";
-    const char * filePrefix = "sigma_1000_";
+    const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_1001_sinsub_10_3_ad_2.root";
+    const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_1001_sinsub_10_3_ad_2.root";
+    const char * filePrefix = "sigma_1001_";
     int mod = 1;
     int mod_remainder = 0;
     start_run = 1;
@@ -801,16 +817,27 @@ void makeSourceMap(const char * treeName, bool evaluate = 1){
     }
     // char const * xStrings[8] = {"0.0002","1","2","3","4","5","6","7"};
     // double const xSigmas[8] = {0.0002,1,2,3,4,5,6,7};
-    // for(int i=0; i<8; i++){
-    //   _evaluateMCOverlap("simulation", summaryFileFormat, thermalTreeFormat, start_run, end_run,xStrings[i],xSigmas[i]);
-    // }
+
+    const char * xStrings[20] = {"0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10"};
+    double const xSigmas[20] = {0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10};
+
+    for(int i=0; i<20; i++){
+      // _evaluateMCOverlap("simulation", summaryFileFormat, thermalTreeFormat, start_run, end_run,xStrings[i],xSigmas[i]);
+    }
     // _fillSizeOfCluster();
-    // _evaluateMCEfficiency();
-    _evaluateBackground();
+    _evaluateMCEfficiency();
+    // _evaluateBackground();
 
   }else{
     std::cout<< "wrong input treeName"<<std::endl;
   }
+}
+
+void makeSourceMap(const char * treeName, int id, bool evaluate = 1){
+  const char * sigmas[20] = {"0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10"};
+  xString = sigmas[id - 1];
+  xSigma = std::stod(sigmas[id - 1]);
+  process(treeName, evaluate);
 }
 
 
