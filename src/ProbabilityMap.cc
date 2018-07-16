@@ -67,6 +67,7 @@ int UCorrelator::ProbabilityMap::add(int& NOverlapedBases, double & p_ground, co
   TLockGuard lock(&m); 
 
   NOverlapedBases = base_ps_to_fill.size(); 
+  std::cout << " NOverlapedBases "<< NOverlapedBases << std::endl;
 
   int NOfSegments = segments_to_fill.size(); 
   double norm = 0; 
@@ -359,6 +360,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
 
   double inv_two_pi_sqrt_det = get_inv_two_pi_sqrt_det(pr.getdPhi(), pr.getdTheta(), pr.getCorr()); 
   double min_p = dist2dens(maxDistance(), inv_two_pi_sqrt_det); 
+  std::cout<< "minp="<< min_p << std::endl;
 
   std::vector<int> used ( segmentationScheme()->NSegments()); //each seg has an integer "used".
   UsefulAdu5Pat pat(gps); 
@@ -694,7 +696,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
   //finally, loop over any bases (if we were asked to do so) 
   if (base_contribution) 
   {
-
+    std::cout << "base contribution" << std::endl;
     //now loop over all the bases 
     int nbases = BaseList::getNumAbstractBases(); 
     for (int ibase = 0; ibase < nbases; ibase++)
@@ -716,12 +718,15 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
       if (base_phi - phi0 > 180) base_phi-=360; 
       if (base_phi - phi0 < -180) base_phi+=360; 
       double dens = pr.computeProbabilityDensity( base_phi, pp.source_theta); 
+      std::cout << ibase << "  "<< dens << std::endl;
       //this is vector that record the base id and its prob density.
       if(dens> min_p){
         // only when dens larger than the min_p, it will record the base.
         // the size of base_contribution will tell us the number of bases that this event is overlapping with.
         //overlapping is defined the same as the p.maximum_distance(ie, how many sigma)
+
         base_contribution->push_back(std::pair<int,double> (ibase, dens));
+        std::cout << " add base "<< ibase << "  "<< dens << " "<< base_contribution->size()<< std::endl;
       }
     }
 
@@ -905,8 +910,8 @@ void  UCorrelator::ProbabilityMap::evaluateEvent(double & indexOfCluster, double
 std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool blind, const char * option) const
 {
   //hard coded to blind, comment out to unblind
-  blind = true;
-
+  blind = false;
+  std::cout <<" showClusters "<<  std::endl;
   const int maxes[] = {1,2,3,4,5,6,7,8,9,10,20,50,100,(int) 100e6}; 
   const int mins[] =  {1,2,3,4,5,6,7,8,9,10,11,21,51,101}; 
   int n_rows = sizeof(maxes) / sizeof(*maxes); 
@@ -919,11 +924,13 @@ std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool bli
   memset(n_clusters_near_base,0, n_rows * sizeof(int)); 
   memset(n_clusters_not_base,0, n_rows * sizeof(int)); 
   memset(n_clusters_weighted,0, n_rows * sizeof(float)); 
+  std::cout << clusterSizes.size()<<  std::endl;
   for (size_t i = 0; i < clusterSizes.size(); i++) 
   {
     int n = round(clusterSizes[i]); 
     int n_nearBase =round(clusterSizes_with_base[i]);
     int n_notnearBase = round(clusterSizes_without_base[i]); 
+    std::cout <<n << " \t"<< n_nearBase<< " \t" <<n_notnearBase <<  std::endl;
     if(blind and n==1 and n_notnearBase==1){
       // if the case is what we should be blind, then skip the output.
       ;

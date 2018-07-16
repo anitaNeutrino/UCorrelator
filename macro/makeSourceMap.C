@@ -779,7 +779,7 @@ void process(const char * treeName, bool evaluate = 1){
     end_run = 367;
     for (mod_remainder= 0; mod_remainder<mod; mod_remainder++){
     // for (mod_remainder= 1; mod_remainder<2; mod_remainder++){
-       // _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+       _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
        _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
        // _makeMCmapAndEvaluateEfficiency(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
     }
