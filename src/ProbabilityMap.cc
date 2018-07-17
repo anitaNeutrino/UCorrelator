@@ -626,15 +626,18 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
       }
 
 
-      //is an vertor store the current segment and its prob density integral over the area.
-      contribution.push_back(std::pair<int,double>(seg,seg_p));
-      //is an vector store the current segment number and it maximun den sity 
-      if(max_densities) max_densities->push_back(std::pair<int,double>(seg, max_dens)); 
+      
       /* if max density is above min_p, add the neighbors of this segment */ 
       // This is done recursively so the neighbour segments(which has max_dens> min_p) will be added into the contribution vector.
       //min_p is calculated from the max distance, like 20 sigma. So it is the upper limit for a point.
       if (max_dens >= min_p)
       {
+        //moved these two line inside the if condition. Because we only record the segment if it's max density > min_p
+        //is an vertor store the current segment and its prob density integral over the area.
+        contribution.push_back(std::pair<int,double>(seg,seg_p));
+        //is an vector store the current segment number and it maximun den sity 
+        if(max_densities) max_densities->push_back(std::pair<int,double>(seg, max_dens)); 
+
         std::vector<int> new_neighbors;
         segmentationScheme()->getNeighbors(seg, &new_neighbors); // find the 8 neighbor seg around this seg. The return vector is in new_neighbors.
         for (size_t j = 0; j < new_neighbors.size(); j++)
@@ -694,7 +697,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
   //finally, loop over any bases (if we were asked to do so) 
   if (base_contribution) 
   {
-
+    // std::cout<< min_p << std::endl;
     //now loop over all the bases 
     int nbases = BaseList::getNumAbstractBases(); 
     for (int ibase = 0; ibase < nbases; ibase++)
@@ -716,6 +719,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
       if (base_phi - phi0 > 180) base_phi-=360; 
       if (base_phi - phi0 < -180) base_phi+=360; 
       double dens = pr.computeProbabilityDensity( base_phi, pp.source_theta); 
+      // std::cout<< ibase << " " << dens << " "  << std::endl;
       //this is vector that record the base id and its prob density.
       if(dens> min_p){
         // only when dens larger than the min_p, it will record the base.
