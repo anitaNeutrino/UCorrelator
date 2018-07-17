@@ -53,7 +53,6 @@ UCorrelator::Analyzer *doInteractive(int run = 64, int event = 16265194, bool de
 // UCorrelator::Analyzer *doInteractive(int run = 7, int event = 14305756, bool decimated = false, bool simulated = true )
 {
   
-std::cout<< "begin "<< std::endl;
   FFTtools::loadWisdom("wisdom.dat"); 
   FilterStrategy *strategy= new FilterStrategy; 
  
@@ -77,13 +76,10 @@ std::cout<< "begin "<< std::endl;
 //UCorrelator::AdaptiveButterworthFilter * butter = new UCorrelator::AdaptiveButterworthFilter(&avg); 
 //printf("UCorrelator::AdaptiveButterworthFilter * butter = (UCorrelator::AdaptiveButterworthFilter *) %p\n",butter); 
 //strategy->addOperation(butter); 
-std::cout<< "begin "<< std::endl;
 
   AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kNoBlinding );
-std::cout<< "begin "<< std::endl;
   event > 0 ? d.getEvent(event) : d.getEntry(-event); 
 
-std::cout<< "begin "<< std::endl;
 
  UCorrelator::AnalysisConfig cfg;
     cfg.nmaxima = 3;
@@ -107,7 +103,6 @@ std::cout<< "begin "<< std::endl;
 
   // ev->plotSummary(0,0); 
 
-std::cout<< "begin "<< std::endl;
   AnitaEventSummary sum; 
   analyzer->analyze(ev,&sum,d.truth()); 
   analyzer->drawSummary(0,0,1); //third 1 is use filtered peak or csw
@@ -145,12 +140,10 @@ std::cout<< "begin "<< std::endl;
   std::cout<< "###is hical = "<< Hical2::isHical(sum.eventNumber, d.header()->triggerTime, FFTtools::wrap(sum.anitaLocation.heading - sum.peak[0][0].phi, 360), sum.deconvolved_filtered[0][0].snr) << std::endl;
   std::cout<< "###evenummber =  "<< sum.eventNumber <<"\t triggerTime ="<< d.header()->triggerTime-1480000000<< "\t heading = "<< sum.anitaLocation.heading  << "\t mostImpPeak - [0][0] peak phi = "<< sum.mostImpulsivePeak(2).phi - sum.peak[0][0].phi<<"\t snr = "<< sum.mostImpulsiveDeconvolvedFiltered(2).snr<< std::endl;
   std::cout<< "### impulsivity "<< sum.mostImpulsiveDeconvolvedFiltered(2).impulsivityMeasure<< std::endl;
-std::cout<< "begin "<< std::endl;
   map->doClustering();
   map->showClusters(1,0);
 
 
-std::cout<< "begin "<< std::endl;
 
 //  butter->getFilter(AnitaPol::kHorizontal,0)->drawResponse(0,101,10); 
 
