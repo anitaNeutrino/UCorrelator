@@ -73,6 +73,7 @@ namespace UCorrelator
         ResponseIndividualBRotter, ///Ben's individual responses 
         ResponseHarmSignalOnly, ///Harm's signal chain only thing (currently used in icemc) 
         ResponseTUFF, /// A3 response with TUFFs convolved in
+        ResponseA4NoNotches, /// A4 response without the TUFFs
         ResponseA4 /// A4 response with TUFFs convolved in
       } response_option;  
 
