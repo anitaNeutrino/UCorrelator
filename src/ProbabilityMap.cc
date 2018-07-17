@@ -4,7 +4,8 @@
 #include "assert.h" 
 #include "BaseList.h" 
 #include "Math/ProbFunc.h"
-#include "UsefulAdu5Pat.h" 
+#include "UsefulAdu5Pat.h"
+#include "PayloadParameters.h"
  
 
 #if ROOT_VERSION_CODE >= ROOT_VERSION(6,0,0)
