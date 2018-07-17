@@ -99,7 +99,7 @@ UCorrelator::PointingResolution * UCorrelator::PointingResolutionParSNRModel::co
     phi_scale = pow(cos(TMath::DegToRad() *  (sum->peak[pol][peak].theta - 8.8)), 8.2); 
   }
 
-  new (p) PointingResolution(sum->peak[pol][peak].phi, sum->peak[pol][peak].theta, f_ph.Eval(snr) * phi_scale, f_th.Eval(snr) * theta_scale , 0); 
+  new (p) PointingResolution(sum->peak[pol][peak].phi, sum->peak[pol][peak].theta, f_ph.Eval(snr) / phi_scale, f_th.Eval(snr) / theta_scale , 0); 
   return p; 
 }
 

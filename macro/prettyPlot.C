@@ -39,7 +39,7 @@ int prettyPlot(int event = 15717147, int anitaVer = 3,
   cfg.zoomed_nant = 15; 
   cfg.use_coherent_spectra = false; 
 
-  cfg.correlation_gain_correction = 30; 
+  cfg.correlation_gain_correction = 40; 
   cfg.correlator_theta_lowest = 50; 
   cfg.correlator_theta_highest = 30; 
   cfg.correlator_nphi = 360; 
