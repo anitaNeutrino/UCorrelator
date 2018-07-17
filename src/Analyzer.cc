@@ -804,7 +804,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 
   TGraph distance_cdf; 
   info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf, &distance_cdf); 
-  //info->bandwidthMeasure = bandwidth::powerInBand(wf); 
+//  info->bandwidthMeasure = bandwidth::bandwidthMeasure(wf); 
 
   //fill in narrowest widths
   for (int iw = 0; iw < AnitaEventSummary::numFracPowerWindows; iw++)
@@ -1168,8 +1168,8 @@ void UCorrelator::Analyzer::fillFlags(const FilteredAnitaEvent * fae, AnitaEvent
   else flags->isStepFunction = 0; 
 
   //might as well use the power flags that Ben Strutt added
-  const double bandsLowGHz[AnitaEventSummary::numBlastPowerBands] = {0.15-1e-10, 0};
-  const double bandsHighGHz[AnitaEventSummary::numBlastPowerBands] = {0.25-1e-10, 999};
+  const double bandsLowGHz[AnitaEventSummary::numBlastPowerBands] = {0.15-1e-10, 1.1-1e-10, 0};
+  const double bandsHighGHz[AnitaEventSummary::numBlastPowerBands] = {0.26-1e-10, 999, 999};
 
   //reset values
   for(int band = 0; band < AnitaEventSummary::numBlastPowerBands; band++)
