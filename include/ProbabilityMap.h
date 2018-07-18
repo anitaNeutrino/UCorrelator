@@ -61,6 +61,7 @@ namespace UCorrelator
             collision_detection(false) , 
             max_dphi(5), 
             max_dtheta(5),
+            radius(20000),
             verbosity(0) 
         {
 
@@ -71,7 +72,8 @@ namespace UCorrelator
         RampdemReader::dataSet dataset; 
         const Refraction::Model * refract; 
         double maximum_distance; 
-        double min_p_on_continent; 
+        double min_p_on_continent;
+        double radius; 
 
         enum ProjectionMode
         {

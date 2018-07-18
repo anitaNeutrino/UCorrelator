@@ -3,7 +3,7 @@
 #include "AnitaDataset.h" 
  
 // TCut cutString("");
-TCut cutString("theta<-5.8 && impulsivity>0.71");
+TCut cutString("theta<-5.8 && impulsivity>0.75");
 double xSigma = 7;
 const char * xString = "7";
 int blind = 1; // hard coded to blind
@@ -49,6 +49,7 @@ UCorrelator::ProbabilityMap::Params * map_params()
   // already have snr cut, so no angular upper limit
   p->max_dphi = 9999;
   p->max_dtheta = 9999;
+  p->radius = 20000;
   // p->min_p_on_continent = 0;
  
 
@@ -564,7 +565,7 @@ void _evaluateMCEfficiency(){
 }
 
 
-//quickly fill the sizeOfCluster in events tree. 
+//quickly fill the sizeOfCluster in anita4 events tree. 
 //Just for a temp use.
 void _fillSizeOfCluster(){
   // char const * filePrefixs[8] = {"0.0002","1","2","3","4","5","6","7"};

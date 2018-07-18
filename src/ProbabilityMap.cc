@@ -383,12 +383,12 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
     used[guess_seg] = 1; 
     segs_to_check.push_back(guess_seg); // put the initial guess seg into segments to check.
 
-    AntarcticCoord pos = segmentationScheme()->getSegmentCenter(segs_to_check[0]); //position is the first segment
-    pos.to(AntarcticCoord::WGS84); 
+    AntarcticCoord pos0 = segmentationScheme()->getSegmentCenter(segs_to_check[0]); //position is the first segment
+    pos0.to(AntarcticCoord::WGS84); 
 
     if (p.verbosity > 2) 
     {
-      printf("center position: %g %g %g\n", pos.x, pos.y, pos.z); 
+      printf("center position: %g %g %g\n", pos0.x, pos0.y, pos0.z); 
     }
     int nsamples = p.backwards_params.num_samples_per_bin; 
     /* set up vectors for sample phis /thetas/ densities */ 
@@ -413,6 +413,8 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
     std::vector<double> xs(max_samples);; 
     std::vector<double> ys(max_samples);; 
     std::vector<bool> occluded(max_samples); 
+    AntarcticCoord pos ; //position of the cur segment
+
 
     /** Loop over segments we need to check to see if p > cutoff */
     //initially, there is only the first segment to check. But in this while loop, more neighbour will be added into this segments to check list. 
@@ -626,13 +628,17 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
       }
 
 
+      pos = segmentationScheme()->getSegmentCenter(seg);
+      pos0.to(AntarcticCoord::STEREOGRAPHIC); 
+      pos.to(AntarcticCoord::STEREOGRAPHIC); 
       
       /* if max density is above min_p, add the neighbors of this segment */ 
       // This is done recursively so the neighbour segments(which has max_dens> min_p) will be added into the contribution vector.
       //min_p is calculated from the max distance, like 20 sigma. So it is the upper limit for a point.
-      if (max_dens >= min_p)
+      // std::cout << pos.x<< " " << pos0.x << " "<< pos.y << " "<< pos0.y << " " << sqrt((pos.x - pos0.x)*(pos.x - pos0.x) + (pos.y - pos0.y)*(pos.y - pos0.y))<<  std::endl;
+      if (max_dens >= min_p or sqrt((pos.x - pos0.x)*(pos.x - pos0.x) + (pos.y - pos0.y)*(pos.y - pos0.y)) <= p.radius)
       {
-        //moved these two line inside the if condition. Because we only record the segment if it's max density > min_p
+        //moved these two line inside the if condition. Because we only record the segment if it's max density > min_p or  distance from base to projection position < radius,
         //is an vertor store the current segment and its prob density integral over the area.
         contribution.push_back(std::pair<int,double>(seg,seg_p));
         //is an vector store the current segment number and it maximun den sity 
@@ -654,8 +660,48 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
       }
     }
 
+    //finally, loop over any bases (if we were asked to do so) 
+    if (base_contribution) 
+    {
+      // std::cout<< min_p << std::endl;
+      //now loop over all the bases 
+      int nbases = BaseList::getNumAbstractBases(); 
+      for (int ibase = 0; ibase < nbases; ibase++)
+      {
+
+        const BaseList::abstract_base & base = BaseList::getAbstractBase(ibase); 
+        AntarcticCoord base_pos= base.getPosition(gps->realTime);
+
+        //TODO: can veto most bases early probalby 
+        //give the gps and base positon, easy to figure out all the geom between payload and base.
+        PayloadParameters pp (gps,base_pos, p.refract);
+        // if this base can not see the payload over horizon , will continue to look for next base. 
+        // if (pp.payload_el < p.backwards_params.el_cutoff || ( p.collision_detection && pp.checkForCollision(p.collision_params.dx,0,0, p.dataset, p.collision_params.grace))) continue ; 
+        if (pp.payload_el < p.backwards_params.el_cutoff) {
+          continue;
+        }
+        // when a base is in view, compute its prob density at this base point.
+        double base_phi = pp.source_phi ; 
+        if (base_phi - phi0 > 180) base_phi-=360; 
+        if (base_phi - phi0 < -180) base_phi+=360; 
+        double dens = pr.computeProbabilityDensity( base_phi, pp.source_theta); 
+        // std::cout<< ibase << " " << dens << " "  << std::endl;
+        //this is vector that record the base id and its prob density.
+        base_pos.to(AntarcticCoord::STEREOGRAPHIC); 
+
+        if(dens> min_p or sqrt((base_pos.x - pos0.x)*(base_pos.x - pos0.x) + (base_pos.y - pos0.y)*(base_pos.y - pos0.y)) <= 2 * p.radius){
+          // only when dens larger than the min_p or distance from base to projection position < 2 * radius, it will record the base.
+          // the size of base_contribution will tell us the number of bases that this event is overlapping with.
+          //overlapping is defined the same as the p.maximum_distance(ie, how many sigma)
+          base_contribution->push_back(std::pair<int,double> (ibase, dens));
+        }
+      }
+
+    }
+
   }
 
+  // this MC method dose work anymore, need to remove.
   else if (p.projection == Params::MC) 
   {
 
@@ -694,42 +740,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
   }
 
 
-  //finally, loop over any bases (if we were asked to do so) 
-  if (base_contribution) 
-  {
-    // std::cout<< min_p << std::endl;
-    //now loop over all the bases 
-    int nbases = BaseList::getNumAbstractBases(); 
-    for (int ibase = 0; ibase < nbases; ibase++)
-    {
-
-      const BaseList::abstract_base & base = BaseList::getAbstractBase(ibase); 
-      AntarcticCoord base_pos= base.getPosition(gps->realTime);
-
-      //TODO: can veto most bases early probalby 
-      //give the gps and base positon, easy to figure out all the geom between payload and base.
-      PayloadParameters pp (gps,base_pos, p.refract);
-      // if this base can not see the payload over horizon , will continue to look for next base. 
-      // if (pp.payload_el < p.backwards_params.el_cutoff || ( p.collision_detection && pp.checkForCollision(p.collision_params.dx,0,0, p.dataset, p.collision_params.grace))) continue ; 
-      if (pp.payload_el < p.backwards_params.el_cutoff) {
-        continue;
-      }
-      // when a base is in view, compute its prob density at this base point.
-      double base_phi = pp.source_phi ; 
-      if (base_phi - phi0 > 180) base_phi-=360; 
-      if (base_phi - phi0 < -180) base_phi+=360; 
-      double dens = pr.computeProbabilityDensity( base_phi, pp.source_theta); 
-      // std::cout<< ibase << " " << dens << " "  << std::endl;
-      //this is vector that record the base id and its prob density.
-      if(dens> min_p){
-        // only when dens larger than the min_p, it will record the base.
-        // the size of base_contribution will tell us the number of bases that this event is overlapping with.
-        //overlapping is defined the same as the p.maximum_distance(ie, how many sigma)
-        base_contribution->push_back(std::pair<int,double> (ibase, dens));
-      }
-    }
-
-  }
+  
   
   return inv_two_pi_sqrt_det; 
 }

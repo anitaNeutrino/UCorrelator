@@ -31,7 +31,8 @@ UCorrelator::ProbabilityMap::Params * map_params()
   p->point = snrResolutionModel; 
   p->collision_detection = false; 
   p->verbosity = 0; // verbosity level for output info.
-  p->maximum_distance = 3.5;
+  p->maximum_distance = 2.0;
+  p->radius = 20000;
   // p->min_p_on_continent = 0;
  
 
