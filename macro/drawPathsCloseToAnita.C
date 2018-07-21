@@ -13,7 +13,7 @@ void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrin
   // thermal_maps->segmentationScheme()->Draw("colz",thermal_maps->getProbSums(true));
 
   // TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_3sigma_30002_mod1_remainder0_41_367.root");; 
-  TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_2sigma_10000003_mod1_remainder0_41_367.root");; 
+  TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_2sigma_20km_10000003_mod1_remainder0_41_367.root");; 
   UCorrelator::ProbabilityMap * maps = (UCorrelator::ProbabilityMap*) probabilityMap->Get("maps");
   // maps->segmentationScheme()->Draw("colz",maps->getBaseWeightedUniformPS());
   // maps->segmentationScheme()->Draw("mapcolz",maps->getProbSums(true));
