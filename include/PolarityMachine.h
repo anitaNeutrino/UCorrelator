@@ -57,6 +57,7 @@ class PolarityMachine
     AnalysisWaveform* CRtemplate_deconv_windowed;
 
     void setDeconvolutionMethod(AnitaResponse::DeconvolutionMethod* opt) { deconv = opt ;}
+    void setWindowSizeNs(double opt) { windowSizeNs = opt ;}
 
     /* Metrics are as follows:
      *    0 is largest peak in the cross correlation template being negative or positive (binary)
@@ -66,12 +67,14 @@ class PolarityMachine
      *    4 is Andres' metric of (max+min)/(max-min) of wf (no correlation)
      * Will add more as i think of them */
 
-    double testPolarity(int metric, AnalysisWaveform* wf, bool deconv);
+    double testPolarity(int metric, AnalysisWaveform* wf, bool deconvolved);
 
     /* draws a nearby min bias event */
     AnalysisWaveform* makeNoiseWaveformFromMinBias(int eventNumber, double phi, double theta, int pol, int current_N);
     /* adds the nearby min bias event to the template waveform with some sort of snr scaling */
     AnalysisWaveform* generateNoisyWaveform(AnalysisWaveform* templateWf, AnalysisWaveform* noiseWf, double snr, TRandom3* tr);
+    /* windows the waveform about the maximum stokes I */
+    TGraph* windowWaveform(AnalysisWaveform* wf, double window_size_ns = 10);
 
   private:
     AnitaDataset* d;
@@ -79,8 +82,7 @@ class PolarityMachine
     int lengthFFT;
     double dT;
     double dF;
-    int windowStart;
-    int windowEnd;
+    double windowSizeNs;
 
     bool kTemplatesLoaded;
     std::string fNotchStr;

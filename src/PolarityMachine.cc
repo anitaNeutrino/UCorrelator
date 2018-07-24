@@ -11,8 +11,7 @@
   dT = 0.1;
   dF = 1./(dT*length);
   kTemplatesLoaded = false;
-  windowStart = 30;
-  windowEnd = 50;
+  windowSizeNs = 10;
 
   d = new AnitaDataset(200);
   deconv = new AnitaResponse::AllPassDeconvolution;
@@ -113,7 +112,9 @@ void PolarityMachine::getCRTemplates(int version) {
   gCR_deconv = FFTtools::normalizeWaveform(gCR_deconv);
   CRtemplate_deconv = new AnalysisWaveform(gCR_deconv->GetN(), gCR_deconv->GetX(), gCR_deconv->GetY(), dT);
   int temp = -1;
-  gCR_deconv = WindowingTools::windowWave(gCR_deconv, temp, windowStart, windowStart, windowEnd, windowEnd);
+  //gCR_deconv = WindowingTools::windowWave(gCR_deconv, temp, windowStart, windowStart, windowEnd, windowEnd);
+  delete gCR_deconv;
+  gCR_deconv = windowWaveform(CRtemplate_deconv, windowSizeNs);
   gCR_deconv = FFTtools::normalizeWaveform(gCR_deconv);
   CRtemplate_deconv_windowed = new AnalysisWaveform(gCR_deconv->GetN(), gCR_deconv->GetX(), gCR_deconv->GetY(), dT);
 
@@ -228,7 +229,7 @@ AnalysisWaveform* PolarityMachine::generateNoisyWaveform(AnalysisWaveform* templ
   return outWf;
 }
 
-double PolarityMachine::testPolarity(int metric, AnalysisWaveform* wf, bool deconv)
+double PolarityMachine::testPolarity(int metric, AnalysisWaveform* wf, bool deconvolved)
 {
   TGraph* gwf = gwf = new TGraph(wf->even()->GetN(), wf->even()->GetX(), wf->even()->GetY());
   TGraph* gCRwf = 0;
@@ -241,16 +242,18 @@ double PolarityMachine::testPolarity(int metric, AnalysisWaveform* wf, bool deco
     delete gwf;
     return retVal;
   }
-  else if(!deconv || metric < 2)
+  else if(!deconvolved || metric < 2)
   {
-    gCRwf = deconv ? new TGraph(CRtemplate_deconv->even()->GetN(), CRtemplate_deconv->even()->GetX(), CRtemplate_deconv->even()->GetY()) : new TGraph(CRtemplate->even()->GetN(), CRtemplate->even()->GetX(), CRtemplate->even()->GetY());
+    gCRwf = deconvolved ? new TGraph(CRtemplate_deconv->even()->GetN(), CRtemplate_deconv->even()->GetX(), CRtemplate_deconv->even()->GetY()) : new TGraph(CRtemplate->even()->GetN(), CRtemplate->even()->GetX(), CRtemplate->even()->GetY());
   }
   else if(metric == 2 || metric == 3)
   {
     gCRwf = new TGraph(CRtemplate_deconv_windowed->even()->GetN(), CRtemplate_deconv_windowed->even()->GetX(), CRtemplate_deconv_windowed->even()->GetY());
     int temp = -1;
     //windowing could probably be tuned up
-    gwf = WindowingTools::windowWave(gwf, temp, windowStart, windowStart, windowEnd, windowEnd);
+    //gwf = WindowingTools::windowWave(gwf, temp, windowStart, windowStart, windowEnd, windowEnd);
+    delete gwf;
+    gwf = windowWaveform(wf, windowSizeNs);
   }
   gCorr = FFTtools::getCorrelationGraph(gwf, gCRwf);
   double normalization = 1./(gwf->GetRMS(2) * gCRwf->GetRMS(2) * gwf->GetN()/TMath::Power(2, int(TMath::Log2(gwf->GetN()))));
@@ -292,6 +295,46 @@ AnalysisWaveform* PolarityMachine::makeNoiseWaveformFromMinBias(int eventNumber,
 
   return theOut;
 }
+
+TGraph* PolarityMachine::windowWaveform(AnalysisWaveform* wf, double window_size_ns)
+{
+  double * x = wf->even()->GetY();
+  double * xh = wf->hilbertTransform()->even()->GetY();
+  double max_dI = 0;
+  int max_ind = -1;
+  for(int i = 0; i < wf->Neven(); i++)
+  {
+    std::complex<double> X(x[i], xh[i]);
+    double dI = std::norm(X);
+    if(dI > max_dI)
+    {
+      max_dI = dI;
+      max_ind = i;
+    }
+  }
+  int window_edge = int(ceil(window_size_ns/(2*wf->deltaT())));
+  TGraph* theOut = new TGraph(wf->even()->GetN(), wf->even()->GetX(), wf->even()->GetY());
+  double alpha = 2 * (1. - double(2 * window_edge)/double(theOut->GetN())); //tukey window alpha
+  for(int i = 0; i < theOut->GetN(); i++)
+  {
+    if(i >= (max_ind - window_edge) && i <= (max_ind + window_edge)) continue;
+    else if (i < (max_ind - window_edge))
+    {
+      double tukey_const = double(2*i)/(alpha * double(theOut->GetN()-1));
+      double coeff = .5*(1 + TMath::Cos(TMath::Pi()*(tukey_const-1)));
+      theOut->GetY()[i] *= coeff;
+    }
+    else
+    {
+      int j = 2 * max_ind - i;
+      double tukey_const = double(2*j)/(alpha * double(theOut->GetN()-1));
+      double coeff = .5*(1 + TMath::Cos(TMath::Pi()*(tukey_const-1)));
+      theOut->GetY()[i] *= coeff;
+    }
+  }
+  return theOut;
+}
+
 
 
 
