@@ -3,7 +3,7 @@
 #include "AnitaDataset.h" 
  
 // TCut cutString("");
-TCut cutString("theta<-5.8 && impulsivity>0.75");
+TCut cutString("theta<-5.8 && impulsivity>0.752586");
 double xSigma = 7;
 const char * strSigma = "7";
 const char * strRadius = "0";
@@ -241,7 +241,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
 
   TTree tr("events","events"); 
   int run, ev, pol, peak,  nsegs,  NOverlapedBases ; 
-  double S, impulsivity,impulsivityH,impulsivityV,powerH,powerV,linearPolFrac,linearPolAngle, p_ground, theta,phi,snr,longitude,latitude; 
+  double S, impulsivity,impulsivityH,impulsivityV,powerH,powerV,linearPolFrac,linearPolAngle, p_ground, theta,phi,snr,longitude,latitude, payloadLongitude,payloadLatitude; 
   tr.Branch("event",&ev); 
   tr.Branch("run",&run); 
   tr.Branch("pol",&pol); 
@@ -262,6 +262,8 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   tr.Branch("snr",&snr);
   tr.Branch("longitude",&longitude); 
   tr.Branch("latitude",&latitude); 
+  tr.Branch("payloadLongitude",&payloadLongitude); 
+  tr.Branch("payloadLatitude",&payloadLatitude); 
   tr.Branch("gps",&gps); 
   
 
@@ -298,8 +300,14 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
     // } 
     peak = int(c.GetV3()[i]) % 5; 
     impulsivity = c.GetV4()[i]; 
+    if(weighted){
+      S = sum->mc.weight;
+    }else{
+      S = 1;
+    }
     // nsegs = map_weighted->add(sum, gps, AnitaPol::AnitaPol_t(pol), peak, S); 
     nsegs = map.add(NOverlapedBases, p_ground, sum, gps, AnitaPol::AnitaPol_t(pol), peak, S);
+
     if(pol == 0){
       impulsivityH = sum->deconvolved_filtered[0][peak].impulsivityMeasure;
       impulsivityV = sum->deconvolved_filtered[1][0].impulsivityMeasure;
@@ -316,11 +324,9 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
     snr = sum->peak[pol][peak].snr;
     longitude = sum->peak[pol][peak].longitude;
     latitude = sum->peak[pol][peak].latitude;
-    if(weighted){
-      S = sum->mc.weight;
-    }else{
-      S = 1;
-    }
+    payloadLongitude = sum->anitaLocation.longitude;
+    payloadLatitude = sum->anitaLocation.latitude;
+    
     // if(p_ground< 0.1){    
       printf("index= %d \trun = %d \tevn= %d \timpulsivity= %g \tS= %g\t nsegs= %d \tp_ground= %g \ttheta= %g \tsnr=%g \n",i,run,ev,impulsivity,S,nsegs,p_ground, theta, snr);
       // std::cout<< "\tsnr = "<< sum->deconvolved_filtered[pol][peak].snr << " longitude="<<sum->peak[pol][peak].longitude<<" latitude"<<sum->peak[pol][peak].latitude<< std::endl; 
@@ -608,21 +614,24 @@ void _fillSizeOfCluster(){
 
 
 void _evaluateBackground(){
-  TFile * sourceMapFile;
-  TTree * events;
+  TFile * clusterFile;
+  TTree * cluster;
   int A, B, C, D;
   for (int i=0; i<80; i++){
-    sourceMapFile = new TFile(TString::Format("source_maps/anita4/_%s_%s_10000003_mod1_remainder0_41_367.root",sigmas[i%10], radius[i/10])); 
-    events = (TTree*) sourceMapFile->Get("events");
-    A = events->Draw("run","abs(FFTtools::wrap(linearPolAngle,90,0))<30 && round(sizeOfCluster)<6 && round(sizeOfCluster)>1","goff");
-    B = events->Draw("run","abs(FFTtools::wrap(linearPolAngle,90,0))>=30 && round(sizeOfCluster)<6 && round(sizeOfCluster)>1","goff");
-    C = events->Draw("run","abs(FFTtools::wrap(linearPolAngle,90,0))<30 && round(sizeOfCluster) == 1","goff");
-    D = events->Draw("run","abs(FFTtools::wrap(linearPolAngle,90,0))>=30 && round(sizeOfCluster) == 1","goff");
+    // std::cout << i;
+    clusterFile = new TFile(TString::Format("cluster/anita4/_%s_%s_10000003_mod1_remainder0_41_367.root",sigmas[i%10], radius[i/10])); 
+    cluster = (TTree*) clusterFile->Get("cluster");
+    A = cluster->Draw("n","n > 1 && n < 6 && base == 0","goff");
+    B = cluster->Draw("n","n > 1 && n < 6 && base > 0","goff");
+    
+    D = cluster->Draw("n","n == 1&& base > 0","goff");
     if (blind){
         C = 0;
+    }else{
+      C = cluster->Draw("n","n == 1&& base == 0","goff");
     }
     std::cout<< "i="<<i<<"\t"<<A<< "\t"<<B<<"\t"<< C << " \t"<<D<<"\t "<<sigmas[i%10]<<"\t"<< radius[i/10]<< " \t"<< float(A)*float(D)/float(B)<<std::endl;
-    delete sourceMapFile;
+    delete clusterFile;
   }
   
 }
@@ -786,14 +795,14 @@ void process(const char * treeName, bool evaluate = 1){
     const char* summaryFileFormat = "/Volumes/SDCard/data/simulated/%d_max_1000_sinsub_10_3_ad_2.root";
     const char* thermalTreeFormat = "thermalTrees/simulated_%d-%d_max_1000_sinsub_10_3_ad_2.root";
     const char * filePrefix = "_1000_";
-    int mod = 3;
+    int mod = 150;
     int mod_remainder = 0;
     start_run = 1;
     end_run = 1;
     // for (mod_remainder= 0; mod_remainder<mod; mod_remainder+=2){
     for (mod_remainder= 0; mod_remainder<1; mod_remainder++){
-      _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
-      // _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
+      _makeSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder,1);
+      _evaluateSourceMap(treeName, summaryFileFormat, thermalTreeFormat, start_run, end_run, filePrefix, mod, mod_remainder);
     }
     
 
@@ -814,15 +823,14 @@ void process(const char * treeName, bool evaluate = 1){
     // char const * xStrings[8] = {"0.0002","1","2","3","4","5","6","7"};
     // double const xSigmas[8] = {0.0002,1,2,3,4,5,6,7};
 
-    double const xSigmas[10] = {0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5};
 
-    for(int i=0; i<80; i++){
-  
-      // _evaluateMCOverlap("simulation", summaryFileFormat, thermalTreeFormat, start_run, end_run,xStrings[i],xSigmas[i]);
+    for(int id=0; id<80; id++){
+      ;
+      // _evaluateMCOverlap("simulation", summaryFileFormat, thermalTreeFormat, start_run, end_run,sigmas[id%10],std::stod(sigmas[id%10]),radius[id/10],std::stod(radius[id/10]));
     }
     // _fillSizeOfCluster();
-    _evaluateMCEfficiency();
-    // _evaluateBackground();
+    // _evaluateMCEfficiency();
+    _evaluateBackground();
 
   }else{
     std::cout<< "wrong input treeName"<<std::endl;

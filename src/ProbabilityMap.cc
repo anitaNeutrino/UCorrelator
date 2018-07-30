@@ -920,7 +920,7 @@ void  UCorrelator::ProbabilityMap::evaluateEvent(double & indexOfCluster, double
 std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool blind, const char * option) const
 {
   //hard coded to blind, comment out to unblind
-  blind = true;
+  blind = false;
 
   const int maxes[] = {1,2,3,4,5,6,7,8,9,10,20,50,100,(int) 100e6}; 
   const int mins[] =  {1,2,3,4,5,6,7,8,9,10,11,21,51,101}; 

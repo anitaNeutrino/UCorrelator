@@ -300,7 +300,7 @@ namespace UCorrelator
       std::vector<double> clusterSizes;
       std::vector<double> clusterSizes_with_base;
       std::vector<double> clusterSizes_without_base;
-      bool blind = true;
+      bool blind = false;
 
       //guards the add method (everything else doesn't touch the internals) 
       TMutex m; 

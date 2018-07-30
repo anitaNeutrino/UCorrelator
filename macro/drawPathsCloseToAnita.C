@@ -13,7 +13,7 @@ void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrin
   // thermal_maps->segmentationScheme()->Draw("colz",thermal_maps->getProbSums(true));
 
   // TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_3sigma_30002_mod1_remainder0_41_367.root");; 
-  TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_2sigma_20km_10000003_mod1_remainder0_41_367.root");; 
+  TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_3_0_10000003_mod1_remainder0_41_367.root");; 
   UCorrelator::ProbabilityMap * maps = (UCorrelator::ProbabilityMap*) probabilityMap->Get("maps");
   // maps->segmentationScheme()->Draw("colz",maps->getBaseWeightedUniformPS());
   // maps->segmentationScheme()->Draw("mapcolz",maps->getProbSums(true));
@@ -28,14 +28,16 @@ void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrin
   grEvents->SetMarkerSize(1);
   double event_longitude, event_latitude;
   double event_sizeOfCluster;
-  int event_NOverlapedBases;
+  int event_NOverlapedBases, event_pol;
   events->SetBranchAddress("longitude",&event_longitude);
   events->SetBranchAddress("latitude",&event_latitude);
   events->SetBranchAddress("sizeOfCluster",&event_sizeOfCluster);
   events->SetBranchAddress("NOverlapedBases",&event_NOverlapedBases);
+  events->SetBranchAddress("pol",&event_pol);
   for(int i =0 ; i<  events->GetEntries(); i++){
     events->GetEntry(i);
-    if (round(event_sizeOfCluster) == 1 and event_NOverlapedBases == 0){
+    // Vpol singlets are blinded
+    if (round(event_sizeOfCluster) == 1 and event_NOverlapedBases == 0 and event_pol == 1){
       continue;
     }
     grEvents->SetPoint(grEvents->GetN(), event_longitude, event_latitude);

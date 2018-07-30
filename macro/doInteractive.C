@@ -31,8 +31,8 @@ UCorrelator::ProbabilityMap::Params * map_params()
   p->point = snrResolutionModel; 
   p->collision_detection = false; 
   p->verbosity = 0; // verbosity level for output info.
-  p->maximum_distance = 2.0;
-  p->radius = 20000;
+  p->maximum_distance = 3.0;
+  p->radius = 0;
   // p->min_p_on_continent = 0;
  
 
@@ -40,11 +40,12 @@ UCorrelator::ProbabilityMap::Params * map_params()
 
 }
 
+
 // UCorrelator::Analyzer *doInteractive(int run = 316, int event = 82634352, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 51, int event = 3697122, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 173, int event = 36506330, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 43, int event = 1757432, bool decimated = false, bool simulated = false )
-UCorrelator::Analyzer *doInteractive(int run = 64, int event = 16265194, bool decimated = false, bool simulated = false )
+UCorrelator::Analyzer * _doInteractive(int run = 90, int event = 35963950, bool decimated = false, bool simulated = false )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204382, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 102, int event = 204407, bool decimated = false, bool simulated = true )
 // UCorrelator::Analyzer *doInteractive(int run = 160, int event = 32096871, bool decimated = false, bool simulated = false )
@@ -77,8 +78,8 @@ UCorrelator::Analyzer *doInteractive(int run = 64, int event = 16265194, bool de
 //UCorrelator::AdaptiveButterworthFilter * butter = new UCorrelator::AdaptiveButterworthFilter(&avg); 
 //printf("UCorrelator::AdaptiveButterworthFilter * butter = (UCorrelator::AdaptiveButterworthFilter *) %p\n",butter); 
 //strategy->addOperation(butter); 
-
-  AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kNoBlinding );
+  AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kRandomizePolarity );
+  // AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kNoBlinding );
   event > 0 ? d.getEvent(event) : d.getEntry(-event); 
 
 
@@ -93,8 +94,8 @@ UCorrelator::Analyzer *doInteractive(int run = 64, int event = 16265194, bool de
   analyzer->setExtraFiltersDeconvolved(forDeco);
   analyzer->setDisallowedAntennas(0, (1ul<<45));  // Vpol ant45 is bad! So disable it.
 
-  // UCorrelator::fillStrategyWithKey(strategy, "sinsub_10_3_ad_2");
-  UCorrelator::fillStrategyWithKey(strategy, "sinsub_7_3_ad_2");
+  UCorrelator::fillStrategyWithKey(strategy, "sinsub_10_3_ad_2");
+  // UCorrelator::fillStrategyWithKey(strategy, "sinsub_7_3_ad_2");
   // UCorrelator::fillStrategyWithKey(strategy, "");
   strategy->addOperation(new UCorrelator::BH13Filter()); 
 
@@ -144,10 +145,18 @@ UCorrelator::Analyzer *doInteractive(int run = 64, int event = 16265194, bool de
   map->doClustering();
   map->showClusters(1,0);
 
-
-
 //  butter->getFilter(AnitaPol::kHorizontal,0)->drawResponse(0,101,10); 
 
   FFTtools::saveWisdom("wisdom.dat"); 
   return analyzer; 
+}
+
+void doInteractive(){
+    const int cosmicRays[24] = {12131787,15738420,16821419,17904564,20936205,25580797,25855454,45684620,35963950,36785931,39236841,40172984,47396999,54063721,64472798,64859493,64861754,66509677,72164985,83074427,88992443,91525988,93744271,95576190};
+    // for(int i = 0; i < 24; i ++){
+    int i = 10;
+      _doInteractive(90, cosmicRays[i], false,false);
+      
+      
+    // }
 }
