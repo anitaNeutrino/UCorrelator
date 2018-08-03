@@ -3,10 +3,47 @@
 // .x drawPathsCloseToAnita.C
 //copy the top headers in the root console and run .x drawPathsCloseToAnita.C
 bool blind = true;
+// text for hpol signal
+void drawtext()
+{
+   Int_t i,n;
+   Double_t x,y;
+   TLatex *l;
+   TGraph *g = (TGraph*)gPad->GetListOfPrimitives()->FindObject("grSignals");
+   n = g->GetN();
+   for (i=0; i<n; i++) {
+      g->GetPoint(i,x,y);
+      l = new TLatex(x,y+0.2,Form("%d",i));
+      l->SetTextSize(0.008);
+      l->SetTextFont(42);
+      l->SetTextAlign(21);
+      l->Paint();
+   }
+}
+//text for payload
+void drawtext1()
+{
+   Int_t i,n;
+   Double_t x,y;
+   TLatex *l;
+   TGraph *g = (TGraph*)gPad->GetListOfPrimitives()->FindObject("grSignalsPayload");
+   n = g->GetN();
+   for (i=0; i<n; i++) {
+      g->GetPoint(i,x,y);
+      l = new TLatex(x,y+0.2,Form("%d",i));
+      l->SetTextSize(0.008);
+      l->SetTextFont(42);
+      l->SetTextAlign(21);
+      l->Paint();
+   }
+}
 void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/sparsedAllRuns/sparsedAllRuns.root"){
   gStyle->SetPalette(54);
   TCanvas * canvas = new TCanvas("Clusters","Clusters",800,800);
   canvas->SetCanvasSize(4000,4000); 
+  // canvas->SetCanvasSize(800,800); 
+  TGraphAntarctica* antarcticaBackground = new TGraphAntarctica();
+  antarcticaBackground->Draw("a");
   // TFile * thermalMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_3sigma_30002_mod1_remainder0_41_367.root");; 
   // UCorrelator::ProbabilityMap * thermal_maps = (UCorrelator::ProbabilityMap*) thermalMap->Get("maps");
   // // maps->segmentationScheme()->Draw("colz",maps->getBaseWeightedUniformPS());
@@ -17,32 +54,62 @@ void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrin
   UCorrelator::ProbabilityMap * maps = (UCorrelator::ProbabilityMap*) probabilityMap->Get("maps");
   // maps->segmentationScheme()->Draw("colz",maps->getBaseWeightedUniformPS());
   // maps->segmentationScheme()->Draw("mapcolz",maps->getProbSums(true));
-  maps->segmentationScheme()->Draw("colz",maps->getClusterSizes());
+  maps->segmentationScheme()->Draw("samecolz",maps->getClusterSizes());
   // maps->segmentationScheme()->Draw("mapcolz");
 
   TTree * events = (TTree *) probabilityMap->Get("events");
   TGraphAntarctica* grEvents = new TGraphAntarctica();
+  TGraphAntarctica* grSignals = new TGraphAntarctica();
+  TGraphAntarctica* grSignalsPayload = new TGraphAntarctica();
   grEvents->SetName("grEvents");
   grEvents->SetMarkerColor(3);
   grEvents->SetMarkerStyle(1);
   grEvents->SetMarkerSize(1);
-  double event_longitude, event_latitude;
+  grSignals->SetName("grSignals");
+  grSignals->SetMarkerColor(3);
+  grSignals->SetMarkerStyle(5);
+  grSignals->SetMarkerSize(2);
+  TExec *ex = new TExec("ex","drawtext();");
+  // grSignals->GetListOfFunctions()->Add(ex);
+
+  grSignalsPayload->SetName("grSignalsPayload");
+  grSignalsPayload->SetMarkerColor(2);
+  grSignalsPayload->SetMarkerStyle(5);
+  grSignalsPayload->SetMarkerSize(2);
+  TExec *ex1 = new TExec("ex1","drawtext1();");
+  // grSignalsPayload->GetListOfFunctions()->Add(ex1);
+  double event_longitude, event_latitude,payload_longitude, payload_latitude;
   double event_sizeOfCluster;
-  int event_NOverlapedBases, event_pol;
+  int eventNumber, event_NOverlapedBases, event_pol;
+  events->SetBranchAddress("event",&eventNumber);
   events->SetBranchAddress("longitude",&event_longitude);
   events->SetBranchAddress("latitude",&event_latitude);
+  events->SetBranchAddress("payloadLongitude",&payload_longitude);
+  events->SetBranchAddress("payloadLatitude",&payload_latitude);
   events->SetBranchAddress("sizeOfCluster",&event_sizeOfCluster);
   events->SetBranchAddress("NOverlapedBases",&event_NOverlapedBases);
   events->SetBranchAddress("pol",&event_pol);
   for(int i =0 ; i<  events->GetEntries(); i++){
     events->GetEntry(i);
     // Vpol singlets are blinded
-    if (round(event_sizeOfCluster) == 1 and event_NOverlapedBases == 0 and event_pol == 1){
-      continue;
+    // Hpol singlets are draw differently. Using green cross for both positino and payload position
+    // if (round(event_sizeOfCluster) == 1 and event_NOverlapedBases == 0){
+    if ((round(event_sizeOfCluster) == 1 && event_NOverlapedBases == 0) || eventNumber == 19848917){
+      // if (event_pol == 0){
+      if (eventNumber == 19848917){
+        grSignals->SetPoint(grSignals->GetN(), event_longitude, event_latitude);
+        std::cout<< i << " "<< eventNumber << std::endl;
+        grSignalsPayload->SetPoint(grSignalsPayload->GetN(), payload_longitude, payload_latitude);
+      }else{
+        continue;
+      }
+    }else{
+      grEvents->SetPoint(grEvents->GetN(), event_longitude, event_latitude);
     }
-    grEvents->SetPoint(grEvents->GetN(), event_longitude, event_latitude);
   }
   grEvents->Draw("psame");
+  grSignalsPayload->Draw("psame");
+  grSignals->Draw("psame");
 
   AnitaEventSummary * sum = new AnitaEventSummary; 
   Adu5Pat * pat = new Adu5Pat; 
@@ -112,6 +179,8 @@ void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrin
   auto legend = new TLegend(0.1,0.85,0.25,0.9);
    // legend->SetHeader("The Legend Title","C"); // option "C" allows to center the header
    legend->AddEntry("grEvents","Event reconstructed position","p");
+   legend->AddEntry("grSignals","Hpol singlets events","p");
+   legend->AddEntry("grSignalsPayload","Hpol singlets payload","p");
    legend->AddEntry("grFlightPath","Payload flight path","p");
    legend->AddEntry(BaseList::getAbstractBase(100).getName(),"Bases","p");
    legend->AddEntry(BaseList::getAbstractBase(550).getName(),"Plane Paths or transient","p");

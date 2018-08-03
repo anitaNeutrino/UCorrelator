@@ -144,6 +144,7 @@ UCorrelator::Analyzer * _doInteractive(int run = 90, int event = 35963950, bool 
   std::cout<< "### impulsivity "<< sum.mostImpulsiveDeconvolvedFiltered(2).impulsivityMeasure<< std::endl;
   map->doClustering();
   map->showClusters(1,0);
+  // map->segmentationScheme()->Draw("mapcolz",map->getProbSums(true));
 
 //  butter->getFilter(AnitaPol::kHorizontal,0)->drawResponse(0,101,10); 
 
@@ -153,6 +154,10 @@ UCorrelator::Analyzer * _doInteractive(int run = 90, int event = 35963950, bool 
 
 void doInteractive(){
     const int cosmicRays[24] = {12131787,15738420,16821419,17904564,20936205,25580797,25855454,45684620,35963950,36785931,39236841,40172984,47396999,54063721,64472798,64859493,64861754,66509677,72164985,83074427,88992443,91525988,93744271,95576190};
+    // the missing events in my list but in andrew's list
+    // const int cosmicRays[] = {4098827, 9734523, 19848917, 50549772, 51293223, 66313236, 74197411};
+    // the bad event
+    // const int cosmicRays[] = {35963950};
     // for(int i = 0; i < 24; i ++){
     int i = 10;
       _doInteractive(90, cosmicRays[i], false,false);

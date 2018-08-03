@@ -215,14 +215,20 @@ namespace UCorrelator
       { return  &uniform_ps_without_base[0]; } 
       const double* getUniformPSwithBase() const 
       { return  &uniform_ps_with_base[0]; } 
-      const double* getClusterSizes() const { 
+      const double* getClusterSizes() const {
           std::vector <double> temp_map(p.seg->NSegments(),0);
           temp_map = mapOfClusterSizes; 
+          const int hpolSignalClusterIndex[] = {3, 7,12,13,34,47,48,29,51,52,50,44,20, 9,24,28,27,38,19,54,46,42,39,41};
           if(blind){
             for (int i =0; i< p.seg->NSegments(); i++){
               // temp_map[i] = 4.0;
               if(round(mapOfClusterSizes[i]) == 1 and uniform_ps_without_base[i] != 0){
-                temp_map[i] = 0;
+                // check whether this singlets is exsit in Hpol cluster indexes
+                if ( std::find(std::begin(hpolSignalClusterIndex), std::end(hpolSignalClusterIndex), mapOfClusterIndexs[i]) != std::end(hpolSignalClusterIndex)){
+                  temp_map[i] = 1;
+                }else{
+                  temp_map[i] = 0;
+                }
               }else if(round(mapOfClusterSizes[i]) == 1 ){
                 temp_map[i] = 1;
               }else if(round(mapOfClusterSizes[i]) > 1 and round(mapOfClusterSizes[i]) < 6){
