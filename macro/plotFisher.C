@@ -169,11 +169,11 @@ expo1->SetParameters(3.0e15,70);
 eff1->Fit("expo1","","",0.65, 0.8)
 
 // // gaussian fit to impulsivity histogram
-gStyle->SetOptFit(0101);
+gStyle->SetOptFit(1111);
 TF1 *gaussianFit = new TF1("gaussianFit","[0]*exp(-[1]*(x-[2])^2 )",0.4,0.8);
 gaussianFit->SetParNames("A","B","C");
 gaussianFit->SetParameters(2e5,200, 0.5);
-h1->Fit("gaussianFit","","",0.45, 0.75)
+h1->Fit("gaussianFit","L","",0.45, 0.75)
 
 // // linear fit
 // gStyle->SetOptFit(1111);

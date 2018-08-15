@@ -147,7 +147,7 @@ namespace UCorrelator
       void maskingWithMap(double & nMasked, double & nNotMasked, const ProbabilityMap & other);
 
       /** Add a point to the clustering. Returns the number of segments that had a non-zero contributions */ 
-      int add(int & NOverlapedBases, double & p_ground, const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, double weight = 1, TFile * debugfile = 0); 
+      int add(int & NOverlapedBases, double & p_ground, double & horizon, double & horizonNoRefrac, const AnitaEventSummary * sum , const Adu5Pat * pat, AnitaPol::AnitaPol_t pol, int peak = 0, double weight = 1, TFile * debugfile = 0); 
 
 
 
@@ -221,6 +221,11 @@ namespace UCorrelator
           const int hpolSignalClusterIndex[] = {3, 7,12,13,34,47,48,29,51,52,50,44,20, 9,24,28,27,38,19,54,46,42,39,41};
           if(blind){
             for (int i =0; i< p.seg->NSegments(); i++){
+              // only see the projection that not overlapping with base
+              if (uniform_ps_without_base[i] == 0){
+                temp_map[i] = 0;
+                continue;
+              }
               // temp_map[i] = 4.0;
               if(round(mapOfClusterSizes[i]) == 1 and uniform_ps_without_base[i] != 0){
                 // check whether this singlets is exsit in Hpol cluster indexes

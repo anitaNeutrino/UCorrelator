@@ -241,7 +241,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
 
   TTree tr("events","events"); 
   int run, ev, pol, peak,  nsegs,  NOverlapedBases ; 
-  double S, impulsivity,impulsivityH,impulsivityV,powerH,powerV,linearPolFrac,linearPolAngle, p_ground, theta,phi,snr,longitude,latitude, payloadLongitude,payloadLatitude; 
+  double S, impulsivity,impulsivityH,impulsivityV,powerH,powerV,linearPolFrac,linearPolAngle, p_ground, theta,phi,snr,longitude,latitude, payloadLongitude,payloadLatitude, horizon, horizonNoRefrac; 
   tr.Branch("event",&ev); 
   tr.Branch("run",&run); 
   tr.Branch("pol",&pol); 
@@ -264,6 +264,8 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   tr.Branch("latitude",&latitude); 
   tr.Branch("payloadLongitude",&payloadLongitude); 
   tr.Branch("payloadLatitude",&payloadLatitude); 
+  tr.Branch("horizon",&horizon); 
+  tr.Branch("horizonNoRefrac",&horizonNoRefrac);  
   tr.Branch("gps",&gps); 
   
 
@@ -306,7 +308,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
       S = 1;
     }
     // nsegs = map_weighted->add(sum, gps, AnitaPol::AnitaPol_t(pol), peak, S); 
-    nsegs = map.add(NOverlapedBases, p_ground, sum, gps, AnitaPol::AnitaPol_t(pol), peak, S);
+    nsegs = map.add(NOverlapedBases, p_ground,horizon, horizonNoRefrac, sum, gps, AnitaPol::AnitaPol_t(pol), peak, S);
 
     if(pol == 0){
       impulsivityH = sum->deconvolved_filtered[0][peak].impulsivityMeasure;

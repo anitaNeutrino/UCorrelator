@@ -1369,6 +1369,8 @@ def f(bg):
 inputs =[1.42857,2.33333,1.66667,1.5,0.857143,0.571429,0.333333,0.25,0.25,0.25,0.25,0.333333,0,]
 
 inputs2 =[4.87805,3.24324,2.51046,1.96364,1.02857,0.685714,0.413793,0.272727,0.272727,0.25,0.25,0.333333,0]
+input2 = [2.8080219,2.6618038,2.0869506,3.5835368,1.3664968,0.6496369,0.7415793,0.4050876,0.5694632,0.5667532,4.9810424,3.9464085,1.5861554,2.582839,0.9373032,0.6492845,0.7411024,0.4047295,0.5691409,0.5664918,2.0876641,1.1963857,1.0825306,2.079882,0.9348105,0.6467263,0.7387219,0.4027823,0.5674425,0.5649055,1.5812676,1.5796321,1.7915633,2.2178724,1.5016294,1.2136493,1.4016864,1.2661036,1.5642265,0.81209,1.5745021,1.5733725,1.7860495,2.2125539,1.4963896,1.2091657,1.6639411,1.2620451,1.5603795,1.5586648,1.5683418,1.31731,1.4943811,0.9213147,0.9201166,0.8948599,1.0597243,0.6580623,0.8066866,0.8052498]
+
 for e in inputs2:
     print f(e)
 "
@@ -1423,4 +1425,79 @@ a4.Add("*10000003*")
 a4.Draw("impulsivityV:impulsivityH>>h1(300,-1,1,300,-1,1)","theta <-5.8&& peak == 0 && impulsivityV > impulsivityH","colz")
 a4.Draw("(impulsivityV- impulsivityH):1.73-(impulsivityV +  impulsivityH)>>h2(300,-1,1,300,-1,1)","theta <-5.8&& peak == 0 && impulsivityV- impulsivityH <= 0","colzsame")
 
-anita4->Draw("mostImpulsiveDeconvolvedFiltered(2).peakTime:mostImpulsiveDeconvolvedFiltered(2).impulsivityMeasure","theta < 0", "colz")
+a4.Draw("mostImpulsiveDeconvolvedFiltered(2).impulsivityMeasure:mostImpulsiveDeconvolvedFiltered(2).peakTime>>h(600,,,300,,)","theta < 0", "colz")
+anita4->Draw("deconvolved.impulsivityMeasure - 0.5*(0.5 - abs(deconvolved.peakTime/100.0 - 0.5)): deconvolved.peakTime>>h(300,,,300,,)","","colz")
+
+
+maps->segmentationScheme()->Draw("colz",maps->getClusterSizes());
+
+input = [0.136317,0.0861987,0.00836969,-0.0834901,-0.00212312,-0.102677,-0.0551683,-0.00765959,0.0556434,0.228091,0.0325614,0.0289176,0.201365,0.0727825,0.24523,0.417677]
+
+
+events->Scan("run:event:pol:peak:nsegs:snr:theta:impulsivityV:impulsivityH:powerV:powerH:linearPolFrac:linearPolAngle:longitude:latitude","round(sizeOfCluster) == 1&& NOverlapedBases == 0 && pol == 0")
+
+TChain mc("simulation")
+mc.Add("*1000*")
+mc.Draw("mc.weight:log10(mc.energy) >> h(100,,,100,,)","mc.weight","colz")
+# h->FitSlicesY(0,0,-1,0,"QNRSG1")
+h->FitSlicesY()
+h_1->Draw("colz")
+
+/Users/sylarcp/anitaNeutrino/anitaBuildTool/build/components/icemc/icemc -i inputs.anita4.conf -o outputs/run102 -r 102 -n 20000
+
+events->Draw("p_ground","round(sizeOfCluster) == 1&& NOverlapedBases == 0 && pol == 0")
+
+
+// script that show elevations for a1 to a4
+TH1* h1 = new TH1I("h1", "anita1", 33, -40, 0);
+TH1* h2 = new TH1I("h2", "anita2", 35, -40, 0);
+TH1* h3 = new TH1I("h3", "anita3", 37, -40, 0);
+TH1* h4 = new TH1I("h4", "anita4", 39, -40, 0);
+const float theta1[] = {-35.9, -20.7, -13.0, -8.2, -11.4, -27.2, -24.4, -26.1, -21.1, -15.7, -4.3, -15.7, -13.4, -12.1, -3.3, -10.0};
+const float theta2[] = {-25, -31, -16};
+const float theta3[] = {-16.8661, -6.43217, -11.8167, -34.9699, -8.73916, -28.8256, -19.0219, -5.5537, -8.25657, -9.48746, -3.61121, -14.553, -10.2213, -11.632, -37.3596, -36.8965, -6.64026, -26.3685, -21.6866, -10.2116};
+const float theta4[] = {-17.30398,-7.641397,-11.24705,-16.16925,-13.55514,-22.25444,-13.20622,-17.34802,-36.53222,-8.454553,-21.69506,-15.26719,-9.887800,-26.07711,-19.71638,-21.72935,-8.911286,-6.174698,-7.289141,-14.81728,-18.62555,-29.97032,-13.75923,-6.06,-5.613,-6.7,-6.4,-5.45,-16.65,-14.83};
+for (int i = 0; i < 16; i ++){
+	h1->Fill(theta1[i]);
+}
+for (int i = 0; i < 3; i ++){
+	h2->Fill(theta2[i]);
+}
+for (int i = 0; i < 20; i ++){
+	h3->Fill(theta3[i]);
+}
+for (int i = 0; i < 30; i ++){
+	h4->Fill(theta4[i]);
+}
+h4->Draw("colz");
+h1->Draw("same");
+h2->Draw("same");
+h3->Draw("same");
+
+
+auto legend2 = new TLegend(0.1,0.7,0.48,0.9);
+// legend2->SetHeader("Elevation Angle","C"); // option "C" allows to center the header
+legend2->AddEntry("h1","Anita 1 CRs","l");
+legend2->AddEntry("h2","Anita 2 CRs","l");
+legend2->AddEntry("h3","Anita 3 CRs","l");
+legend2->AddEntry("h4","Anita 4 CRs","l");
+legend2->Draw();
+
+
+# add the Andrew's events ot my plot:
+
+events->Draw("theta:impulsivity>>h1(300,,,300,,)","round(sizeOfCluster) == 1&& NOverlapedBases == 0 && pol == 0","")
+h1->Fill(0.827, -6.06);
+h1->Fill(0.904, -5.61);
+h1->Fill(0.829, -6.7);
+h1->Fill(0.820, -6.4);
+h1->Fill(0.825, -5.45);
+h1->Fill(0.802, -16.65);
+h1->Fill(0.716, -14.83);
+
+events->Draw("theta:impulsivity>>h(300,,,300,,)","","colz")
+h1->Draw("colz")
+
+
+
+

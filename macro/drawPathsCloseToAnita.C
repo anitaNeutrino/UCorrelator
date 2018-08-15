@@ -91,6 +91,10 @@ void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrin
   events->SetBranchAddress("pol",&event_pol);
   for(int i =0 ; i<  events->GetEntries(); i++){
     events->GetEntry(i);
+    //only see the events not overlapping with bases.
+    if (event_NOverlapedBases != 0){
+      continue;
+    }
     // Vpol singlets are blinded
     // Hpol singlets are draw differently. Using green cross for both positino and payload position
     // if (round(event_sizeOfCluster) == 1 and event_NOverlapedBases == 0){
@@ -146,7 +150,7 @@ void drawPathsCloseToAnita(const TString fileName = "/Users/sylarcp/anitaNeutrin
       	    grs[i]->SetTitle(BaseList::getAbstractBase(i).getName());
             if(i< BaseList::getNumBases()){
               grs[i]->SetMarkerColor(7);
-              grs[i]->SetMarkerStyle(1);
+              grs[i]->SetMarkerStyle(3);
               grs[i]->SetMarkerSize(1);
             }else{
               grs[i]->SetMarkerColor(6);

@@ -1,9 +1,11 @@
 
 #include "FFTtools.h"
+ofstream myfile;
+
 UCorrelator::ProbabilityMap::Params * map_params()
 {
   // pixel x, pixel y , max meter x, max meter y
-  StereographicGrid * g= new StereographicGrid(1000,1000,2000000,2000000); 
+  StereographicGrid * g= new StereographicGrid(1000,1000,3000000,3000000); 
 
   TF1 * f_dtheta = new TF1("ftheta", "[0]/x^[1] + [2]", 1, 100);
   TF1 * f_dphi = new TF1("fphi", "[0]/x^[1] + [2]", 1, 100);
@@ -25,8 +27,8 @@ UCorrelator::ProbabilityMap::Params * map_params()
   Refraction::SphRay * ref = new Refraction::SphRay; 
 
   UCorrelator::ProbabilityMap::Params *p = new UCorrelator::ProbabilityMap::Params; 
-  p->refract = ref; 
-  // p->refract = 0; 
+  // p->refract = ref; 
+  p->refract = 0; 
   p->seg = g; 
   p->point = snrResolutionModel; 
   p->collision_detection = false; 
@@ -78,8 +80,8 @@ UCorrelator::Analyzer * _doInteractive(int run = 90, int event = 35963950, bool 
 //UCorrelator::AdaptiveButterworthFilter * butter = new UCorrelator::AdaptiveButterworthFilter(&avg); 
 //printf("UCorrelator::AdaptiveButterworthFilter * butter = (UCorrelator::AdaptiveButterworthFilter *) %p\n",butter); 
 //strategy->addOperation(butter); 
-  AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kRandomizePolarity );
-  // AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kNoBlinding );
+  // AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kRandomizePolarity );
+  AnitaDataset d(run,decimated, WaveCalType::kDefault, simulated ? AnitaDataset::ANITA_MC_DATA : AnitaDataset::ANITA_ROOT_DATA, AnitaDataset::kNoBlinding );
   event > 0 ? d.getEvent(event) : d.getEntry(-event); 
 
 
@@ -91,13 +93,17 @@ UCorrelator::Analyzer * _doInteractive(int run = 90, int event = 35963950, bool 
 
   FilterStrategy* forDeco = new FilterStrategy;
   forDeco->addOperation(new UCorrelator::AntiBH13Filter());
+   
   analyzer->setExtraFiltersDeconvolved(forDeco);
   analyzer->setDisallowedAntennas(0, (1ul<<45));  // Vpol ant45 is bad! So disable it.
 
   UCorrelator::fillStrategyWithKey(strategy, "sinsub_10_3_ad_2");
   // UCorrelator::fillStrategyWithKey(strategy, "sinsub_7_3_ad_2");
   // UCorrelator::fillStrategyWithKey(strategy, "");
+  // additional bandpass filter:  just test for event 8
+  // strategy->addOperation(new SimplePassBandFilter(0.2, 1.2));
   strategy->addOperation(new UCorrelator::BH13Filter()); 
+
 
 //  FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),UCorrelator::getStrategyWithKey("adsinsub_3_10_3"), d.gps(), d.header()); 
   FilteredAnitaEvent* ev = new FilteredAnitaEvent(d.useful(),strategy, d.gps(), d.header()); 
@@ -107,7 +113,7 @@ UCorrelator::Analyzer * _doInteractive(int run = 90, int event = 35963950, bool 
 
   AnitaEventSummary sum; 
   analyzer->analyze(ev,&sum,d.truth()); 
-  analyzer->drawSummary(0,0,1); //third 1 is use filtered peak or csw
+  analyzer->drawSummary(0,0,0); //third 1 is use filtered peak or csw
   std::cout<< "eventNumber "<<sum.eventNumber<< " glitch="<< sum.flags.hasGlitch <<" flags->isStepFunction= "<<sum.flags.isStepFunction<< std::endl;
   /*
   TCanvas * c2 = new TCanvas; 
@@ -136,32 +142,42 @@ UCorrelator::Analyzer * _doInteractive(int run = 90, int event = 35963950, bool 
   int NOverlapedBases;
   UCorrelator::ProbabilityMap::Params * p = map_params(); 
   UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(p); 
+  // // TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_3_0_10000003_mod1_remainder0_41_367.root");; 
+  // // UCorrelator::ProbabilityMap * map = (UCorrelator::ProbabilityMap*) probabilityMap->Get("maps");
   int n_seg = map->add(NOverlapedBases, p_ground, &sum, d.gps(), AnitaPol::AnitaPol_t(sum.mostImpulsivePolAsInt(2)), sum.mostImpulsiveInd(2), 1);
-  std::cout<< "NOverlapedBases "<< NOverlapedBases << " p_ground=" << p_ground <<" n_seg="<< n_seg<< " theta="<< sum.mostImpulsivePeak(2).theta << " snr="<< sum.mostImpulsiveDeconvolvedFiltered(2).snr<< std::endl;
+  std::cout<< "NOverlapedBases "<< NOverlapedBases << "\n p_ground=" << p_ground <<"\n n_seg="<< n_seg<< "\n theta="<< sum.mostImpulsivePeak(2).theta << "\n snr="<< sum.mostImpulsiveDeconvolvedFiltered(2).snr<< std::endl;
   
-  std::cout<< "###is hical = "<< Hical2::isHical(sum.eventNumber, d.header()->triggerTime, FFTtools::wrap(sum.anitaLocation.heading - sum.peak[0][0].phi, 360), sum.deconvolved_filtered[0][0].snr) << std::endl;
-  std::cout<< "###evenummber =  "<< sum.eventNumber <<"\t triggerTime ="<< d.header()->triggerTime-1480000000<< "\t heading = "<< sum.anitaLocation.heading  << "\t mostImpPeak - [0][0] peak phi = "<< sum.mostImpulsivePeak(2).phi - sum.peak[0][0].phi<<"\t snr = "<< sum.mostImpulsiveDeconvolvedFiltered(2).snr<< std::endl;
-  std::cout<< "### impulsivity "<< sum.mostImpulsiveDeconvolvedFiltered(2).impulsivityMeasure<< std::endl;
-  map->doClustering();
-  map->showClusters(1,0);
-  // map->segmentationScheme()->Draw("mapcolz",map->getProbSums(true));
+  // std::cout<< "###is hical = "<< Hical2::isHical(sum.eventNumber, d.header()->triggerTime, FFTtools::wrap(sum.anitaLocation.heading - sum.peak[0][0].phi, 360), sum.deconvolved_filtered[0][0].snr) << std::endl;
+  // std::cout<< "###evenummber =  "<< sum.eventNumber <<"\t triggerTime ="<< d.header()->triggerTime-1480000000<< "\t heading = "<< sum.anitaLocation.heading  << "\t mostImpPeak - [0][0] peak phi = "<< sum.mostImpulsivePeak(2).phi - sum.peak[0][0].phi<<"\t snr = "<< sum.mostImpulsiveDeconvolvedFiltered(2).snr<< std::endl;
+  // std::cout<< "### impulsivity "<< sum.mostImpulsiveDeconvolvedFiltered(2).impulsivityMeasure<< std::endl;
+  // map->doClustering();
+  // map->showClusters(1,0);
 
-//  butter->getFilter(AnitaPol::kHorizontal,0)->drawResponse(0,101,10); 
+  // map->segmentationScheme()->Draw("mapcolz",map->getProbSums(true));
 
   FFTtools::saveWisdom("wisdom.dat"); 
   return analyzer; 
 }
 
 void doInteractive(){
-    const int cosmicRays[24] = {12131787,15738420,16821419,17904564,20936205,25580797,25855454,45684620,35963950,36785931,39236841,40172984,47396999,54063721,64472798,64859493,64861754,66509677,72164985,83074427,88992443,91525988,93744271,95576190};
+    std::ofstream myfile;
+    myfile.open ("horizon.txt");
+    myfile << "" <<"\n";
+    myfile.close();
+    std::ofstream myfile2;
+    myfile2.open ("dtheta.txt");
+    myfile2 << "" <<"\n";
+    myfile2.close();
+    // const int cosmicRays[24] = {12131787,15738420,16821419,17904564,20936205,25580797,25855454,45684620,35963950,36785931,39236841,40172984,47396999,54063721,64472798,64859493,64861754,66509677,72164985,83074427,88992443,91525988,93744271,95576190};
     // the missing events in my list but in andrew's list
     // const int cosmicRays[] = {4098827, 9734523, 19848917, 50549772, 51293223, 66313236, 74197411};
     // the bad event
-    // const int cosmicRays[] = {35963950};
-    // for(int i = 0; i < 24; i ++){
-    int i = 10;
+    const int cosmicRays[31] = {4098827,9734523,12131787,15738420,16821419,17904564,19848917,20936205,25580797,25855454,35963950,36785931,39236841,40172984,45684620,47396999,50549772,51293223,54063721,64472798,64859493,64861754,66313236,66509677,72164985,74197411,83074427,88992443,91525988,93744271,95576190};
+    for(int i = 0; i < 31; i ++){
+    // int i = 30;
+      std::cout<< "--------\n"<<std::endl;
       _doInteractive(90, cosmicRays[i], false,false);
       
       
-    // }
+    }
 }

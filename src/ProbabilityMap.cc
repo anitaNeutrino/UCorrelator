@@ -47,7 +47,7 @@ UCorrelator::ProbabilityMap::ProbabilityMap(const Params * par)
 }
 
 
-int UCorrelator::ProbabilityMap::add(int& NOverlapedBases, double & p_ground, const AnitaEventSummary * sum, const Adu5Pat * pat, AnitaPol::AnitaPol_t pol,
+int UCorrelator::ProbabilityMap::add(int& NOverlapedBases, double & p_ground, double & horizon, double & horizonNoRefrac, const AnitaEventSummary * sum, const Adu5Pat * pat, AnitaPol::AnitaPol_t pol,
                                      int peak, double weight, TFile * debugfile) 
 {
 
@@ -61,7 +61,8 @@ int UCorrelator::ProbabilityMap::add(int& NOverlapedBases, double & p_ground, co
   //occlude to fill: return the fraction of occluded sample for the segment.
   //max_density_to_fill: return the max prob density for the segment.
   double inv_two_pi_sqrt_det = computeContributions(sum,pat,pol,peak,segments_to_fill, &base_ps_to_fill, &occluded_to_fill, &max_densities, debugfile); 
-
+  horizon =  PayloadParameters::getHorizon(sum->peak[pol][peak]->phi,pat, p.refract);
+  horizonNoRefrac =  PayloadParameters::getHorizon(sum->peak[pol][peak]->phi,pat, 0);
   if (!inv_two_pi_sqrt_det) return 0; 
   
   TLockGuard lock(&m); 
@@ -357,7 +358,11 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
 
   double phi0 = sum->peak[pol][peak].phi; 
 
-  double inv_two_pi_sqrt_det = get_inv_two_pi_sqrt_det(pr.getdPhi(), pr.getdTheta(), pr.getCorr()); 
+  double inv_two_pi_sqrt_det = get_inv_two_pi_sqrt_det(pr.getdPhi(), pr.getdTheta(), pr.getCorr());
+  std::ofstream myfile;
+  myfile.open ("dtheta.txt", std::ios::app);
+  myfile << pr.getdTheta() <<"\n";
+  myfile.close(); 
   double min_p = dist2dens(maxDistance(), inv_two_pi_sqrt_det); 
 
   std::vector<int> used ( segmentationScheme()->NSegments()); //each seg has an integer "used".
@@ -367,7 +372,10 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
   {
     //start with guess
     const AnitaEventSummary::PointingHypothesis *pk = &sum->peak[pol][peak];  
-    PayloadParameters guess;  
+    PayloadParameters guess; 
+    // double horizon_theta =  PayloadParameters::getHorizon(pk->phi,gps, p.refract);
+    // std::cout<< "horizon is : " <<  -horizon_theta << std::endl;
+ 
     int status =  PayloadParameters::findSourceOnContinent(pk->theta,pk->phi,gps, &guess, p.refract, p.collision_detection ? p.collision_params.dx : 0); 
     if (p.verbosity > 2) 
     {
@@ -694,6 +702,7 @@ double  UCorrelator::ProbabilityMap::computeContributions(const AnitaEventSummar
           // the size of base_contribution will tell us the number of bases that this event is overlapping with.
           //overlapping is defined the same as the p.maximum_distance(ie, how many sigma)
           base_contribution->push_back(std::pair<int,double> (ibase, dens));
+          std::cout<< ibase << " base name:" << BaseList::getAbstractBase(ibase).getName()<<std::endl;
         }
       }
 
@@ -920,7 +929,6 @@ void  UCorrelator::ProbabilityMap::evaluateEvent(double & indexOfCluster, double
 std::pair<int, int> UCorrelator::ProbabilityMap::showClusters(int draw, bool blind, const char * option) const
 {
   //hard coded to blind, comment out to unblind
-  blind = false;
 
   const int maxes[] = {1,2,3,4,5,6,7,8,9,10,20,50,100,(int) 100e6}; 
   const int mins[] =  {1,2,3,4,5,6,7,8,9,10,11,21,51,101}; 
