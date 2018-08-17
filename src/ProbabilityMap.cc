@@ -61,8 +61,8 @@ int UCorrelator::ProbabilityMap::add(int& NOverlapedBases, double & p_ground, do
   //occlude to fill: return the fraction of occluded sample for the segment.
   //max_density_to_fill: return the max prob density for the segment.
   double inv_two_pi_sqrt_det = computeContributions(sum,pat,pol,peak,segments_to_fill, &base_ps_to_fill, &occluded_to_fill, &max_densities, debugfile); 
-  horizon =  PayloadParameters::getHorizon(sum->peak[pol][peak]->phi,pat, p.refract);
-  horizonNoRefrac =  PayloadParameters::getHorizon(sum->peak[pol][peak]->phi,pat, 0);
+  horizon =  -1*PayloadParameters::getHorizon(sum->peak[pol][peak].phi,pat, p.refract);
+  horizonNoRefrac =  -1*PayloadParameters::getHorizon(sum->peak[pol][peak].phi,pat, 0);
   if (!inv_two_pi_sqrt_det) return 0; 
   
   TLockGuard lock(&m); 

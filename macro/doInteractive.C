@@ -138,13 +138,13 @@ UCorrelator::Analyzer * _doInteractive(int run = 90, int event = 35963950, bool 
 
   TCanvas * psCanvas = new TCanvas();
   psCanvas->cd();
-  double p_ground;
+  double p_ground, horizon, horizonNoRefrac;
   int NOverlapedBases;
   UCorrelator::ProbabilityMap::Params * p = map_params(); 
   UCorrelator::ProbabilityMap *map = new UCorrelator::ProbabilityMap(p); 
   // // TFile * probabilityMap = new TFile("/Users/sylarcp/anitaNeutrino/anitaBuildTool/components/UCorrelator/macro/source_maps/anita4/_3_0_10000003_mod1_remainder0_41_367.root");; 
   // // UCorrelator::ProbabilityMap * map = (UCorrelator::ProbabilityMap*) probabilityMap->Get("maps");
-  int n_seg = map->add(NOverlapedBases, p_ground, &sum, d.gps(), AnitaPol::AnitaPol_t(sum.mostImpulsivePolAsInt(2)), sum.mostImpulsiveInd(2), 1);
+  int n_seg = map->add(NOverlapedBases, p_ground, horizon, horizonNoRefrac, &sum, d.gps(), AnitaPol::AnitaPol_t(sum.mostImpulsivePolAsInt(2)), sum.mostImpulsiveInd(2), 1);
   std::cout<< "NOverlapedBases "<< NOverlapedBases << "\n p_ground=" << p_ground <<"\n n_seg="<< n_seg<< "\n theta="<< sum.mostImpulsivePeak(2).theta << "\n snr="<< sum.mostImpulsiveDeconvolvedFiltered(2).snr<< std::endl;
   
   // std::cout<< "###is hical = "<< Hical2::isHical(sum.eventNumber, d.header()->triggerTime, FFTtools::wrap(sum.anitaLocation.heading - sum.peak[0][0].phi, 360), sum.deconvolved_filtered[0][0].snr) << std::endl;
@@ -160,6 +160,9 @@ UCorrelator::Analyzer * _doInteractive(int run = 90, int event = 35963950, bool 
 }
 
 void doInteractive(){
+  
+  _doInteractive(90, 54781949, false,false);
+  return;
     std::ofstream myfile;
     myfile.open ("horizon.txt");
     myfile << "" <<"\n";

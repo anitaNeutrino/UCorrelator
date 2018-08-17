@@ -241,7 +241,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
 
   TTree tr("events","events"); 
   int run, ev, pol, peak,  nsegs,  NOverlapedBases ; 
-  double S, impulsivity,impulsivityH,impulsivityV,powerH,powerV,linearPolFrac,linearPolAngle, p_ground, theta,phi,snr,longitude,latitude, payloadLongitude,payloadLatitude, horizon, horizonNoRefrac; 
+  double S, impulsivity,impulsivityH,impulsivityV,powerH,powerV,linearPolFrac,linearPolAngle, p_ground, theta,phi,snr,longitude,latitude, payloadLongitude,payloadLatitude,payloadAltitude, horizon, horizonNoRefrac; 
   tr.Branch("event",&ev); 
   tr.Branch("run",&run); 
   tr.Branch("pol",&pol); 
@@ -264,6 +264,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
   tr.Branch("latitude",&latitude); 
   tr.Branch("payloadLongitude",&payloadLongitude); 
   tr.Branch("payloadLatitude",&payloadLatitude); 
+  tr.Branch("payloadAltitude",&payloadAltitude); 
   tr.Branch("horizon",&horizon); 
   tr.Branch("horizonNoRefrac",&horizonNoRefrac);  
   tr.Branch("gps",&gps); 
@@ -328,6 +329,7 @@ int _makeSourceMap(const char * treeName, const char* summaryFileFormat, const c
     latitude = sum->peak[pol][peak].latitude;
     payloadLongitude = sum->anitaLocation.longitude;
     payloadLatitude = sum->anitaLocation.latitude;
+    payloadAltitude = sum->anitaLocation.altitude;
     
     // if(p_ground< 0.1){    
       printf("index= %d \trun = %d \tevn= %d \timpulsivity= %g \tS= %g\t nsegs= %d \tp_ground= %g \ttheta= %g \tsnr=%g \n",i,run,ev,impulsivity,S,nsegs,p_ground, theta, snr);
