@@ -45,7 +45,7 @@ class PolarityMachine
      * outfilename is the file where you want to save histograms to.
      * whichTemplates is which templates you want to use to check this (default is 0-4) */
 
-    TH2D* generatePolarityMeasurements(int N, int eventNumber, double cr_phi = 0, double cr_theta = 0, double cr_snr = 0, int pol = 0, int metric = 0,  const char * outhistoname = "h0", std::vector<int> whichTemplates={0,1,2,3,4});
+    TH2D* generatePolarityMeasurements(int N, int eventNumber, double cr_phi = 0, double cr_theta = 0, double cr_snr = 3, int pol = 0, int metric = 0,  const char * outhistoname = "h0", std::vector<int> whichTemplates={0,1,2,3,4});
 
     static const int numCRTemplates = 10;
     AnalysisWaveform* simulatedCRs[numCRTemplates];
@@ -68,6 +68,8 @@ class PolarityMachine
      * Will add more as i think of them */
 
     double testPolarity(int metric, AnalysisWaveform* wf, bool deconvolved);
+
+    TH2D* runPolaritySimulation(int N , int eventNumber, double cr_phi = 0, double cr_theta = 0, double cr_snr = 3, int pol = 0, int metric = 0, const char * outhistoname = "h0");
 
     /* draws a nearby min bias event */
     AnalysisWaveform* makeNoiseWaveformFromMinBias(int eventNumber, double phi, double theta, int pol, int current_N);

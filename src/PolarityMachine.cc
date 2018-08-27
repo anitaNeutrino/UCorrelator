@@ -335,6 +335,55 @@ TGraph* PolarityMachine::windowWaveform(AnalysisWaveform* wf, double window_size
   return theOut;
 }
 
+TH2D* PolarityMachine::runPolaritySimulation(int N, int eventNumber, double cr_phi, double cr_theta, double cr_snr, int pol, int metric, const char* outhistoname)
+{
+  d->getEvent(eventNumber, true);
+  FilterStrategy strat;
+  TGraph* gCorr = 0;
+  std::vector<double> corrs(numCRTemplates);
 
+  FilteredAnitaEvent fae(d->useful(), &strat, d->gps(), d->header());
+  wfcomb.combine(cr_phi, cr_theta, &fae, AnitaPol::AnitaPol_t(pol), 0, -25, 125);
+  TGraph* g = new TGraph(wfcomb.getCoherent()->even()->GetN(), wfcomb.getCoherent()->even()->GetX(), wfcomb.getCoherent()->even()->GetY());
+  g = FFTtools::normalizeWaveform(g);
+  AnalysisWaveform* theCR = new AnalysisWaveform(g->GetN(), g->GetX(), g->GetY(), dT);
+  delete g;
+  TGraph* gg = new TGraph(theCR->even()->GetN(), theCR->even()->GetX(), theCR->even()->GetY());
+  double t0 = gg->GetX()[0];
+  for(int i = gg->GetN(); i < 2048; i++) gg->SetPoint(i, t0 + i*dT, 0); //pad to 2048
+  
+  for(int i = 0; i < numCRTemplates; i++)
+  {
+    g = new TGraph(simulatedCRs[i]->even()->GetN(), simulatedCRs[i]->even()->GetX(), simulatedCRs[i]->even()->GetY());
+    gCorr = FFTtools::getCorrelationGraph(g, gg);
+    double normalization = 1./(g->GetRMS(2) * gg->GetRMS(2) * g->GetN()/TMath::Power(2, int(TMath::Log2(g->GetN()))));
+    double maxCorr = normalization * TMath::MaxElement(gCorr->GetN(), gCorr->GetY());
+    double minCorr = normalization * TMath::MinElement(gCorr->GetN(), gCorr->GetY());
+    corrs.at(i) = TMath::Max(maxCorr, abs(minCorr));
+    delete gCorr;
+    delete g;
+  }
+  delete gg;
+  std::vector<int> which_templates;
+  double max_val = 0;
+  int max_ind = -1;
+  for(int j = 0; j < 3; j++)
+  {
+    max_val = -1;
+    max_ind = -1;
+    for(int i = 0; i < corrs.size(); i++)
+    {
+      if(max_val < corrs.at(i)) 
+      {
+        max_val = corrs.at(i);
+        max_ind = i;
+      }
+    }
+    which_templates.push_back(max_ind);
+    corrs.erase(corrs.begin() + max_ind);
+  }
 
+  TH2D* hOut = generatePolarityMeasurements(N, eventNumber, cr_phi, cr_theta, cr_snr, pol, metric, outhistoname, which_templates);
+  return hOut;
+}
 
