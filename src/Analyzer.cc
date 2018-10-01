@@ -375,7 +375,6 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
 
     //compute RMS of correlation map 
     //    maprms = corr.getHist()->GetRMS(3); //This doesn't work!  Probably because ROOT is dumb
-    maprms = UCorrelator::getZRMS(corr.getHist());
 
 
     if (cfg->max_peak_trigger_angle)
@@ -413,6 +412,14 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       fillChannelInfo(event, summary);
     }
 
+
+
+    int rms_lims[4]; 
+    rms_lims[0] = (cfg->correlator_nphi/6 + maxima[0].xbin) % cfg->correlator_nphi; 
+    rms_lims[1] = (-cfg->correlator_nphi/6 + maxima[0].xbin) % cfg->correlator_nphi; 
+    rms_lims[2] = 1; 
+    rms_lims[3] = cfg->correlator_ntheta; 
+    maprms = UCorrelator::getZRMS(corr.getHist(), rms_lims);
 
     // Loop over found peaks 
     for (int i = 0; i < npeaks; i++) 

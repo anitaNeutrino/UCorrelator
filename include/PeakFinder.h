@@ -22,6 +22,7 @@ namespace UCorrelator
     {
       public:
         int bin; 
+        int xbin;
         int val; 
         double x; 
         double y; 
