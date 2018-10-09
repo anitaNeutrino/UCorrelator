@@ -188,7 +188,7 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
   scaleGraph(&coherent_avg_spectrum, 1./nant); 
   if (do_deconvolution)
   {
-    combineWaveforms(nant, &deconv[0], delays, 0, &deconvolved, t0, t1, check_vpp); 
+    combineWaveforms(nant, &deconv[0], delays, 0, &deconvolved, t0, t1, 0); 
     scaleGraph(&deconvolved_avg_spectrum, 1./nant); 
   }
 
@@ -199,7 +199,7 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
 }
 
 
-double UCorrelator::WaveformCombiner::combineWaveforms(int nwf, const AnalysisWaveform * wf, const double * delays, const double * scales, AnalysisWaveform * out, double min, double max, bool checkvpp)
+double UCorrelator::WaveformCombiner::combineWaveforms(int nwf, const AnalysisWaveform * wf, const double * delays, const double * scales, AnalysisWaveform * out, double min, double max, int checkvpp)
 {
   // we want to make the waveform as big as the entire span of all the waveforms to combine 
 
@@ -222,8 +222,19 @@ double UCorrelator::WaveformCombiner::combineWaveforms(int nwf, const AnalysisWa
       double scale = scales ? scales[j] : 1; 
       double tempvpp = 0;
       val += wf[j].evalEven(gupdate->GetX()[i] + delays[j])/nwf*scale; 
-      if(checkvpp) tempvpp = wf[j].even()->pk2pk();
-      if(checkvpp && maxvpp < tempvpp) maxvpp = tempvpp;
+      if(i == 0)
+      {
+        if(checkvpp == 1)
+        {
+          tempvpp = wf[j].even()->pk2pk();
+          if(maxvpp < tempvpp) maxvpp = tempvpp;
+        }
+        if(checkvpp == 2)
+        {
+          tempvpp = wf[j].even()->pk2pk()/double(nwf); 
+          maxvpp += tempvpp;
+        }
+      }
     }
 
     //    printf("%f %f\n", gupdate->GetX()[i], val); 
