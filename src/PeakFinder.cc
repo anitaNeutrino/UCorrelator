@@ -179,6 +179,7 @@ int UCorrelator::peakfinder::findIsolatedMaxima(const TH2D * hist, double distan
     maxima[nfound].bin = bin; 
     maxima[nfound].val = hist->GetArray()[bin]; 
     int xbin =  bin % (hist->GetNbinsX() + 2); 
+    maxima[nfound].xbin = xbin; 
     maxima[nfound].x = use_bin_center ? hist->GetXaxis()->GetBinCenter(xbin) : hist->GetXaxis()->GetBinLowEdge(xbin); 
     int ybin =  bin / (hist->GetNbinsX() + 2); 
     maxima[nfound].y = use_bin_center ? hist->GetYaxis()->GetBinCenter(ybin) : hist->GetYaxis()->GetBinLowEdge(ybin); 
