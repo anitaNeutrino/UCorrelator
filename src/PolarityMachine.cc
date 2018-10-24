@@ -359,7 +359,7 @@ TH2D* PolarityMachine::runPolaritySimulation(int N, int eventNumber, double cr_p
     double normalization = 1./(g->GetRMS(2) * gg->GetRMS(2) * g->GetN()/TMath::Power(2, int(TMath::Log2(g->GetN()))));
     double maxCorr = normalization * TMath::MaxElement(gCorr->GetN(), gCorr->GetY());
     double minCorr = normalization * TMath::MinElement(gCorr->GetN(), gCorr->GetY());
-    corrs.at(i) = TMath::Max(maxCorr, abs(minCorr));
+    corrs.at(i) = TMath::Max(maxCorr, TMath::Abs(minCorr));
     delete gCorr;
     delete g;
   }
