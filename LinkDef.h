@@ -27,6 +27,8 @@
 #pragma link C++ class UCorrelator::AdaptiveMinimumPhaseFilter;
 #pragma link C++ class UCorrelator::AdaptiveBrickWallFilter; 
 #pragma link C++ class UCorrelator::AdaptiveButterworthFilter;
+#pragma link C++ class UCorrelator::BH13Filter;
+#pragma link C++ class UCorrelator::AntiBH13Filter;
 #pragma link C++ class UCorrelator::WaveformCombiner;
 #pragma link C++ class UCorrelator::Analyzer;
 #pragma link C++ class UCorrelator::AnalysisConfig;
@@ -42,10 +44,12 @@
 #pragma link C++ class UCorrelator::ConstantPointingResolutionModel;
 #pragma link C++ class UCorrelator::HeadingErrorEstimator;
 
+
 #pragma link C++ class UCorrelator::gui::Map+; 
 #pragma link C++ class UCorrelator::gui::SummaryText; 
 
 #pragma link C++ class AnitaNoiseMachine+;
+#pragma link C++ class PolarityMachine+;
 
 
 
