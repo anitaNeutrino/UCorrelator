@@ -155,18 +155,18 @@ static int instance_counter = 0;
 
 
 
-static double computeCombinedRMS(double t, AnitaPol::AnitaPol_t pol, const UCorrelator::WaveformCombiner * wfcomb, bool use_best_antenna_snr) 
+static double computeCombinedRMS(double t, AnitaPol::AnitaPol_t pol, const UCorrelator::WaveformCombiner * wfcomb, int use_antenna_level_snr) 
 {
   double rms = 0 ;
 
   for (int ant =0; ant < wfcomb->getNAntennas(); ant++) 
   {
     double ant_rms = UCorrelator::TimeDependentAverageLoader::getRMS(t, pol, wfcomb->getUsedAntennas()[ant]); 
-    if(use_best_antenna_snr) rms += ant_rms; 
+    if(use_antenna_level_snr) rms += ant_rms; 
     else rms += ant_rms * ant_rms; 
   }
 
-  if(use_best_antenna_snr) rms = rms / wfcomb->getNAntennas(); 
+  if(use_antenna_level_snr) rms = rms / wfcomb->getNAntennas(); 
   else rms = sqrt(rms) / wfcomb->getNAntennas(); 
 
   return rms; 
@@ -454,12 +454,12 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     {
       rough_peaks[pol].push_back(std::pair<double,double>(maxima[i].x, maxima[i].y)); 
       //now make the combined waveforms 
-      if(cfg->use_best_antenna_snr)
+      if(cfg->use_antenna_level_snr > 0)
       {
-        wfcomb.setCheckVpp(true);
-        wfcomb_xpol.setCheckVpp(true);
-        wfcomb_filtered.setCheckVpp(true);
-        wfcomb_xpol_filtered.setCheckVpp(true);
+        wfcomb.setCheckVpp(cfg->use_antenna_level_snr);
+        wfcomb_xpol.setCheckVpp(cfg->use_antenna_level_snr);
+        wfcomb_filtered.setCheckVpp(cfg->use_antenna_level_snr);
+        wfcomb_xpol_filtered.setCheckVpp(cfg->use_antenna_level_snr);
       }
 
 
@@ -476,7 +476,7 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
           wfcomb_xpol_filtered.combine(summary->peak[pol][i].phi, summary->peak[pol][i].theta, event, (AnitaPol::AnitaPol_t) (1-pol), saturated[pol], cfg->combine_t0, cfg->combine_t1); 
       }
 
-      double rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, (AnitaPol::AnitaPol_t) pol, &wfcomb, cfg->use_best_antenna_snr) : 0 ; 
+      double rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, (AnitaPol::AnitaPol_t) pol, &wfcomb, cfg->use_antenna_level_snr) : 0 ; 
 
       SECTIONS 
       {
@@ -613,10 +613,10 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
     //    SECTIONS
     {
       //      SECTION
-      if(cfg->use_best_antenna_snr)
+      if(cfg->use_antenna_level_snr > 0)
       {
-        wfcomb.setCheckVpp(true);
-        wfcomb_xpol.setCheckVpp(true);
+        wfcomb.setCheckVpp(cfg->use_antenna_level_snr);
+        wfcomb_xpol.setCheckVpp(cfg->use_antenna_level_snr);
       }
 
       wfcomb.combine(summary->mc.phi, summary->mc.theta, event, AnitaPol::kHorizontal, 0, cfg->combine_t0, cfg->combine_t1); 
@@ -624,8 +624,8 @@ void UCorrelator::Analyzer::analyze(const FilteredAnitaEvent * event, AnitaEvent
       wfcomb_xpol.combine(summary->mc.phi, summary->mc.theta, event, AnitaPol::kVertical, 0, cfg->combine_t0, cfg->combine_t1); 
     }
 
-    double hpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kHorizontal, &wfcomb, cfg->use_best_antenna_snr) : 0 ; 
-    double vpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kVertical, &wfcomb_xpol, cfg->use_best_antenna_snr) : 0 ; 
+    double hpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kHorizontal, &wfcomb, cfg->use_antenna_level_snr) : 0 ; 
+    double vpol_rms =  cfg->use_forced_trigger_rms ? computeCombinedRMS(event->getHeader()->triggerTime, AnitaPol::kVertical, &wfcomb_xpol, cfg->use_antenna_level_snr) : 0 ; 
 
     //    SECTIONS
     {
@@ -835,7 +835,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   }
 
   info->snr = info->peakHilbert / rms;
-  if(vpp > 0 && cfg->use_best_antenna_snr) info->snr = vpp/(2*rms);
+  if(vpp > 0 && cfg->use_antenna_level_snr) info->snr = vpp/(2*rms);
 
   if(cfg->use_coherent_spectra) pwr = wf->powerdB(); 
 
