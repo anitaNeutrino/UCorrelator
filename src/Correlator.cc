@@ -616,12 +616,10 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    int * thetabins = alloc + maxsize; 
    int * bins_to_fill = alloc + 2 * maxsize; 
 
-
    int nbins_used = 0; 
 
    double * gain_weights = 0;
    if ((gainSigma && !center_point) || !abbysMethod) gain_weights = new double[maxsize]; 
-
 
    //  The following quantities are relevant when abbysMethod is not being used and gain_weights are being used.
    double r1 = cache -> ap -> rAnt[pol][ant1];
@@ -673,7 +671,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        phibins[nbins_used] = phibin; 
        thetabins[nbins_used] = thetabin; 
        bins_to_fill[nbins_used] = phibin + thetabin * nphibins;
-       if ((gainSigma && !center_point) || !abbysMethod) 
+       if ((gainSigma && !center_point) || !abbysMethod)
        {
          //Matt Mottram weighted by the baseline angle difference somehow
          
@@ -684,7 +682,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
         double cosDPhi2 = cos((phi - centerPhi2) * DEG2RAD);
 
         double cosTheta = cos(theta * DEG2RAD);
-        double sinTheta = -sin(theta * DEG2RAD);
+        double sinTheta = sin(theta * DEG2RAD);
 
         double sphCos1 = cosTheta * cosTheta1 * cosDPhi1 + sinTheta * sinTheta1;
         if (!abbysMethod && sphCos1 < 0) continue;
