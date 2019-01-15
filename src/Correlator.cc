@@ -241,22 +241,40 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
     allowedFlag = 1;
     centerPhi1 = ap -> phiAnt[pol][ant1]; 
     centerPhi2 = ap -> phiAnt[pol][ant2];
-    double phi_diff1 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0); 
-    double phi_diff2 = FFTtools::wrap(centerPhi2 - centerPhi1, 360, 0); 
-    double baseline_phi = (fabs(phi_diff1) < fabs(phi_diff2)) ? centerPhi2 + phi_diff1 / 2 : centerPhi1 + phi_diff2 / 2; 
-    baseline_phi = FFTtools::wrap(baseline_phi, 360);
-//    double baseline_phi = FFTtools::wrap(atan2(sin(centerPhi1 / RAD2DEG) + sin(centerPhi2 / RAD2DEG), cos(centerPhi1 / RAD2DEG) + cos(centerPhi2 / RAD2DEG)) * RAD2DEG, 360);
+
+    double r1 = ap -> rAnt[pol][ant1];
+    double z1 = ap -> zAnt[pol][ant1];
+    double R1 = sqrt(r1 * r1 + z1 * z1);
+
+    centerTheta1 = -atan(z1 / r1) * RAD2DEG;
+    double cosTheta1 = r1 / R1;
+    double sinTheta1 = -z1 / R1;
+
+    double r2 = ap -> rAnt[pol][ant2];
+    double z2 = ap -> zAnt[pol][ant2];
+    double R2 = sqrt(r2 * r2 + z2 * z2);
+
+    centerTheta2 = -atan(z2 / r2) * RAD2DEG;
+    double cosTheta2 = r2 / R2;
+    double sinTheta2 = -z2 / R2;
+
+    double sphCos12 = cosTheta1 * cosTheta2 * cos((centerPhi1 - centerPhi2) * DEG2RAD) + sinTheta1 * sinTheta2;
+
+//    double phi_diff1 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0); 
+//    double phi_diff2 = FFTtools::wrap(centerPhi2 - centerPhi1, 360, 0); 
+//    double baseline_phi = (fabs(phi_diff1) < fabs(phi_diff2)) ? centerPhi2 + phi_diff1 / 2 : centerPhi1 + phi_diff2 / 2; 
+//    baseline_phi = FFTtools::wrap(baseline_phi, 360);
     int phiSep = abs(phi1 - phi2) % 16;
     if (phiSep > 8) phiSep = 16 - phiSep;
 //   double axPhi = 30;  //  Values gleaned from Figure 5.6 in Ben Strutt's dissertation, and what was calculated at LDB in 2016.
-    lowerPhi = FFTtools::wrap(baseline_phi - 45, 360);
-    higherPhi = FFTtools::wrap(baseline_phi + 45, 360);
-    double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
-    if (fMin >= ANITA_F_LO || phiSep > 2)  //  Exclude baselines incapable of covering the entire ANITA passband, and antennas greater than 2 phi sectors apart.
+//    lowerPhi = FFTtools::wrap(baseline_phi - 45, 360);
+//    higherPhi = FFTtools::wrap(baseline_phi + 45, 360);
+//    double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
+    if (phiSep > 4 || sphCos12 < 1 / sqrt(2))  //  Exclude baselines more than 4 phi sectors apart or has antenna coverage that falls below half power.
     {
       allowedFlag = 0;
-      centerPhi1 = 0;
-      centerPhi2 = 0;
+//      centerPhi1 = 0;
+//      centerPhi2 = 0;
     }
   }
   
@@ -373,7 +391,7 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   double theta0 = theta - dtheta * ntheta / 2; 
   double theta1 = theta + dtheta * ntheta / 2; 
   TH2D * zoomed_norm = new TH2D(TString::Format("zoomed_norm_%d",count_the_zoomed_correlators), "Zoomed Correlation Normalization", 
-                    nphi, phi0,phi1, 
+                    nphi, phi0, phi1, 
                     ntheta, theta0, theta1); 
   zoomed_norm->SetDirectory(0); 
 
@@ -556,7 +574,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
 //   printf("lowerPhiThis: %g higherPhiThis: %g\n", lowerPhiThis, higherPhiThis); 
    // More stringent check if we have a center point
-   if (center_point && !between(center_point[0], lowerPhiThis, higherPhiThis)) return;
+   if (abbysMethod && center_point && !between(center_point[0], lowerPhiThis, higherPhiThis)) return;
 
    //  To ensure proper coverage over the whole map when not using abbysMethod.
 //   if (!abbysMethod && !center_point)
@@ -571,8 +589,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
    //find phi bin corresponding to lowerPhiThis and higherPhiThis
 
-   int first_phi_bin = center_point ? 1 : the_hist->GetXaxis()->FindFixBin(lowerPhiThis); 
-   int last_phi_bin  = center_point ? the_hist->GetNbinsX() : the_hist->GetXaxis()->FindFixBin(higherPhiThis); 
+   int first_phi_bin = (abbysMethod && center_point) ? 1 : the_hist->GetXaxis()->FindFixBin(lowerPhiThis); 
+   int last_phi_bin = (abbysMethod && center_point) ? the_hist->GetNbinsX() : the_hist->GetXaxis()->FindFixBin(higherPhiThis); 
 
    if (first_phi_bin == 0) ++first_phi_bin; 
    if (last_phi_bin == the_hist->GetNbinsX()+1) --last_phi_bin;  
@@ -602,9 +620,22 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    int nbins_used = 0; 
 
    double * gain_weights = 0;
-   if (gainSigma && !center_point) gain_weights = new double[maxsize]; 
+   if ((gainSigma && !center_point) || !abbysMethod) gain_weights = new double[maxsize]; 
 
-  
+
+   //  The following quantities are relevant when abbysMethod is not being used and gain_weights are being used.
+   double r1 = cache -> ap -> rAnt[pol][ant1];
+   double z1 = cache -> ap -> zAnt[pol][ant1];
+   double R1 = sqrt(r1 * r1 + z1 * z1);
+   double cosTheta1 = r1 / R1;
+   double sinTheta1 = -z1 / R1;
+
+   double r2 = cache -> ap -> rAnt[pol][ant2];
+   double z2 = cache -> ap -> zAnt[pol][ant2];
+   double R2 = sqrt(r2 * r2 + z2 * z2);
+   double cosTheta2 = r2 / R2;
+   double sinTheta2 = -z2 / R2;
+
    for (int phibin = first_phi_bin; (phibin <= last_phi_bin) || must_wrap; phibin++)
    {
      if (must_wrap && phibin == nphibins - 1)
@@ -642,14 +673,26 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        phibins[nbins_used] = phibin; 
        thetabins[nbins_used] = thetabin; 
        bins_to_fill[nbins_used] = phibin + thetabin * nphibins;
-       if (gainSigma && !center_point) 
+       if ((gainSigma && !center_point) || !abbysMethod) 
        {
          //Matt Mottram weighted by the baseline angle difference somehow
          
         double Dphi = FFTtools::wrap(phi - baseline_phi, 360, 0); 
         double Dtheta = theta - baseline_theta;
 
-        gain_weights[nbins_used] = abbysMethod ? TMath::Gaus(TMath::Sqrt(Dphi*Dphi + Dtheta*Dtheta), 0, gainSigma, true) : TMath::Gaus(Dphi, 0, gainSigma, true);
+        double cosDPhi1 = cos((phi - centerPhi1) * DEG2RAD);
+        double cosDPhi2 = cos((phi - centerPhi2) * DEG2RAD);
+
+        double cosTheta = cos(theta * DEG2RAD);
+        double sinTheta = -sin(theta * DEG2RAD);
+
+        double sphCos1 = cosTheta * cosTheta1 * cosDPhi1 + sinTheta * sinTheta1;
+        if (!abbysMethod && sphCos1 < 0) continue;
+
+        double sphCos2 = cosTheta * cosTheta2 * cosDPhi2 + sinTheta * sinTheta2;
+        if (!abbysMethod && sphCos2 < 0) continue;
+
+        gain_weights[nbins_used] = abbysMethod ? TMath::Gaus(TMath::Sqrt(Dphi*Dphi + Dtheta*Dtheta), 0, gainSigma, true) : sphCos1 * sphCos2 / (R1 * R2) ; //  TMath::Gaus(Dphi, 0, gainSigma, true);
 //cos(Dphi / RAD2DEG);
 
        }
@@ -697,10 +740,10 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi];
 
-       if (!abbysMethod && fabs(vals_to_fill[bi]) > 1 / ANITA_BW) continue;
+//       if (!abbysMethod && fabs(vals_to_fill[bi]) > 1 / ANITA_BW) continue;
 
-       the_hist->GetArray()[bin] += gainSigma && !center_point ? val * gain_weights[bi] : val; 
-       the_norm->GetArray()[bin] += gainSigma && !center_point ? gain_weights[bi] : 1;
+       the_hist->GetArray()[bin] += ((gainSigma && !center_point) || !abbysMethod) ? val * gain_weights[bi] : val; 
+       the_norm->GetArray()[bin] += ((gainSigma && !center_point) || !abbysMethod) ? gain_weights[bi] : 1;
    }
 
    delete [] alloc; 
