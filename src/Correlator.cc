@@ -685,10 +685,18 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
         double sinTheta = sin(theta * DEG2RAD);
 
         double sphCos1 = cosTheta * cosTheta1 * cosDPhi1 + sinTheta * sinTheta1;
-        if (!abbysMethod && sphCos1 < 0) continue;
+        if (!abbysMethod && sphCos1 < 0) {
+
+         gain_weights[nbins_used] = 0;
+         continue;
+        }
 
         double sphCos2 = cosTheta * cosTheta2 * cosDPhi2 + sinTheta * sinTheta2;
-        if (!abbysMethod && sphCos2 < 0) continue;
+        if (!abbysMethod && sphCos2 < 0) {
+
+          gain_weights[nbins_used] = 0;
+          continue;
+        }
 
         gain_weights[nbins_used] = abbysMethod ? TMath::Gaus(TMath::Sqrt(Dphi*Dphi + Dtheta*Dtheta), 0, gainSigma, true) : sphCos1 * sphCos2 / (R1 * R2) ; //  TMath::Gaus(Dphi, 0, gainSigma, true);
 //cos(Dphi / RAD2DEG);
