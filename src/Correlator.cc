@@ -264,13 +264,13 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
 //    double phi_diff2 = FFTtools::wrap(centerPhi2 - centerPhi1, 360, 0); 
 //    double baseline_phi = (fabs(phi_diff1) < fabs(phi_diff2)) ? centerPhi2 + phi_diff1 / 2 : centerPhi1 + phi_diff2 / 2; 
 //    baseline_phi = FFTtools::wrap(baseline_phi, 360);
-    int phiSep = abs(phi1 - phi2);
+    int phiSep = abs(ant1 - ant2) % NUM_PHI;
     if (phiSep > NUM_PHI / 2) phiSep = NUM_PHI - phiSep;
 //   double axPhi = 30;  //  Values gleaned from Figure 5.6 in Ben Strutt's dissertation, and what was calculated at LDB in 2016.
 //    lowerPhi = FFTtools::wrap(baseline_phi - 45, 360);
 //    higherPhi = FFTtools::wrap(baseline_phi + 45, 360);
 //    double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
-    if (phiSep > 2 || sphCos12 < 1 / sqrt(2))  //  Exclude baselines more than 4 phi sectors apart or has antenna coverage that falls below half power.
+    if (phiSep > 4 || sphCos12 < 1 / sqrt(2))  //  Exclude baselines more than 4 phi sectors apart or has antenna coverage that falls below half power.
     {
       allowedFlag = 0;
 //      centerPhi1 = 0;
