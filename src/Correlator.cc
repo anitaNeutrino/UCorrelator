@@ -270,7 +270,7 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
 //    lowerPhi = FFTtools::wrap(baseline_phi - 45, 360);
 //    higherPhi = FFTtools::wrap(baseline_phi + 45, 360);
 //    double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
-    if (phiSep > 4 || sphCos12 < 1 / sqrt(2))  //  Exclude baselines more than 4 phi sectors apart or has antenna coverage that falls below half power.
+    if (phiSep > 2 || sphCos12 < 1 / sqrt(2))  //  Exclude baselines more than 4 phi sectors apart or has antenna coverage that falls below half power.
     {
       allowedFlag = 0;
 //      centerPhi1 = 0;
@@ -685,18 +685,10 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
         double sinTheta = sin(theta * DEG2RAD);
 
         double sphCos1 = cosTheta * cosTheta1 * cosDPhi1 + sinTheta * sinTheta1;
-        if (!abbysMethod && sphCos1 < 0) {
-
-         gain_weights[nbins_used] = 0;
-         continue;
-        }
+        if (!abbysMethod && sphCos1 < 0) continue;
 
         double sphCos2 = cosTheta * cosTheta2 * cosDPhi2 + sinTheta * sinTheta2;
-        if (!abbysMethod && sphCos2 < 0) {
-
-          gain_weights[nbins_used] = 0;
-          continue;
-        }
+        if (!abbysMethod && sphCos2 < 0) continue;
 
         gain_weights[nbins_used] = abbysMethod ? TMath::Gaus(TMath::Sqrt(Dphi*Dphi + Dtheta*Dtheta), 0, gainSigma, true) : sphCos1 * sphCos2 / (R1 * R2) ; //  TMath::Gaus(Dphi, 0, gainSigma, true);
 //cos(Dphi / RAD2DEG);
