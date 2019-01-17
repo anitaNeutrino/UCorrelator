@@ -190,27 +190,27 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
   int phi2 = AnitaGeomTool::Instance() -> getPhiFromAnt(ant2);
   int allowedFlag = 0;
 
-  //  Making the commented out criterion below much more concise.
-  int phiSep = abs(ant1 - ant2) % NUM_PHI;
-  if (phiSep > NUM_PHI / 2) phiSep = NUM_PHI - phiSep;
+//  //  Making the commented out criterion below much more concise.
+//  int phiSep = abs(ant1 - ant2) % NUM_PHI;
+//  if (phiSep > NUM_PHI / 2) phiSep = NUM_PHI - phiSep;
+//
+//  if (phiSep < 3) allowedFlag = 1;  //  Exclude antenna pairs more than 2 phi sectors apart.
 
-  if (phiSep < 3) allowedFlag = 1;  //  Exclude antenna pairs more than 2 phi sectors apart.
+  int upperlimit, lowerlimit;
+  upperlimit = phi2 + 2;  //  2 phi sectors on either side
+  lowerlimit = phi2 - 2;
 
-//  int upperlimit, lowerlimit;
-//  upperlimit = phi2 + 2;  //  2 phi sectors on either side
-//  lowerlimit = phi2 - 2;
-//
-//  if (upperlimit > NUM_PHI - 1) upperlimit -= NUM_PHI;
-//  if (lowerlimit < 0) lowerlimit += NUM_PHI;
-//
-//  if (upperlimit > lowerlimit) {
-//
-//    if (phi1 <= upperlimit && phi1 >= lowerlimit) allowedFlag = 1;  //  within 2 phi sectors of eachother.
-//
-//  } else if (upperlimit < lowerlimit) {
-//
-//    if (phi1 <= upperlimit || phi1 >= lowerlimit) allowedFlag = 1;
-//  }
+  if (upperlimit > NUM_PHI - 1) upperlimit -= NUM_PHI;
+  if (lowerlimit < 0) lowerlimit += NUM_PHI;
+
+  if (upperlimit > lowerlimit) {
+
+    if (phi1 <= upperlimit && phi1 >= lowerlimit) allowedFlag = 1;  //  within 2 phi sectors of eachother.
+
+  } else if (upperlimit < lowerlimit) {
+
+    if (phi1 <= upperlimit || phi1 >= lowerlimit) allowedFlag = 1;
+  }
 
   const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions::instance();
 
