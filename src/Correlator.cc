@@ -130,7 +130,7 @@ static void combineHists(int N, T ** hists )
 #define ANITA_F_LO 0.180  //  Lower 3dB point of ANITA passband in GHz.
 #define ANITA_F_HI 1.2  //  Higher 3dB point of ANITA passband in GHz.
 #define ANITA_F_C (ANITA_F_HI + ANITA_F_LO) / 2  //  Central frequency of ANITA passband in GHz.
-#define ANITA_BW (ANITA_F_HI - ANITA_F_LO)  //  ANITA bandwidth in GHz.
+#define ANITA_BW ANITA_F_HI - ANITA_F_LO  //  ANITA bandwidth in GHz.
 #endif
 
 
@@ -576,7 +576,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    // More stringent check if we have a center point
    if (abbysMethod && center_point && !between(center_point[0], lowerPhiThis, higherPhiThis)) return;
 
-   //  To ensure proper coverage over the whole map when not using abbysMethod.
+//   //  To ensure proper coverage over the whole map when not using abbysMethod.
 //   if (!abbysMethod && !center_point)
 //   {
 //     lowerPhiThis = 0;
@@ -589,8 +589,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
    //find phi bin corresponding to lowerPhiThis and higherPhiThis
 
-   int first_phi_bin = (abbysMethod && center_point) ? 1 : the_hist->GetXaxis()->FindFixBin(lowerPhiThis); 
-   int last_phi_bin = (abbysMethod && center_point) ? the_hist->GetNbinsX() : the_hist->GetXaxis()->FindFixBin(higherPhiThis); 
+   int first_phi_bin = center_point ? 1 : the_hist->GetXaxis()->FindFixBin(lowerPhiThis);
+   int last_phi_bin = center_point ? the_hist->GetNbinsX() : the_hist->GetXaxis()->FindFixBin(higherPhiThis); 
 
    if (first_phi_bin == 0) ++first_phi_bin; 
    if (last_phi_bin == the_hist->GetNbinsX()+1) --last_phi_bin;  
@@ -600,7 +600,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    //So the maximum number of bins is going to be the total number of bins in the histogram. We probably won't fill all of them, 
    //but memory is cheap and std::vector is slow  
 
-   int maxsize = the_hist->GetNbinsY() * the_hist->GetNbinsX(); 
+   int maxsize = the_hist->GetNbinsY() * the_hist->GetNbinsX();
+   if (!abbysMethod) maxsize *= 2;
 
    double phi_diff1 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0); 
    double phi_diff2 = FFTtools::wrap(centerPhi2 - centerPhi1, 360, 0); 
@@ -692,10 +693,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
         gain_weights[nbins_used] = abbysMethod ? TMath::Gaus(TMath::Sqrt(Dphi*Dphi + Dtheta*Dtheta), 0, gainSigma, true) : sphCos1 * sphCos2 / (R1 * R2) ; //  TMath::Gaus(Dphi, 0, gainSigma, true);
 //cos(Dphi / RAD2DEG);
-
        }
-
-	cout << sphCos1 << " " << sphCos2 << " " << gain_weights[nbins_used] << endl;
 
        nbins_used++; 
      }
