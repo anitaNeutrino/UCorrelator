@@ -694,6 +694,9 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 //cos(Dphi / RAD2DEG);
 
        }
+
+	cout << sphCos1 << " " << sphCos2 << " " << gain_weights[nbins_used] << endl;
+
        nbins_used++; 
      }
    }
