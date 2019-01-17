@@ -184,60 +184,69 @@ UCorrelator::Correlator::Correlator(int nphi, double phi_min, double phi_max, in
   groupDelayFlag = 1; 
 }
 
-static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double &centerTheta1, double &centerTheta2, double &centerPhi1, double &centerPhi2, int ant1, int ant2, double max_phi, AnitaPol::AnitaPol_t pol, bool abbysMethod)
-{
+static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double &centerTheta1, double &centerTheta2, double &centerPhi1, double &centerPhi2, int ant1, int ant2, double max_phi, AnitaPol::AnitaPol_t pol, bool abbysMethod) {
+
   int phi1 = AnitaGeomTool::Instance() -> getPhiFromAnt(ant1);
   int phi2 = AnitaGeomTool::Instance() -> getPhiFromAnt(ant2);
   int allowedFlag = 0;
 
-  int upperlimit, lowerlimit;
-  upperlimit = phi2 + 2;  //  2 phi sectors on either side
-  lowerlimit = phi2 - 2;
+  //  Making the commented out criterion below much more concise.
+  int phiSep = abs(ant1 - ant2) % NUM_PHI;
+  if (phiSep > NUM_PHI / 2) phiSep = NUM_PHI - phiSep;
 
-  if (upperlimit > NUM_PHI - 1) upperlimit -= NUM_PHI;
-  if (lowerlimit < 0) lowerlimit += NUM_PHI;
+  if (phiSep < 3) allowedFlag = 1;  //  Exclude antenna pairs more than 2 phi sectors apart.
 
-  if (upperlimit > lowerlimit)
-  {
-    if (phi1 <= upperlimit && phi1 >= lowerlimit) allowedFlag = 1;  //  within 2 phi sectors of eachother.
-  } else if (upperlimit < lowerlimit)
-  {
-    if (phi1 <= upperlimit || phi1 >= lowerlimit) allowedFlag = 1;
-  }
+//  int upperlimit, lowerlimit;
+//  upperlimit = phi2 + 2;  //  2 phi sectors on either side
+//  lowerlimit = phi2 - 2;
+//
+//  if (upperlimit > NUM_PHI - 1) upperlimit -= NUM_PHI;
+//  if (lowerlimit < 0) lowerlimit += NUM_PHI;
+//
+//  if (upperlimit > lowerlimit) {
+//
+//    if (phi1 <= upperlimit && phi1 >= lowerlimit) allowedFlag = 1;  //  within 2 phi sectors of eachother.
+//
+//  } else if (upperlimit < lowerlimit) {
+//
+//    if (phi1 <= upperlimit || phi1 >= lowerlimit) allowedFlag = 1;
+//  }
 
   const UCorrelator::AntennaPositions * ap = UCorrelator::AntennaPositions::instance();
 
-  if (allowedFlag == 1)
-  {
-    centerPhi1 = ap -> phiAnt[pol][ant1]; 
-    centerPhi2 = ap -> phiAnt[pol][ant2]; 
-//    assert(centerAngle1 == ap->phiAnt[0][ant1]); 
+  if (abbysMethod) {
 
-    if (centerPhi2 > centerPhi1)
-    {
-      lowerPhi = centerPhi2 - max_phi;
-      higherPhi = centerPhi1 + max_phi;
-    }
-    else
-    {
-      lowerPhi = centerPhi1 - max_phi;
-      higherPhi = centerPhi2 + max_phi; 
-    }
+    if (allowedFlag == 1) {
 
-    if (lowerPhi < 0) lowerPhi += 360;
-    if (higherPhi > 360) higherPhi -= 360;
+      centerPhi1 = ap -> phiAnt[pol][ant1]; 
+      centerPhi2 = ap -> phiAnt[pol][ant2]; 
+//      assert(centerAngle1 == ap->phiAnt[0][ant1]); 
+
+      if (centerPhi2 > centerPhi1) {
+
+        lowerPhi = centerPhi2 - max_phi;
+        higherPhi = centerPhi1 + max_phi;
+
+      } else {
+
+        lowerPhi = centerPhi1 - max_phi;
+        higherPhi = centerPhi2 + max_phi; 
+      }
+
+      if (lowerPhi < 0) lowerPhi += 360;
+      if (higherPhi > 360) higherPhi -= 360;
     
-  } else
-  {
-    centerPhi1 = 0; 
-    centerPhi2 = 0; 
-  }
+    } else {
 
-  centerTheta1 = 10;  //  degrees down
-  centerTheta2 = 10;  //  degrees down
+      centerPhi1 = 0; 
+      centerPhi2 = 0; 
+    }
 
-  if (!abbysMethod)
-  {
+    centerTheta1 = 10;  //  degrees down
+    centerTheta2 = 10;  //  degrees down
+
+  } else {
+
     allowedFlag = 1;
     centerPhi1 = ap -> phiAnt[pol][ant1]; 
     centerPhi2 = ap -> phiAnt[pol][ant2];
@@ -258,24 +267,23 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
     double cosTheta2 = r2 / R2;
     double sinTheta2 = -z2 / R2;
 
+    double dPhi12 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0);
     double sphCos12 = cosTheta1 * cosTheta2 * cos((centerPhi1 - centerPhi2) * DEG2RAD) + sinTheta1 * sinTheta2;
 
 //    double phi_diff1 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0); 
 //    double phi_diff2 = FFTtools::wrap(centerPhi2 - centerPhi1, 360, 0); 
 //    double baseline_phi = (fabs(phi_diff1) < fabs(phi_diff2)) ? centerPhi2 + phi_diff1 / 2 : centerPhi1 + phi_diff2 / 2; 
 //    baseline_phi = FFTtools::wrap(baseline_phi, 360);
-    int phiSep = abs(ant1 - ant2) % NUM_PHI;
-    if (phiSep > NUM_PHI / 2) phiSep = NUM_PHI - phiSep;
+//    int phiSep = abs(ant1 - ant2) % NUM_PHI;
+//    if (phiSep > NUM_PHI / 2) phiSep = NUM_PHI - phiSep;
 //   double axPhi = 30;  //  Values gleaned from Figure 5.6 in Ben Strutt's dissertation, and what was calculated at LDB in 2016.
-//    lowerPhi = FFTtools::wrap(baseline_phi - 45, 360);
-//    higherPhi = FFTtools::wrap(baseline_phi + 45, 360);
+//    lowerPhi = FFTtools::wrap(baseline_phi - 45, 360, 180);
+//    higherPhi = FFTtools::wrap(baseline_phi + 45, 360, 180);
 //    double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
-    if (phiSep > 4 || sphCos12 < 1 / sqrt(2))  //  Exclude baselines more than 4 phi sectors apart or has antenna coverage that falls below half power.
-    {
-      allowedFlag = 0;
-//      centerPhi1 = 0;
-//      centerPhi2 = 0;
-    }
+//    if (phiSep > 4 || sphCos12 < 1 / sqrt(2))  allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna coverage that falls below half power.
+//    if (phiSep > 4 || sphCos12 < 0.5)  allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna pair phase centers more than 60 degrees apart.
+//    if (phiSep > 4 || sphCos12 < cos(max_phi * DEG2RAD)) allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna pair phase centers more than max_phi degrees apart.
+    if (fabs(dPhi12) > 90 || sphCos12 < 0) allowedFlag = 0;  // Exclude baselines whose antennas are more than 90 degrees apart in phi or phase center location. Phi separation as opposed to phi sector separation because top ring is staggered.
   }
   
   return allowedFlag;
@@ -432,12 +440,13 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   center_point[0] = phi; 
   center_point[1] = theta; 
 
-  for (int ant_i = 0; ant_i < n2loop; ant_i++)
-  {
+  for (int ant_i = 0; ant_i < n2loop; ant_i++) {
+
     int ant1 = nant ? closest[ant_i] : ant_i; 
-    if (!nant && disallowed_antennas & (1ul << ant1)) continue; 
-    for (int ant_j = ant_i +1; ant_j < n2loop; ant_j++)
-    {
+    if (!nant && disallowed_antennas & (1ul << ant1)) continue;
+
+    for (int ant_j = ant_i + 1; ant_j < n2loop; ant_j++) {
+
       int ant2 = nant ? closest[ant_j] : ant_j; 
       if (!nant && disallowed_antennas & (1ul << ant2)) continue; 
 
@@ -446,8 +455,6 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   }
  
   unsigned nit = pairs.size(); 
-
- 
 
   /* lock contention for the hist / norm lock is killing parallelization */ 
   std::vector<TH2D*> zoomed_hists(nthreads()); 
