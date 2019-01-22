@@ -267,23 +267,23 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
     double cosTheta2 = r2 / R2;
     double sinTheta2 = -z2 / R2;
 
-    double dPhi12 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0);
+//    double dPhi12 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0);
     double sphCos12 = cosTheta1 * cosTheta2 * cos((centerPhi1 - centerPhi2) * DEG2RAD) + sinTheta1 * sinTheta2;
 
 //    double phi_diff1 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0); 
 //    double phi_diff2 = FFTtools::wrap(centerPhi2 - centerPhi1, 360, 0); 
 //    double baseline_phi = (fabs(phi_diff1) < fabs(phi_diff2)) ? centerPhi2 + phi_diff1 / 2 : centerPhi1 + phi_diff2 / 2; 
 //    baseline_phi = FFTtools::wrap(baseline_phi, 360);
-//    int phiSep = abs(ant1 - ant2) % NUM_PHI;
-//    if (phiSep > NUM_PHI / 2) phiSep = NUM_PHI - phiSep;
+    int phiSep = abs(ant1 - ant2) % NUM_PHI;
+    if (phiSep > NUM_PHI / 2) phiSep = NUM_PHI - phiSep;
 //   double axPhi = 30;  //  Values gleaned from Figure 5.6 in Ben Strutt's dissertation, and what was calculated at LDB in 2016.
 //    lowerPhi = FFTtools::wrap(baseline_phi - 45, 360, 180);
 //    higherPhi = FFTtools::wrap(baseline_phi + 45, 360, 180);
 //    double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
-//    if (phiSep > 4 || sphCos12 < 1 / sqrt(2))  allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna coverage that falls below half power.
+    if (phiSep > 4 || sphCos12 < 1 / sqrt(2))  allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna coverage that falls below half power.
 //    if (phiSep > 4 || sphCos12 < 0.5)  allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna pair phase centers more than 60 degrees apart.
 //    if (phiSep > 4 || sphCos12 < cos(max_phi * DEG2RAD)) allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna pair phase centers more than max_phi degrees apart.
-    if (fabs(dPhi12) > 90 || sphCos12 < 0) allowedFlag = 0;  // Exclude baselines whose antennas are more than 90 degrees apart in phi or phase center location. Phi separation as opposed to phi sector separation because top ring is staggered.
+//    if (phiSep > 4 || sphCos12 < 0) allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna pair phase centers more than 90 degrees apart. Phi separation as opposed to phi sector separation because top ring is staggered.
   }
   
   return allowedFlag;
@@ -442,12 +442,12 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
 
   for (int ant_i = 0; ant_i < n2loop; ant_i++) {
 
-    int ant1 = nant ? closest[ant_i] : ant_i; 
+    int ant1 = nant ? closest[ant_i] : ant_i;
     if (!nant && disallowed_antennas & (1ul << ant1)) continue;
 
     for (int ant_j = ant_i + 1; ant_j < n2loop; ant_j++) {
 
-      int ant2 = nant ? closest[ant_j] : ant_j; 
+      int ant2 = nant ? closest[ant_j] : ant_j;
       if (!nant && disallowed_antennas & (1ul << ant2)) continue; 
 
       pairs.push_back(std::pair<int,int>(ant1,ant2));
@@ -596,13 +596,22 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
    //find phi bin corresponding to lowerPhiThis and higherPhiThis
 
-   int first_phi_bin = center_point ? 1 : the_hist->GetXaxis()->FindFixBin(lowerPhiThis);
-   int last_phi_bin = center_point ? the_hist->GetNbinsX() : the_hist->GetXaxis()->FindFixBin(higherPhiThis); 
+   int first_phi_bin, last_phi_bin;
+   if (abbysMethod) {
 
-   if (first_phi_bin == 0) ++first_phi_bin; 
-   if (last_phi_bin == the_hist->GetNbinsX()+1) --last_phi_bin;  
+     first_phi_bin = center_point ? 1 : the_hist->GetXaxis()->FindFixBin(lowerPhiThis);
+     last_phi_bin = center_point ? the_hist->GetNbinsX() : the_hist->GetXaxis()->FindFixBin(higherPhiThis);
+
+     if (first_phi_bin == 0) ++first_phi_bin; 
+     if (last_phi_bin == the_hist->GetNbinsX()+1) --last_phi_bin;
+
+   } else {
+
+     first_phi_bin = 1;
+     last_phi_bin = the_hist -> GetNbinsX();
+   }
+
    bool must_wrap = (last_phi_bin < first_phi_bin); 
-
 
    //So the maximum number of bins is going to be the total number of bins in the histogram. We probably won't fill all of them, 
    //but memory is cheap and std::vector is slow  
@@ -679,6 +688,7 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
        phibins[nbins_used] = phibin; 
        thetabins[nbins_used] = thetabin; 
        bins_to_fill[nbins_used] = phibin + thetabin * nphibins;
+
        if ((gainSigma && !center_point) || !abbysMethod)
        {
          //Matt Mottram weighted by the baseline angle difference somehow
