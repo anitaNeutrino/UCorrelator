@@ -29,7 +29,7 @@ UCorrelator::gui::Map::Map(const TH2D & hist, const FilteredAnitaEvent * ev, Wav
 
 
   /** figure out true -neutrino- position (SOURCE SEARCH) **/
-  bool sourceSearchOption == false;
+  bool sourceSearchOption = true;
   if (sourceSearchOption == true)
     {
       double phi_neutrino = sum->mc.nuPhi;
