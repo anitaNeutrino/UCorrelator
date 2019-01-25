@@ -29,12 +29,16 @@ UCorrelator::gui::Map::Map(const TH2D & hist, const FilteredAnitaEvent * ev, Wav
 
 
   /** figure out true -neutrino- position (SOURCE SEARCH) **/
-  double phi_neutrino = sum->mc.nuPhi;
-  double theta_neutrino = -sum->mc.nuTheta;
-  TMarker sourceSearch(phi_neutrino,theta_neutrino,23);
-  sourceSearch.SetMarkerColor(3);
-  specials.push_back(sourceSearch); 
-    
+  bool sourceSearchOption == false;
+  if (sourceSearchOption == true)
+    {
+      double phi_neutrino = sum->mc.nuPhi;
+      double theta_neutrino = -sum->mc.nuTheta;
+      TMarker sourceSearch(phi_neutrino,theta_neutrino,23);
+      sourceSearch.SetMarkerColor(3);
+      specials.push_back(sourceSearch); 
+    }
+  
   if (sum->mc.phi >-999)
   {
 //    printf("MC position: phi=%g theta=%g\n",sum->mc.phi, sum->mc.theta ); 
