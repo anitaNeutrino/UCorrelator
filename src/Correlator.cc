@@ -270,7 +270,7 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
 //    double dPhi12 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0);
 //    double sphCos12 = cosTheta1 * cosTheta2 * cos((centerPhi1 - centerPhi2) * DEG2RAD) + sinTheta1 * sinTheta2;
     double baseline = ap -> distance(ant1, ant2, pol);  //  Antenna pair baseline (m).    
-    if (ANITA_BW * baseline * 1e9 / C_LIGHT > 6) allowedFlag = 0;  //  As none of our baselines fall below a value of 1 in this inequality,
+    if (ANITA_BW * baseline * 1e9 / C_LIGHT > 5) allowedFlag = 0;  //  As none of our baselines fall below a value of 1 in this inequality,
     //  the value of 6 was chosen empirically after determining a range of |u| < 6, |v| < 6 in the visibility map was sufficient to cover features for a WAIS pulse (A4 run 130, event # 22,896,140).
 
 //    double sphCos12 = cosTheta1 * cosTheta2 * cos((centerPhi1 - centerPhi2) * DEG2RAD) + sinTheta1 * sinTheta2;
