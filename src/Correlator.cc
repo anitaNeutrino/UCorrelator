@@ -190,7 +190,7 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
   int phi2 = AnitaGeomTool::Instance() -> getPhiFromAnt(ant2);
   int allowedFlag = 0;
 
-//  //  Making the commented out criterion below much more concise.
+//  //  This *should* make the make the lines regarding "upperlimit" and "lowerlimit" much more concise.
 //  int phiSep = abs(ant1 - ant2) % NUM_PHI;
 //  if (phiSep > NUM_PHI / 2) phiSep = NUM_PHI - phiSep;
 //
@@ -253,23 +253,27 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
 
     double r1 = ap -> rAnt[pol][ant1];
     double z1 = ap -> zAnt[pol][ant1];
-    double R1 = sqrt(r1 * r1 + z1 * z1);
+//    double R1 = sqrt(r1 * r1 + z1 * z1);
 
     centerTheta1 = -atan(z1 / r1) * RAD2DEG;
-    double cosTheta1 = r1 / R1;
-    double sinTheta1 = -z1 / R1;
+//    double cosTheta1 = r1 / R1;
+//    double sinTheta1 = -z1 / R1;
 
     double r2 = ap -> rAnt[pol][ant2];
     double z2 = ap -> zAnt[pol][ant2];
-    double R2 = sqrt(r2 * r2 + z2 * z2);
+//    double R2 = sqrt(r2 * r2 + z2 * z2);
 
     centerTheta2 = -atan(z2 / r2) * RAD2DEG;
-    double cosTheta2 = r2 / R2;
-    double sinTheta2 = -z2 / R2;
+//    double cosTheta2 = r2 / R2;
+//    double sinTheta2 = -z2 / R2;
 
 //    double dPhi12 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0);
 //    double sphCos12 = cosTheta1 * cosTheta2 * cos((centerPhi1 - centerPhi2) * DEG2RAD) + sinTheta1 * sinTheta2;
+    double baseline = ap -> distance(ant1, ant2, pol);  //  Antenna pair baseline (m).    
+    if (ANITA_BW * baseline * 1e9 / C_LIGHT > 6) allowedFlag = 0;  //  As none of our baselines fall below a value of 1 in this inequality,
+    //  the value of 6 was chosen empirically after determining a range of |u| < 6, |v| < 6 in the visibility map was sufficient to cover features for a WAIS pulse (A4 run 130, event # 22,896,140).
 
+//    double sphCos12 = cosTheta1 * cosTheta2 * cos((centerPhi1 - centerPhi2) * DEG2RAD) + sinTheta1 * sinTheta2;
 //    double phi_diff1 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0); 
 //    double phi_diff2 = FFTtools::wrap(centerPhi2 - centerPhi1, 360, 0); 
 //    double baseline_phi = (fabs(phi_diff1) < fabs(phi_diff2)) ? centerPhi2 + phi_diff1 / 2 : centerPhi1 + phi_diff2 / 2; 
@@ -277,11 +281,10 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
 //    int phiSep = abs(ant1 - ant2) % NUM_PHI;
 //    if (phiSep > NUM_PHI / 2) phiSep = NUM_PHI - phiSep;
 //   double axPhi = 30;  //  Values gleaned from Figure 5.6 in Ben Strutt's dissertation, and what was calculated at LDB in 2016.
+//
 //    lowerPhi = FFTtools::wrap(baseline_phi - 45, 360, 180);
 //    higherPhi = FFTtools::wrap(baseline_phi + 45, 360, 180);
 //    double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
-    double baseline = ap -> distance(ant1, ant2, pol);  //  Antenna pair baseline (m).
-    if (ANITA_BW * baseline * 1e9 / C_LIGHT > 6) allowedFlag = 0;
 //    if (phiSep > 4 || sphCos12 < 1 / sqrt(2))  allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna coverage that falls below half power.
 //    if (phiSep > 4 || sphCos12 < 0.5)  allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna pair phase centers more than 60 degrees apart.
 //    if (phiSep > 4 || sphCos12 < cos(max_phi * DEG2RAD)) allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna pair phase centers more than max_phi degrees apart.
@@ -446,12 +449,12 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
 
   for (int ant_i = 0; ant_i < n2loop; ant_i++) {
 
-    int ant1 = nant ? closest[ant_i] : ant_i;
+    int ant1 = (nant && abbysMethod) ? closest[ant_i] : ant_i;
     if (!nant && disallowed_antennas & (1ul << ant1)) continue;
 
     for (int ant_j = ant_i + 1; ant_j < n2loop; ant_j++) {
 
-      int ant2 = nant ? closest[ant_j] : ant_j;
+      int ant2 = (nant && abbysMethod) ? closest[ant_j] : ant_j;
       if (!nant && disallowed_antennas & (1ul << ant2)) continue; 
 
       pairs.push_back(std::pair<int,int>(ant1,ant2));
