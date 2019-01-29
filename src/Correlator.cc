@@ -268,19 +268,21 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
     double sinTheta2 = -z2 / R2;
 
 //    double dPhi12 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0);
-    double sphCos12 = cosTheta1 * cosTheta2 * cos((centerPhi1 - centerPhi2) * DEG2RAD) + sinTheta1 * sinTheta2;
+//    double sphCos12 = cosTheta1 * cosTheta2 * cos((centerPhi1 - centerPhi2) * DEG2RAD) + sinTheta1 * sinTheta2;
 
 //    double phi_diff1 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0); 
 //    double phi_diff2 = FFTtools::wrap(centerPhi2 - centerPhi1, 360, 0); 
 //    double baseline_phi = (fabs(phi_diff1) < fabs(phi_diff2)) ? centerPhi2 + phi_diff1 / 2 : centerPhi1 + phi_diff2 / 2; 
 //    baseline_phi = FFTtools::wrap(baseline_phi, 360);
-    int phiSep = abs(ant1 - ant2) % NUM_PHI;
-    if (phiSep > NUM_PHI / 2) phiSep = NUM_PHI - phiSep;
+//    int phiSep = abs(ant1 - ant2) % NUM_PHI;
+//    if (phiSep > NUM_PHI / 2) phiSep = NUM_PHI - phiSep;
 //   double axPhi = 30;  //  Values gleaned from Figure 5.6 in Ben Strutt's dissertation, and what was calculated at LDB in 2016.
 //    lowerPhi = FFTtools::wrap(baseline_phi - 45, 360, 180);
 //    higherPhi = FFTtools::wrap(baseline_phi + 45, 360, 180);
 //    double fMin = C_LIGHT * 1e-9 / ap -> distance(ant1, ant2, pol);
-    if (phiSep > 4 || sphCos12 < 1 / sqrt(2))  allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna coverage that falls below half power.
+    double baseline = ap -> distance(ant1, ant2, pol);  //  Antenna pair baseline (m).
+    if (ANITA_BW * baseline * 1e9 / C_LIGHT > 6) allowedFlag = 0;
+//    if (phiSep > 4 || sphCos12 < 1 / sqrt(2))  allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna coverage that falls below half power.
 //    if (phiSep > 4 || sphCos12 < 0.5)  allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna pair phase centers more than 60 degrees apart.
 //    if (phiSep > 4 || sphCos12 < cos(max_phi * DEG2RAD)) allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna pair phase centers more than max_phi degrees apart.
 //    if (phiSep > 4 || sphCos12 < 0) allowedFlag = 0;  // Exclude baselines more than 4 phi sectors apart or has antenna pair phase centers more than 90 degrees apart. Phi separation as opposed to phi sector separation because top ring is staggered.
@@ -385,7 +387,7 @@ correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],
 
 
 
-TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi, double dphi, int ntheta, double dtheta, int nant, TH2D * answer) 
+TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi, double dphi, int ntheta, double dtheta, int nant, TH2D * answer, bool abbysMethod) 
 {
 
   if (!ev) 
@@ -421,6 +423,8 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   answer->GetYaxis()->SetTitle("-#theta"); 
 
   const AntennaPositions * ap = AntennaPositions::instance(); 
+
+  nant = abbysMethod ? nant : NANTENNAS;
 
   int closest[nant]; // is it a problem if nant is 0? 
   if (nant) 
