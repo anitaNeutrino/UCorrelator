@@ -270,8 +270,8 @@ static int allowedPhisPairOfAntennas(double &lowerPhi, double &higherPhi, double
 //    double dPhi12 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0);
 //    double sphCos12 = cosTheta1 * cosTheta2 * cos((centerPhi1 - centerPhi2) * DEG2RAD) + sinTheta1 * sinTheta2;
     double baseline = ap -> distance(ant1, ant2, pol);  //  Antenna pair baseline (m).    
-    if (ANITA_BW * baseline * 1e9 / C_LIGHT > 5) allowedFlag = 0;  //  As none of our baselines fall below a value of 1 in this inequality,
-    //  the value of 6 was chosen empirically after determining a range of |u| < 6, |v| < 6 in the visibility map was sufficient to cover features for a WAIS pulse (A4 run 130, event # 22,896,140).
+    if (ANITA_BW * baseline * 1e9 / C_LIGHT > 6) allowedFlag = 0;  //  As none of our baselines fall below a value of 1 in this inequality,
+    //  the value of 6 was chosen empirically after determining a range of q = sqrt(u * u + v * v) <= 6 in the visibility map was sufficient to cover features for a WAIS pulse (A4 run 130, event # 22,896,140).
 
 //    double sphCos12 = cosTheta1 * cosTheta2 * cos((centerPhi1 - centerPhi2) * DEG2RAD) + sinTheta1 * sinTheta2;
 //    double phi_diff1 = FFTtools::wrap(centerPhi1 - centerPhi2, 360, 0); 
@@ -449,12 +449,12 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
 
   for (int ant_i = 0; ant_i < n2loop; ant_i++) {
 
-    int ant1 = (nant && abbysMethod) ? closest[ant_i] : ant_i;
+    int ant1 = nant ? closest[ant_i] : ant_i;
     if (!nant && disallowed_antennas & (1ul << ant1)) continue;
 
     for (int ant_j = ant_i + 1; ant_j < n2loop; ant_j++) {
 
-      int ant2 = (nant && abbysMethod) ? closest[ant_j] : ant_j;
+      int ant2 = nant ? closest[ant_j] : ant_j;
       if (!nant && disallowed_antennas & (1ul << ant2)) continue; 
 
       pairs.push_back(std::pair<int,int>(ant1,ant2));
