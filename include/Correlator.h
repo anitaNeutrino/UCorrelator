@@ -36,7 +36,7 @@ namespace UCorrelator
       
 
       /** Compute a zoomed in map around phi and theta. nphi,dphi,ntheta,dtheta. If nant is non-zero, only the nearest nant antennas are used. You can use useme to avoid allocating a new TH2.  */ 
-      TH2D* computeZoomed(double phi, double theta, int nphi, double dphi,  int ntheta, double dtheta, int nant = 0, TH2D * useme = 0, bool abbysMethod = false); 
+      TH2D* computeZoomed(double phi, double theta, int nphi, double dphi,  int ntheta, double dtheta, int nant = 0, TH2D * useme = 0, AnitaPol::AnitaPol_t pol = AnitaPol::kHorizontal, bool abbysMethod = false); 
 
       /** Disable the antennas given by the bitmap */ 
       void setDisallowedAntennas(ULong64_t disallowed) { disallowed_antennas = disallowed; } 

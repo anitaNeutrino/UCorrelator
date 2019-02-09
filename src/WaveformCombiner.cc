@@ -95,7 +95,7 @@ void UCorrelator::WaveformCombiner::combine(double phi, double theta, const Filt
   std::vector<AnalysisWaveform> deconv(numDeconv);
 
   const UCorrelator::AntennaPositions * antpos = UCorrelator::AntennaPositions::instance(); 
-  nant = antpos->getClosestAntennas(phi, nant, &antennas[0], disallowed); 
+  nant = antpos->getClosestAntennas(phi, nant, &antennas[0], disallowed, pol, true); 
   double delays[nant]; 
 
   if (bottom_first) {

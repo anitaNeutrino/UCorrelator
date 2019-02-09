@@ -390,7 +390,7 @@ correlations[ant1][ant2] = AnalysisWaveform::correlation(padded_waveforms[ant1],
 
 
 
-TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi, double dphi, int ntheta, double dtheta, int nant, TH2D * answer, bool abbysMethod) 
+TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi, double dphi, int ntheta, double dtheta, int nant, TH2D * answer, AnitaPol::AnitaPol_t pol, bool abbysMethod) 
 {
 
   if (!ev) 
@@ -433,7 +433,7 @@ TH2D * UCorrelator::Correlator::computeZoomed(double phi, double theta, int nphi
   if (nant) 
   {
     memset(closest,0,sizeof(closest)); 
-    nant = ap->getClosestAntennas(phi, nant, closest, disallowed_antennas); 
+    nant = ap->getClosestAntennas(phi, nant, closest, disallowed_antennas, pol, abbysMethod); 
   }
 
   TrigCache cache(nphi, dphi, phi0, ntheta, dtheta, theta0, ap, true, nant, nant ? closest : 0); 

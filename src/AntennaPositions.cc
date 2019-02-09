@@ -69,7 +69,7 @@ UCorrelator::AntennaPositions::AntennaPositions(int version, AnitaGeomTool *geom
 
 }
 
-int UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * closest, ULong64_t disallowed , AnitaPol::AnitaPol_t pol) const
+int UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * closest, ULong64_t disallowed , AnitaPol::AnitaPol_t pol, bool abbysMethod) const
 {
 
   assert(N < NUM_SEAVEYS); 
@@ -79,7 +79,10 @@ int UCorrelator::AntennaPositions::getClosestAntennas(double phi, int N, int * c
   for (int i = 0; i < NUM_SEAVEYS; i++) 
   {
 
-    double dphi = disallowed & (1ul << i) ? 360 : fabs(FFTtools::wrap(phi-phiAnt[pol_ind][i], 360, 0)); 
+    double dphi;
+    if (disallowed & (1ul << i)) dphi = 360;
+    else if (abbysMethod) dphi = fabs(FFTtools::wrap(phi-phiAnt[pol_ind][i], 360, 0));
+    else dphi = 90; 
     dphis.insert(std::pair<double,int>(dphi,i)); 
   }
 
