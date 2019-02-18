@@ -29,7 +29,7 @@ namespace AnitaResponse
 class PolarityMachine
 {
   public:
-    PolarityMachine();
+    PolarityMachine(int padX=15);
 
     ~PolarityMachine();
     void zeroInternals();
@@ -58,6 +58,7 @@ class PolarityMachine
 
     void setDeconvolutionMethod(AnitaResponse::DeconvolutionMethod* opt) { deconv = opt ;}
     void setWindowSizeNs(double opt) { windowSizeNs = opt ;}
+    void setPadFactor(int opt) { padFactor = opt ;}
 
     /* Metrics are as follows:
      *    0 is largest peak in the cross correlation template being negative or positive (binary)
@@ -65,6 +66,8 @@ class PolarityMachine
      *    2 same as 0 but w/ a window about the deconvolved wf
      *    3 same as 1 but w/ a window about the deconvolved wf
      *    4 is Andres' metric of (max+min)/(max-min) of wf (no correlation)
+     *    5 is the Peter metric (windows differently and does a fixed point correlation about a fiducial)
+     *    6 is the phase based Peter metric
      * Will add more as i think of them */
 
     double testPolarity(int metric, AnalysisWaveform* wf, bool deconvolved);
@@ -77,11 +80,21 @@ class PolarityMachine
     AnalysisWaveform* generateNoisyWaveform(AnalysisWaveform* templateWf, AnalysisWaveform* noiseWf, double snr, TRandom3* tr);
     /* windows the waveform about the maximum stokes I */
     TGraph* windowWaveform(AnalysisWaveform* wf, double window_size_ns = 10);
+    /* windows the waveform about the zero crossing with the maximum stokes I */
+    TGraph* peterWindow(AnalysisWaveform* wf, double window_size_ns = 5, bool roll = false);
+
+    void makeSameSize(AnalysisWaveform* wf1, AnalysisWaveform* wf2);
+
+    /* these functions pull the two waveforms that went into the most recently formed correlation graph and the correlation graph itself, mostly for validation purposes */
+    TGraph* getInputWaveform(){return inputWaveform ;}
+    TGraph* getCRWaveform(){return crWaveform ;}
+    TGraph* getCorrelationGraph(){return correlationGraph ;}
 
   private:
     AnitaDataset* d;
     int length;
     int lengthFFT;
+    int padFactor;
     double dT;
     double dF;
     double windowSizeNs;
@@ -97,6 +110,10 @@ class PolarityMachine
     void fillNotchConfigs();
     void getCRTemplates(int version = AnitaVersion::get());
     void getImpulseResponseTemplate(int version = AnitaVersion::get());
+
+    TGraph* inputWaveform;
+    TGraph* crWaveform;
+    TGraph* correlationGraph;
 
 
     ClassDefNV(PolarityMachine, 1);
