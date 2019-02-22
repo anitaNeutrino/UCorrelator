@@ -13,10 +13,14 @@ PolarityMachine::PolarityMachine(int padX)
   kTemplatesLoaded = false;
   windowSizeNs = 10;
   padFactor = padX;
+  test_coherent = true;
 
   d = new AnitaDataset(41);
   deconv = new AnitaResponse::AllPassDeconvolution;
   fNotchStr = "";
+  inputWaveform = new TGraph;
+  crWaveform = new TGraph;
+  correlationGraph = new TGraph;
 
   for (int i=0; i < numCRTemplates; i++) {
     simulatedCRs[i] = NULL;
@@ -190,8 +194,6 @@ TH2D* PolarityMachine::generatePolarityMeasurements(int N, int eventNumber, doub
   h->GetXaxis()->SetTitle("coherentPolarity");
   h->GetYaxis()->SetTitle("deconvolvedPolarity");
 
-  double average_coh_pol = 0;
-  double average_deco_pol = 0;
   for(int i = 0; i < N; i++)
   {
     //generate a noisy wf and test its polarity
@@ -200,14 +202,11 @@ TH2D* PolarityMachine::generatePolarityMeasurements(int N, int eventNumber, doub
     double wf_snr = simulatedCRPeaks[whichTemplates[j]] / rms;
 
     AnalysisWaveform* noisyWf = generateNoisyWaveform(simulatedCRs[whichTemplates[j]], noiseWf, cr_snr/wf_snr, tr);
-    double coherent_polarity = testPolarity(metric, noisyWf, 0);
+    double coherent_polarity = (test_coherent) ? testPolarity(metric, noisyWf, 0) : 0;
 
     //now deconvolve it and test the polarity of that
     deconv->deconvolve(noisyWf->Nfreq(), noisyWf->deltaF(), noisyWf->updateFreq(), theImpTemplate->freq());
     double deco_polarity = testPolarity(metric, noisyWf, 1);
-
-    average_coh_pol += coherent_polarity;
-    average_deco_pol += deco_polarity;
 
     h->Fill(coherent_polarity, deco_polarity);
     j = (j < whichTemplates.size()-1) ? j+1 : 0; //cycle through the templates you want to look at
@@ -281,6 +280,7 @@ double PolarityMachine::testPolarity(int metric, AnalysisWaveform* wf, bool deco
       ave_phase += gwf->GetY()[i];
     }
     ave_phase/=n_samp;
+    ave_phase = (ave_phase > 0) ? 1 : -1;
     delete gwf;
     return ave_phase;
   }
@@ -299,10 +299,11 @@ double PolarityMachine::testPolarity(int metric, AnalysisWaveform* wf, bool deco
   }
   gCorr = FFTtools::getCorrelationGraph(gwf, gCRwf);
   double normalization = TMath::Power(2, int(TMath::Log2(gwf->GetN())))/(gwf->GetRMS(2) * gCRwf->GetRMS(2) * gwf->GetN());
-  double maxCorr = normalization * TMath::MaxElement(gCorr->GetN(), gCorr->GetY());
-  double minCorr = normalization * TMath::MinElement(gCorr->GetN(), gCorr->GetY());
+  for(int i = 0; i < gCorr->GetN(); i++) gCorr->GetY()[i] *= normalization;
+  double maxCorr = TMath::MaxElement(gCorr->GetN(), gCorr->GetY());
+  double minCorr = TMath::MinElement(gCorr->GetN(), gCorr->GetY());
   double peak2sidelobe = abs(maxCorr/minCorr);
-  double fixedMetric = gCorr->GetY()[gCorr->GetN()/2]*normalization;
+  double fixedMetric = gCorr->GetY()[gCorr->GetN()/2];
   //printf("%g, %g, %g, %g, %g\n", normalization, maxCorr, minCorr, peak2sidelobe, fixedMetric);
 
   delete inputWaveform;
@@ -319,6 +320,30 @@ double PolarityMachine::testPolarity(int metric, AnalysisWaveform* wf, bool deco
   if(metric%2 == 1) return peak2sidelobe;
   if(abs(maxCorr) > abs(minCorr)) return 1;
   return -1;
+}
+
+double PolarityMachine::fourierPhasePolarity(int window_type, AnalysisWaveform* wf)
+{
+  TGraph* theOut;
+  if(window_type == 0) theOut = peterWindow(wf, windowSizeNs, true);
+  else if(window_type == 1) theOut = hilbertWindow(wf, windowSizeNs, true, true, 0);
+  else if(window_type == 2) theOut = hilbertWindow(wf, windowSizeNs, true, true, 1);
+  else if(window_type == 3) theOut = hilbertWindow(wf, windowSizeNs, true, false);
+
+  delete inputWaveform;
+  inputWaveform = new TGraph(theOut->GetN(), theOut->GetX(), theOut->GetY());
+  double ret = 0;
+  double n_samp = 0;
+  for(int i = 0; i < theOut->GetN(); i++)
+  {
+    if(theOut->GetX()[i] > 0.6) break;
+    if(theOut->GetX()[i] < 0.18) continue;
+    ret += theOut->GetY()[i];
+    n_samp++;
+  }
+  ret /= n_samp;
+  delete theOut;
+  return ret;
 }
 
 AnalysisWaveform* PolarityMachine::makeNoiseWaveformFromMinBias(int eventNumber, double phi, double theta, int pol, int current_N)
@@ -510,6 +535,126 @@ TGraph* PolarityMachine::peterWindow(AnalysisWaveform* wf, double window_size_ns
     }
     delete theOut;
     AnalysisWaveform* tawf = new AnalysisWaveform(tempOut->GetN(), tempOut->GetY(), tempOut->GetX()[1] - tempOut->GetX()[0], 0);
+    //tawf->padEven(1);
+    theOut = new TGraph(tawf->phase()->GetN(), tawf->phase()->GetX(), tawf->phase()->GetY());
+    for(int i = 0; i < theOut->GetN(); i++)
+    {
+      theOut->GetY()[i] *= TMath::RadToDeg();
+    }
+  }
+
+  return theOut;
+}
+
+TGraph* PolarityMachine::hilbertWindow(AnalysisWaveform* wf, double window_size_ns, bool roll, bool use_cdf, int how_to_use_cdf)
+{
+  if(window_size_ns <= 0)
+  {
+    TGraph* theOut = new TGraph(wf->even()->GetN(), wf->even()->GetX(), wf->even()->GetY());
+    return theOut;
+  }
+
+  double * x = wf->even()->GetY();
+  double * xh = wf->hilbertTransform()->even()->GetY();
+  double max_dI = 0;
+  int max_ind = -1;
+  double prev;
+
+  if(!use_cdf)
+  {
+    for(int i = 0; i < wf->Neven(); i++)
+    {
+      std::complex<double> X(x[i], xh[i]);
+      double dI = std::norm(X);
+      if(dI > max_dI)
+      {
+        max_dI = dI;
+        max_ind = i;
+      }
+    }
+  }
+  else
+  {
+    TGraph* tempCDF = new TGraph(wf->Neven());
+    double cdfmean = 0;
+    for(int i = 0; i < wf->Neven(); i++)
+    {
+      std::complex<double> X(x[i], xh[i]);
+      double dI = std::norm(X);
+      if(i > 0) 
+      {
+        tempCDF->SetPoint(i, i, dI + tempCDF->GetY()[i-1]);
+        cdfmean += (dI + tempCDF->GetY()[i-1])/double(wf->Neven());
+      }
+      else 
+      {
+        tempCDF->SetPoint(i, i, dI);
+        cdfmean += dI/double(wf->Neven());
+      }
+    }
+    
+    if(how_to_use_cdf == 0)
+    {
+      for(int i = 0; i < tempCDF->GetN(); i++)
+      {
+        if(tempCDF->GetY()[i] > cdfmean)
+        {
+          max_ind = i;
+          break;
+        }
+      }
+      max_ind = (abs(tempCDF->GetY()[max_ind] - cdfmean) > abs(tempCDF->GetY()[max_ind-1] - cdfmean)) ? max_ind -1 : max_ind;
+    }
+    else if(how_to_use_cdf == 1)
+    {
+      double target = 0.9 * tempCDF->GetY()[tempCDF->GetN()-1];
+      for(int i = tempCDF->GetN()-1; i > -1; i--)
+      {
+        if(tempCDF->GetY()[i] < target)
+        {
+          max_ind = i;
+          break;
+        }
+      }
+      max_ind = (abs(tempCDF->GetY()[max_ind] - target) > abs(tempCDF->GetY()[max_ind+1] - target)) ? max_ind -1 : max_ind;
+    }
+  }
+
+  int window_edge = int(ceil(window_size_ns/(2*wf->deltaT())));
+  TGraph* theOut = new TGraph(window_edge*2);
+  for(int i = 0; i < wf->even()->GetN(); i++)
+  {
+    if(i < (max_ind - window_edge) || i > (max_ind + window_edge)) continue;
+    else
+    {
+      if(roll) 
+      {
+        theOut->SetPoint(i-(max_ind - window_edge), wf->even()->GetX()[i], wf->even()->GetY()[i]);
+      }
+      else
+      {
+        theOut->SetPoint(i-(max_ind - window_edge), i-(max_ind-window_edge), wf->even()->GetY()[i]);
+      }
+    }
+  }
+
+  if(roll)
+  {
+    TGraph* tempOut = new TGraph(theOut->GetN());
+    for(int i = 0; i < theOut->GetN(); i++)
+    {
+      if(i < theOut->GetN()/2)
+      {
+        tempOut->SetPoint(i, theOut->GetX()[i], theOut->GetY()[i + theOut->GetN()/2]);
+      }
+      else 
+      {
+        tempOut->SetPoint(i, theOut->GetX()[i], theOut->GetY()[i - theOut->GetN()/2]);
+      }
+    }
+    delete theOut;
+    AnalysisWaveform* tawf = new AnalysisWaveform(tempOut->GetN(), tempOut->GetY(), tempOut->GetX()[1] - tempOut->GetX()[0], 0);
+    //tawf->padEven(1);
     theOut = new TGraph(tawf->phase()->GetN(), tawf->phase()->GetX(), tawf->phase()->GetY());
     for(int i = 0; i < theOut->GetN(); i++)
     {
@@ -523,6 +668,8 @@ TGraph* PolarityMachine::peterWindow(AnalysisWaveform* wf, double window_size_ns
 TH2D* PolarityMachine::runPolaritySimulation(int N, int eventNumber, double cr_phi, double cr_theta, double cr_snr, int pol, int metric, const char* outhistoname)
 {
   d->getEvent(eventNumber, true);
+  //make sure templates are loaded 
+  loadTemplates(d->header()->realTime);
   FilterStrategy strat;
   TGraph* gCorr = 0;
   std::vector<double> corrs(numCRTemplates);
