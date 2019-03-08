@@ -60,6 +60,7 @@ class PolarityMachine
     void setWindowSizeNs(double opt) { windowSizeNs = opt ;}
     void setPadFactor(int opt) { padFactor = opt ;}
     void setTestCoherent(bool opt) { test_coherent = opt ;}
+    void setOffset(int opt) { offset = opt ;}
 
     /* Metrics are as follows:
      *    0 is largest peak in the cross correlation template being negative or positive (binary)
@@ -124,6 +125,9 @@ class PolarityMachine
     double dF;
     double windowSizeNs;
     bool test_coherent;
+    int forwardMinBias;
+    int previousMinBias;
+    int offset;
 
     bool kTemplatesLoaded;
     std::string fNotchStr;

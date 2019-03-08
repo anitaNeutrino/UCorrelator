@@ -14,6 +14,8 @@ PolarityMachine::PolarityMachine(int padX)
   windowSizeNs = 10;
   padFactor = padX;
   test_coherent = true;
+  forwardMinBias = 0;
+  previousMinBias = 0;
 
   d = new AnitaDataset(41);
   deconv = new AnitaResponse::AllPassDeconvolution;
@@ -36,6 +38,8 @@ PolarityMachine::~PolarityMachine() {
 
 void PolarityMachine::zeroInternals() {
   /* in case you want to delete everything */
+  forwardMinBias = 0;
+  previousMinBias = 0;
 
   if(kTemplatesLoaded)
   {
@@ -350,15 +354,31 @@ AnalysisWaveform* PolarityMachine::makeNoiseWaveformFromMinBias(int eventNumber,
 {
   //TODO make the output of this be 2048 points long or 2046 in awf form or change everything else to 1500 points
   d->getEvent(eventNumber, true);
-  if(current_N%2 == 0)
+  if(current_N%2 == 0) 
   {
-    for(int i = 0; i < (current_N/2) + 1; i++)
-      d->nextMinBiasEvent();
+    if(forwardMinBias != 0)
+    {
+      d->getEvent(forwardMinBias);
+    }
+    else 
+    {
+      for(int i = 0; i < offset/2; i++) d->nextMinBiasEvent();
+    }
+    d->nextMinBiasEvent();
+    forwardMinBias = d->header()->eventNumber;
   }
-  if(current_N%2 == 1)
+  else
   {
-    for(int i = 0; i < (current_N/2) + 1; i++)
-      d->previousMinBiasEvent();
+    if(previousMinBias != 0)
+    {
+      d->getEvent(previousMinBias);
+    }
+    else 
+    {
+      for(int i = 0; i < offset/2; i++) d->previousMinBiasEvent();
+    }
+    d->previousMinBiasEvent();
+    previousMinBias = d->header()->eventNumber;
   }
   FilterStrategy strat;
 
