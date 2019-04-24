@@ -116,6 +116,8 @@ class PolarityMachine
     TGraph* getCRWaveform(){return crWaveform ;}
     TGraph* getCorrelationGraph(){return correlationGraph ;}
 
+    std::string getNotchStr(){return fNotchStr ;}
+
   private:
     AnitaDataset* d;
     int length;

@@ -592,6 +592,7 @@ TGraph* PolarityMachine::hilbertWindow(AnalysisWaveform* wf, double window_size_
         max_ind = i;
       }
     }
+
   }
   else
   {
@@ -639,6 +640,23 @@ TGraph* PolarityMachine::hilbertWindow(AnalysisWaveform* wf, double window_size_
       max_ind = (abs(tempCDF->GetY()[max_ind] - target) > abs(tempCDF->GetY()[max_ind+1] - target)) ? max_ind -1 : max_ind;
     }
   }
+  
+  int counter_down = 0;
+  int counter_up = 0;
+  double val_at_max = wf->even()->GetY()[max_ind];
+  for(int i = max_ind; i < wf->Neven(); i++)
+  {
+    counter_up++;
+    if(val_at_max > 0 && wf->even()->GetY()[i] < 0) break; 
+    if(val_at_max < 0 && wf->even()->GetY()[i] > 0) break;
+  }
+  for(int i = max_ind; i >= 0; i--)
+  {
+    counter_down++;
+    if(val_at_max > 0 && wf->even()->GetY()[i] < 0) break; 
+    if(val_at_max < 0 && wf->even()->GetY()[i] > 0) break;
+  }
+  max_ind = (counter_up > counter_down) ? max_ind-counter_down : max_ind+counter_up;
 
   int window_edge = int(ceil(window_size_ns/(2*wf->deltaT())));
   TGraph* theOut = new TGraph(window_edge*2);
@@ -741,7 +759,7 @@ TH2D* PolarityMachine::runPolaritySimulation(int N, int eventNumber, double cr_p
 
 void PolarityMachine::makeSameSize(AnalysisWaveform* wf1, AnalysisWaveform* wf2)
 {
-  int n_target = (wf1->Neven() > wf1->Neven()) ? wf1->Neven() : wf2->Neven();
+  int n_target = (wf2->Neven() > wf1->Neven()) ? wf1->Neven() : wf2->Neven();
   if(wf1->Neven() != n_target)
   {
     TGraph g(n_target+2);
