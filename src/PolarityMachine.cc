@@ -19,6 +19,7 @@ PolarityMachine::PolarityMachine(int padX)
 
   d = new AnitaDataset(41);
   deconv = new AnitaResponse::AllPassDeconvolution;
+  clean_deconv = new AnitaResponse::CLEAN(1000, 0.02, 1, "(1./10.) * pow(x,2) * exp(-x/1.43)", 0,0);
   fNotchStr = "";
   inputWaveform = new TGraph;
   crWaveform = new TGraph;
@@ -55,6 +56,18 @@ void PolarityMachine::zeroInternals() {
 
   kTemplatesLoaded = false;
   return;
+}
+
+void PolarityMachine::setDeconvolutionMethod(AnitaResponse::DeconvolutionMethod* opt)
+{
+  delete deconv;
+  deconv = opt;
+}
+
+void PolarityMachine::setCLEANDeconvolution(AnitaResponse::DeconvolutionMethod* opt)
+{
+  delete clean_deconv;
+  clean_deconv = opt;
 }
 
 void PolarityMachine::fillNotchConfigs()
@@ -209,7 +222,9 @@ TH2D* PolarityMachine::generatePolarityMeasurements(int N, int eventNumber, doub
     double coherent_polarity = (test_coherent) ? testPolarity(metric, noisyWf, 0) : 0;
 
     //now deconvolve it and test the polarity of that
-    deconv->deconvolve(noisyWf->Nfreq(), noisyWf->deltaF(), noisyWf->updateFreq(), theImpTemplate->freq());
+
+    if(metric == 7) clean_deconv->deconvolve(noisyWf->Nfreq(), noisyWf->deltaF(), noisyWf->updateFreq(), theImpTemplate->freq());
+    else deconv->deconvolve(noisyWf->Nfreq(), noisyWf->deltaF(), noisyWf->updateFreq(), theImpTemplate->freq());
     double deco_polarity = testPolarity(metric, noisyWf, 1);
 
     h->Fill(coherent_polarity, deco_polarity);
@@ -259,6 +274,10 @@ double PolarityMachine::testPolarity(int metric, AnalysisWaveform* wf, bool deco
     double retVal = (maxVal + minVal) / (maxVal - minVal);
     delete gwf;
     return retVal;
+  }
+  else if(deconvolved && metric == 7)
+  {
+    return calculateCLEANPolarity(gwf);
   }
   else if(deconvolved && metric == 5)
   {
@@ -324,6 +343,42 @@ double PolarityMachine::testPolarity(int metric, AnalysisWaveform* wf, bool deco
   if(metric%2 == 1) return peak2sidelobe;
   if(abs(maxCorr) > abs(minCorr)) return 1;
   return -1;
+}
+
+double PolarityMachine::calculateCLEANPolarity(TGraph* gwf)
+{
+  int max_ind = 0; 
+  int min_ind = 0;
+  double max_val = 0;
+  double min_val = 0;
+  for(int i = 0; i < gwf->GetN(); i++)
+  {
+    if(gwf->GetY()[i] > max_val)
+    {
+      gwf->GetY()[i] = max_val;
+      i = max_ind;
+    }
+    if(gwf->GetY()[i] < min_val)
+    {
+      gwf->GetY()[i] = min_val;
+      i = min_ind;
+    }
+  }
+  double maxovermin = fabs(max_val)/fabs(min_val);
+  double minovermax = fabs(min_val)/fabs(max_val);
+  maxovermin = TMath::Min(maxovermin, minovermax);
+  double retval = 0;
+  if(maxovermin > .5)
+  {
+    //choose the first peak if they are similar in size
+    retval = (max_ind < min_ind) ? 1 : -1;
+  }
+  else 
+  {
+    //choose the largest peak if they are far apart in size 
+    retval = (fabs(max_val) < fabs(min_val)) ? -1 : 1;
+  }
+  return retval;
 }
 
 double PolarityMachine::fourierPhasePolarity(int window_type, AnalysisWaveform* wf)

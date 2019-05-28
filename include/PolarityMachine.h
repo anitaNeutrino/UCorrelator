@@ -56,7 +56,8 @@ class PolarityMachine
     AnalysisWaveform* CRtemplate_deconv;
     AnalysisWaveform* CRtemplate_deconv_windowed;
 
-    void setDeconvolutionMethod(AnitaResponse::DeconvolutionMethod* opt) { deconv = opt ;}
+    void setDeconvolutionMethod(AnitaResponse::DeconvolutionMethod* opt);
+    void setCLEANDeconvolution(AnitaResponse::DeconvolutionMethod* opt);
     void setWindowSizeNs(double opt) { windowSizeNs = opt ;}
     void setPadFactor(int opt) { padFactor = opt ;}
     void setTestCoherent(bool opt) { test_coherent = opt ;}
@@ -70,10 +71,14 @@ class PolarityMachine
      *    4 is Andres' metric of (max+min)/(max-min) of wf (no correlation)
      *    5 is the Peter metric (windows differently and does a fixed point correlation about a fiducial)
      *    6 is the fourier phase metric
+     *    7 is CLEAN
      * Will add more as i think of them */
 
     double testPolarity(int metric, AnalysisWaveform* wf, bool deconvolved);
-   
+
+    /* a function to calculate the polarity given by clean components, still fleshing this out 
+     * returns +/- 1 */
+    double calculateCLEANPolarity(TGraph* gwf);
     
     /* wf is the waveform you want to test.
      * Windowing types are as follows:
@@ -137,6 +142,7 @@ class PolarityMachine
     std::vector<std::string> notchConfigs;
 
     AnitaResponse::DeconvolutionMethod * deconv;
+    AnitaResponse::DeconvolutionMethod * clean_deconv;
     UCorrelator::WaveformCombiner wfcomb;
 
     void fillNotchConfigs();
