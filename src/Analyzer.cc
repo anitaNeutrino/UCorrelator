@@ -841,7 +841,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 
   TGraphAligned power(pwr->GetN(),pwr->GetX(),pwr->GetY()); 
 
-  if (cfg->use_coherent_spectra) power.dBize(); 
+  if (!cfg->use_coherent_spectra) power.dBize(); 
 
   if (power_filter)
   {
