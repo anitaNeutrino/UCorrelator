@@ -74,8 +74,12 @@ namespace UCorrelator
         ResponseHarmSignalOnly, ///Harm's signal chain only thing (currently used in icemc) 
         ResponseTUFF, /// A3 response with TUFFs convolved in
         ResponseA4NoNotches, /// A4 response without the TUFFs
-        ResponseA4 /// A4 response with TUFFs convolved in
+        ResponseA4, /// A4 response with TUFFs convolved in
+        ResponseCustomString // make sure you set response_string; 
+
       } response_option;  
+
+      const char * response_string; 
 
       static const char * getResponseString(ResponseOption_t opt); 
       int response_npad; //number of times to pad (in freq domain) the response 

@@ -62,7 +62,7 @@ static int instance_counter = 0;
   UCorrelator::Analyzer::Analyzer(const AnalysisConfig * conf, bool interactive_mode) 
 : cfg(conf ? conf: &defaultConfig),
   corr(cfg->correlator_nphi,0,360,  cfg->correlator_ntheta, -cfg->correlator_theta_lowest, cfg->correlator_theta_highest, cfg->use_bin_center, cfg->scale_by_cos_theta, cfg->baseline_weight, cfg->correlation_gain_correction ) , 
-  responses(AnalysisConfig::getResponseString(cfg->response_option), cfg->response_npad, cfg->deconvolution_method), 
+  responses(cfg->response_option == AnalysisConfig::ResponseCustomString ? cfg->response_string : AnalysisConfig::getResponseString(cfg->response_option), cfg->response_npad, cfg->deconvolution_method), 
   wfcomb(cfg->combine_nantennas, cfg->combine_npad, true, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
   wfcomb_xpol(cfg->combine_nantennas, cfg->combine_npad, true, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 
   wfcomb_filtered(cfg->combine_nantennas, cfg->combine_npad, false, cfg->response_option!=AnalysisConfig::ResponseNone, &responses), 

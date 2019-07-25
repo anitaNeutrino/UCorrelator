@@ -167,6 +167,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   noise_estimate_t1 = 100; 
 
   response_option = ResponseNone; 
+  response_string = 0; 
   response_npad = 50; 
 
   max_mean_power_filtered = 1e6; 
@@ -239,7 +240,8 @@ const char * UCorrelator::AnalysisConfig::getPeakFindingString(FinePeakFindingOp
 
 const char * UCorrelator::AnalysisConfig::getResponseString(ResponseOption_t opt) 
 {
-  return responses[opt]; 
+
+  return opt == ResponseCustomString ? 0 :  responses[opt]; 
 }
 
 
