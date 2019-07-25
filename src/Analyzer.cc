@@ -811,7 +811,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 
   TGraph distance_cdf; 
   info->impulsivityMeasure = impulsivity::impulsivityMeasure(wf, &distance_cdf); 
-//  info->bandwidthMeasure = bandwidth::bandwidthMeasure(wf); 
+  info->bandwidthMeasure = bandwidth::lowness(wf); 
 
   //fill in narrowest widths
   for (int iw = 0; iw < AnitaEventSummary::numFracPowerWindows; iw++)
