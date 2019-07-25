@@ -196,6 +196,8 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
   delay_to_center = true;
   r_time_shift_correction = true; 
   simulation_time_shift_correction = false; 
+  cross_correlate_hv = 0; 
+
   use_forced_trigger_rms = true; 
   
   only_use_usable = false;

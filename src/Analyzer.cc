@@ -802,7 +802,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
     info->power_10_10 = 0; 
   }
 
-  polarimetry::StokesAnalysis stokes( pol == AnitaPol::kHorizontal ? wf : xpol_wf,  pol == AnitaPol::kHorizontal ? xpol_wf: wf); 
+  polarimetry::StokesAnalysis stokes( pol == AnitaPol::kHorizontal ? wf : xpol_wf,  pol == AnitaPol::kHorizontal ? xpol_wf: wf, cfg->cross_correlate_hv); 
   info->I = stokes.getAvgI(); 
   info->Q = stokes.getAvgQ(); 
   info->U = stokes.getAvgU(); 
