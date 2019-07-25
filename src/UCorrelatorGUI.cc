@@ -21,9 +21,6 @@ UCorrelator::gui::Map::Map(const TH2D & hist, const FilteredAnitaEvent * ev, Wav
   SetDirectory(0); 
 
   /** figure out sun position */ 
-
-
-
   double phi_sun = sum->sun.phi;
   double theta_sun = -sum->sun.theta; 
   phi_sun = FFTtools::wrap(phi_sun,360); 
@@ -31,6 +28,17 @@ UCorrelator::gui::Map::Map(const TH2D & hist, const FilteredAnitaEvent * ev, Wav
   specials.push_back(TMarker(phi_sun,theta_sun,7)); 
 
 
+  /** figure out true -neutrino- position (SOURCE SEARCH) **/
+  bool sourceSearchOption = true;
+  if (sourceSearchOption == true)
+    {
+      double phi_neutrino = sum->mc.nuPhi;
+      double theta_neutrino = -sum->mc.nuTheta;
+      TMarker sourceSearch(phi_neutrino,theta_neutrino,23);
+      sourceSearch.SetMarkerColor(3);
+      specials.push_back(sourceSearch); 
+    }
+  
   if (sum->mc.phi >-999)
   {
 //    printf("MC position: phi=%g theta=%g\n",sum->mc.phi, sum->mc.theta ); 
