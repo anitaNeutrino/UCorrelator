@@ -13,7 +13,7 @@ UCorrelator::Analyzer *testDeconv(int event = 72164985)
 
 
   UCorrelator::AnalysisConfig cfg; 
-  cfg.nmaxima = 2; 
+  cfg.nmaxima = 1; 
   cfg.response_option = UCorrelator::AnalysisConfig::ResponseCustomString; 
   cfg.response_string = "newA4responses";
   cfg.deconvolution_method = new AnitaResponse::CLEAN; 
