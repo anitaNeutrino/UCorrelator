@@ -13,6 +13,7 @@
 #pragma link C++ namespace UCorrelator::spectrum;
 #pragma link C++ namespace UCorrelator::image;
 
+#pragma link C++ class UCorrelator::KDE2D;
 #pragma link C++ class UCorrelator::peakfinder::FineMaximum;
 #pragma link C++ class UCorrelator::peakfinder::RoughMaximum;
 #pragma link C++ class UCorrelator::AntennaPositions;
