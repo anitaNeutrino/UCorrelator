@@ -595,8 +595,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
 
    double * dalloc = new double[2 *nbins_used]; 
-   double * vals_to_fill = dalloc; 
-   double * times_to_fill = dalloc + nbins_used; 
+   double * __restrict__ vals_to_fill = dalloc; 
+   double * __restrict__ times_to_fill = dalloc + nbins_used; 
 
   //TODO vectorize this
    for (int i = 0; i < nbins_used; i++)
@@ -630,17 +630,26 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
 
 
 
+   double * __restrict__ the_arr = the_hist->GetArray();
+   double * __restrict__ the_norm_arr = the_norm->GetArray();
+
    for (int bi = 0; bi < nbins_used; bi++)
    {
        double val = vals_to_fill[bi]; 
        int bin = bins_to_fill[bi]; 
-       the_hist->GetArray()[bin]+= gainSigma && !center_point ? val * gain_weights[bi] : val; 
+
+       if (gainSigma && !center_point)
+       {
+         the_arr[bin] += val * gain_weights[bi];
+         the_norm_arr[bin] += gain_weights[bi];
+       }
+       else
+       {
+         the_arr[bin]+=  val; 
+         the_norm_arr[bin]+= 1;
+       }
    }
-   for (int bi = 0; bi < nbins_used; bi++)
-   {
-       int bin = bins_to_fill[bi]; 
-       the_norm->GetArray()[bin]+=  gainSigma && !center_point ? gain_weights[bi] : 1;
-   }
+
 
    delete [] alloc; 
    delete [] dalloc; 
