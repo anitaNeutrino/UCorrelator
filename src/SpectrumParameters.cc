@@ -33,7 +33,7 @@ void setupFitters()
   fitters = new TLinearFitter * [nthreads]; 
   for (int i = 0; i < nthreads; i++)
   {
-    fitters[i] = new TLinearFitter(1,"1++x","x"); 
+    fitters[i] = new TLinearFitter(1,"1++x",""); 
     double dummy_x[5] = {0}; 
     double dummy_y[5] = {0}; 
     /* !@#!DSAFSD #!@$ !@#!  %!@$ */ 

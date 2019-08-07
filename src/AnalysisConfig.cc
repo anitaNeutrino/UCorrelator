@@ -161,7 +161,7 @@ UCorrelator::AnalysisConfig::AnalysisConfig(const char * config)
 
   bw_ndb = 6; //let the bandwidth search stop immediately
   spectral_fit_start = 0.22; 
-  spectral_fit_stop =1.2; 
+  spectral_fit_stop =0.55; 
 
   noise_estimate_t0 = 70; 
   noise_estimate_t1 = 100; 
