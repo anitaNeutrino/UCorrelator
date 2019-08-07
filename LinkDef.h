@@ -44,6 +44,8 @@
 #pragma link C++ class UCorrelator::PointingResolutionParSNRModel;
 #pragma link C++ class UCorrelator::ConstantPointingResolutionModel;
 #pragma link C++ class UCorrelator::HeadingErrorEstimator;
+#pragma link C++ class UCorrelator::EASFitter;
+#pragma link C++ class UCorrelator::EASFitResult;
 
 
 #pragma link C++ class UCorrelator::gui::Map+; 
