@@ -684,9 +684,9 @@ UCorrelator:: TimeDependentAverageLoader::TimeDependentAverageLoader(const char 
 }
 
 
+static TMutex mut; 
 const UCorrelator::TimeDependentAverage* UCorrelator::TimeDependentAverageLoader::avg(double t) const
 {
-  static TMutex mut; 
   TLockGuard l(&mut); 
 
 //  printf("%g\n",t); 
