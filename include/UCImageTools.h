@@ -46,6 +46,16 @@ namespace UCorrelator
 
     TH1 * getPctileProjection(const TH2 * h, int axis = 1, double pct = 0.5, bool ignoreEmpty = true, const TH1 * norm = 0); 
 
+    /** Converts a histogram to percent below level */ 
+    TH2 * makePctileHist(const TH2 * h, const char * name = "_pct", bool invert = false,  int npctilebins = 1000); 
+    
+    enum AreaMode 
+    {
+      AreaMode_Contour, 
+      AreaMode_BinCartesian,
+      AreaMode_BinSpherical
+    }; 
+//    double getAreaAbove(const TH2 *h, double val, int mode) 
 
     enum InterpolationType
     {

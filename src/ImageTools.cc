@@ -371,3 +371,56 @@ double UCorrelator::image::interpolate(const TH2 *h, double x, double y, Interpo
 
 }
 
+
+TH2 * UCorrelator::image::makePctileHist(const TH2 * h, const char * name , bool invert, int npctilebins) 
+{
+
+  TH1D aux("aux_pctile_hist", "blah", npctilebins, h->GetMinimum(), h->GetMaximum()); 
+
+
+  for (int i = 1; i <= h->GetNbinsX(); i++)
+  {
+    for (int j = 1; j <= h->GetNbinsY(); j++)
+    {
+      aux.Fill(h->GetBinContent(i,j), h->GetBinContent(i,j)); 
+    }
+  }
+
+  aux.Scale(1./aux.Integral()); 
+  TH1 * cum = aux.GetCumulative(invert); 
+
+
+  TString hist_name;
+  if (name[0]=='_') hist_name.Form("%s%s", h->GetName(),name); 
+  else hist_name = name;
+  TString hist_title;
+  hist_title.Form("Pctiles of %s", h->GetTitle());
+  TH2F* hout = new TH2F(hist_name.Data(), hist_title.Data(),
+      h->GetNbinsX(), h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(), 
+      h->GetNbinsY(), h->GetYaxis()->GetXmin(), h->GetYaxis()->GetXmax()); 
+
+  hout->SetEntries(h->GetEntries()); 
+
+  for (int i = 1; i <= h->GetNbinsX(); i++)
+  {
+    for (int j = 1; j <= h->GetNbinsY(); j++)
+    {
+      double val = h->GetBinContent(i,j); 
+      double pctile = cum->Interpolate(val); 
+      if (invert) pctile = 1-pctile;
+      hout->SetBinContent(i,j, pctile); 
+    }
+  }
+
+  delete cum; 
+
+  hout->GetXaxis()->SetTitle(h->GetXaxis()->GetTitle());
+  hout->GetYaxis()->SetTitle(h->GetYaxis()->GetTitle());
+  hout->GetZaxis()->SetTitle("Percentile");
+  hout->SetMaximum(1); 
+  hout->SetMinimum(0); 
+
+  return hout; 
+
+}
+
