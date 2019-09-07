@@ -1,0 +1,30 @@
+### This is am example TMVA configuration file for use by e.g. macro/{makeTMVATrees.C, runTMVA.C, fillTMVA.C} 
+### The format for this file is : 
+###     varName @ varExpr @ Type=F, @ Spectator = 0
+###     varExpr is a tree expression
+###     Type can be F or I , but beware that the TMVA-produced trees in the output ROOT file (e.g. TrainTree) will always make things floats regardless
+###     Spectators are NOT used in training, but can be used in cuts or for diagnostic / plotting  purposes 
+
+
+###  Define some training variables, since these are floats and not spectators, you can leave out the last two fields 
+deconvHilbertPeak @ deconvolved_filtered.peakHilbert[][]
+deconvImpulsivity @ deconvolved_filtered.impulsivityMeasure[][]
+peakPowerDifference @  deconvolved_filtered[][].peakHilbert/sqrt(deconvolved_filtered[][].totalPower)  - coherent_filtered[][].peakHilbert /sqrt(coherent_filtered[][].totalPower) 
+
+#Define some spectators, All of these need a 1 in the last field, some are integers 
+run @ run @ I @ 1 
+eventNumber @ eventNumber @ I @ 1 
+RFtrigger @ flags.isRF @ I @ 1 
+HPolTrigger @ flags.isHPolTrigger @ I @ 1 
+VPolTrigger @ flags.isVPolTrigger @ I @ 1 
+weight @ mc.weight @ F @ 1 
+energy @ mc.energy @ F @ 1 
+pointsToMC @ abs(FFTtools::wrap(peak.theta-mc.theta,360,0)) < 3.5 && abs(FFTtools::wrap(peak.phi-mc.phi,360,0)) < 5.5  @ I @ 1 
+isMostImpulsive @ summary.mostImpulsivePolAsInt() == Iteration$ / 5 && ( Iteration$ % 5) == summary.mostImpulsivePeak()  @ I @ 1
+theta @ peak.theta[][]  @ F @ 1
+isWais @ mc.energy == 0 && flags.pulser && run >=332 && run <= 356 && abs(FFTtools::wrap(peak.phi-wais.phi,360,0)) < 3 && abs(peak.theta - wais.theta) < 2 && Iteration$ < 5 @ I @ 1 
+
+#this one is silly, but it's used so that you can unambiguously define the event number in TMVA's output trees
+eventNumber_nnn @ eventNumber % 1000 @ I @ 1 
+
+

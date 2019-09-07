@@ -1,0 +1,75 @@
+
+int opt 
+
+
+
+void doLDB(int run = 135, int max = 0, int filter_opt = 0)
+{
+
+  FFTtools::loadWisdom("wisdom.dat"); 
+
+
+  AnitaDataset d(run); 
+  UCorrelator::AnalysisConfig cfg; 
+  UCorrelator::Analyzer analyzer(&cfg); 
+
+  TString outname; 
+  if (max) outname.Form("wais/wais_hpol_%d_max_%d%s.root",run,max, sine_subtract ? "_sinsub" : "" ); 
+  else outname.Form("wais/wais_hpol_%d%s.root",run, sine_subtract ? "_sinsub" : "" ); 
+
+  TFile ofile(outname, "RECREATE"); 
+  TTree * tree = new TTree("wais","WAIS Hpol"); 
+  AnitaEventSummary * sum = new AnitaEventSummary; 
+
+
+  FilterStrategy strategy (&ofile); 
+  if (sine_subtract) 
+  {
+    double fmins[1] = {0.2}; 
+    double fmaxs[1] = {1.3}; 
+    strategy.addOperation(new UCorrelator::SineSubtractFilter(0.05, 0, 4,1,fmins,fmaxs)); 
+    strategy.addOperation(new UCorrelator::SimplePassBandFilter(0.2.1.3)); 
+  }
+  else
+  {
+    UCorrelator::applyAbbysFilterStrategy(&strategy); 
+  }
+
+//  printf("Strategy applied!\n"); 
+
+  RawAnitaHeader *hdr; 
+  UsefulAdu5Pat *patptr; 
+  tree->Branch("summary",&sum); 
+  tree->Branch("header",&hdr); 
+  tree->Branch("pat",&patptr); 
+
+  int ndone = 0; 
+  for (int i =0 ; i < d.N(); i++)
+  {
+
+    d.getEntry(i); 
+    printf("----(%d)-----\n",i); 
+
+    UsefulAdu5Pat pat(d.gps()); 
+
+    if (UCorrelator::isLDBHPol(&pat, d.header()) || UCorrelator::isLDBVpol(&pat, d.header()))
+    {
+      printf("Processing event %d (%d)\n",d.header()->eventNumber,ndone); 
+      FilteredAnitaEvent ev(d.useful(), &strategy, d.gps(), d.header()); 
+      analyzer.analyze(&ev, sum); 
+      ofile.cd(); 
+      header = d.header(); 
+      patptr = &pat; 
+      tree->Fill(); 
+      ndone++; 
+    }
+
+    if (max && ndone > max) break; 
+
+  }
+
+  ofile.cd(); 
+  tree->Write(); 
+
+  FFTtools::saveWisdom("wisdom.dat"); 
+}

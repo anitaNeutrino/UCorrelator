@@ -1,0 +1,111 @@
+/** 
+
+\mainpage 
+
+\section intro Introduction 
+
+UCorrelator is the UChicago ANITA analysis software. It is implemented in terms
+of the AnitaAnalysisFramework. The primary author is Cosmin, and has heritag
+from Abby's MyCorrelator code, although much has beline implemented
+
+UCorrelator is intended to be both fast and easily adaptable, two features
+often at odds. It is compiled as a shared library which can then be leverated
+by ROOT macros or auxilliary programs. Probably the fastest way to learn how to
+use it is to look at some of the driver programsk 
+
+
+\section install Installation and Configuration 
+
+UCorrelator relies on ROOT, libRootFftwWrapper (the git version),  and
+eventReaderRoot, anitaEventCorrelator, and AnitaAnalysisFramework. It will look
+for necessary includes and libraries in ANITA_UTIL_INSTALL_DIR as well as the
+standard locations. It is fully integrated into anitaBuildTool so that is
+usually the easiest way to use it. 
+
+A number of compilation options exist and can be accessed via e.g. ccmake or
+make configure . Right now, the most important to pay attention to is OpenMP
+support. OpenMP is a pragma-based multithreading paradigm, which UCorrelator
+can use to make things faster in situations where enough cores are available.
+The number of cores used is influenced by the environmental variable
+OMP_NUM_THREADS. 
+
+UCorrelator has exclusively been developed on Linux with fairly recent versions
+of gcc. If it does not work on your system, let me know. 
+
+\section highlevel High-Level Description
+
+ANITA waveforms are filtered to remove spurious CW. Then, an interferometric
+map is created, where for each incoming angle, the signals are combined as if
+there was a plane wave coming from that direction. Peaks are found, and a more
+detailed correlation map is made around the peaks, to find more precise direction. 
+
+For each peak, a coherent waveform is created and things about it are
+calculated. We also figure out where on the continent (if anywhere) the event
+points to. At some point in the future, system response will be deconvolved and more things
+will be calculated.
+
+
+\section org Implementation 
+
+In keeping with the AnitaAnalysis framework, UCorrelator is separated into a
+number of filters that are used to create FilteredAnitaEvents and an Analyzer
+that processes a FilteredAnitaEvent into an AnitaEventSummary. 
+
+\subsection conventions Conventions
+
+  - To avoid polluting the global namespace, everything lives inside the
+    UCorrelator namespace. 
+  - Frequencies are in GHz and times are in nanoseconds. Usually. I think. 
+  - The sign convention for elevation angle is ...fluid. Internally, up is
+    positive makes more sense, but quantities are saved with inverted sign to
+    attempt to conform with the legacy of MyCorrelator
+
+\subsection filters Filters
+
+Implemented filters are inside include/UCFilters.h
+
+A user-friendly way of adding the default strategy is 
+\verbatim
+FilterStrategy strategy; 
+UCorrelator::fillStrategyWithKey(&strategy,"sinsub_5_3_ad_2"); 
+\endverbatim
+or 
+
+\verbatim
+FilterStrategy * strategy = UCorrelator::getStrategyWithKey("sinsub_5_3_ad_2"); 
+
+\endverbatim
+
+Adaptive filters like the default greatly benefit from having
+UCORRELATOR_SPECAVG_DIR defined to cache the necessary spectrum averages (about
+11 MB per run). The spectrum averages are created on demand, but if
+UCORRELATOR_SPECAVG_DIR isn't defined, they won't be persisted. You may also
+download all the averages by doing something like :
+
+\verbatim
+for i in $(seq 130 1 439); do curl http://users.rcc.uchicago.edu/~cozzyd/specavg/${i}_60.root > ${i}_60.root; done
+\endverbatim
+
+
+
+\subsection analyzer Analyzer
+
+The UCorrelator::Analyzer takes a FilteredAnitaEvent (that has probably has
+been filtered with some strategy) and creates an AnitaEventSummary based on it.
+Its behavior is influenced by UCorrelator::AnalysisConfig, which is meant to
+include all useful configuration options. Analyzer mostly plumbs different
+other parts of UCorrelator together, which may be used separately for advanced
+purposes. These include things like UCorrelator::Correlator, which does most of
+the interferometry, UCorrelator::WaveformCombiner to combine waveforms,
+UCorrelator::PeakFinder to identify peaks in correlation maps, etc. 
+
+The Ucorrelator::Analyzer may also be used in interactive mode, where one can
+access internal parameters for diagnostic or exploratory purposes. 
+
+\section todo TODO 
+
+Short-term priorities include: 
+ - Update the documentation
+ - Implement clustering
+
+*/
