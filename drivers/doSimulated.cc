@@ -31,6 +31,8 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
   cfg.fill_blast_fraction = true; 
   cfg.combine_nantennas = 15; 
   cfg.zoomed_nant = 15; 
+  cfg.use_coherent_spectra = true; 
+  cfg.cross_correlate_hv = 1; 
 
   UCorrelator::Analyzer analyzer(&cfg); 
 
