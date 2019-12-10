@@ -374,6 +374,10 @@ double UCorrelator::image::interpolate(const TH2 *h, double x, double y, Interpo
 
 TH2 * UCorrelator::image::makePctileHist(const TH2 * h, const char * name , bool invert, int npctilebins) 
 {
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,4,0)
+  fprintf(stderr,"makePctileHist requires at least ROOT 6.04\n"); 
+  return 0; 
+#else
 
   TH1D aux("aux_pctile_hist", "blah", npctilebins, h->GetMinimum(), h->GetMaximum()); 
 
@@ -421,6 +425,7 @@ TH2 * UCorrelator::image::makePctileHist(const TH2 * h, const char * name , bool
   hout->SetMinimum(0); 
 
   return hout; 
+#endif
 
 }
 
