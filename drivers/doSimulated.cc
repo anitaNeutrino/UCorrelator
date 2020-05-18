@@ -29,10 +29,11 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
   cfg.deconvolution_method = new AnitaResponse::AllPassDeconvolution; 
 //  cfg.max_peak_trigger_angle = 90; 
   cfg.fill_blast_fraction = true; 
+  cfg.delay_to_center=true; 
   cfg.combine_nantennas = 15; 
   cfg.zoomed_nant = 15; 
   cfg.use_coherent_spectra = true; 
-  cfg.cross_correlate_hv = 1; 
+  cfg.cross_correlate_hv = 0.0; 
 
   UCorrelator::Analyzer analyzer(&cfg); 
 
@@ -45,6 +46,7 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
 
 
 
+  AnitaEventSummary::useProbWeight(1); 
 
   TFile ofile(outname, "RECREATE"); 
   TTree * tree = new TTree("simulation"," Simulated events"); 

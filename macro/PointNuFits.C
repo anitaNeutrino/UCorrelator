@@ -10,9 +10,11 @@
 void makePointingTrees()
 {
   TChain c("simulation"); 
-  c.Add("simulated_hooper/*.root"); 
+  c.Add("simulated_ps/222/*.root"); 
+  c.Add("simulated_ps/19/*.root"); 
+  c.Add("simulated_ps/19.5/*.root"); 
 
-  TFile of("pointing_training.root","RECREATE"); 
+  TFile of("pointing_training_ps.root","RECREATE"); 
 
   AnitaTMVA::MVAVarSet phi_vars("phi_point.tmva"); 
   AnitaTMVA::MVAVarSet theta_vars("theta_point.tmva"); 
@@ -32,10 +34,10 @@ void doPointing()
 {
   TChain dphic("dphi"); 
   TChain dthetac("dtheta"); 
-  dphic.Add("pointing_training.root");
-  dthetac.Add("pointing_training.root");
+  dphic.Add("pointing_training_ps.root");
+  dthetac.Add("pointing_training_ps.root");
 
-  TFile fout("pointingTMVA.root","RECREATE"); 
+  TFile fout("pointingTMVA_ps.root","RECREATE"); 
 
   TMVA::Factory * f= new TMVA::Factory("pointing",&fout,"V:Color:DrawProgressBar:AnalysisType=Regression"); 
 
@@ -54,7 +56,7 @@ void doPointing()
   theta_vars.setUpData(dl_theta);
   phi_vars.setUpData(dl_phi);
 
-  TCut cut("(isMostImpulsive && pointsToMC && weight > 1e-6)"); 
+  TCut cut("(isMostImpulsive && pointsToMC)"); 
   dl_phi->AddCut(cut); 
   dl_theta->AddCut(cut); 
 

@@ -42,8 +42,9 @@ void makeTMVATrees(const char * dir, const char * tree_name, int start_run, int 
     AnitaTMVA::MVAVarSet varset("tree_vars.tmva"); 
 
     TString treefilename; 
-    system("mkdir -p thermalTrees"); 
-    treefilename.Form("thermalTrees/%s_%d-%d_%s.root",basename(dir),current_run,end, filter); 
+    TString sanitized_dir(dir); 
+    sanitized_dir.ReplaceAll("/","_"); 
+    treefilename.Form("thermalTrees/%s_%d-%d_%s.root",sanitized_dir.Data(),current_run,end, filter); 
 
     TFile newOut(treefilename.Data(),"RECREATE"); 
     TTree * tree = AnitaTMVA::makeTMVATree(nworkers, (TTree**) &c[0], &newOut, tree_name, varset, cut); 

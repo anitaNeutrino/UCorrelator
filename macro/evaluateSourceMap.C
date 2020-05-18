@@ -29,7 +29,7 @@ int combineSourceMaps(const char * dir, const char * output)
       
       UCorrelator::ProbabilityMap * m_w = (UCorrelator::ProbabilityMap*) f->Get("map_weighted");
       UCorrelator::ProbabilityMap * m_u = (UCorrelator::ProbabilityMap*) f->Get("map_unweighted");
-      if (!m_w || !m_u) continue; 
+      if (!m_w && !m_u) continue; 
 
       if (!map_w)
       {
@@ -54,8 +54,10 @@ int combineSourceMaps(const char * dir, const char * output)
   }
 
   outf.cd(); 
-  map_w->Write("map_weighted"); 
-  map_u->Write("map_unweighted"); 
+  if (map_w) 
+    map_w->Write("map_weighted"); 
+  if (map_u) 
+    map_u->Write("map_unweighted"); 
 
   return 0;
 }
@@ -77,10 +79,11 @@ UCorrelator::ProbabilityMap::Params * map_params()
   Refraction::SphRay * ref = new Refraction::SphRay; 
 
   UCorrelator::ProbabilityMap::Params *p = new UCorrelator::ProbabilityMap::Params; 
-  p->refract = ref; 
+//  p->refract = ref; 
   p->seg = g; 
   p->point = m; 
   p->collision_detection = false; 
+//  p->verbosity = 3; 
  
 
   return p; 
@@ -91,7 +94,7 @@ UCorrelator::ProbabilityMap::Params * map_params()
 
 
 double cutoff = 3; 
-const char * weight = "((F > 3.25) + (F < 3.25 && F > 2) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && isMostImpulsive && !payloadBlast && MaxPeak < 1000 && theta < 40 && ( (HPolTrigger && iteration < 5) || (VPolTrigger && iteration > 4))  && !isPulser  )";
+const char * weight = "((F > 3.25) + (F < 3.25 && F > 0) * exp (-((abs(F-3.25))^0.5879) / 0.4231 )) * ( F > 0 && theta > 3 && isMostImpulsive && !payloadBlast && MaxPeak < 1000 && theta < 40 && ( (HPolTrigger && iteration < 5) || (VPolTrigger && iteration > 4))  && !isPulser  )";
 
 
 void addRuns(TChain & c, int start_run, int end_run)
@@ -198,18 +201,17 @@ int removeEvents(const char * maps_file = "all_source_maps.root",
 
 
 int evaluateSourceMap(int start_run = 300, int end_run = 330, 
-                      bool mc = false, bool decimated = true,
+                      const char * mc= 0,  bool decimated = true,
                       const char * prefix = "source_maps_eval/",
                       const char * infile="all_source_maps.root",
-                      const char * key = "map_weighted_culled", 
-                      const char * removed_events_file = "removed_events.txt", 
+                      const char * key = "map_weighted", 
+                      const char * removed_events_file = "", 
                       bool weighted = true, bool vpol_only = false ) 
 {
-  TChain c(mc ? "simulation":"anita3"); 
+  TChain c(mc? "simulation":"anita3"); 
   if (mc) 
   {
-//    c.Add("thermalTrees/simulated*.root"); 
-    c.Add("thermalTrees/simulated*.root"); 
+    c.Add(TString::Format("thermalTrees/%s*.root",mc)); 
     decimated = false; 
   }
   else
@@ -217,17 +219,20 @@ int evaluateSourceMap(int start_run = 300, int end_run = 330,
     addRuns(c,start_run,end_run); 
   }
 
-  TFile of(TString::Format("%s%d_%d_%s.root",prefix,start_run,end_run, decimated ? "10pct" : mc ? "sim" : "full" ),"RECREATE"); 
+  TFile of(TString::Format("%s%d_%d_%s.root",prefix,start_run,end_run, decimated ? "10pct" : mc? mc: "full" ),"RECREATE"); 
 
   TTree * ot = new TTree("overlap","Overlap"); 
   double O; 
   double S; 
   int run;
-  int event;
+  UInt_t event;
   int pol; 
   double theta; 
   double base_sum; 
   double F; 
+  double mcEasting = 0; 
+  double mcNorthing = 0; 
+  double mcSNR = 0; 
   double polangle; 
   double wgt = 1; 
   double mcE = 0; 
@@ -252,6 +257,9 @@ int evaluateSourceMap(int start_run = 300, int end_run = 330,
   ot->Branch("max_base_p",&max_base_p); 
   ot->Branch("weight",&wgt); 
   ot->Branch("mcE",&mcE); 
+  ot->Branch("mcEasting",&mcEasting); 
+  ot->Branch("mcNorthing",&mcNorthing); 
+  ot->Branch("mcSNR",&mcSNR); 
   ot->Branch("peak",&peak); 
   ot->Branch("removed",&removed); 
 
@@ -259,7 +267,7 @@ int evaluateSourceMap(int start_run = 300, int end_run = 330,
   UCorrelator::ProbabilityMap * map = (UCorrelator::ProbabilityMap*) f.Get(key); 
   UCorrelator::ProbabilityMap * source_map = map; //for mc 
   UCorrelator::ProbabilityMap::Params * map_pars = map_params(); 
-  int n = c.Draw("run:eventNumber:iteration:F",  TCut(TString::Format("(%s) * (run >= %d && run <= %d)", weight,start_run,end_run)) , "goff" ); 
+  int n = c.Draw("run:entry:iteration:F",  TCut(TString::Format("(%s) * (run >= %d && run <= %d)", weight,start_run,end_run)) , "goff" ); 
 
   std::vector<std::vector<double> > counts(10, std::vector<double> (map->segmentationScheme()->NSegments())); 
 
@@ -277,10 +285,11 @@ int evaluateSourceMap(int start_run = 300, int end_run = 330,
   int loaded_run = 0; 
   TFile * sumfile = 0; 
   TTree * sumtree = 0; 
+  TTree * truthtree = 0;
   AnitaDataset * d = 0; 
   for (int i = 0; i < n; i++) 
   {
-    run = c.GetV1()[i]; 
+    run = (int) c.GetV1()[i]; 
     if (run!= loaded_run)
     {
         if (sumfile) delete sumfile; 
@@ -290,18 +299,25 @@ int evaluateSourceMap(int start_run = 300, int end_run = 330,
         {
           d = new AnitaDataset(run,true); 
         }
+        else if (mc) 
+        {
+          d = new AnitaDataset(run,false, WaveCalType::kDefault, AnitaDataset::ANITA_MC_DATA); 
+        }
 
-        sumfile = new TFile(TString::Format("%s/%d_sinsub_10_3_ad_2.root", mc ? "simulated_kotera_max" : "a3all",run));; 
+        sumfile = new TFile(TString::Format("%s/%d_sinsub_10_3_ad_2.root", mc ? mc : "a3all",run));; 
         gROOT->cd(); 
         sumtree = (TTree*) sumfile->Get(mc ? "simulation" : "anita3"); 
         sumtree->SetBranchAddress("summary",&sum); 
         sumtree->SetBranchAddress("pat",&gps); 
-        sumtree->BuildIndex("eventNumber"); 
         loaded_run =run; 
     }
       
-    event = int(c.GetV2()[i]); 
+    int entry = int(c.GetV2()[i]); 
 
+
+    int sument = sumtree->GetEntry(entry); 
+    event = sum->eventNumber;
+    printf("%d %u\n", sument,event); 
 
     if (decimated)
     {
@@ -312,14 +328,13 @@ int evaluateSourceMap(int start_run = 300, int end_run = 330,
     }
 
     S = c.GetW()[i]; 
-    sumtree->GetEntryWithIndex(event); 
     pol = int(c.GetV3()[i]) / 5; 
     peak = int(c.GetV3()[i]) % 5; 
     polangle = 90/TMath::Pi() * TMath::ATan2(sum->deconvolved_filtered[pol][peak].max_dU, sum->deconvolved_filtered[pol][peak].max_dQ); 
     F = c.GetV4()[i]; 
     theta = sum->peak[pol][peak].theta; 
 
-    removed = (removed_events && removed_events->count(event));  
+    removed = (!mc && removed_events && removed_events->count(event));  
 
     double phi = sum->peak[pol][peak].phi; 
 
@@ -327,6 +342,16 @@ int evaluateSourceMap(int start_run = 300, int end_run = 330,
     {
       wgt = sum->mc.weight; 
       mcE = sum->mc.energy; 
+
+      int ent = d->getEntry(entry); 
+      printf("%d/%u/%d/%d\n",run,event,ent,sument); 
+
+      AntarcticCoord crd(AntarcticCoord::WGS84, d->truth()->sourceLat, d->truth()->sourceLon,0); 
+      crd.to(AntarcticCoord::STEREOGRAPHIC); 
+      mcEasting = crd.x; 
+      mcNorthing = crd.y; 
+      mcSNR = pol == 0 ? d->truth()->maxSNRAtTriggerH : d->truth()->maxSNRAtTriggerV; 
+
       if ( fabs(sum->mc.theta-theta) > 4) continue; 
       if ( fabs(FFTtools::wrap(sum->mc.phi-phi, 360,0)) > 4) continue; 
     }
@@ -374,7 +399,7 @@ int evaluateSourceMap(int start_run = 300, int end_run = 330,
     if (mc) delete map; 
    
 //    if (O < 0) O = -1; 
-    printf("r/e: %d/%d/%g/%g\n",run,event, F, O); 
+    printf("r/e: %d/%u/%g/%g\n",run,event, F, O); 
 
     max_base_index = -1;
     base_sum = 0;
