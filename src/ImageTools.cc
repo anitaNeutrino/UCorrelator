@@ -1,10 +1,31 @@
 #include "TProfile2D.h"
-#include "TH2.h" 
+#include "TH3.h" 
 #include "UCImageTools.h" 
 #include "TString.h" 
 #include <algorithm>
 #include <set>
 #include <math.h>
+
+static TH1* makeTH1(char type, const char * name, const char * title, int nbins, double xmin, double xmax) 
+{
+  switch(type)
+  {
+    case 'C': 
+      return new TH1C(name,title,nbins,xmin,xmax); 
+    case 'S': 
+      return new TH1S(name,title,nbins,xmin,xmax); 
+    case 'I': 
+      return new TH1I(name,title,nbins,xmin,xmax); 
+    case 'F': 
+      return new TH1F(name,title,nbins,xmin,xmax); 
+    case 'D': 
+    default:
+      return new TH1D(name,title,nbins,xmin,xmax); 
+  }
+}
+
+
+
 
 
 
@@ -112,25 +133,6 @@ double UCorrelator::getZRMS(const TH2* hist, const int * lims) {
   return sqrt(sqMean - mean * mean);
 }
 
-
-static TH1* makeTH1(char type, const char * name, const char * title, int nbins, double xmin, double xmax) 
-{
-
-  switch(type)
-  {
-    case 'C': 
-      return new TH1C(name,title,nbins,xmin,xmax); 
-    case 'S': 
-      return new TH1S(name,title,nbins,xmin,xmax); 
-    case 'I': 
-      return new TH1I(name,title,nbins,xmin,xmax); 
-    case 'F': 
-      return new TH1F(name,title,nbins,xmin,xmax); 
-    case 'D': 
-    default:
-      return new TH1D(name,title,nbins,xmin,xmax); 
-  }
-}
 
 
 static const TAxis * getAxis(const TH2* H, int axis) 
@@ -371,56 +373,110 @@ double UCorrelator::image::interpolate(const TH2 *h, double x, double y, Interpo
 
 }
 
-
-TH2 * UCorrelator::image::makePctileHist(const TH2 * h, const char * name , bool invert, int npctilebins) 
+TH1 * UCorrelator::image::makePctileHist(const TH1 * h, const char * name , bool invert, int npctilebins, bool integral) 
 {
 #if ROOT_VERSION_CODE < ROOT_VERSION(6,4,0)
   fprintf(stderr,"makePctileHist requires at least ROOT 6.04\n"); 
   return 0; 
 #else
 
-  TH1D aux("aux_pctile_hist", "blah", npctilebins, h->GetMinimum(), h->GetMaximum()); 
 
+  std::vector<double> vals; 
+  vals.reserve(h->GetNbinsX()*h->GetNbinsY() * h->GetNbinsZ()); 
 
+  double min = DBL_MAX; 
+  double max = -DBL_MAX; 
+  double sum = 0; 
   for (int i = 1; i <= h->GetNbinsX(); i++)
   {
+    double iwidth = h->GetXaxis()->GetBinWidth(i);
     for (int j = 1; j <= h->GetNbinsY(); j++)
     {
-      aux.Fill(h->GetBinContent(i,j), h->GetBinContent(i,j)); 
+      double jwidth = h->GetYaxis()->GetBinWidth(j);
+      for (int k = 1; k <= h->GetNbinsZ(); k++)
+      {
+        double w = 1; 
+        if (integral) 
+        {
+          double kwidth = h->GetZaxis()->GetBinWidth(k);
+          w = iwidth*jwidth*kwidth; 
+        }
+        double val = w*h->GetBinContent(i,j,k); 
+        if (val < min) min = val; 
+        if (val > max) max = val; 
+        sum += val; 
+        vals.push_back(val); 
+      }
     }
   }
 
-  aux.Scale(1./aux.Integral()); 
-  TH1 * cum = aux.GetCumulative(invert); 
+  TH1D aux("aux_pctile_hist", "blah", npctilebins,min,max); 
+  for (unsigned i = 0; i < vals.size(); i++) 
+  {
+    aux.Fill(vals[i], vals[i]/sum); 
+  }
 
+  TH1 * cumu = aux.GetCumulative(invert); 
 
   TString hist_name;
   if (name[0]=='_') hist_name.Form("%s%s", h->GetName(),name); 
   else hist_name = name;
   TString hist_title;
   hist_title.Form("Pctiles of %s", h->GetTitle());
-  TH2F* hout = new TH2F(hist_name.Data(), hist_title.Data(),
-      h->GetNbinsX(), h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(), 
-      h->GetNbinsY(), h->GetYaxis()->GetXmin(), h->GetYaxis()->GetXmax()); 
 
+  int ndims = h->ClassName()[2]-'0'; 
+
+  TH1* hout = ndims == 1 ? (TH1*) new TH1F(hist_name.Data(), hist_title.Data(), h->GetNbinsX(), h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax()) : 
+              ndims == 2 ? (TH1*) new TH2F(hist_name.Data(), hist_title.Data(), h->GetNbinsX(), h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(), 
+                                                                         h->GetNbinsY(), h->GetYaxis()->GetXmin(), h->GetYaxis()->GetXmax()) :
+              ndims == 3 ? (TH1*) new TH3F(hist_name.Data(), hist_title.Data(), h->GetNbinsX(), h->GetXaxis()->GetXmin(), h->GetXaxis()->GetXmax(), 
+                                                                         h->GetNbinsY(), h->GetYaxis()->GetXmin(), h->GetYaxis()->GetXmax(),
+                                                                         h->GetNbinsZ(), h->GetZaxis()->GetXmin(), h->GetZaxis()->GetXmax())
+              : 0;
+
+  //copy the actual axes to get the binning right!!! 
+  //This also gets the axes names right
+  h->GetXaxis()->Copy(*hout->GetXaxis()); 
+  h->GetYaxis()->Copy(*hout->GetYaxis()); 
+  h->GetZaxis()->Copy(*hout->GetZaxis()); 
+
+
+  //copy the number of entries 
   hout->SetEntries(h->GetEntries()); 
 
   for (int i = 1; i <= h->GetNbinsX(); i++)
   {
+    double iwidth = h->GetXaxis()->GetBinWidth(i);
     for (int j = 1; j <= h->GetNbinsY(); j++)
     {
-      double val = h->GetBinContent(i,j); 
-      double pctile = cum->Interpolate(val); 
-      if (invert) pctile = 1-pctile;
-      hout->SetBinContent(i,j, pctile); 
+      double jwidth = h->GetYaxis()->GetBinWidth(j);
+      for (int k = 1; k <= h->GetNbinsZ(); k++)
+      {
+        double w = 1; 
+        if (integral) 
+        {
+          double kwidth = h->GetZaxis()->GetBinWidth(k);
+          w = iwidth*jwidth*kwidth; 
+        }
+        double val = w*h->GetBinContent(i,j,k); 
+        double pctile = cumu->Interpolate(val); 
+        if (invert) pctile = 1-pctile;
+        hout->SetBinContent(i,j,k, pctile); 
+      }
     }
   }
 
-  delete cum; 
+  delete cumu; 
 
   hout->GetXaxis()->SetTitle(h->GetXaxis()->GetTitle());
-  hout->GetYaxis()->SetTitle(h->GetYaxis()->GetTitle());
-  hout->GetZaxis()->SetTitle("Percentile");
+  if (ndims > 1) 
+  {
+    hout->GetYaxis()->SetTitle(h->GetYaxis()->GetTitle());
+  }
+  if (ndims > 2) 
+  {
+    hout->GetZaxis()->SetTitle("Percentile");
+  }
   hout->SetMaximum(1); 
   hout->SetMinimum(0); 
 
