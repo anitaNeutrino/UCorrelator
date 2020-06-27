@@ -46,7 +46,7 @@ void doSimulated(int run = 1, int max = 0, int start = 0, const char * out_dir =
 
 
 
-  AnitaEventSummary::useProbWeight(1); 
+//  AnitaEventSummary::useProbWeight(1); 
 
   TFile ofile(outname, "RECREATE"); 
   TTree * tree = new TTree("simulation"," Simulated events"); 
