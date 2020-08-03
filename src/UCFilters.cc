@@ -273,10 +273,12 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
 
     else if (strcasestr(tok.Data(),"deconv")) 
     {
-      //TODO: A4 support 
+
       if (!responseManager && fillme ) 
       {
-        responseManager = new AnitaResponse::ResponseManager("IndividualBRotter",3); 
+        if (AnitaVersion::get() == 3) responseManager = new AnitaResponse::ResponseManager("IndividualBRotter",3);
+        else if (AnitaVersion::get() == 4) responseManager = new AnitaResponse::ResponseManager("ResponseA4",3);
+        else fprintf(stderr, "Response not yet implemented for other versions of ANITA!\n");
       }
 
       if (need_description) 
