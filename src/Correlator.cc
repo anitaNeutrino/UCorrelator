@@ -82,7 +82,7 @@ static int nthreads()
 
 
 
-static int gettid() 
+static int get_thread_id() 
 {
 #ifdef UCORRELATOR_OPENMP
   return omp_get_thread_num(); 
@@ -499,8 +499,8 @@ inline void UCorrelator::Correlator::doAntennas(int ant1, int ant2, TH2D ** thes
    assert(ant2 < 48); 
    if(!allowedFlag) return; 
 
-   TH2D * the_hist  = these_hists[gettid()]; 
-   TH2D * the_norm  = these_norms[gettid()]; 
+   TH2D * the_hist  = these_hists[get_thread_id()]; 
+   TH2D * the_norm  = these_norms[get_thread_id()]; 
 
 //   printf("lowerAngleThis: %g higherAngleThis: %g\n", lowerAngleThis, higherAngleThis); 
    // More stringent check if we have a center point
