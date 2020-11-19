@@ -160,7 +160,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
 
         if (fillme) 
         {
-          fillme->addOperation(ssf); 
+          fillme->addOperation(ssf,false,true); 
           // fillme->addOperation(ssf,true);// true for having output. 
         }
 
@@ -193,7 +193,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
         if (fillme) 
         {
           ssf->makeAdaptive(&avgldr,expf); 
-          fillme->addOperation(ssf); 
+          fillme->addOperation(ssf,false,true); 
         }
         if (need_description)
         {
@@ -219,7 +219,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
 
         if (fillme) 
         {
-          fillme->addOperation(new AdaptiveButterworthFilter(&avgldr,threshf,order)); 
+          fillme->addOperation(new AdaptiveButterworthFilter(&avgldr,threshf,order),false,true); 
         }
         if (need_description) 
         {
@@ -240,7 +240,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
         while (expf > 10 )expf/=10; 
 
         if (fillme) 
-          fillme->addOperation(new AdaptiveMinimumPhaseFilter(&avgldr,-expf)); 
+          fillme->addOperation(new AdaptiveMinimumPhaseFilter(&avgldr,-expf),false,true); 
 
         if (need_description)
         {
@@ -261,7 +261,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
         while (threshf > 10 )threshf/=10; 
 
         if (fillme) 
-          fillme->addOperation(new AdaptiveBrickWallFilter(&avgldr,threshf,fill)); 
+          fillme->addOperation(new AdaptiveBrickWallFilter(&avgldr,threshf,fill),false,true); 
 
         if (need_description)
         {
@@ -287,7 +287,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
       }
 
       if (fillme) 
-        fillme->addOperation( new AnitaResponse::DeconvolveFilter(responseManager, &allpass)); 
+        fillme->addOperation( new AnitaResponse::DeconvolveFilter(responseManager, &allpass),false,true); 
     }
 
     else if (strcasestr(tok.Data(),"gaustaper_")) 
@@ -309,7 +309,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
 
 
         if (fillme) 
-          fillme->addOperation(new GaussianTaper(mean,nsigma)); 
+          fillme->addOperation(new GaussianTaper(mean,nsigma),false,true); 
 
       }
  
@@ -335,7 +335,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
             delete avg; 
           }
         }
-        fillme->addOperation(new GeometricFilter(noise)); 
+        fillme->addOperation(new GeometricFilter(noise),false,true); 
       }
       if (need_description)
       {
@@ -348,16 +348,15 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
     {
       if (fillme) 
       {
-        fillme->addOperation(new SimplePassBandFilter(0.2, 1.2)); 
+        fillme->addOperation(new SimplePassBandFilter(0.2, 1.2),false,true); 
 
 
         fillme->addOperation(new ConditionalFilterOperation
                                      (  new ComplicatedNotchFilter(0.26-0.026, 0.26 + 0.026), 
                                             &UCorrelator::antennaIsNorthFacing, "_north", "if is facing north",true
-                                     )
-                             );  
+                                     ), false,true);  
 
-        fillme->addOperation(new AdaptiveFilterAbby(2, getenv("UCORRELATOR_BASELINE_DIR"))); 
+        fillme->addOperation(new AdaptiveFilterAbby(2, getenv("UCORRELATOR_BASELINE_DIR")),false,true); 
 
       }
       if (need_description)
@@ -379,7 +378,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
       if (fillme) 
       {
 
-        fillme->addOperation(new SimplePassBandFilter(lower/1e3, upper/1e3)); 
+        fillme->addOperation(new SimplePassBandFilter(lower/1e3, upper/1e3),false,true); 
 
       }
 
@@ -400,7 +399,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
       if (fillme) 
       {
 
-        fillme->addOperation(new SimpleNotchFilter(lower/1e3, upper/1e3)); 
+        fillme->addOperation(new SimpleNotchFilter(lower/1e3, upper/1e3),false,true); 
 
       }
 
@@ -414,7 +413,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
       dont_alfa = true; 
       if (fillme) 
       {
-        fillme->addOperation(new ALFAFilter); 
+        fillme->addOperation(new ALFAFilter,false,true); 
       }
       if (need_description) 
       {
@@ -430,7 +429,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
            dont_alfa = true; 
            if (fillme) 
            {
-              fillme->addOperation(new ALFAFilter); 
+              fillme->addOperation(new ALFAFilter,false,true); 
            }
            if (need_description) 
            {
@@ -438,7 +437,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
            }
 
         }
-        fillme->addOperation(new DiodeFilter); 
+        fillme->addOperation(new DiodeFilter,false,true); 
       }
       if (need_description) 
       {
@@ -454,7 +453,7 @@ const char * UCorrelator::fillStrategyWithKey(FilterStrategy * fillme, const cha
     //TODO: make this more configurable
     if (fillme) 
     {
-      fillme->addOperation(new ALFAFilter); 
+      fillme->addOperation(new ALFAFilter,false,true); 
     }
     if (need_description) 
     {
