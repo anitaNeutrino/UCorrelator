@@ -353,8 +353,8 @@ const TH2F * UCorrelator::TimeDependentAverage::getSpectrogram(AnitaPol::AnitaPo
     m.Lock(); 
     if (!avgs_loaded) 
     {
-      TFile f(fname); 
-      f.cd("specavg"); 
+      TFile * f = TFile::Open(fname); 
+      f->cd("specavg"); 
       for (int ant = 0; ant < NUM_SEAVEYS; ant++) 
       {
         TH2F * found_hpol = (TH2F*) gDirectory->Get(TString::Format("h%d",ant)); 
@@ -366,7 +366,7 @@ const TH2F * UCorrelator::TimeDependentAverage::getSpectrogram(AnitaPol::AnitaPo
         avgs[ant][1]->SetDirectory(0); 
       }
 
-      f.cd("specavg_minbias"); 
+      f->cd("specavg_minbias"); 
 
       for (int ant = 0; ant < NUM_SEAVEYS; ant++) 
       {
@@ -379,6 +379,7 @@ const TH2F * UCorrelator::TimeDependentAverage::getSpectrogram(AnitaPol::AnitaPo
         avgs_minbias[ant][1] = new TH2F(*found_vpol);  
         avgs_minbias[ant][1]->SetDirectory(0); 
       }
+      delete f ; 
       __sync_synchronize(); //memory barrier
       avgs_loaded = true; 
     }
@@ -399,8 +400,8 @@ const TH1D * UCorrelator::TimeDependentAverage::getRMS(AnitaPol::AnitaPol_t pol,
 
     if (!rms_loaded)
     {
-      TFile f(fname); 
-      f.cd("rms"); 
+      TFile *f = TFile::Open(fname); 
+      f->cd("rms"); 
 
       for (int ant = 0; ant < NUM_SEAVEYS; ant++) 
       {
@@ -415,6 +416,7 @@ const TH1D * UCorrelator::TimeDependentAverage::getRMS(AnitaPol::AnitaPol_t pol,
       }
       __sync_synchronize(); //memory barrier
       rms_loaded = true; 
+      delete f; 
     }
     m.UnLock(); 
   }
@@ -438,10 +440,10 @@ UCorrelator::TimeDependentAverage::TimeDependentAverage(int run, int nsecs, cons
   if (check_dir)
   {
     fname.Form("%s/%d_%d.root", check_dir, run,nsecs); 
-    TFile f(fname); 
-    if (f.IsOpen())
+    TFile * f = TFile::Open(fname); 
+    if (f && f->IsOpen())
     {
-      f.cd(); 
+      f->cd(); 
 
       if (gDirectory->Get("norms") && gDirectory->Get("norms_minbias") && gDirectory->Get("nblasts"))
       {
@@ -473,6 +475,8 @@ UCorrelator::TimeDependentAverage::TimeDependentAverage(int run, int nsecs, cons
 
     memset(avgs,0,sizeof(avgs)); 
     memset(avgs_minbias,0,sizeof(avgs_minbias)); 
+
+    if (f) delete f; 
   }
 
   if (!foundit) 
@@ -488,6 +492,7 @@ UCorrelator::TimeDependentAverage::TimeDependentAverage(int run, int nsecs, cons
 
   memset(peakiness,0,sizeof(peakiness)); 
   memset(peakiness_minbias,0,sizeof(peakiness_minbias)); 
+
 }
             
 
