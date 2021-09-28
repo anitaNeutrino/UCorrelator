@@ -885,9 +885,9 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 	}
 
 	info->snr = thatSnr; //LE 5-17 should I be messing with this?
-	info->snr1 = thisSnr;
-	info->snr2 = otherSnr;
-	info->snr3 = snr3;
+	info->snrFifthRMS = thisSnr;
+	info->snrTenRMS = otherSnr;
+	info->snrHilbert = snr3;
 //End BinnedAnalysis additions.
 
   polarimetry::StokesAnalysis stokes( pol == AnitaPol::kHorizontal ? wf : xpol_wf,  pol == AnitaPol::kHorizontal ? xpol_wf: wf, cfg->cross_correlate_hv); 
