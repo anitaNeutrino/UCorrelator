@@ -4,6 +4,7 @@
 
 #include "AnitaConventions.h"
 #include "TH2.h"
+#include "AnalysisConfig.h"
 
 class FilteredAnitaEvent; 
 class AnalysisWaveform; 
