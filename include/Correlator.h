@@ -57,6 +57,20 @@ namespace UCorrelator
       /** Set the supersampling factor */ 
       void setPadFactor(int pad) { pad_factor = pad; } 
 
+      //Added for BinnedAnalysis - JCF 9/27/2021
+      /** Disable the antennas given by the bitmap, but leave all others alone */    // sammy 2016/10/27
+      void disallowAntennas(uint64_t disallowed) { disallowed_antennas |= disallowed; }
+
+      /** Enable the antennas given by the bitmap, but leave all others alone */    // sammy 2016/10/27
+      void allowAntennas(uint64_t allowed) { disallowed_antennas &= ~allowed; }
+
+      /** Set the normalization      added sammy */
+      void setNormalization(AnalysisConfig::NormalizationOption_t n) { normalization_option = n; }
+      const char * getNormalizationString() {return AnalysisConfig::getNormalizationString(normalization_option);}
+      //----------------------------------------------------------------------
+
+      //End BinnedAnalysis Additions
+
       /** Debugging method to dump out some info to a file */ 
       void dumpDeltaTs(const char * file) const; 
       virtual ~Correlator(); 
@@ -93,6 +107,12 @@ namespace UCorrelator
       void reset(); 
 
       CorrelatorLocks * locks; 
+
+      //Added for BinnedAnalysis - JCF 9/27/2021
+      // added sammy -----------------------------------------------
+      AnalysisConfig::NormalizationOption_t normalization_option;
+      //------------------------------------------------------------
+      //End BinnedAnalysis addition.
   }; 
 
 

@@ -6,7 +6,11 @@
 
 static const char * peakfinders[] = {"Abby","Bicubic","Gaussian","QuadraticFit9","QuadraticFit16","QuadraticFit25", "Histogram" }; 
 static const char * responses[] = {"None","SingleBRotter","IndividualBRotter","HarmSignalOnly", "TUFFs", "A4noNotches", "A4ImpulseTUFFs", "A4OldImpulseTUFFs"};
-
+//BinnedAnalysis Changes - JCF 9/27/2021
+// added sammy  -----------------------------------------------
+static const char * normalizations[] = {"None", "Magnitude", "Overlap magnitude", "Overlap-weighted magnitude"}; 
+//-------------------------------------------------------------
+//end BinnedAnalysis changes.
 
 #ifdef ENABLE_LIBCONFIG
 #include "libconfig.h++"
@@ -101,7 +105,10 @@ void UCorrelator::AnalysisConfig::loadFromFile(const char * config_file)
   lookupEnum(&cfg, "end_pol", (int*) &end_pol, 2,pols); 
   lookupEnum(&cfg, "fine_peak_finding_option", (int*) &fine_peak_finding_option, sizeof(peakfinders)/sizeof(char *), peakfinders); 
   lookupEnum(&cfg, "response_option", (int*) &response_option, sizeof(responses)/sizeof(char *), responses); 
-
+  //BinnedAnalysis change - JCF 9/27/2021
+  // added sammy
+  lookupEnum(&cfg, "normalization_option", normalization_option, sizeof(normalizations)/sizeof(char *), normalizations); 
+  //end BinnedAnalysis change
 }
 
 #else
@@ -244,6 +251,14 @@ const char * UCorrelator::AnalysisConfig::getResponseString(ResponseOption_t opt
   return opt == ResponseCustomString ? 0 :  responses[opt]; 
 }
 
+//BinnedAnalysis addition - JCF 9/27/2021
+// added sammy ------------------------------------------------------------------
+const char * UCorrelator::AnalysisConfig::getNormalizationString(NormalizationOption_t opt) 
+{
+  return normalizations[opt]; 
+}
+// ------------------------------------------------------------------------------
+//End BinnedAnalysis addition.
 
 UCorrelator::AnalysisConfig::~AnalysisConfig()
 {

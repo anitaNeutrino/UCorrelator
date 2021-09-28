@@ -96,6 +96,10 @@ static int instance_counter = 0;
   corr.setGroupDelayFlag(cfg->enable_group_delay); 
   if (cfg->correlation_gain_correction) corr.setMaxAntennaMaxPhiDistance(3*cfg->correlation_gain_correction); 
 
+  //BinnedAnalysis addition - JCF 9/27/2021
+  corr.setNormalization(cfg->normalization_option);
+  //End BinnedAnalysis addition.
+
   wfcomb.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_xpol.setGroupDelayFlag(cfg->enable_group_delay); 
   wfcomb_filtered.setGroupDelayFlag(cfg->enable_group_delay); 
@@ -758,6 +762,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
   }
   const TGraphAligned * even = wf->even(); 
   const TGraphAligned * xpol_even= xpol_wf->even(); 
+  const TGraphAligned* hilbert = wf->hilbertEnvelope(); //BinnedAnalysis addition - JCF 9/27/2021
   int peakBin;
 
   int peakHilbertBin; 
@@ -801,6 +806,89 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
     info->width_10_10 = 0; 
     info->power_10_10 = 0; 
   }
+
+//BinnedAnalysis additions - JCF 9/27/2021
+	// fix fail on unequal lengths - sammy
+	int nMin = std::min(even->GetN(), xpol_even->GetN());
+	if (pol == AnitaPol::kHorizontal)
+	{
+		FFTtools::stokesParameters(nMin,
+															even->GetY(),
+															wf->hilbertTransform()->even()->GetY(),
+															xpol_even->GetY(),
+															xpol_wf->hilbertTransform()->even()->GetY(),
+															&(info->I), &(info->Q), &(info->U), &(info->V));
+	}
+	else
+	{
+		FFTtools::stokesParameters(nMin,
+															xpol_even->GetY(),
+															xpol_wf->hilbertTransform()->even()->GetY(),
+															even->GetY(),
+															wf->hilbertTransform()->even()->GetY(),
+															&(info->I), &(info->Q), &(info->U), &(info->V));
+	}
+
+	double dt = wf->deltaT();
+	double t0 = even->GetX()[0];
+
+	int i0 = TMath::Max(0.,floor((cfg->noise_estimate_t0 - t0)/dt));
+	int i1 = TMath::Min(even->GetN()-1.,ceil((cfg->noise_estimate_t1 - t0)/dt));
+	int n = i1 - i0 + 1;
+
+	// changed by sammy to use SNR similar to B. Dailey, A. Vieregg, for like-to-like comparison
+	double rmsSam;
+	if (n<0) {
+		printf("   -----Warning! - finagling index limits for rms calculation \n");
+		printf("         even->GetN()=%i \n", even->GetN());
+		printf("         %d-%d -> %d \n", i0, i1, n);
+		rmsSam = TMath::RMS(-n, even->GetY() + i0 + n);
+		printf("    rms value is %f \n", rmsSam);
+	} else {
+		rmsSam = TMath::RMS(n, even->GetY() + i0);
+	}
+	double thatSnr = info->peakVal / rmsSam; 
+
+	// new code sammy
+  // get rms of a 1/5 sampling of the waveform, use the end 1/5 since our pulses are early in the sampling window
+	int k0 = (int)(0.75 * even->GetN());
+	int k1 = (int)(0.95 * even->GetN());
+	double thisNoise = TMath::RMS(k1-k0, &(even->GetY()[k0]));
+	double thisSig = 0.5 * even->pk2pk(0, 0, NULL, NULL);
+	double thisSnr = thisSig / thisNoise;
+
+	// third way: use (noiseInterval) seconds starting with the first nonzero bucket
+	// fourth way: integrate the hilbert envelope acroos the peak for S; for N, do like third way except use hilbert env instead of waveform
+	float noiseInterval = 10.;
+	int j0 = 0;
+	for (; j0<even->GetN() && even->GetY()[j0]==0; ++j0) {}
+	int j1 = j0 + noiseInterval/dt;
+	float otherSnr = 1.0;
+	float snr3 = 1.0;
+	if (j1 >= even->GetN()) {
+		printf("warning: could not obtain noise sample interval \n");
+	} else {
+		rmsSam = TMath::RMS(j1-j0+1, even->GetY() + j0);
+		otherSnr = thisSig / rmsSam;
+		double noise3 = hilbert->Integral(j0, j1);
+		noise3 /= (j1-j0+1);
+		float hilbPeakTime = 0;
+		hilbPeakTime = info->peakTime;
+
+		int hilbPeakIndex = (info->peakTime - hilbert->GetX()[0])/dt;
+		int j3 = hilbPeakIndex - 7.5/dt;
+		int j4 = hilbPeakIndex + 12.5/dt;
+		double sig3 = hilbert->Integral(j3, j4);
+		sig3 /= (j4-j3+1);
+		snr3 = sig3/noise3;
+		int wk;
+	}
+
+	info->snr = thatSnr; //LE 5-17 should I be messing with this?
+	info->snr1 = thisSnr;
+	info->snr2 = otherSnr;
+	info->snr3 = snr3;
+//End BinnedAnalysis additions.
 
   polarimetry::StokesAnalysis stokes( pol == AnitaPol::kHorizontal ? wf : xpol_wf,  pol == AnitaPol::kHorizontal ? xpol_wf: wf, cfg->cross_correlate_hv); 
   info->I = stokes.getAvgI(); 

@@ -84,6 +84,18 @@ namespace UCorrelator
       static const char * getResponseString(ResponseOption_t opt); 
       int response_npad; //number of times to pad (in freq domain) the response 
 
+      //BinnedAnalysis changes - JCF 9/27/2021
+      // normalization  options added sammy ----------------
+      enum NormalizationOption_t
+      {
+        NormalizationNone,          // no normalization
+        NormalizationStandard,      // normalize by the magnitudes (pythagorean sums) of the inputs
+        NormalizationOverlap,      // normalize by pythagorean sums across the mutually supported regions (overlap normalization)
+        NormalizationOverlapWeighted   // normalize by magnitudes, but weighted by the width of overlap (not implemented yet)
+      } normalization_option;
+      static const char * getNormalizationString(NormalizationOption_t opt);
+      //end BinnedAnalysis changes
+      // ---------------------------------------------------
 
       int nmaxima; ///number of maxima computed
       bool use_bin_center; ///True to use bin center in interferometric map
