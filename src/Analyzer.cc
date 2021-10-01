@@ -887,7 +887,7 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
 	int wk;
   }
 
-  info->snr = thatSnr; //LE 5-17 should I be messing with this?
+  info->snrStafford = thatSnr; //LE 5-17 should I be messing with this?
   info->snrFifthRMS = thisSnr;
   info->snrTenRMS = otherSnr;
   info->snrHilbert = snr3;
@@ -924,10 +924,10 @@ void UCorrelator::Analyzer::fillWaveformInfo(const AnalysisWaveform * wf, const 
     if (n < 0 || n > even->GetN()) n = even->GetN();
     rms = TMath::RMS(n, even->GetY() + i0); 
   }
-
+/*  //Commenting out for testing
   info->snr = info->peakHilbert / rms;
   if(vpp > 0 && cfg->use_antenna_level_snr) info->snr = vpp/(2*rms);
-
+*/
   if(cfg->use_coherent_spectra) pwr = wf->powerdB(); 
 
   TGraphAligned power(pwr->GetN(),pwr->GetX(),pwr->GetY()); 
