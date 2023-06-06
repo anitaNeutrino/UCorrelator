@@ -82,7 +82,13 @@ namespace UCorrelator
       const TGraphAligned * getCoherentPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent_power[pol][filtered ? 1: 0][i]; } 
 
        /** Return the ith deconvolved averaged power for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
-      const TGraphAligned * getDeconvolvedPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_power[pol][filtered ? 1: 0][i]; } 
+      const TGraphAligned * getDeconvolvedPower(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_power[pol][filtered ? 1: 0][i]; }
+      
+      /** Return the ith coherent xpol averaged power for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
+      const TGraphAligned * getCoherentPowerXpol(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return coherent_power_xpol[pol][filtered ? 1: 0][i]; } 
+
+       /** Return the ith deconvolved xpol averaged power for the polarization. For this to work, Analyzer must have been constructed with interactive= true and the polarization asked for must have been enabled in the config. */ 
+      const TGraphAligned * getDeconvolvedPowerXpol(AnitaPol::AnitaPol_t pol, int i, bool filtered = false) const { return deconvolved_power_xpol[pol][filtered ? 1: 0][i]; }
 
       AnitaResponse::ResponseManager * getResponseManager() { return &responses; } 
 
