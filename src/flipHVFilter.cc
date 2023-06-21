@@ -88,7 +88,11 @@ UCorrelator::flipHVFilter::~flipHVFilter() {
 }
 
 
-void UCorrelator::flipHVFilter::process(FilteredAnitaEvent * ev) processOne(getWf(ev, 44, AnitaPol::kVertical), ev->getHeader(), 44, AnitaPol::kVertical);
+void UCorrelator::flipHVFilter::process(FilteredAnitaEvent * ev) {
+
+  processOne(getWf(ev, 44, AnitaPol::kVertical), ev->getHeader(), 44, AnitaPol::kVertical);
+
+}
 
 
 void UCorrelator::flipHVFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int whichAnt, int whichPol) {
