@@ -33,8 +33,11 @@ UCorrelator::flipHVFilter::~flipHVFilter() {
 
 void UCorrelator::flipHVFilter::process(FilteredAnitaEvent * ev) {
 
-  processOne(getWf(ev, 44, AnitaPol::kVertical), ev->getHeader(), 44, AnitaPol::kVertical);
-
+  for (unsigned i = 0; i < NUM_SEAVEYS; ++i) {
+  
+      processOne(getWf(ev, i, AnitaPol::kHorizontal), ev->getHeader(), i, AnitaPol::kVertical);
+      processOne(getWf(ev, i, AnitaPol::kVertical), ev->getHeader(), i, AnitaPol::kHorizontal);
+  }
 }
 
 
