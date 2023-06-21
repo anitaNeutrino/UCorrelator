@@ -15,7 +15,7 @@
 namespace UCorrelator 
 {
   /*
-   *  The purspose of this filter is to flip H and Vpol channels.
+   *  The purpose of this filter is to flip H and Vpol channels.
    */
 
   class flipHVFilter : public FilterOperation {
