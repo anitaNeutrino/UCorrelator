@@ -78,50 +78,47 @@ UCorrelator::flipHVFilter::flipHVFilter(const char * index_file, bool anti)
 }
 
 
-UCorrelator::flipHVFilter::~flipHVFilter()
-{
-  for (unsigned i = 0; i < gPhase.size(); i++)
-  {
+UCorrelator::flipHVFilter::~flipHVFilter() {
+
+  for (unsigned i = 0; i < gPhase.size(); i++) {
+  
     delete gPhase[i];
     delete gMag[i];
   }
 }
 
 
-void UCorrelator::flipHVFilter::process(FilteredAnitaEvent * ev)
-{
-  processOne(getWf(ev, 44, AnitaPol::kVertical), ev->getHeader(), 44, AnitaPol::kVertical);
-}
+void UCorrelator::flipHVFilter::process(FilteredAnitaEvent * ev) processOne(getWf(ev, 44, AnitaPol::kVertical), ev->getHeader(), 44, AnitaPol::kVertical);
 
-void UCorrelator::flipHVFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int whichAnt, int whichPol)
-{
-	if(whichAnt != 44 || whichPol != 0) return;
 
+void UCorrelator::flipHVFilter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int whichAnt, int whichPol) {
+
+  if(whichAnt != 44 || whichPol != 0) return;
 
   int index = 0; 
 
   //check curent index 
-  if (end_times.size()) 
-  {
-    index = indices[std::upper_bound(end_times.begin(), end_times.end(), header->triggerTime) - end_times.begin()]; 
-  }
+  if (end_times.size()) index = indices[std::upper_bound(end_times.begin(), end_times.end(), header->triggerTime) - end_times.begin()];
 
-	AnitaPol::AnitaPol_t pol = AnitaPol::kHorizontal; 
-	int old_size = awf->Neven();
-	int nf = awf->Nfreq();
-	double df = awf->deltaF();
-	for( int i =0; i < nf; i++)
-	{
-		double f =i*df; 
-    double lookup_f = f; 
-    if (!end_times.size()) lookup_f*=1e9; // old version used Hz, not GHz 
-		double phase = anti ?
-      awf->freq()[i].getPhase()-FFTtools::evalEvenGraph(gPhase[index], lookup_f):
-      awf->freq()[i].getPhase()+FFTtools::evalEvenGraph(gPhase[index],lookup_f);
-		double mag = anti ? 
-         awf->freq()[i].getAbs()*FFTtools::evalEvenGraph(gMag[index],lookup_f):
-         awf->freq()[i].getAbs()*(1./gMag[index]->Eval(lookup_f));
-		if( f>=.1 && f<=1.3) awf->updateFreq()[i].setMagPhase(mag, phase);
-	}
-	awf->updateEven()->Set(old_size);
+  AnitaPol::AnitaPol_t pol = AnitaPol::kHorizontal;
+  int old_size = awf->Neven();
+  int nf = awf->Nfreq();
+  double df = awf->deltaF();
+  
+  for( int i =0; i < nf; i++) {
+	
+    double f =i*df; 
+    double lookup_f = f;
+    
+    if (!end_times.size()) lookup_f*=1e9; // old version used Hz, not GHz
+    
+    double phase = anti ? awf->freq()[i].getPhase()-FFTtools::evalEvenGraph(gPhase[index], lookup_f) : awf->freq()[i].getPhase()+FFTtools::evalEvenGraph(gPhase[index],lookup_f);
+
+    double mag = anti ? awf->freq()[i].getAbs()*FFTtools::evalEvenGraph(gMag[index],lookup_f) : awf->freq()[i].getAbs()*(1./gMag[index]->Eval(lookup_f));
+    
+    if( f>=.1 && f<=1.3) awf->updateFreq()[i].setMagPhase(mag, phase);
+
+    }
+    
+    awf->updateEven()->Set(old_size);
 }
