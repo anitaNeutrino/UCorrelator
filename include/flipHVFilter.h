@@ -11,6 +11,7 @@
 #include "SineSubtract.h" 
 #include "AnalysisWaveform.h" 
 
+
 namespace UCorrelator 
 {
   /*
@@ -21,22 +22,14 @@ namespace UCorrelator
   
     public: 
 
-      flipHVFilter(const char * index_file="A4ImpulseTUFFs/index.txt", bool anti = false); 
+      flipHVFilter(); 
       ~flipHVFilter(); 
 
       virtual const char * tag() const { return "flipHVFilter"; } 
       virtual const char * description() const { return "flipHVFilter"; } 
 
       virtual void process(FilteredAnitaEvent * ev); 
-      virtual void processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int whichAnt, int whichPol); 
-
-    private:
-    
-      bool anti;
-      std::vector<unsigned> end_times; 
-      std::vector<unsigned> indices; 
-      std::vector<TGraph*> gPhase;
-      std::vector<TGraph*> gMag;
+      virtual void processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int whichAnt, int whichPol);
   };  
 }
 
