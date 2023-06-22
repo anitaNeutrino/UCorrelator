@@ -96,7 +96,7 @@ void UCorrelator::BV13Filter::process(FilteredAnitaEvent * ev)
 
 void UCorrelator::BV13Filter::processOne(AnalysisWaveform * awf, const RawAnitaHeader * header, int whichAnt, int whichPol)
 {
-	if(whichAnt != 44 || whichPol != 0) return;
+	if(whichAnt != 44 || whichPol != 1) return;
 
 
   int index = 0; 
